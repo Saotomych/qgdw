@@ -61,13 +61,35 @@ static int uc1698_fb_open(struct fb_info *info, int user)
 static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
 {
 	int i=0;
-//	
-//	printk("device_read(%p,%p,%d)\n",file,buffer,length);
-//	
+
+	printk("device_read(%p,%p,%d)\n",info,buffer,length);
+
 //	for(i=0; i<length && i < BUF_LEN; i++) get_user(Video[i], buffer + i);
 //	pVideo = Video;
-//	
+
 	return i;
+}
+
+static ssize_t uc1698_fb_write(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
+{
+    int rlen = info->fix.smem_len;
+    unsigned long pos = (unsigned long) offset;
+
+    // Проверка на переход смещения за границу буфера и на приход блока с длиной 0
+    if (pos >= info->fix.smem_len || (!length)) return 0;
+
+    // Если пришедший блок длиннее чем выделенная память, то ставим длину выделенной памяти
+    if (length <= info->fix.smem_len) rlen = length;
+    // Если текущая длина + смешщение больше, чем выделенная память, то вычитаем смещение
+    if (rlen + pos > info->fix.smem_len) rlen-=pos;
+
+    // Читаем в буфер блок данных
+    if (copy_from_user(info->fix.smem_start, buffer, rlen)) return -EFAULT;
+
+    offset += length;
+
+    return length;
+
 }
 
 static int uc1698_fb_release(struct fb_info *info, int user)
@@ -185,7 +207,7 @@ static struct fb_ops uc1698_fb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_open	= uc1698_fb_open,
 	.fb_read	= uc1698_fb_read,
-//	.fb_write	= uc1698_fb_write,
+	.fb_write	= uc1698_fb_write,
 	.fb_release	= uc1698_fb_release,
 //	.fb_check_var	= uc1698_fb_check_var,
 //	.fb_set_par	= uc1698_fb_set_par,
