@@ -62,7 +62,7 @@ static int uc1698_fb_open(struct fb_info *info, int user)
 // (struct fb_info *info, char __user *buf,  size_t count, loff_t *ppos);
 static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
 {
-	int i=10;
+	int i=0;
 
 	printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
 
@@ -77,22 +77,24 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
 
-	printk(KERN_INFO "fb_write(%p,%p,%d,%d)\n",info,buffer,length, (long) offset);
+	printk(KERN_INFO "fb_write(%p,%p,%d,%ld)\n",info,buffer,length, (long) offset);
 
 	// Проверка на переход смещения за границу буфера и на приход блока с длиной 0
-    if (pos >= info->fix.smem_len || (!length)) return 0;
+//    if (pos >= info->fix.smem_len || (!length)) return 0;
 
     // Если пришедший блок длиннее чем выделенная память, то ставим длину выделенной памяти
-    if (length <= info->fix.smem_len) rlen = length;
+//    if (length <= info->fix.smem_len) rlen = length;
     // Если текущая длина + смешщение больше, чем выделенная память, то вычитаем смещение
-    if (rlen + pos > info->fix.smem_len) rlen-=pos;
+//    if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
-    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
+//    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
 
-    offset += length;
+//    offset += length;
+	offset++;
 
-    return length;
+//    return length;
+	return 1;
 
 }
 
