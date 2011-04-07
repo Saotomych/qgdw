@@ -26,9 +26,9 @@
 #undef CONFIG_PM
 
 #define PIXMAP_SIZE	1
-#define BUF_LEN		6400
+#define BUF_LEN		160*160*8
 
-unsigned char Video[BUF_LEN];
+unsigned char video[BUF_LEN];
 unsigned char *pVideo;
 
 /*
@@ -38,9 +38,10 @@ static char *mode_option __devinitdata;
 struct uc1698_par;
 
 static struct fb_fix_screeninfo uc1698_fb_fix __devinitdata = {
-	.id =		"uc1698_drv", 
-	.type =		FB_TYPE_PACKED_PIXELS,
-	.visual =	FB_VISUAL_PSEUDOCOLOR,
+	.id =		"uc1698_fb",
+//	.type =		FB_TYPE_PACKED_PIXELS,
+	.type =		FB_TYPE_TEXT,
+	.visual =	FB_VISUAL_MONO01,
 	.xpanstep =	1,
 	.ypanstep =	1,
 	.ywrapstep =	1, 
@@ -54,16 +55,16 @@ static struct fb_fix_screeninfo uc1698_fb_fix __devinitdata = {
 
 static int uc1698_fb_open(struct fb_info *info, int user)
 {
-	printk(KERN_INFO "device_open(%d)\n",user);
+	printk(KERN_INFO "fb_open(%d)\n",user);
     return 0;
 }
 
 // (struct fb_info *info, char __user *buf,  size_t count, loff_t *ppos);
 static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
 {
-	int i=0;
+	int i=10;
 
-	printk(KERN_INFO "device_read(%p,%p,%d)\n",info,buffer,length);
+	printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
 
 //	for(i=0; i<length && i < BUF_LEN; i++) get_user(Video[i], buffer + i);
 //	pVideo = Video;
@@ -76,7 +77,7 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
 
-	printk(KERN_INFO "device_write(%p,%p,%d,%d)\n",info,buffer,length, (long) offset);
+	printk(KERN_INFO "fb_write(%p,%p,%d,%d)\n",info,buffer,length, (long) offset);
 
 	// Проверка на переход смещения за границу буфера и на приход блока с длиной 0
     if (pos >= info->fix.smem_len || (!length)) return 0;
@@ -97,7 +98,7 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
 
 static int uc1698_fb_release(struct fb_info *info, int user)
 {
-	printk(KERN_INFO "device_release(%d)\n",user);
+	printk(KERN_INFO "fb_release(%d)\n",user);
 	return 0;
 }
 
@@ -249,42 +250,69 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     int cmap_len, retval;	
     unsigned int smem_len;
     
+    memset(video, 0, BUF_LEN);
     /*
      * Dynamically allocate info and par
      */
-    info = framebuffer_alloc(sizeof(struct uc1698_info), dev);
-    var = &info->var;
-
+    info = framebuffer_alloc(sizeof(u32) * (BUF_LEN>>2), dev);
     if (!info) {
 	    /* goto error path */
     }
 
-    sinfo = info->par;
-
-    if (dev->platform_data){
-        pd_sinfo = dev->platform_data;
-        		
-        sinfo->default_bpp = pd_sinfo->default_bpp;
-    	sinfo->default_dmacon = pd_sinfo->default_dmacon;
-    	sinfo->default_lcdcon2 = pd_sinfo->default_lcdcon2;
-    	sinfo->default_monspecs = pd_sinfo->default_monspecs;
-    	sinfo->u1698_fb_power_control = pd_sinfo->u1698_fb_power_control;
-    	sinfo->guard_time = pd_sinfo->guard_time;
-    	sinfo->smem_len = pd_sinfo->smem_len;
-    	sinfo->lcdcon_is_backlight = pd_sinfo->lcdcon_is_backlight;
-    	sinfo->lcd_wiring_mode = pd_sinfo->lcd_wiring_mode;
-    }
-    sinfo->info = info;
-    sinfo->pdev = pdev;
-    strcpy(info->fix.id, sinfo->pdev->name);
-
+    info->screen_base = (char __iomem *) video;
     info->fbops = &uc1698_fb_ops;
+
+    //    if (!mode_option)
+    //	mode_option = "160x160@60";
+
+    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
+    if (!retval || retval == 4) 	return -ENOMEM;
+// var = uc1698_fb_default;
+
+    uc1698_fb_fix.smem_start = (unsigned long) video;
+    uc1698_fb_fix.smem_len = BUF_LEN;
     info->fix = uc1698_fb_fix; /* this will be the only time uc1698_fb_fix will be
-			    * used, so mark it as __devinitdata
-			    */
-    info->pseudo_palette = sinfo->pseudo_palette; /* The pseudopalette is an
-					    * 16-member array
-					    */
+     	 	 	 	 	 	 	 * used, so mark it as __devinitdata
+     	 	 	 	 	 	 	 */
+    info->pseudo_palette = info->par;
+    info->par = NULL;
+    info->flags = FBINFO_FLAG_DEFAULT;
+
+    cmap_len = 16;
+    if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0) return -ENOMEM;
+
+    if (register_framebuffer(info) < 0) {
+    	fb_dealloc_cmap(&info->cmap);
+    	return -EINVAL;
+    }
+
+    platform_set_drvdata(pdev, info);
+
+
+    printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
+
+    return 0;
+
+//    var = &info->var;
+
+//    sinfo = info->par;
+//    if (dev->platform_data){
+//        pd_sinfo = dev->platform_data;
+//
+//        sinfo->default_bpp = pd_sinfo->default_bpp;
+//    	sinfo->default_dmacon = pd_sinfo->default_dmacon;
+//    	sinfo->default_lcdcon2 = pd_sinfo->default_lcdcon2;
+//    	sinfo->default_monspecs = pd_sinfo->default_monspecs;
+//    	sinfo->u1698_fb_power_control = pd_sinfo->u1698_fb_power_control;
+//    	sinfo->guard_time = pd_sinfo->guard_time;
+//    	sinfo->smem_len = pd_sinfo->smem_len;
+//    	sinfo->lcdcon_is_backlight = pd_sinfo->lcdcon_is_backlight;
+//    	sinfo->lcd_wiring_mode = pd_sinfo->lcd_wiring_mode;
+//    }
+//    sinfo->info = info;
+//    sinfo->pdev = pdev;
+//    strcpy(info->fix.id, sinfo->pdev->name);
+
     
     /* 
      * Here we set the screen_base to the virtual memory address
@@ -294,121 +322,28 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
      */
 //    info->screen_base = framebuffer_virtual_memory;
     /* Set Video Memory */
-    map = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-    if (map){ // Already exist
-    	// use pre-allocated memory buffer
-    	info->fix.smem_start = map->start;
-    	info->fix.smem_len = map->end - map->start + 1;
+//    map = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+//    if (map){ // Already exist
+//    	// use pre-allocated memory buffer
+//    	info->fix.smem_start = map->start;
+//    	info->fix.smem_len = map->end - map->start + 1;
+//
+////    	if (!request_mem_region(info->fix.smem.start, info->fix.smem.len)){
+//    		// Goto ERROR
+////    	}
+//
+//    	info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
+//
+//    }else{	// Non exist
+//    	smem_len = (var->xres_virtual * var->yres_virtual * ((var->bits_per_pixel + 7) / 8));
+//    	info->fix.smem_len = max(smem_len, sinfo->smem_len);
+//
+////
+//    	//info->screen_base =  dma_alloc_writecombine(info->device, info->fix.smem_len, (dma_addr_t *) &info->fix.smem_start, GFP_KERNEL);
+//
+//    	memset(info->screen_base, 0, info->fix.smem_len);
+//    }
 
-//    	if (!request_mem_region(info->fix.smem.start, info->fix.smem.len)){
-    		// Goto ERROR
-//    	}
-    	
-    	info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
-    
-    }else{	// Non exist
-    	smem_len = (var->xres_virtual * var->yres_virtual * ((var->bits_per_pixel + 7) / 8));
-    	info->fix.smem_len = max(smem_len, sinfo->smem_len);
-    	
-//    	info->screen_base = Video; 
-    	//info->screen_base =  dma_alloc_writecombine(info->device, info->fix.smem_len, (dma_addr_t *) &info->fix.smem_start, GFP_KERNEL);
-  	
-    	memset(info->screen_base, 0, info->fix.smem_len);
-    }
-
-    cmap_len=info->fix.smem_len;
-
-	/*
-     * Set up flags to indicate what sort of acceleration your
-     * driver can provide (pan/wrap/copyarea/etc.) and whether it
-     * is a module -- see FBINFO_* in include/linux/fb.h
-     *
-     * If your hardware can support any of the hardware accelerated functions
-     * fbcon performance will improve if info->flags is set properly.
-     *
-     * FBINFO_HWACCEL_COPYAREA - hardware moves
-     * FBINFO_HWACCEL_FILLRECT - hardware fills
-     * FBINFO_HWACCEL_IMAGEBLIT - hardware mono->color expansion
-     * FBINFO_HWACCEL_YPAN - hardware can pan display in y-axis
-     * FBINFO_HWACCEL_YWRAP - hardware can wrap display in y-axis
-     * FBINFO_HWACCEL_DISABLED - supports hardware accels, but disabled
-     * FBINFO_READS_FAST - if set, prefer moves over mono->color expansion
-     * FBINFO_MISC_TILEBLITTING - hardware can do tile blits
-     *
-     * NOTE: These are for fbcon use only.
-     */
-    info->flags = FBINFO_DEFAULT;
-
-/********************* This stage is optional ******************************/
-     /*
-     * The struct pixmap is a scratch pad for the drawing functions. This
-     * is where the monochrome bitmap is constructed by the higher layers
-     * and then passed to the accelerator.  For drivers that uses
-     * cfb_imageblit, you can skip this part.  For those that have a more
-     * rigorous requirement, this stage is needed
-     */
-     
-    /* PIXMAP_SIZE should be small enough to optimize drawing, but not
-     * large enough that memory is wasted.  A safe size is
-     * (max_xres * max_font_height/8). max_xres is driver dependent,
-     * max_font_height is 32.
-     */
-//    info->pixmap.addr = kmalloc(PIXMAP_SIZE, GFP_KERNEL);
-    info->pixmap.addr = kmalloc(var->bits_per_pixel, GFP_KERNEL);
-    if (!info->pixmap.addr) {
-	    /* goto error */
-    }
-
-    info->pixmap.size = var->bits_per_pixel;
-
-    /*
-     * FB_PIXMAP_SYSTEM - memory is in system ram
-     * FB_PIXMAP_IO     - memory is iomapped
-     * FB_PIXMAP_SYNC   - if set, will call fb_sync() per access to pixmap,
-     *                    usually if FB_PIXMAP_IO is set.
-     *
-     * Currently, FB_PIXMAP_IO is unimplemented.
-     */
-    info->pixmap.flags = FB_PIXMAP_SYSTEM;
-
-    /*
-     * scan_align is the number of padding for each scanline.  It is in bytes.
-     * Thus for accelerators that need padding to the next u32, put 4 here.
-     */
-    info->pixmap.scan_align = 1;
-
-    /*
-     * buf_align is the amount to be padded for the buffer. For example,
-     * the i810fb needs a scan_align of 2 but expects it to be fed with
-     * dwords, so a buf_align = 4 is required.
-     */
-    info->pixmap.buf_align = 1;
-
-    /* access_align is how many bits can be accessed from the framebuffer
-     * ie. some epson cards allow 16-bit access only.  Most drivers will
-     * be safe with u32 here.
-     *
-     * NOTE: This field is currently unused.
-     */
-    info->pixmap.access_align = 32;
-/***************************** End optional stage ***************************/
-
-    /*
-     * This should give a reasonable default video mode. The following is
-     * done when we can set a video mode. 
-     */
-    if (!mode_option)
-	mode_option = "160x160@60";	 	
-
-    retval = fb_find_mode(&info->var, info, mode_option, NULL, 0, NULL, 8);
-  
-    if (!retval || retval == 4)
-	return -EINVAL;			
-
-    /* This has to be done! */
-    if (fb_alloc_cmap(&info->cmap, cmap_len, 0))
-	return -ENOMEM;
-	
     /* 
      * The following is done in the case of having hardware with a static 
      * mode. If we are setting the mode ourselves we don't call this. 
@@ -431,15 +366,6 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
      */
     /* uc1698_fb_set_par(info); */
 
-    if (register_framebuffer(info) < 0) {
-    	fb_dealloc_cmap(&info->cmap);
-    	return -EINVAL;
-    }
-    
-    printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
-    platform_set_drvdata(pdev, info);
-    
-    return 0;
 }
 
 //    /*
@@ -503,7 +429,7 @@ static int uc1698_fb_resume(struct platform_dev *dev)
 
 //static struct platform_device_driver uc1698_fb_driver = {
 static struct platform_driver uc1698_fb_driver = {
-//	.probe = uc1698_fb_probe,
+	.probe = uc1698_fb_probe,
 	.remove = __exit_p(uc1698_fb_remove),
 
 #ifdef CONFIG_PM
@@ -551,15 +477,22 @@ static int __init uc1698_fb_init(void)
 	ret = platform_driver_register(&uc1698_fb_driver);
 
 	if (!ret) {
-		uc1698_fb_device = platform_device_register_simple("uc1698_fb", 0,
-								NULL, 0);
+//		uc1698_fb_device = platform_device_register_simple("uc1698_fb", 0,
+//								NULL, 0);
 
-		if (IS_ERR(uc1698_fb_device)) {
+		uc1698_fb_device = platform_device_alloc("uc1698_fb", 0);
+		if (uc1698_fb_device)
+			ret = platform_device_add(uc1698_fb_device);
+		else
+			ret = -ENOMEM;
+
+		if (ret) {
+			platform_device_put(uc1698_fb_device);
 			platform_driver_unregister(&uc1698_fb_driver);
-			ret = PTR_ERR(uc1698_fb_device);
-		}else
-			uc1698_fb_probe(uc1698_fb_device);
+		}
 	}
+
+	printk(KERN_INFO "device_open(%d)\n",ret);
 
 	return ret;
 }
