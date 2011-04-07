@@ -34,8 +34,10 @@ unsigned char *pVideo;
 /*
  * Driver data
  */
-static char *mode_option __devinitdata;
+//static char *mode_option __devinitdata;
 struct uc1698_par;
+
+static int device_cnt=0;
 
 static struct fb_fix_screeninfo uc1698_fb_fix __devinitdata = {
 	.id =		"uc1698_fb",
@@ -56,6 +58,7 @@ static struct fb_fix_screeninfo uc1698_fb_fix __devinitdata = {
 static int uc1698_fb_open(struct fb_info *info, int user)
 {
 	printk(KERN_INFO "fb_open(%d)\n",user);
+
     return 0;
 }
 
@@ -77,29 +80,34 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
 
-	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, offset);
+	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
+
+	// Вместо офсета в реале приходит какая-то эпическая хуйня, поэтому пока не юзаем
+	// Выяснить где и как оно выставляется и юзается.
 
 	// Проверка на переход смещения за границу буфера и на приход блока с длиной 0
-//    if (pos >= info->fix.smem_len || (!length)) return length;
+	//    if (pos >= info->fix.smem_len || (!length)) return length;
+	if (!length) return 0;
 
-    // Если пришедший блок длиннее чем выделенная память, то ставим длину выделенной памяти
-//    if (length <= info->fix.smem_len) rlen = length;
+    // Если пришедший блок короче, чем выделенная память, то ставим длину этого блока.
+	// Обычно ожидается приход блока равный памяти
+    if (length <= info->fix.smem_len) rlen = length;
     // Если текущая длина + смешщение больше, чем выделенная память, то вычитаем смещение
-//    if (rlen + pos > info->fix.smem_len) rlen-=pos;
+    //    if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
     if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, length)) return -EFAULT;
 
-	((char *) info->fix.smem_start)[length] = 0;
-	printk(KERN_INFO "i'm eat %s\n", (char*)info->fix.smem_start);
+    // Передача экрана на индикатор
+
 
 	return length;
-
 }
 
 static int uc1698_fb_release(struct fb_info *info, int user)
 {
 	printk(KERN_INFO "fb_release(%d)\n",user);
+
 	return 0;
 }
 
@@ -229,8 +237,8 @@ static struct fb_ops uc1698_fb_ops = {
 //	.fb_ioctl	= uc1698_fb_ioctl,
 //	.fb_mmap	= uc1698_fb_mmap,
 };
-EXPORT_SYMBOL_GPL(uc1698_fb_read);
-EXPORT_SYMBOL_GPL(uc1698_fb_write);
+//EXPORT_SYMBOL_GPL(uc1698_fb_read);
+//EXPORT_SYMBOL_GPL(uc1698_fb_write);
 
 /* ------------------------------------------------------------------------- */
 
@@ -244,13 +252,14 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 {
     struct device *dev = &pdev->dev;
     struct fb_info *info;
-    struct uc1698_info *sinfo;
-    struct uc1698_info *pd_sinfo;
-    struct resource *map = NULL;
-    struct fb_var_screeninfo *var;
+//    struct uc1698_info *sinfo;
+//    struct uc1698_info *pd_sinfo;
+//    struct resource *map = NULL;
+//    struct fb_var_screeninfo *var;
     int cmap_len, retval;	
-    unsigned int smem_len;
-    
+//    unsigned int smem_len;
+
+
     memset(video, 0, BUF_LEN);
     /*
      * Dynamically allocate info and par
@@ -289,84 +298,11 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 
     platform_set_drvdata(pdev, info);
 
-
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
+    // Хардварная инициализация индикатора
+
     return 0;
-
-//    var = &info->var;
-
-//    sinfo = info->par;
-//    if (dev->platform_data){
-//        pd_sinfo = dev->platform_data;
-//
-//        sinfo->default_bpp = pd_sinfo->default_bpp;
-//    	sinfo->default_dmacon = pd_sinfo->default_dmacon;
-//    	sinfo->default_lcdcon2 = pd_sinfo->default_lcdcon2;
-//    	sinfo->default_monspecs = pd_sinfo->default_monspecs;
-//    	sinfo->u1698_fb_power_control = pd_sinfo->u1698_fb_power_control;
-//    	sinfo->guard_time = pd_sinfo->guard_time;
-//    	sinfo->smem_len = pd_sinfo->smem_len;
-//    	sinfo->lcdcon_is_backlight = pd_sinfo->lcdcon_is_backlight;
-//    	sinfo->lcd_wiring_mode = pd_sinfo->lcd_wiring_mode;
-//    }
-//    sinfo->info = info;
-//    sinfo->pdev = pdev;
-//    strcpy(info->fix.id, sinfo->pdev->name);
-
-    
-    /* 
-     * Here we set the screen_base to the virtual memory address
-     * for the framebuffer. Usually we obtain the resource address
-     * from the bus layer and then translate it to virtual memory
-     * space via ioremap. Consult ioport.h. 
-     */
-//    info->screen_base = framebuffer_virtual_memory;
-    /* Set Video Memory */
-//    map = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-//    if (map){ // Already exist
-//    	// use pre-allocated memory buffer
-//    	info->fix.smem_start = map->start;
-//    	info->fix.smem_len = map->end - map->start + 1;
-//
-////    	if (!request_mem_region(info->fix.smem.start, info->fix.smem.len)){
-//    		// Goto ERROR
-////    	}
-//
-//    	info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
-//
-//    }else{	// Non exist
-//    	smem_len = (var->xres_virtual * var->yres_virtual * ((var->bits_per_pixel + 7) / 8));
-//    	info->fix.smem_len = max(smem_len, sinfo->smem_len);
-//
-////
-//    	//info->screen_base =  dma_alloc_writecombine(info->device, info->fix.smem_len, (dma_addr_t *) &info->fix.smem_start, GFP_KERNEL);
-//
-//    	memset(info->screen_base, 0, info->fix.smem_len);
-//    }
-
-    /* 
-     * The following is done in the case of having hardware with a static 
-     * mode. If we are setting the mode ourselves we don't call this. 
-     */	
-//    info->var = uc1698_fb_var;
-
-    /*
-     * For drivers that can...
-     */
-//    uc1698_fb_check_var(&info->var, info);
-
-    /*
-     * Does a call to fb_set_par() before register_framebuffer needed?  This
-     * will depend on you and the hardware.  If you are sure that your driver
-     * is the only device in the system, a call to fb_set_par() is safe.
-     *
-     * Hardware in x86 systems has a VGA core.  Calling set_par() at this
-     * point will corrupt the VGA console, so it might be safer to skip a
-     * call to set_par here and just allow fbcon to do it for you.
-     */
-    /* uc1698_fb_set_par(info); */
-
 }
 
 //    /*
@@ -430,7 +366,7 @@ static int uc1698_fb_resume(struct platform_dev *dev)
 
 //static struct platform_device_driver uc1698_fb_driver = {
 static struct platform_driver uc1698_fb_driver = {
-	.probe = uc1698_fb_probe,
+//	.probe = uc1698_fb_probe,
 	.remove = __exit_p(uc1698_fb_remove),
 
 #ifdef CONFIG_PM
@@ -468,6 +404,8 @@ static int __init uc1698_fb_init(void)
 	 *  For kernel boot options (in 'video=uc1698_fb:<options>' format)
 	 */
 	
+    if (device_cnt++) return -EINVAL;
+
 #ifndef MODULE
 	char *option = NULL;
 
@@ -490,7 +428,7 @@ static int __init uc1698_fb_init(void)
 		if (ret) {
 			platform_device_put(uc1698_fb_device);
 			platform_driver_unregister(&uc1698_fb_driver);
-		}
+		}else ret = uc1698_fb_probe(uc1698_fb_device);
 	}
 
 	printk(KERN_INFO "device_open(%d)\n",ret);
@@ -500,6 +438,7 @@ static int __init uc1698_fb_init(void)
 
 static void __exit uc1698_fb_exit(void)
 {
+	device_cnt--;
 	platform_device_unregister(uc1698_fb_device);
 	platform_driver_unregister(&uc1698_fb_driver);
 }
