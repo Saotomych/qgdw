@@ -70,7 +70,7 @@ static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t 
 	return i;
 }
 
-static ssize_t uc1698_fb_write(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
+static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset)
 {
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
@@ -84,7 +84,7 @@ static ssize_t uc1698_fb_write(struct fb_info *info, char __user *buffer, size_t
     if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
-    if (copy_from_user(info->fix.smem_start, buffer, rlen)) return -EFAULT;
+    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
 
     offset += length;
 
