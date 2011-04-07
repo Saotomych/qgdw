@@ -54,6 +54,7 @@ static struct fb_fix_screeninfo uc1698_fb_fix __devinitdata = {
 
 static int uc1698_fb_open(struct fb_info *info, int user)
 {
+	printk(KERN_INFO "device_open(%d)\n",user);
     return 0;
 }
 
@@ -62,7 +63,7 @@ static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t 
 {
 	int i=0;
 
-	printk("device_read(%p,%p,%d)\n",info,buffer,length);
+	printk(KERN_INFO "device_read(%p,%p,%d)\n",info,buffer,length);
 
 //	for(i=0; i<length && i < BUF_LEN; i++) get_user(Video[i], buffer + i);
 //	pVideo = Video;
@@ -75,7 +76,9 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
 
-    // Проверка на переход смещения за границу буфера и на приход блока с длиной 0
+	printk(KERN_INFO "device_write(%p,%p,%d,%d)\n",info,buffer,length, (long) offset);
+
+	// Проверка на переход смещения за границу буфера и на приход блока с длиной 0
     if (pos >= info->fix.smem_len || (!length)) return 0;
 
     // Если пришедший блок длиннее чем выделенная память, то ставим длину выделенной памяти
@@ -94,7 +97,8 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
 
 static int uc1698_fb_release(struct fb_info *info, int user)
 {
-    return 0;
+	printk(KERN_INFO "device_release(%d)\n",user);
+	return 0;
 }
 
 //static int uc1698_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
@@ -223,6 +227,8 @@ static struct fb_ops uc1698_fb_ops = {
 //	.fb_ioctl	= uc1698_fb_ioctl,
 //	.fb_mmap	= uc1698_fb_mmap,
 };
+EXPORT_SYMBOL_GPL(uc1698_fb_read);
+EXPORT_SYMBOL_GPL(uc1698_fb_write);
 
 /* ------------------------------------------------------------------------- */
 
