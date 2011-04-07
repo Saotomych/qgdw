@@ -77,10 +77,10 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
 
-	printk(KERN_INFO "fb_write(%p,%p,%d,%ld)\n",info,buffer,length, (long) offset);
+	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, offset);
 
 	// Проверка на переход смещения за границу буфера и на приход блока с длиной 0
-//    if (pos >= info->fix.smem_len || (!length)) return 0;
+//    if (pos >= info->fix.smem_len || (!length)) return length;
 
     // Если пришедший блок длиннее чем выделенная память, то ставим длину выделенной памяти
 //    if (length <= info->fix.smem_len) rlen = length;
@@ -88,13 +88,12 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
 //    if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
-//    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
+    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, length)) return -EFAULT;
 
-//    offset += length;
-	offset++;
+	((char *) info->fix.smem_start)[length] = 0;
+	printk(KERN_INFO "i'm eat %s\n", (char*)info->fix.smem_start);
 
-//    return length;
-	return 1;
+	return length;
 
 }
 
