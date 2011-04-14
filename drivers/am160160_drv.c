@@ -20,15 +20,19 @@
 #include <linux/fb.h>
 #include <asm/uaccess.h>
 
+#include <linux/gpio.h>
+#include <mach/gpio.h>
+
 #include "am160160_drv.h"
+#include "AT91SAM9260_inc.h"
 
 #undef CONFIG_PCI
 #undef CONFIG_PM
 
 #define PIXMAP_SIZE	1
-#define BUF_LEN		160*160*8
+#define BUFLEN		160*160*8
 
-unsigned char video[BUF_LEN];
+unsigned char video[BUFLEN];
 unsigned char *pVideo;
 
 /*
@@ -36,6 +40,8 @@ unsigned char *pVideo;
  */
 //static char *mode_option __devinitdata;
 struct uc1698_par;
+static unsigned char *uc1698_cmd = (unsigned char *) 0x10000000;
+static unsigned char *uc1698_data = (unsigned char *) (0x10000000 | (1 << 19));
 
 static int device_cnt=0;
 
@@ -69,7 +75,7 @@ static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t 
 
 	printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
 
-//	for(i=0; i<length && i < BUF_LEN; i++) get_user(Video[i], buffer + i);
+//	for(i=0; i<length && i < BUFLEN; i++) get_user(Video[i], buffer + i);
 //	pVideo = Video;
 
 	return i;
@@ -252,38 +258,54 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 {
     struct device *dev = &pdev->dev;
     struct fb_info *info;
-//    struct uc1698_info *sinfo;
+    struct uc1698_info *sinfo;
 //    struct uc1698_info *pd_sinfo;
 //    struct resource *map = NULL;
+      struct resource *regs = NULL;
 //    struct fb_var_screeninfo *var;
     int cmap_len, retval;	
 //    unsigned int smem_len;
+    unsigned char *regcmd;
 
 
-    memset(video, 0, BUF_LEN);
+    memset(video, 0, BUFLEN);
     /*
      * Dynamically allocate info and par
      */
-    info = framebuffer_alloc(sizeof(u32) * (BUF_LEN>>2), dev);
+    /*
+     * Dynamically allocate info and par
+     */
+    info = framebuffer_alloc(sizeof(struct uc1698_info), dev);
     if (!info) {
 	    /* goto error path */
+    	return -ENOMEM;
     }
-
-    info->screen_base = (char __iomem *) video;
+    sinfo = info->par;
+    sinfo->info = info;
+    sinfo->pdev = pdev;
     info->fbops = &uc1698_fb_ops;
 
+//    regs = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sram");
+    uc1698_fb_fix.mmio_start = ioremap(uc1698_data, BUFLEN >> 2);
+    uc1698_fb_fix.mmio_len = BUFLEN >> 2;
+    regcmd = ioremap(uc1698_cmd, 1);
+
+    dev_err(dev, "resource unusable\n");
     //    if (!mode_option)
     //	mode_option = "160x160@60";
 
-    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
-    if (!retval || retval == 4) 	return -ENOMEM;
+//    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
+//    if (!retval || retval == 4) 	return -ENOMEM;
 // var = uc1698_fb_default;
 
     uc1698_fb_fix.smem_start = (unsigned long) video;
-    uc1698_fb_fix.smem_len = BUF_LEN;
+    uc1698_fb_fix.smem_len = BUFLEN >> 2;
     info->fix = uc1698_fb_fix; /* this will be the only time uc1698_fb_fix will be
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
+
+    printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", uc1698_fb_fix.mmio_start, uc1698_fb_fix.mmio_len, uc1698_fb_fix.smem_start, uc1698_fb_fix.smem_len);
+
     info->pseudo_palette = info->par;
     info->par = NULL;
     info->flags = FBINFO_FLAG_DEFAULT;
@@ -413,6 +435,16 @@ static int __init uc1698_fb_init(void)
 		return -ENODEV;
 	uc1698_fb_setup(option);
 #endif
+
+	at91_set_GPIO_periph(AT91_PIN_PC4, 0);
+	at91_set_GPIO_periph(AT91_PIN_PC5, 0);
+	at91_set_GPIO_periph(AT91_PIN_PC6, 0);
+	at91_set_GPIO_periph(AT91_PIN_PC7, 0);
+	at91_set_gpio_output(AT91_PIN_PC4, 1);
+	at91_set_gpio_output(AT91_PIN_PC5, 1);
+	at91_set_gpio_output(AT91_PIN_PC6, 0);
+	at91_set_gpio_output(AT91_PIN_PC7, 0);
+
 	ret = platform_driver_register(&uc1698_fb_driver);
 
 	if (!ret) {
