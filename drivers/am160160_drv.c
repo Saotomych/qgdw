@@ -29,19 +29,62 @@
 #undef CONFIG_PCI
 #undef CONFIG_PM
 
+#define UC1698CMD		0x10000000
+#define UC1698DATA		(0x10000000 | (1 << 19))
+
+
 #define PIXMAP_SIZE	1
 #define BUFLEN		160*160*8
 
 unsigned char video[BUFLEN];
 unsigned char *pVideo;
 
+/*static struct map_desc uc1698_io_desc[] __initdata = {
+	{
+		.virtual	= AT91_IO_P2V(UC1698CMD),
+		.pfn		= __phys_to_pfn(UC1698CMD),
+		.length		= SZ_1K,
+		.type		= MT_DEVICE,
+	},
+	{
+		.virtual	= AT91_IO_P2V(UC1698DATA),
+		.pfn		= __phys_to_pfn(UC1698DATA),
+		.length		= SZ_16K,
+		.type		= MT_DEVICE,
+	}
+};*/
+
+static struct resource uc1698_resources[]={
+		[0]={
+			.start	= UC1698CMD,
+			.end 	= UC1698CMD + 1,
+			.flags 	= IORESOURCE_MEM,
+		},
+		[1] = {
+			.start 	= UC1698DATA,
+			.end 	= UC1698DATA + BUFLEN,
+			.flags 	= IORESOURCE_MEM,
+		},
+};
+
+static struct platform_device uc1698_device = {
+		.name	= "uc6198",
+		.id 	= 0,
+		.num_resources	= ARRAY_SIZE(uc1698_resources),
+		.resource		= uc1698_resources,
+};
+
+static struct platform_device *devices[] __initdata = {
+		&uc1698_device,
+};
+
 /*
  * Driver data
  */
 //static char *mode_option __devinitdata;
 struct uc1698_par;
-static unsigned char *uc1698_cmd = (unsigned char *) 0x10000000;
-static unsigned char *uc1698_data = (unsigned char *) (0x10000000 | (1 << 19));
+static unsigned char *uc1698_cmd = (unsigned char *) UC1698CMD;
+static unsigned char *uc1698_data = (unsigned char *) UC1698DATA;
 
 static int device_cnt=0;
 
@@ -285,7 +328,8 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     sinfo->pdev = pdev;
     info->fbops = &uc1698_fb_ops;
 
-//    regs = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sram");
+//    iotable_init(uc1698_io_desc, ARRAY_SIZE(uc1698_io_desc));
+
     uc1698_fb_fix.mmio_start = ioremap(uc1698_data, BUFLEN >> 2);
     uc1698_fb_fix.mmio_len = BUFLEN >> 2;
     regcmd = ioremap(uc1698_cmd, 1);
@@ -306,11 +350,13 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 
     printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", uc1698_fb_fix.mmio_start, uc1698_fb_fix.mmio_len, uc1698_fb_fix.smem_start, uc1698_fb_fix.smem_len);
 
-    info->pseudo_palette = info->par;
-    info->par = NULL;
-    info->flags = FBINFO_FLAG_DEFAULT;
+//    info->pseudo_palette = info->par;
+//    info->par = NULL;
+//    info->flags = FBINFO_FLAG_DEFAULT;
 
-    cmap_len = 16;
+    ((unsigned char *) uc1698_fb_fix.mmio_start)[0] = 0;
+
+/*    cmap_len = 16;
     if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0) return -ENOMEM;
 
     if (register_framebuffer(info) < 0) {
@@ -318,7 +364,7 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     	return -EINVAL;
     }
 
-    platform_set_drvdata(pdev, info);
+    platform_set_drvdata(pdev, info);*/
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
@@ -444,6 +490,14 @@ static int __init uc1698_fb_init(void)
 	at91_set_gpio_output(AT91_PIN_PC5, 1);
 	at91_set_gpio_output(AT91_PIN_PC6, 0);
 	at91_set_gpio_output(AT91_PIN_PC7, 0);
+
+	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
+
+	if (ret){
+
+		printk(KERN_INFO "no add device\n");
+
+	}
 
 	ret = platform_driver_register(&uc1698_fb_driver);
 
