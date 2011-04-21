@@ -32,28 +32,13 @@
 #define UC1698CMD		0x10000000
 #define UC1698DATA		(0x10000000 | (1 << 19))
 
-
 #define PIXMAP_SIZE	1
-#define BUFLEN		160*160*8
+#define BUFLEN		160*160
 
-unsigned char video[BUFLEN];
-unsigned char *pVideo;
+static unsigned char video[BUFLEN];
+static unsigned char *pVideo;
 
-/*static struct map_desc uc1698_io_desc[] __initdata = {
-	{
-		.virtual	= AT91_IO_P2V(UC1698CMD),
-		.pfn		= __phys_to_pfn(UC1698CMD),
-		.length		= SZ_1K,
-		.type		= MT_DEVICE,
-	},
-	{
-		.virtual	= AT91_IO_P2V(UC1698DATA),
-		.pfn		= __phys_to_pfn(UC1698DATA),
-		.length		= SZ_16K,
-		.type		= MT_DEVICE,
-	}
-};*/
-
+/* Board depend */
 static struct resource uc1698_resources[]={
 		[0]={
 			.start	= UC1698CMD,
@@ -77,6 +62,7 @@ static struct platform_device uc1698_device = {
 static struct platform_device *devices[] __initdata = {
 		&uc1698_device,
 };
+/* End Board depend */
 
 /*
  * Driver data
@@ -297,7 +283,7 @@ static struct fb_ops uc1698_fb_ops = {
 /*static int __devinit uc1698_fb_probe(struct pci_dev *dev,
 			      const struct pci_device_id *ent)*/
 
-static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform devs
+static int __init uc1698_fb_probe (struct platform_device *pdev)	// -- for platform devs
 {
     struct device *dev = &pdev->dev;
     struct fb_info *info;
@@ -308,35 +294,36 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 //    struct fb_var_screeninfo *var;
     int cmap_len, retval;	
 //    unsigned int smem_len;
-    unsigned char *regcmd;
+    unsigned char *io_cmd, *io_data;
 
 
     memset(video, 0, BUFLEN);
     /*
      * Dynamically allocate info and par
      */
-    /*
-     * Dynamically allocate info and par
-     */
+
     info = framebuffer_alloc(sizeof(struct uc1698_info), dev);
     if (!info) {
 	    /* goto error path */
     	return -ENOMEM;
     }
     sinfo = info->par;
+    /* Set default configuration */
+    sinfo->default_bpp = 1;
     sinfo->info = info;
     sinfo->pdev = pdev;
-    info->fbops = &uc1698_fb_ops;
 
-//    iotable_init(uc1698_io_desc, ARRAY_SIZE(uc1698_io_desc));
+//    info->default_monspecs = NULL;
+    info->fbops = &uc1698_fb_ops;
 
     uc1698_fb_fix.mmio_start = ioremap(uc1698_data, BUFLEN >> 2);
     uc1698_fb_fix.mmio_len = BUFLEN >> 2;
-    regcmd = ioremap(uc1698_cmd, 1);
+    io_cmd = ioremap(uc1698_cmd, 1);
+    io_data = uc1698_fb_fix.mmio_start;
+    *io_cmd = RESET;	// Reset, Дальнейшие операции регистрации фреймбуфера дадут задержку до операций с индикатором
 
-    dev_err(dev, "resource unusable\n");
-    //    if (!mode_option)
-    //	mode_option = "160x160@60";
+//    dev_err(dev, "resource unusable\n");
+//    mode_option = "160x160@60";
 
 //    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
 //    if (!retval || retval == 4) 	return -ENOMEM;
@@ -348,27 +335,82 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
 
+
     printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", uc1698_fb_fix.mmio_start, uc1698_fb_fix.mmio_len, uc1698_fb_fix.smem_start, uc1698_fb_fix.smem_len);
 
-//    info->pseudo_palette = info->par;
-//    info->par = NULL;
-//    info->flags = FBINFO_FLAG_DEFAULT;
+    info->pseudo_palette = info->par;
+    info->par = NULL;
+    info->flags = FBINFO_FLAG_DEFAULT;
 
-    ((unsigned char *) uc1698_fb_fix.mmio_start)[0] = 0;
 
 /*    cmap_len = 16;
     if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0) return -ENOMEM;
-
-    if (register_framebuffer(info) < 0) {
+*/
+/*    if (register_framebuffer(info) < 0) {
     	fb_dealloc_cmap(&info->cmap);
     	return -EINVAL;
-    }
+    }*/
 
-    platform_set_drvdata(pdev, info);*/
+//    platform_set_drvdata(pdev, info);
+
+
+//    ((unsigned char *) uc1698_fb_fix.mmio_start)[0] = 0;
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
     // Хардварная инициализация индикатора
+    // default gbr mode, default 64k color mod
+	*io_cmd = SETLCDBIASRT | 1;				//Bias Ratio:1/10 bias
+	*io_cmd = SETPWRCTL | 3;				//power control set as internal power
+	*io_cmd = SETTEMPCOMP | off;			//set temperate compensation as 0%
+	*io_cmd = SETV_2B;						//electronic potentiometer
+	*io_cmd = 0xc6;							// potentiometer value
+
+	*io_cmd = SETALLPXON | 1;				// all pixel on
+	*io_cmd = SETALLPXINV | off;			// not inversed
+
+	*io_cmd = SETLCDMAP;					//19:partial display and MX disable,MY enable
+	*io_cmd = SETLNRATE | 3;				//line rate 15.2klps
+	*io_cmd = SETPARTCTL | off;				//12:partial display control disable
+
+	*io_cmd = SETNLNINV_2B;
+	*io_cmd = off;							// disable NIV
+
+	/*com scan fuction*/
+	*io_cmd = SETCOMSCAN | 4;				//enable FRC,PWM,LRM sequence
+
+	/*window*/
+	*io_cmd = SETWINCOLSTART_2B;
+	*io_cmd = 0;
+	*io_cmd = SETWINCOLEND_2B;
+	*io_cmd = 0x35;							// 53 fullcolor pixel = 160 b/w pixel
+
+	*io_cmd = SETWINROWSTART_2B;
+	*io_cmd = 0;
+	*io_cmd = SETWINROWEND_2B;
+	*io_cmd = 0x9f;
+
+	*io_cmd = WINPRGMOD;					//inside mode
+
+	*io_cmd = SETRAMCTL | 1;
+
+	*io_cmd = SETDISPEN	| 5;			//display on,select on/off mode.Green Enhance mode disable
+
+	/*scroll line*/
+	*io_cmd = SETSCRLN_L;
+	*io_cmd = SETSCRLN_H;
+	*io_cmd = SETLCDMAP	| 4;			//19,enable FLT and FLB
+	*io_cmd = SETFIXLN_2B;				//14:FLT,FLB set
+	*io_cmd = 0x00;
+
+	/*partial display*/
+	*io_cmd = SETPARTCTL;				//12,set partial display control:off
+	*io_cmd	= SETCOMEND_2B;				//com end
+	*io_cmd = 159;						//160
+	*io_cmd = SETPARTSTART_2B;			//display start
+	*io_cmd = 0;						//0
+	*io_cmd = SETPARTEND_2B;			//display end
+	*io_cmd = 159;			//160
 
     return 0;
 }
@@ -465,7 +507,7 @@ int __init uc1698_fb_setup(char *options)
 }
 #endif /* MODULE */
 
-static int __init uc1698_fb_init(void)
+static int __init_or_module uc1698_fb_init(void)
 {
 	int ret;
 	/*
@@ -482,6 +524,7 @@ static int __init uc1698_fb_init(void)
 	uc1698_fb_setup(option);
 #endif
 
+	/* Platform & board depend */
 	at91_set_GPIO_periph(AT91_PIN_PC4, 0);
 	at91_set_GPIO_periph(AT91_PIN_PC5, 0);
 	at91_set_GPIO_periph(AT91_PIN_PC6, 0);
@@ -490,14 +533,19 @@ static int __init uc1698_fb_init(void)
 	at91_set_gpio_output(AT91_PIN_PC5, 1);
 	at91_set_gpio_output(AT91_PIN_PC6, 0);
 	at91_set_gpio_output(AT91_PIN_PC7, 0);
+	/* End platform & board depend */
 
 	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
 
 	if (ret){
+		device_cnt--;
 
 		printk(KERN_INFO "no add device\n");
 
+		return -ENODEV;
 	}
+
+//	ret = platform_driver_probe(&uc1698_fb_driver, uc1698_fb_probe);
 
 	ret = platform_driver_register(&uc1698_fb_driver);
 
@@ -508,12 +556,16 @@ static int __init uc1698_fb_init(void)
 		uc1698_fb_device = platform_device_alloc("uc1698_fb", 0);
 		if (uc1698_fb_device)
 			ret = platform_device_add(uc1698_fb_device);
-		else
+		else{
+			device_cnt--;
 			ret = -ENOMEM;
+		}
 
 		if (ret) {
 			platform_device_put(uc1698_fb_device);
 			platform_driver_unregister(&uc1698_fb_driver);
+
+
 		}else ret = uc1698_fb_probe(uc1698_fb_device);
 	}
 
@@ -527,11 +579,10 @@ static void __exit uc1698_fb_exit(void)
 	device_cnt--;
 	platform_device_unregister(uc1698_fb_device);
 	platform_driver_unregister(&uc1698_fb_driver);
+	platform_device_unregister(&uc1698_device);
 }
 
 /* ------------------------------------------------------------------------- */
-
-
     /*
      *  Modularization
      */
