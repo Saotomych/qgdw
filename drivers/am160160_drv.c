@@ -64,7 +64,7 @@ static struct platform_device *devices[] __initdata = {
 /*
  * Driver data
  */
-//static char *mode_option __devinitdata;
+static char *mode_option __initdata;
 struct uc1698_par;
 static unsigned char *uc1698_cmd = (unsigned char *) UC1698CMD;		// phys i/o indicator addresses
 static unsigned char *uc1698_data = (unsigned char *) UC1698DATA;
@@ -133,17 +133,17 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     // Читаем в буфер блок данных
     if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
 
-    for (i=0; i < rlen; i++) *io_data = ((char*)info->fix.smem_start)[i];
-
-    // Передача экрана на индикатор
-	*io_cmd = SETALLPXINV | off;			// not inversed
-
-    rd[0] = *io_cmd;
-    rd[1] = *io_cmd;
-    rd[2] = *io_cmd;
+//    for (i=0; i < rlen; i++) *io_data = ((char*)info->fix.smem_start)[i];
+//
+//    // Передача экрана на индикатор
+//	*io_cmd = SETALLPXINV | off;			// not inversed
+//
+//    rd[0] = *io_cmd;
+//    rd[1] = *io_cmd;
+//    rd[2] = *io_cmd;
 
     printk(KERN_INFO "write %s", (char *) info->fix.smem_start);
-    printk(KERN_INFO "rd 0x%X 0x%X 0x%X", rd[0],rd[1],rd[2]);
+//    printk(KERN_INFO "rd 0x%X 0x%X 0x%X", rd[0],rd[1],rd[2]);
 
 	return length;
 }
@@ -306,7 +306,7 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     unsigned char rd[3];
     unsigned int i;
 
-    memset(video, 0, BUF_LEN);
+//    memset(video, 0, BUF_LEN);
     /*
      * Dynamically allocate info and par
      */
@@ -319,31 +319,32 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     info->screen_base = (char __iomem *) video;
     info->fbops = &uc1698_fb_ops;
 
-    //    if (!mode_option)
-    //	mode_option = "160x160@60";
+	mode_option = "160x160@60";
 
-//    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
-//    if (!retval || retval == 4) 	return -ENOMEM;
-// var = uc1698_fb_default;
+    retval = fb_find_mode(&info->var, info, mode_option, NULL, 0, NULL, 8);
+    if (!retval || retval == 4) 	return -EINVAL;
+//    info->var = uc1698_fb_fix;
 
     uc1698_fb_fix.smem_start = (unsigned long) video;
     uc1698_fb_fix.smem_len = BUF_LEN;
     info->fix = uc1698_fb_fix; /* this will be the only time uc1698_fb_fix will be
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
-    uc1698_fb_fix.mmio_start = ioremap(uc1698_data, BUF_LEN >> 2);
-    uc1698_fb_fix.mmio_len = BUF_LEN >> 2;
-    io_cmd = ioremap(uc1698_cmd, 1);
-    io_data = uc1698_fb_fix.mmio_start;
+//    uc1698_fb_fix.mmio_start = ioremap(uc1698_data, BUF_LEN >> 2);
+//    uc1698_fb_fix.mmio_len = BUF_LEN >> 2;
+//    io_cmd = ioremap(uc1698_cmd, 1);
+//    io_data = uc1698_fb_fix.mmio_start;
 
     info->pseudo_palette = info->par;
     info->par = NULL;
     info->flags = FBINFO_FLAG_DEFAULT;
 
-    printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", uc1698_fb_fix.mmio_start, uc1698_fb_fix.mmio_len, uc1698_fb_fix.smem_start, uc1698_fb_fix.smem_len);
+//    printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", uc1698_fb_fix.mmio_start, uc1698_fb_fix.mmio_len, uc1698_fb_fix.smem_start, uc1698_fb_fix.smem_len);
 
     cmap_len = 16;
     if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0) return -ENOMEM;
+
+    printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
     if (register_framebuffer(info) < 0) {
     	fb_dealloc_cmap(&info->cmap);
@@ -356,73 +357,71 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 
     // Хардварная инициализация индикатора
 
-        for(i=0; i<4000000; i++);
-        *io_cmd = RESET;						// Reset, Дальнейшие операции регистрации фреймбуфера дадут задержку до операций с индикатором
-        for(i=0; i<4000; i++);
-    	*io_cmd = SETALLPXON | 1;				// all pixel on
-    	*io_cmd = SETALLPXINV | off;			// not inversed
-
-        rd[0] = *io_cmd;
-        rd[1] = *io_cmd;
-        rd[2] = *io_cmd;
-        printk(KERN_INFO "rd 0x%X 0x%X 0x%X", rd[0],rd[1],rd[2]);
-
-        printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
-
-        // Хардварная инициализация индикатора
-        // default gbr mode, default 64k color mod
-
-    	*io_cmd = SETLCDBIASRT | 1;				//Bias Ratio:1/10 bias
-    	*io_cmd = SETPWRCTL | 3;				//power control set as internal power
-    	*io_cmd = SETTEMPCOMP | off;			//set temperate compensation as 0%
-    	*io_cmd = SETV_2B;						//electronic potentiometer
-    	*io_cmd = 0xc6;							// potentiometer value
-
-    	*io_cmd = SETALLPXON | 1;				// all pixel on
-    	*io_cmd = SETALLPXINV | off;			// not inversed
-
-    	*io_cmd = SETLCDMAP;					//19:partial display and MX disable,MY enable
-    	*io_cmd = SETLNRATE | 3;				//line rate 15.2klps
-    	*io_cmd = SETPARTCTL | off;				//12:partial display control disable
-
-    	*io_cmd = SETNLNINV_2B;
-    	*io_cmd = off;							// disable NIV
-
-    	/*com scan fuction*/
-    	*io_cmd = SETCOMSCAN | 4;				//enable FRC,PWM,LRM sequence
-
-    	/*window*/
-    	*io_cmd = SETWINCOLSTART_2B;
-    	*io_cmd = 0;
-    	*io_cmd = SETWINCOLEND_2B;
-    	*io_cmd = 0x35;							// 53 fullcolor pixel = 160 b/w pixel
-
-    	*io_cmd = SETWINROWSTART_2B;
-    	*io_cmd = 0;
-    	*io_cmd = SETWINROWEND_2B;
-    	*io_cmd = 0x9f;
-
-    	*io_cmd = WINPRGMOD;					//inside mode
-
-    	*io_cmd = SETRAMCTL | 1;
-
-    	*io_cmd = SETDISPEN	| 5;			//display on,select on/off mode.Green Enhance mode disable
-
-    	/*scroll line*/
-    	*io_cmd = SETSCRLN_L;
-    	*io_cmd = SETSCRLN_H;
-    	*io_cmd = SETLCDMAP	| 4;			//19,enable FLT and FLB
-    	*io_cmd = SETFIXLN_2B;				//14:FLT,FLB set
-    	*io_cmd = 0x00;
-
-    	/*partial display*/
-    	*io_cmd = SETPARTCTL;				//12,set partial display control:off
-    	*io_cmd	= SETCOMEND_2B;				//com end
-    	*io_cmd = 159;						//160
-    	*io_cmd = SETPARTSTART_2B;			//display start
-    	*io_cmd = 0;						//0
-    	*io_cmd = SETPARTEND_2B;			//display end
-    	*io_cmd = 159;			//160
+//        for(i=0; i<40000; i++);
+//        *io_cmd = RESET;						// Reset, Дальнейшие операции регистрации фреймбуфера дадут задержку до операций с индикатором
+//        for(i=0; i<400; i++);
+//    	*io_cmd = SETALLPXON | 1;				// all pixel on
+//    	*io_cmd = SETALLPXINV | off;			// not inversed
+//
+//        rd[0] = *io_cmd;
+//        rd[1] = *io_cmd;
+//        rd[2] = *io_cmd;
+//        printk(KERN_INFO "rd 0x%X 0x%X 0x%X", rd[0],rd[1],rd[2]);
+//
+//        // Хардварная инициализация индикатора
+//        // default gbr mode, default 64k color mod
+//
+//    	*io_cmd = SETLCDBIASRT | 1;				//Bias Ratio:1/10 bias
+//    	*io_cmd = SETPWRCTL | 3;				//power control set as internal power
+//    	*io_cmd = SETTEMPCOMP | off;			//set temperate compensation as 0%
+//    	*io_cmd = SETV_2B;						//electronic potentiometer
+//    	*io_cmd = 0xc6;							// potentiometer value
+//
+//    	*io_cmd = SETALLPXON | 1;				// all pixel on
+//    	*io_cmd = SETALLPXINV | off;			// not inversed
+//
+//    	*io_cmd = SETLCDMAP;					//19:partial display and MX disable,MY enable
+//    	*io_cmd = SETLNRATE | 3;				//line rate 15.2klps
+//    	*io_cmd = SETPARTCTL | off;				//12:partial display control disable
+//
+//    	*io_cmd = SETNLNINV_2B;
+//    	*io_cmd = off;							// disable NIV
+//
+//    	/*com scan fuction*/
+//    	*io_cmd = SETCOMSCAN | 4;				//enable FRC,PWM,LRM sequence
+//
+//    	/*window*/
+//    	*io_cmd = SETWINCOLSTART_2B;
+//    	*io_cmd = 0;
+//    	*io_cmd = SETWINCOLEND_2B;
+//    	*io_cmd = 0x35;							// 53 fullcolor pixel = 160 b/w pixel
+//
+//    	*io_cmd = SETWINROWSTART_2B;
+//    	*io_cmd = 0;
+//    	*io_cmd = SETWINROWEND_2B;
+//    	*io_cmd = 0x9f;
+//
+//    	*io_cmd = WINPRGMOD;					//inside mode
+//
+//    	*io_cmd = SETRAMCTL | 1;
+//
+//    	*io_cmd = SETDISPEN	| 5;			//display on,select on/off mode.Green Enhance mode disable
+//
+//    	/*scroll line*/
+//    	*io_cmd = SETSCRLN_L;
+//    	*io_cmd = SETSCRLN_H;
+//    	*io_cmd = SETLCDMAP	| 4;			//19,enable FLT and FLB
+//    	*io_cmd = SETFIXLN_2B;				//14:FLT,FLB set
+//    	*io_cmd = 0x00;
+//
+//    	/*partial display*/
+//    	*io_cmd = SETPARTCTL;				//12,set partial display control:off
+//    	*io_cmd	= SETCOMEND_2B;				//com end
+//    	*io_cmd = 159;						//160
+//    	*io_cmd = SETPARTSTART_2B;			//display start
+//    	*io_cmd = 0;						//0
+//    	*io_cmd = SETPARTEND_2B;			//display end
+//    	*io_cmd = 159;			//160
 
     return 0;
 }
@@ -536,7 +535,7 @@ static int __init uc1698_fb_init(void)
 	uc1698_fb_setup(option);
 #endif
 
-	/* Platform & board depend */
+//	/* Platform & board depend */
 //	at91_set_GPIO_periph(AT91_PIN_PC4, 0);
 //	at91_set_GPIO_periph(AT91_PIN_PC5, 0);
 //	at91_set_GPIO_periph(AT91_PIN_PC6, 0);
@@ -545,16 +544,16 @@ static int __init uc1698_fb_init(void)
 //	at91_set_gpio_output(AT91_PIN_PC5, 1);
 //	at91_set_gpio_output(AT91_PIN_PC6, 0);
 //	at91_set_gpio_output(AT91_PIN_PC7, 0);
-	/* End platform & board depend */
-
-	// Registration I/O mem for indicator registers
-	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
-
-	if (ret){
-		device_cnt--;
-		printk(KERN_INFO "no add device\n");
-		return -ENODEV;
-	}
+//	/* End platform & board depend */
+//
+//	// Registration I/O mem for indicator registers
+//	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
+//
+//	if (ret){
+//		device_cnt--;
+//		printk(KERN_INFO "no add device\n");
+//		return -ENODEV;
+//	}
 
 	ret = platform_driver_probe(&uc1698_fb_driver, uc1698_fb_probe);
 	if (ret) {
@@ -582,7 +581,7 @@ static void __exit uc1698_fb_exit(void)
 	device_cnt--;
 	platform_device_unregister(uc1698_fb_device);
 	platform_driver_unregister(&uc1698_fb_driver);
-	platform_device_unregister(&uc1698_device);
+//	platform_device_unregister(&uc1698_device);
 }
 
 /* ------------------------------------------------------------------------- */
