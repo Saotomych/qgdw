@@ -16,7 +16,7 @@
 #include <linux/init.h>
 #include <linux/backlight.h>
 #include <linux/platform_device.h>
-#include <linux/dma-mapping.h>
+//#include <linux/dma-mapping.h>
 #include <linux/fb.h>
 #include <asm/uaccess.h>
 
@@ -25,17 +25,49 @@
 #undef CONFIG_PCI
 #undef CONFIG_PM
 
+#define UC1698CMD		0x10000000
+#define UC1698DATA		(0x10000000 | (1 << 19))
+
 #define PIXMAP_SIZE	1
-#define BUF_LEN		160*160*8
+#define BUF_LEN		160*160
 
 unsigned char video[BUF_LEN];
 unsigned char *pVideo;
+
+/* Board depend */
+static struct resource uc1698_resources[]={
+		[0]={
+			.start	= UC1698CMD,
+			.end 	= UC1698CMD + 1,
+			.flags 	= IORESOURCE_MEM,
+		},
+		[1] = {
+			.start 	= UC1698DATA,
+			.end 	= UC1698DATA + BUF_LEN,
+			.flags 	= IORESOURCE_MEM,
+		},
+};
+
+static struct platform_device uc1698_device = {
+		.name	= "uc6198",
+		.id 	= 0,
+		.num_resources	= ARRAY_SIZE(uc1698_resources),
+		.resource		= uc1698_resources,
+};
+
+static struct platform_device *devices[] __initdata = {
+		&uc1698_device,
+};
+/* End Board depend */
+
 
 /*
  * Driver data
  */
 //static char *mode_option __devinitdata;
 struct uc1698_par;
+static unsigned char *uc1698_cmd = (unsigned char *) UC1698CMD;
+static unsigned char *uc1698_data = (unsigned char *) UC1698DATA;
 
 static int device_cnt=0;
 
@@ -79,6 +111,9 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
 {
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
+//    unsigned char *io_data = (unsigned char *) uc1698_fb_fix.mmio_start;
+//    unsigned char rd[3];
+//    unsigned int i;
 
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
 
@@ -96,10 +131,19 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     //    if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
-    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, length)) return -EFAULT;
+    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
 
-    // Передача экрана на индикатор
-
+//    for (i=0; i < rlen; i++) *io_data = ((char*)info->fix.smem_start)[i];
+//
+//    // Передача экрана на индикатор
+//	*io_cmd = SETALLPXINV | off;			// not inversed
+//
+//    rd[0] = *io_cmd;
+//    rd[1] = *io_cmd;
+//    rd[2] = *io_cmd;
+//
+//    printk(KERN_INFO "rd 0x%X 0x%X 0x%X", rd[0],rd[1],rd[2]);
+    printk(KERN_INFO "write %s", (char *) info->fix.smem_start);
 
 	return length;
 }
@@ -259,6 +303,9 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     int cmap_len, retval;	
 //    unsigned int smem_len;
 
+    unsigned char *io_cmd, *io_data;
+    unsigned char rd[3];
+    unsigned int i;
 
     memset(video, 0, BUF_LEN);
     /*
@@ -267,6 +314,7 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     info = framebuffer_alloc(sizeof(u32) * (BUF_LEN>>2), dev);
     if (!info) {
 	    /* goto error path */
+    	return -ENOMEM;
     }
 
     info->screen_base = (char __iomem *) video;
@@ -275,8 +323,8 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     //    if (!mode_option)
     //	mode_option = "160x160@60";
 
-    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
-    if (!retval || retval == 4) 	return -ENOMEM;
+//    retval = fb_find_mode(&info->var, info, NULL, NULL, 0, NULL, 8);
+//    if (!retval || retval == 4) 	return -ENOMEM;
 // var = uc1698_fb_default;
 
     uc1698_fb_fix.smem_start = (unsigned long) video;
@@ -284,9 +332,16 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     info->fix = uc1698_fb_fix; /* this will be the only time uc1698_fb_fix will be
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
+    uc1698_fb_fix.mmio_start = ioremap(uc1698_data, BUF_LEN >> 2);
+    uc1698_fb_fix.mmio_len = BUF_LEN >> 2;
+    io_cmd = ioremap(uc1698_cmd, 1);
+    io_data = uc1698_fb_fix.mmio_start;
+
     info->pseudo_palette = info->par;
     info->par = NULL;
     info->flags = FBINFO_FLAG_DEFAULT;
+
+    printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", uc1698_fb_fix.mmio_start, uc1698_fb_fix.mmio_len, uc1698_fb_fix.smem_start, uc1698_fb_fix.smem_len);
 
     cmap_len = 16;
     if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0) return -ENOMEM;
@@ -413,22 +468,41 @@ static int __init uc1698_fb_init(void)
 		return -ENODEV;
 	uc1698_fb_setup(option);
 #endif
-	ret = platform_driver_register(&uc1698_fb_driver);
 
-	if (!ret) {
-//		uc1698_fb_device = platform_device_register_simple("uc1698_fb", 0,
-//								NULL, 0);
+	/* Platform & board depend */
+//	at91_set_GPIO_periph(AT91_PIN_PC4, 0);
+//	at91_set_GPIO_periph(AT91_PIN_PC5, 0);
+//	at91_set_GPIO_periph(AT91_PIN_PC6, 0);
+//	at91_set_GPIO_periph(AT91_PIN_PC7, 0);
+//	at91_set_gpio_output(AT91_PIN_PC4, 1);
+//	at91_set_gpio_output(AT91_PIN_PC5, 1);
+//	at91_set_gpio_output(AT91_PIN_PC6, 0);
+//	at91_set_gpio_output(AT91_PIN_PC7, 0);
+	/* End platform & board depend */
 
+	// Registration I/O mem for indicator registers
+	ret = platform_add_devices(devices, ARRAY_SIZE(devices));
+
+	if (ret){
+		device_cnt--;
+		printk(KERN_INFO "no add device\n");
+		return -ENODEV;
+	}
+
+	ret = platform_driver_probe(&uc1698_fb_driver, uc1698_fb_probe);
+	if (ret) {
+		// В случае когда девайс еще не добавлен
 		uc1698_fb_device = platform_device_alloc("uc1698_fb", 0);
 		if (uc1698_fb_device)
 			ret = platform_device_add(uc1698_fb_device);
-		else
+		else{
+			device_cnt--;
 			ret = -ENOMEM;
-
+		}
 		if (ret) {
 			platform_device_put(uc1698_fb_device);
 			platform_driver_unregister(&uc1698_fb_driver);
-		}else ret = uc1698_fb_probe(uc1698_fb_device);
+		}else ret = platform_driver_probe(&uc1698_fb_driver, uc1698_fb_probe); //uc1698_fb_probe(uc1698_fb_device);
 	}
 
 	printk(KERN_INFO "device_open(%d)\n",ret);
@@ -441,6 +515,7 @@ static void __exit uc1698_fb_exit(void)
 	device_cnt--;
 	platform_device_unregister(uc1698_fb_device);
 	platform_driver_unregister(&uc1698_fb_driver);
+	platform_device_unregister(&uc1698_device);
 }
 
 /* ------------------------------------------------------------------------- */
