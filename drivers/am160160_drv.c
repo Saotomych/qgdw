@@ -142,7 +142,7 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     hard->writedat(pvideo, rlen);
 
     pvideo[rlen - 1] = 0;
-    printk(KERN_INFO "write %s \n length %d \n in length %d", pvideo, rlen);
+    printk(KERN_INFO "write %s \n length %d", pvideo, rlen);
 
 	return rlen;
 }
@@ -457,6 +457,11 @@ static int __init uc1698_fb_init(void)
 	 */
 	
 	/* Hardware initialize and testing */
+	// Connect to hardware driver
+	hard = uc1698_connect();
+	hard->init();
+	pinfo = hard->readinfo();
+
 	/* Platform & board depend */
 	/* SMC SRAM Initialise: Byte write access type, NCS0, WR, RD */
 	at91_sys_write(AT91_SMC_SETUP(0), AT91_SMC_NWESETUP_(1) | AT91_SMC_NCS_WRSETUP_(0) | AT91_SMC_NRDSETUP_(2) | AT91_SMC_NCS_RDSETUP_(0));
@@ -467,17 +472,12 @@ static int __init uc1698_fb_init(void)
 	/* Pins initialize */
 	at91_set_GPIO_periph(hard->resetpin, 0);
 	at91_set_gpio_output(hard->resetpin, 1);
-	at91_set_GPIO_periph(hard->ligthpin, 0);
-	at91_set_gpio_output(hard->ligthpin, 1);
+	at91_set_GPIO_periph(hard->lightpin, 0);
+	at91_set_gpio_output(hard->lightpin, 1);
 	/* End platform & board depend */
 
 	// Registration I/O mem for indicator registers
 	platform_add_devices(devices, ARRAY_SIZE(devices));
-
-	// Connect to hardware driver
-	hard = uc1698_connect();
-	hard->init();
-	pinfo = hard->readinfo();
 
     if (device_cnt++) return -EINVAL;
 

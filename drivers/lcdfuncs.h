@@ -7,7 +7,7 @@
  *      readdata
  */
 
-typedef struct{
+typedef struct _AMLCDFUNC{
 	void (*init)(void);											// Initialize hardware driver
 	void (*writecmd)(unsigned char cmd);						// Write command to hardware driver
 	void (*writedat)(unsigned char *buf, unsigned int len);		// Write data buffer to hardware driver
@@ -18,5 +18,5 @@ typedef struct{
 	unsigned int lightpin;
 } AMLCDFUNC, *PAMLCDFUNC;
 
-extern AMLCDFUNC* uc1698_connect(void);
-extern AMLCDFUNC* st7529_connect(void);
+extern PAMLCDFUNC uc1698_connect(void);
+extern PAMLCDFUNC st7529_connect(void);

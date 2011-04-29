@@ -11,6 +11,16 @@
  *      readinfo
  *      readdata
  */
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/string.h>
+#include <linux/mm.h>
+#include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/init.h>
+#include <linux/backlight.h>
+#include <linux/gpio.h>
+#include <asm/uaccess.h>
 
 #include "lcdfuncs.h"
 
@@ -18,46 +28,48 @@ static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen;
 
-void st7529init(){
+static void st7529init(){
 
 }
 
-unsigned int st7529exit(){
+static unsigned int st7529exit(){
 
 	return 0;
 }
 
-void st7529writecmd(unsigned char cmd){
+static void st7529writecmd(unsigned char cmd){
 	// Write command to hardware driver
 }
 
-void st7529writedat(unsigned char *buf, unsigned int len){
+static void st7529writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
 }
 
-unsigned int st7529readinfo(){
+static unsigned int st7529readinfo(){
 	// Return pointer to info buffer
 
 	return info;
 }
 
-unsigned int readdata(unsigned char *addr){
+static unsigned int st7529readdata(unsigned char *addr){
 unsigned int len = videolen;
 	// Return length & pointer to data buffer
 	*addr = video;
 	return len;
 }
 
-AMLCDFUNC st7529func = {
-	init = st7529init,
-	exit = st7529exit,
-	writecmd = st7529writecmd,
-	writedat = st7529writedat,
-	readinfo = st7529readinfo,
-	readdata = st7529readdata
+static AMLCDFUNC st7529func = {
+	st7529init,
+	st7529exit,
+	st7529writecmd,
+	st7529writedat,
+	st7529readinfo,
+	st7529readdata,
+	AT91_PIN_PC4,
+	AT91_PIN_PC5
 };
 
-static AMLCDFUNC* st7529_connect(){
-	return st7529func;
-}
+//PAMLCDFUNC st7529_connect(){
+//	return &st7529func;
+//}
 
