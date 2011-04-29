@@ -36,7 +36,6 @@
 #define BUF_LEN		160*160
 
 static unsigned char video[BUF_LEN];
-static unsigned char *pVideo;
 static PAMLCDFUNC hard;
 
 /* Board depend */
@@ -104,22 +103,22 @@ static int uc1698_fb_open(struct fb_info *info, int user)
 static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
 {
 	unsigned int len=0, i;
-	unsigned char *prddata;
+	unsigned char *prddata = 0;
 
 	len = hard->readdata(prddata);
-	for(i=0; i<length && i < info->fix.smem_len; i++) put_user(prddata[i], (char __user *) buffer + i);
+	if ((prddata) && (len)){
+		for(i=0; i<length && i < info->fix.smem_len; i++) put_user(prddata[i], (char __user *) buffer + i);
+		printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
+	}
 
-	printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
-
-	return i;
+	return len;
 }
 
 static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset)
 {
     int rlen = info->fix.smem_len;
-    unsigned long pos = (unsigned long) offset;
+//    unsigned long pos = (unsigned long) offset;
     char *pvideo = info->fix.smem_start;
-    unsigned int i;
 
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
 

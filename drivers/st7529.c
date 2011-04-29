@@ -69,7 +69,7 @@ static AMLCDFUNC st7529func = {
 	AT91_PIN_PC5
 };
 
-//PAMLCDFUNC st7529_connect(){
-//	return &st7529func;
-//}
+PAMLCDFUNC st7529_connect(){
+	return &st7529func;
+}
 
