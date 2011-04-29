@@ -17,7 +17,7 @@
 
 static unsigned char info[3];
 static unsigned char *video;
-static unsigned char videolen;
+static unsigned char videolen = 0;
 
 void uc1698init(){
     // Хардварная инициализация индикатора
@@ -78,6 +78,7 @@ void uc1698init(){
     	writeb(0, io_cmd);						//0
     	writeb(SETPARTEND_2B, io_cmd);			//display end
     	writeb(159, io_cmd);			//160
+
 }
 
 unsigned int uc1698exit(){
@@ -106,7 +107,7 @@ unsigned int uc1698readinfo(){
 unsigned int readdata(unsigned char *addr){
 unsigned int len = videolen;
 	// Return length & pointer to data buffer
-	*addr = video;
+	addr = video;
 	return len;
 }
 

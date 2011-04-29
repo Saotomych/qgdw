@@ -103,12 +103,13 @@ static int uc1698_fb_open(struct fb_info *info, int user)
 // (struct fb_info *info, char __user *buf,  size_t count, loff_t *ppos);
 static ssize_t uc1698_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
 {
-	int i=0;
+	unsigned int len=0, i;
+	unsigned char *prddata;
+
+	len = hard->readdata(prddata);
+	for(i=0; i<length && i < info->fix.smem_len; i++) put_user(prddata[i], (char __user *) buffer + i);
 
 	printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
-
-//	for(i=0; i<length && i < BUF_LEN; i++) get_user(Video[i], buffer + i);
-//	pVideo = Video;
 
 	return i;
 }
@@ -117,7 +118,7 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
 {
     int rlen = info->fix.smem_len;
     unsigned long pos = (unsigned long) offset;
-    unsigned char rd[3];
+    char *pvideo = info->fix.smem_start;
     unsigned int i;
 
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
@@ -136,20 +137,14 @@ static ssize_t uc1698_fb_write(struct fb_info *info, const char __user *buffer, 
     //    if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
-    if (copy_from_user((char *) info->fix.smem_start, (const char __user *) buffer, rlen)) return -EFAULT;
+    if (copy_from_user(pvideo, (const char __user *) buffer, rlen)) return -EFAULT;
 
-    for (i=0; i < rlen; i++) *io_data = ((char*)info->fix.smem_start)[i];
+    hard->writedat(pvideo, rlen);
 
-    // Передача экрана на индикатор
-	*io_cmd = SETALLPXINV | off;			// not inversed
+    pvideo[rlen - 1] = 0;
+    printk(KERN_INFO "write %s \n length %d \n in length %d", pvideo, rlen);
 
-    rd[0] = *io_cmd;
-    rd[1] = *io_cmd;
-    rd[2] = *io_cmd;
-
-    printk(KERN_INFO "write %s", (char *) info->fix.smem_start);
-
-	return length;
+	return rlen;
 }
 
 static int uc1698_fb_release(struct fb_info *info, int user)
@@ -300,6 +295,7 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 {
     struct device *dev = &pdev->dev;
     struct fb_info *info;
+    unsigned char *pinfo;
 //    struct uc1698_info *sinfo;
 //    struct uc1698_info *pd_sinfo;
 //    struct resource *map = NULL;
@@ -307,10 +303,7 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
     int cmap_len, retval;	
 //    unsigned int smem_len;
 
-    unsigned char rd[3];
-    unsigned int i;
-
-//    memset(video, 0, BUF_LEN);
+    memset(video, 0, BUF_LEN);
     /*
      * Dynamically allocate info and par
      */
@@ -358,7 +351,8 @@ static int uc1698_fb_probe (struct platform_device *pdev)	// -- for platform dev
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
-        printk(KERN_INFO "rd 0x%X 0x%X 0x%X", rd[0],rd[1],rd[2]);
+    pinfo = hard->readinfo();
+    printk(KERN_INFO "rd 0x%X 0x%X 0x%X", pinfo[0],pinfo[1],pinfo[2]);
     return 0;
 }
 
@@ -494,7 +488,6 @@ static int __init uc1698_fb_init(void)
 		return -ENODEV;
 	uc1698_fb_setup(option);
 #endif
-
 
 	ret = platform_driver_probe(&uc1698_fb_driver, uc1698_fb_probe);
 	if (ret) {
