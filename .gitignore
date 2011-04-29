@@ -1,0 +1,13 @@
+.*
+!.gitignore
+*.cmd
+*.o
+*.ko
+*.d
+*.mod.c
+Module.symvers
+modules.order
+uc1698u160160d.c
+am_rd
+
+

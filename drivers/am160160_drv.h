@@ -100,4 +100,5 @@ struct uc1698_info {
 	u32			pseudo_palette[16];
 };
 
+
 #endif /* __UC1698_H__ */
