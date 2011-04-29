@@ -465,10 +465,10 @@ static int __init uc1698_fb_init(void)
 	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
 
 	/* Pins initialize */
-	at91_set_GPIO_periph(AT91_PIN_PC4, 0);
-	at91_set_GPIO_periph(AT91_PIN_PC5, 0);
-	at91_set_gpio_output(AT91_PIN_PC4, 1);
-	at91_set_gpio_output(AT91_PIN_PC5, 1);
+	at91_set_GPIO_periph(hard->resetpin, 0);
+	at91_set_gpio_output(hard->resetpin, 1);
+	at91_set_GPIO_periph(hard->ligthpin, 0);
+	at91_set_gpio_output(hard->ligthpin, 1);
 	/* End platform & board depend */
 
 	// Registration I/O mem for indicator registers
