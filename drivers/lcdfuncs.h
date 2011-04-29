@@ -14,9 +14,7 @@ typedef struct _AMLCDFUNC{
 	unsigned int (*readinfo)(void);								// Return pointer to info buffer
 	unsigned int (*readdata)(unsigned char *addr);				// Return length & pointer to data buffer
 	unsigned int (*exit)(void);									// Return 0 if release resources OK
-	unsigned int resetpin;
-	unsigned int lightpin;
 } AMLCDFUNC, *PAMLCDFUNC;
 
-extern PAMLCDFUNC uc1698_connect(void);
-extern PAMLCDFUNC st7529_connect(void);
+extern PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d);
+extern PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d);

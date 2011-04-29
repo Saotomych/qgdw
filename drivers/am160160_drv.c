@@ -31,6 +31,8 @@
 
 #define am160160CMD		AT91_CHIPSELECT_0		// 0x10000000
 #define am160160DATA		(AT91_CHIPSELECT_0 | (1 << 19))
+#define resetpin		AT91_PIN_PC4
+#define lightpin		AT91_PIN_PC5
 
 #define PIXMAP_SIZE	1
 #define BUF_LEN		160*160
@@ -72,7 +74,6 @@ static char *mode_option __initdata;
 struct am160160_par;
 static unsigned char *am160160_cmd = (unsigned char *) am160160CMD;		// phys i/o indicator addresses
 static unsigned char *am160160_data = (unsigned char *) am160160DATA;
-static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 
 static int device_cnt=0;
 
@@ -322,13 +323,12 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 //    info->var = am160160_fb_fix;
 
     am160160_fb_fix.smem_start = (unsigned long) video;
-    am160160_fb_fix.smem_len = BUF_LEN >> 2;
+    am160160_fb_fix.smem_len = BUF_LEN;
     info->fix = am160160_fb_fix; /* this will be the only time am160160_fb_fix will be
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
-    am160160_fb_fix.mmio_len = BUF_LEN >> 2;
-    io_data = am160160_fb_fix.mmio_start = ioremap(am160160_data, BUF_LEN >> 2);
-    io_cmd = ioremap(am160160_cmd, 1);
+//    am160160_fb_fix.mmio_start = io_data;
+//    am160160_fb_fix.mmio_len = BUF_LEN;
 
     info->pseudo_palette = info->par;
     info->par = NULL;
@@ -451,13 +451,19 @@ static int __init am160160_fb_init(void)
 {
 	int ret;
 	unsigned char *pinfo;
+	unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 	/*
 	 *  For kernel boot options (in 'video=am160160_fb:<options>' format)
 	 */
-	
+
+	// Registration I/O mem for indicator registers
+	platform_add_devices(devices, ARRAY_SIZE(devices));
+	io_data = ioremap(am160160_data, BUF_LEN);
+	io_cmd = ioremap(am160160_cmd, 1);
+
 	/* Hardware initialize and testing */
 	// Connect to hardware driver
-	hard = uc1698_connect();
+	hard = uc1698_connect(io_data, io_cmd);
 	hard->init();
 	pinfo = hard->readinfo();
 
@@ -469,14 +475,11 @@ static int __init am160160_fb_init(void)
 	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
 
 	/* Pins initialize */
-	at91_set_GPIO_periph(hard->resetpin, 0);
-	at91_set_gpio_output(hard->resetpin, 1);
-	at91_set_GPIO_periph(hard->lightpin, 0);
-	at91_set_gpio_output(hard->lightpin, 1);
+	at91_set_GPIO_periph(resetpin, 0);
+	at91_set_gpio_output(resetpin, 1);
+	at91_set_GPIO_periph(lightpin, 0);
+	at91_set_gpio_output(lightpin, 1);
 	/* End platform & board depend */
-
-	// Registration I/O mem for indicator registers
-	platform_add_devices(devices, ARRAY_SIZE(devices));
 
     if (device_cnt++) return -EINVAL;
 
@@ -512,10 +515,9 @@ static int __init am160160_fb_init(void)
 static void __exit am160160_fb_exit(void)
 {
 	device_cnt--;
+	hard->exit();
 	platform_device_unregister(am160160_fb_device);
 	platform_driver_unregister(&am160160_fb_driver);
-	iounmap(io_cmd);
-	iounmap(io_data);
 	platform_device_del(&am160160_device);
 }
 

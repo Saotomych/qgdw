@@ -27,12 +27,13 @@
 static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen;
+static unsigned char *io_cmd, *io_data;
 
-static void st7529init(){
+static void st7529init(void){
 
 }
 
-static unsigned int st7529exit(){
+static unsigned int st7529exit(void){
 
 	return 0;
 }
@@ -45,7 +46,7 @@ static void st7529writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
 }
 
-static unsigned int st7529readinfo(){
+static unsigned int st7529readinfo(void){
 	// Return pointer to info buffer
 
 	return info;
@@ -60,16 +61,16 @@ unsigned int len = videolen;
 
 static AMLCDFUNC st7529func = {
 	st7529init,
-	st7529exit,
 	st7529writecmd,
 	st7529writedat,
 	st7529readinfo,
 	st7529readdata,
-	AT91_PIN_PC4,
-	AT91_PIN_PC5
+	st7529exit,
 };
 
-PAMLCDFUNC st7529_connect(){
+PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d){
+	io_data = io_d;
+	io_cmd = io_c;
 	return &st7529func;
 }
 

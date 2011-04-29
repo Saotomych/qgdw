@@ -72,71 +72,73 @@
 static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen = 0;
+static unsigned char *io_cmd, *io_data;
 
-static void uc1698init(){
+static void uc1698init(void){
     // Хардварная инициализация индикатора
 
-//        writeb(RESET, io_cmd);						// Reset, Дальнейшие операции регистрации фреймбуфера дадут задержку до операций с индикатором
-//        mdelay(10);
-//
-//        // Хардварная инициализация индикатора
-//        // default gbr mode, default 64k color mod
-//
-//    	writeb(SETLCDBIASRT | 1, io_cmd);			//Bias Ratio:1/10 bias
-//    	writeb(SETPWRCTL | 3, io_cmd);				//power control set as internal power
-//    	writeb(SETTEMPCOMP | off, io_cmd);			//set temperate compensation as 0%
-//    	writeb(SETV_2B, io_cmd);					//electronic potentiometer
-//    	writeb(0xc6, io_cmd);						// potentiometer value
-//    	writeb(SETALLPXON | 1, io_cmd);				// all pixel on
-//    	writeb(SETALLPXINV | off, io_cmd);			// not inversed
-//
-//    	writeb(SETLCDMAP, io_cmd);					//19:partial display and MX disable,MY enable
-//    	writeb(SETLNRATE | 3, io_cmd);				//line rate 15.2klps
-//    	writeb(SETPARTCTL | off, io_cmd);				//12:partial display control disable
-//
-//    	writeb(SETNLNINV_2B, io_cmd);
-//    	writeb(off, io_cmd);							// disable NIV
-//
-//    	/*com scan fuction*/
-//    	writeb(SETCOMSCAN | 4, io_cmd);				//enable FRC,PWM,LRM sequence
-//
-//    	/*window*/
-//    	writeb(SETWINCOLSTART_2B, io_cmd);
-//    	writeb(0, io_cmd);
-//    	writeb(SETWINCOLEND_2B, io_cmd);
-//    	writeb(0x35, io_cmd);							// 53 fullcolor pixel = 160 b/w pixel
-//
-//    	writeb(SETWINROWSTART_2B, io_cmd);
-//    	writeb(0, io_cmd);
-//    	writeb(SETWINROWEND_2B, io_cmd);
-//    	writeb(0x9f, io_cmd);
-//
-//    	writeb(WINPRGMOD, io_cmd);					//inside mode
-//
-//    	writeb(SETRAMCTL | 1, io_cmd);
-//
-//    	writeb(SETDISPEN | 5, io_cmd);			//display on,select on/off mode.Green Enhance mode disable
-//
-//    	/*scroll line*/
-//    	writeb(SETSCRLN_L, io_cmd);
-//    	writeb(SETSCRLN_H, io_cmd);
-//    	writeb(SETLCDMAP | 4, io_cmd);			//19,enable FLT and FLB
-//    	writeb(SETFIXLN_2B, io_cmd);				//14:FLT,FLB set
-//    	writeb(0x00, io_cmd);
-//
-//    	/*partial display*/
-//    	writeb(SETPARTCTL, io_cmd);				//12,set partial display control:off
-//    	writeb(SETCOMEND_2B, io_cmd);				//com end
-//    	writeb(159, io_cmd);						//160
-//    	writeb(SETPARTSTART_2B, io_cmd);			//display start
-//    	writeb(0, io_cmd);						//0
-//    	writeb(SETPARTEND_2B, io_cmd);			//display end
-//    	writeb(159, io_cmd);			//160
+        writeb(RESET, io_cmd);						// Reset, Дальнейшие операции регистрации фреймбуфера дадут задержку до операций с индикатором
+        mdelay(10);
+
+        // Хардварная инициализация индикатора
+        // default gbr mode, default 64k color mod
+
+    	writeb(SETLCDBIASRT | 1, io_cmd);			//Bias Ratio:1/10 bias
+    	writeb(SETPWRCTL | 3, io_cmd);				//power control set as internal power
+    	writeb(SETTEMPCOMP | off, io_cmd);			//set temperate compensation as 0%
+    	writeb(SETV_2B, io_cmd);					//electronic potentiometer
+    	writeb(0xc6, io_cmd);						// potentiometer value
+    	writeb(SETALLPXON | 1, io_cmd);				// all pixel on
+    	writeb(SETALLPXINV | off, io_cmd);			// not inversed
+
+    	writeb(SETLCDMAP, io_cmd);					//19:partial display and MX disable,MY enable
+    	writeb(SETLNRATE | 3, io_cmd);				//line rate 15.2klps
+    	writeb(SETPARTCTL | off, io_cmd);				//12:partial display control disable
+
+    	writeb(SETNLNINV_2B, io_cmd);
+    	writeb(off, io_cmd);							// disable NIV
+
+    	/*com scan fuction*/
+    	writeb(SETCOMSCAN | 4, io_cmd);				//enable FRC,PWM,LRM sequence
+
+    	/*window*/
+    	writeb(SETWINCOLSTART_2B, io_cmd);
+    	writeb(0, io_cmd);
+    	writeb(SETWINCOLEND_2B, io_cmd);
+    	writeb(0x35, io_cmd);							// 53 fullcolor pixel = 160 b/w pixel
+
+    	writeb(SETWINROWSTART_2B, io_cmd);
+    	writeb(0, io_cmd);
+    	writeb(SETWINROWEND_2B, io_cmd);
+    	writeb(0x9f, io_cmd);
+
+    	writeb(WINPRGMOD, io_cmd);					//inside mode
+
+    	writeb(SETRAMCTL | 1, io_cmd);
+
+    	writeb(SETDISPEN | 5, io_cmd);			//display on,select on/off mode.Green Enhance mode disable
+
+    	/*scroll line*/
+    	writeb(SETSCRLN_L, io_cmd);
+    	writeb(SETSCRLN_H, io_cmd);
+    	writeb(SETLCDMAP | 4, io_cmd);			//19,enable FLT and FLB
+    	writeb(SETFIXLN_2B, io_cmd);				//14:FLT,FLB set
+    	writeb(0x00, io_cmd);
+
+    	/*partial display*/
+    	writeb(SETPARTCTL, io_cmd);				//12,set partial display control:off
+    	writeb(SETCOMEND_2B, io_cmd);				//com end
+    	writeb(159, io_cmd);						//160
+    	writeb(SETPARTSTART_2B, io_cmd);			//display start
+    	writeb(0, io_cmd);						//0
+    	writeb(SETPARTEND_2B, io_cmd);			//display end
+    	writeb(159, io_cmd);			//160
 
 }
 
-static unsigned int uc1698exit(){
-
+static unsigned int uc1698exit(void){
+	iounmap(io_cmd);
+	iounmap(io_data);
 	return 0;
 }
 
@@ -149,12 +151,12 @@ static void uc1698writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
 }
 
-static unsigned int uc1698readinfo(){
+static unsigned int uc1698readinfo(void){
 	// Return pointer to info buffer
 
-//    info[0] = readb(io_cmd);
-//    info[1] = readb(io_cmd);
-//    info[2] = readb(io_cmd);
+    info[0] = readb(io_cmd);
+    info[1] = readb(io_cmd);
+    info[2] = readb(io_cmd);
 
 	return info;
 }
@@ -168,15 +170,15 @@ unsigned int len = videolen;
 
 static AMLCDFUNC uc1698func = {
 	uc1698init,
-	uc1698exit,
 	uc1698writecmd,
 	uc1698writedat,
 	uc1698readinfo,
 	uc1698readdata,
-	AT91_PIN_PC4,
-	AT91_PIN_PC5
+	uc1698exit
 };
 
-PAMLCDFUNC uc1698_connect(){
+PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d){
+	io_data = io_d;
+	io_cmd = io_c;
 	return &uc1698func;
 }
