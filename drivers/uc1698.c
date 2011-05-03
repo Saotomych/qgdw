@@ -26,7 +26,7 @@
 #include "lcdfuncs.h"
 
 #define 	off					0
-
+#define 	on					1
 // UC1698 Command set
 #define 	SETCOLADDR_L		0x00
 #define 	SETCOLADDR_H		0x10
@@ -72,7 +72,7 @@
 static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen = 0;
-static unsigned char *io_cmd, *io_data;
+static unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual i/o indicator addresses
 
 static void uc1698init(void){
     // Хардварная инициализация индикатора
@@ -88,8 +88,8 @@ static void uc1698init(void){
     	writeb(SETTEMPCOMP | off, io_cmd);			//set temperate compensation as 0%
     	writeb(SETV_2B, io_cmd);					//electronic potentiometer
     	writeb(0xc6, io_cmd);						// potentiometer value
-    	writeb(SETALLPXON | 1, io_cmd);				// all pixel on
-    	writeb(SETALLPXINV | off, io_cmd);			// not inversed
+    	writeb(SETALLPXON | 0, io_cmd);				// all pixel on
+    	writeb(SETALLPXINV | on, io_cmd);			// not inversed
 
     	writeb(SETLCDMAP, io_cmd);					//19:partial display and MX disable,MY enable
     	writeb(SETLNRATE | 3, io_cmd);				//line rate 15.2klps
@@ -151,6 +151,8 @@ static void uc1698writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
 	unsigned int i;
 		for(i=0; i<len; i++) writeb(buf[i], io_data);
+		mdelay(10);
+		for (i=0; i<len; i++) buf[i] = readb(io_data);
 }
 
 static unsigned int uc1698readinfo(void){
@@ -165,6 +167,7 @@ static unsigned int uc1698readinfo(void){
 
 static unsigned char* uc1698readdata(unsigned int len){
 	// Return length & pointer to data buffer
+//	for (i=0; i<len; i++) video[i] = readb(io_data);
 	return video;
 }
 
@@ -177,8 +180,11 @@ static AMLCDFUNC uc1698func = {
 	uc1698exit
 };
 
-PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d){
+PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d, unsigned char *io_cw, unsigned char *io_dw){
 	io_data = io_d;
 	io_cmd = io_c;
+	io_datawr = io_dw;
+	io_cmdwr = io_cw;
+
 	return &uc1698func;
 }

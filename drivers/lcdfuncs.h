@@ -16,5 +16,5 @@ typedef struct _AMLCDFUNC{
 	unsigned int (*exit)(void);									// Return 0 if release resources OK
 } AMLCDFUNC, *PAMLCDFUNC;
 
-extern PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d);
-extern PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d);
+extern PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d, unsigned char *io_cw, unsigned char *io_dw);
+extern PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d, unsigned char *io_cw, unsigned char *io_dw);

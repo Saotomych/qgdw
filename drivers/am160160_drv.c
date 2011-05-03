@@ -29,8 +29,10 @@
 #undef CONFIG_PCI
 #undef CONFIG_PM
 
-#define am160160CMD		AT91_CHIPSELECT_0		// 0x10000000
+#define am160160CMD			AT91_CHIPSELECT_0	// 0x10000000
 #define am160160DATA		(AT91_CHIPSELECT_0 | (1 << 19))
+#define am160160CMDWR		(AT91_CHIPSELECT_0 | (1 << 20))
+#define am160160DATAWR		(AT91_CHIPSELECT_0 | (1 << 19) | (1 <<20))
 #define resetpin		AT91_PIN_PC4
 #define lightpin		AT91_PIN_PC5
 
@@ -39,7 +41,7 @@
 
 static unsigned char video[BUF_LEN];
 static PAMLCDFUNC hard;
-unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
+unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual i/o indicator addresses
 
 /* Board depend */
 static struct resource am160160_resources[]={
@@ -53,10 +55,20 @@ static struct resource am160160_resources[]={
 			.end 	= am160160DATA + BUF_LEN,
 			.flags 	= IORESOURCE_MEM,
 		},
+		[2] = {
+			.start 	= am160160CMDWR,
+			.end 	= am160160CMDWR + 1,
+			.flags 	= IORESOURCE_MEM,
+		},
+		[3] = {
+			.start 	= am160160DATAWR,
+			.end 	= am160160DATAWR + BUF_LEN,
+			.flags 	= IORESOURCE_MEM,
+		},
 };
 
 static struct platform_device am160160_device = {
-		.name	= "uc6198",
+		.name	= "am160160",
 		.id 	= 0,
 		.num_resources	= ARRAY_SIZE(am160160_resources),
 		.resource		= am160160_resources,
@@ -75,6 +87,8 @@ static char *mode_option __initdata;
 struct am160160_par;
 static unsigned char *am160160_cmd = (unsigned char *) am160160CMD;		// phys i/o indicator addresses
 static unsigned char *am160160_data = (unsigned char *) am160160DATA;
+static unsigned char *am160160_cmdwr = (unsigned char *) am160160CMDWR;		// phys i/o indicator addresses
+static unsigned char *am160160_datawr = (unsigned char *) am160160DATAWR;
 
 static int device_cnt=0;
 
@@ -140,10 +154,14 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
     // Читаем в буфер блок данных
     if (copy_from_user(pvideo, (const char __user *) buffer, rlen)) return -EFAULT;
 
+    printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n length %d \n", pvideo[0],  pvideo[1],  pvideo[2],  pvideo[3],
+    		 pvideo[4],  pvideo[5],  pvideo[6],  pvideo[8],  pvideo[9],  pvideo[10], rlen);
+
     hard->writedat(pvideo, rlen);
 
 //    pvideo[rlen - 1] = 0;
-    printk(KERN_INFO "write %s \n length %d \n", pvideo, rlen);
+    printk(KERN_INFO "read %x %x %x %x %x %x %x %x %x %x \n length %d \n", pvideo[0],  pvideo[1],  pvideo[2],  pvideo[3],
+    		 pvideo[4],  pvideo[5],  pvideo[6],  pvideo[8],  pvideo[9],  pvideo[10], rlen);
 
 	return rlen;
 }
@@ -475,11 +493,13 @@ static int __init am160160_fb_init(void)
 	platform_add_devices(devices, ARRAY_SIZE(devices));
 	io_data = ioremap(am160160_data, BUF_LEN);
 	io_cmd = ioremap(am160160_cmd, 1);
+	io_datawr = ioremap(am160160_data, BUF_LEN);
+	io_cmdwr = ioremap(am160160_cmd, 1);
 
 	/* Hardware initialize and testing */
 	// Connect to hardware driver
-//	hard = uc1698_connect(io_data, io_cmd);
-	hard = st7529_connect(io_data, io_cmd);
+ 	hard = uc1698_connect(io_cmd, io_data, io_cmdwr, io_datawr);
+//	hard = st7529_connect(io_cmd, io_data, io_cmdwr, io_datawr);
 	hard->init();
 	pinfo = hard->readinfo();
 
