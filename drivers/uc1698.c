@@ -144,11 +144,13 @@ static unsigned int uc1698exit(void){
 
 static void uc1698writecmd(unsigned char cmd){
 	// Write command to hardware driver
-
+	writeb(cmd, io_cmd);
 }
 
 static void uc1698writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
+	unsigned int i;
+		for(i=0; i<len; i++) writeb(buf[i], io_data);
 }
 
 static unsigned int uc1698readinfo(void){
