@@ -161,11 +161,9 @@ static unsigned int uc1698readinfo(void){
 	return info;
 }
 
-static unsigned int uc1698readdata(unsigned char *addr){
-unsigned int len = videolen;
+static unsigned char* uc1698readdata(unsigned int len){
 	// Return length & pointer to data buffer
-	addr = video;
-	return len;
+	return video;
 }
 
 static AMLCDFUNC uc1698func = {

@@ -40,10 +40,14 @@ static unsigned int st7529exit(void){
 
 static void st7529writecmd(unsigned char cmd){
 	// Write command to hardware driver
+	writeb(cmd, io_cmd);
 }
 
 static void st7529writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
+unsigned int i;
+	st7529writecmd(0x5c);
+	for (i=0; i<len; i++) writeb((i&1 ? 0 : 0xff), io_data);
 }
 
 static unsigned int st7529readinfo(void){
@@ -52,11 +56,9 @@ static unsigned int st7529readinfo(void){
 	return info;
 }
 
-static unsigned int st7529readdata(unsigned char *addr){
-unsigned int len = videolen;
+static unsigned char* st7529readdata(unsigned char *addr, unsigned int len){
 	// Return length & pointer to data buffer
-	*addr = video;
-	return len;
+	return video;
 }
 
 static AMLCDFUNC st7529func = {
@@ -71,6 +73,7 @@ static AMLCDFUNC st7529func = {
 PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d){
 	io_data = io_d;
 	io_cmd = io_c;
+    printk(KERN_INFO "set i/o sram: %lX; %lX\n", io_cmd, io_data);
 	return &st7529func;
 }
 

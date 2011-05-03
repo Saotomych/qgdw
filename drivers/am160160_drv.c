@@ -39,6 +39,7 @@
 
 static unsigned char video[BUF_LEN];
 static PAMLCDFUNC hard;
+unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 
 /* Board depend */
 static struct resource am160160_resources[]={
@@ -106,7 +107,7 @@ static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_
 	unsigned int len=0, i;
 	unsigned char *prddata = 0;
 
-	len = hard->readdata(prddata);
+	len = hard->readdata(prddata, BUF_LEN);
 	if ((prddata) && (len)){
 		for(i=0; i<length && i < info->fix.smem_len; i++) put_user(prddata[i], (char __user *) buffer + i);
 		printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
@@ -117,9 +118,9 @@ static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_
 
 static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset)
 {
-    int rlen = info->fix.smem_len;
+    size_t rlen = info->fix.smem_len;
 //    unsigned long pos = (unsigned long) offset;
-    char *pvideo = info->fix.smem_start;
+    char *pvideo = video;
 
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
 
@@ -141,8 +142,8 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
 
     hard->writedat(pvideo, rlen);
 
-    pvideo[rlen - 1] = 0;
-    printk(KERN_INFO "write %s \n length %d", pvideo, rlen);
+//    pvideo[rlen - 1] = 0;
+    printk(KERN_INFO "write %s \n length %d \n", pvideo, rlen);
 
 	return rlen;
 }
@@ -307,28 +308,29 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     /*
      * Dynamically allocate info and par
      */
-    info = framebuffer_alloc(sizeof(u32) * (BUF_LEN>>2), dev);
+    info = framebuffer_alloc(sizeof(u32) * BUF_LEN, dev);
+//    info = framebuffer_alloc(sizeof(struct uc1698_info), dev);
     if (!info) {
 	    /* goto error path */
     	return -ENOMEM;
     }
 
-    info->screen_base = (char __iomem *) video;
+    info->screen_base = (char __iomem *) io_data;
     info->fbops = &am160160_fb_ops;
 
 	mode_option = "160x160@60";
 
     retval = fb_find_mode(&info->var, info, mode_option, NULL, 0, NULL, 8);
     if (!retval || retval == 4) 	return -EINVAL;
-//    info->var = am160160_fb_fix;
+//    info->var =
 
     am160160_fb_fix.smem_start = (unsigned long) video;
     am160160_fb_fix.smem_len = BUF_LEN;
+    am160160_fb_fix.mmio_start = io_data;
+    am160160_fb_fix.mmio_len = BUF_LEN;
     info->fix = am160160_fb_fix; /* this will be the only time am160160_fb_fix will be
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
-//    am160160_fb_fix.mmio_start = io_data;
-//    am160160_fb_fix.mmio_len = BUF_LEN;
 
     info->pseudo_palette = info->par;
     info->par = NULL;
@@ -451,21 +453,9 @@ static int __init am160160_fb_init(void)
 {
 	int ret;
 	unsigned char *pinfo;
-	unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 	/*
 	 *  For kernel boot options (in 'video=am160160_fb:<options>' format)
 	 */
-
-	// Registration I/O mem for indicator registers
-	platform_add_devices(devices, ARRAY_SIZE(devices));
-	io_data = ioremap(am160160_data, BUF_LEN);
-	io_cmd = ioremap(am160160_cmd, 1);
-
-	/* Hardware initialize and testing */
-	// Connect to hardware driver
-	hard = uc1698_connect(io_data, io_cmd);
-	hard->init();
-	pinfo = hard->readinfo();
 
 	/* Platform & board depend */
 	/* SMC SRAM Initialise: Byte write access type, NCS0, WR, RD */
@@ -480,6 +470,18 @@ static int __init am160160_fb_init(void)
 	at91_set_GPIO_periph(lightpin, 0);
 	at91_set_gpio_output(lightpin, 1);
 	/* End platform & board depend */
+
+	// Registration I/O mem for indicator registers
+	platform_add_devices(devices, ARRAY_SIZE(devices));
+	io_data = ioremap(am160160_data, BUF_LEN);
+	io_cmd = ioremap(am160160_cmd, 1);
+
+	/* Hardware initialize and testing */
+	// Connect to hardware driver
+//	hard = uc1698_connect(io_data, io_cmd);
+	hard = st7529_connect(io_data, io_cmd);
+	hard->init();
+	pinfo = hard->readinfo();
 
     if (device_cnt++) return -EINVAL;
 
@@ -516,8 +518,8 @@ static void __exit am160160_fb_exit(void)
 {
 	device_cnt--;
 	hard->exit();
-	platform_device_unregister(am160160_fb_device);
 	platform_driver_unregister(&am160160_fb_driver);
+	platform_device_unregister(am160160_fb_device);
 	platform_device_del(&am160160_device);
 }
 
