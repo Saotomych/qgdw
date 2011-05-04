@@ -539,7 +539,7 @@ static void __exit am160160_fb_exit(void)
 	platform_device_unregister(am160160_fb_device);
 	platform_device_del(&am160160_device);
 	hard->exit();
-	printk(KERN_INFO "device_close(%d)\n",ret);
+	printk(KERN_INFO "device_closed");
 }
 
 /* ------------------------------------------------------------------------- */
