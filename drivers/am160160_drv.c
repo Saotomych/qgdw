@@ -501,7 +501,6 @@ static int __init am160160_fb_init(void)
  	hard = uc1698_connect(io_cmd, io_data);
 //	hard = st7529_connect(io_cmd, io_data);
 	hard->init();
-	pinfo = hard->readinfo();
 
     if (device_cnt++) return -EINVAL;
 
