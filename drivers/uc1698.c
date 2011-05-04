@@ -127,9 +127,8 @@ static void uc1698init(void){
 		writeb(SETCOLMOD | 1, io_cmd);				// 4bit mode
 
     	/*window*/
-    	writeb(WINPRGMOD, io_cmd);					//inside mode
     	writeb(SETWINCOLSTART_2B, io_cmd);
-    	writeb(0, io_cmd);
+    	writeb(0x0C, io_cmd);
     	writeb(SETWINCOLEND_2B, io_cmd);
     	writeb(0x5a, io_cmd);							// 80 byte = 160 b/w pixel
 
@@ -137,6 +136,7 @@ static void uc1698init(void){
     	writeb(0, io_cmd);
     	writeb(SETWINROWEND_2B, io_cmd);
     	writeb(0x9f, io_cmd);
+    	writeb(WINPRGMOD, io_cmd);					//inside mode
 
     	/*scroll line*/
     	writeb(SETSCRLN_L, io_cmd);

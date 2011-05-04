@@ -40,6 +40,7 @@
 #define BUF_LEN		80*160
 
 static unsigned char video[BUF_LEN];
+static unsigned char tmpvd[BUF_LEN];
 static PAMLCDFUNC hard;
 unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual i/o indicator addresses
 
@@ -133,6 +134,8 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
     size_t rlen = info->fix.smem_len;
 //    unsigned long pos = (unsigned long) offset;
     char *pvideo = video;
+    unsigned int x, i;
+    unsigned char mask;
 
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
 
@@ -150,14 +153,25 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
     //    if (rlen + pos > info->fix.smem_len) rlen-=pos;
 
     // Читаем в буфер блок данных
-    if (copy_from_user(pvideo, (const char __user *) buffer, rlen)) return -EFAULT;
+    if (copy_from_user(tmpvd, (const char __user *) buffer, rlen)) return -EFAULT;
+
+    // Decode to indicator format from 2color bmp
+    memset(video, 0, BUF_LEN);
+    for (x=0; x<rlen; x++){
+    	mask = 0x80;
+    	for (i=0; i<8; i++){
+    		if (tmpvd[x] & mask){
+    			pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+    		}
+    		mask >>= 1;
+    	}
+    }
 
     printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n length %d \n", pvideo[0],  pvideo[1],  pvideo[2],  pvideo[3],
     		 pvideo[4],  pvideo[5],  pvideo[6],  pvideo[8],  pvideo[9],  pvideo[10], rlen);
 
-    hard->writedat(pvideo, rlen);
+    hard->writedat(pvideo, rlen << 2);
 
-//    pvideo[rlen - 1] = 0;
     printk(KERN_INFO "read %x %x %x %x %x %x %x %x %x %x \n length %d \n", pvideo[0],  pvideo[1],  pvideo[2],  pvideo[3],
     		 pvideo[4],  pvideo[5],  pvideo[6],  pvideo[8],  pvideo[9],  pvideo[10], rlen);
 
