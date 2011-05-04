@@ -382,6 +382,7 @@ static int __exit am160160_fb_remove(struct platform_device *pdev)
 {
 	struct fb_info *info = platform_get_drvdata(pdev);
 	/* or platform_get_drvdata(pdev); */
+	printk(KERN_INFO "fb remove\n");
 
 	if (info) {
 		unregister_framebuffer(info);
@@ -389,9 +390,10 @@ static int __exit am160160_fb_remove(struct platform_device *pdev)
 		/* ... */
 		framebuffer_release(info);
 	}
+
+	printk(KERN_INFO "fb removed. OK.\n");
 	
 	return 0;
-	
 }
 
 /* for platform devices */
@@ -534,12 +536,12 @@ static int __init am160160_fb_init(void)
 
 static void __exit am160160_fb_exit(void)
 {
-	device_cnt--;
 	platform_driver_unregister(&am160160_fb_driver);
 	platform_device_unregister(am160160_fb_device);
 	platform_device_del(&am160160_device);
 	hard->exit();
-	printk(KERN_INFO "device_closed");
+	device_cnt--;
+	printk(KERN_INFO "device_closed\n");
 }
 
 /* ------------------------------------------------------------------------- */
