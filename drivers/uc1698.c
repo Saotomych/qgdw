@@ -11,6 +11,26 @@
  *      writedat
  *      readinfo
  *      readdata
+ *
+ *      Bitmap
+ *      0 - NC
+ *      1 - NC
+ *      2 - NC
+ *      3 - четные точки с нулевой
+ *      4 - NC
+ *      5 - NC
+ *      6 - NC
+ *      7 - нечетные точки с первой
+ *
+  *		Screen map - rgb mode, 4 bit
+ * 		7bit(a)..3bit(b) | 7bit(c)..3bit(d) | 7bit(e)..3bit(f) | 7bit(g)..3bit(h)
+ *
+ * 			0			158
+ * 1ln		bcdafghe		- 80 byte
+ * 2ln
+ *
+ *
+ *
  */
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -77,62 +97,64 @@ static unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual
 static void uc1698init(void){
     // Хардварная инициализация индикатора
 
-        writeb(RESET, io_cmd);						// Reset, Дальнейшие операции регистрации фреймбуфера дадут задержку до операций с индикатором
+        writeb(RESET, io_cmd);						// Reset
         mdelay(10);
 
         // Хардварная инициализация индикатора
-        // default gbr mode, default 64k color mod
+        // default rgb mode, default 64k color mod
 
     	writeb(SETLCDBIASRT | 1, io_cmd);			//Bias Ratio:1/10 bias
     	writeb(SETPWRCTL | 3, io_cmd);				//power control set as internal power
     	writeb(SETTEMPCOMP | off, io_cmd);			//set temperate compensation as 0%
     	writeb(SETV_2B, io_cmd);					//electronic potentiometer
     	writeb(0xc6, io_cmd);						// potentiometer value
-    	writeb(SETALLPXON | 0, io_cmd);				// all pixel on
-    	writeb(SETALLPXINV | on, io_cmd);			// not inversed
 
-    	writeb(SETLCDMAP, io_cmd);					//19:partial display and MX disable,MY enable
+    	writeb(SETLCDMAP | 4, io_cmd);					//18:partial display and MX disable,MY enable
     	writeb(SETLNRATE | 3, io_cmd);				//line rate 15.2klps
-    	writeb(SETPARTCTL | off, io_cmd);				//12:partial display control disable
+    	writeb(SETPARTCTL | off, io_cmd);			//12:partial display control disable
+    	writeb(SETRAMCTL | 1, io_cmd);
 
     	writeb(SETNLNINV_2B, io_cmd);
-    	writeb(off, io_cmd);							// disable NIV
+    	writeb(off, io_cmd);						// disable NIV
 
     	/*com scan fuction*/
     	writeb(SETCOMSCAN | 4, io_cmd);				//enable FRC,PWM,LRM sequence
+    	writeb(SETCOMEND_2B, io_cmd);				//com end
+    	writeb(159, io_cmd);						//160
+
+    	/* color functions */
+    	writeb(SETCOLPAT | 1, io_cmd);					// rgb mode
+		writeb(SETCOLMOD | 1, io_cmd);				// 4bit mode
 
     	/*window*/
+    	writeb(WINPRGMOD, io_cmd);					//inside mode
     	writeb(SETWINCOLSTART_2B, io_cmd);
     	writeb(0, io_cmd);
     	writeb(SETWINCOLEND_2B, io_cmd);
-    	writeb(0x35, io_cmd);							// 53 fullcolor pixel = 160 b/w pixel
+    	writeb(0x5a, io_cmd);							// 90 byte = 160 b/w pixel
 
     	writeb(SETWINROWSTART_2B, io_cmd);
     	writeb(0, io_cmd);
     	writeb(SETWINROWEND_2B, io_cmd);
     	writeb(0x9f, io_cmd);
 
-    	writeb(WINPRGMOD, io_cmd);					//inside mode
-
-    	writeb(SETRAMCTL | 1, io_cmd);
-
     	writeb(SETDISPEN | 5, io_cmd);			//display on,select on/off mode.Green Enhance mode disable
 
     	/*scroll line*/
     	writeb(SETSCRLN_L, io_cmd);
     	writeb(SETSCRLN_H, io_cmd);
-    	writeb(SETLCDMAP | 4, io_cmd);			//19,enable FLT and FLB
     	writeb(SETFIXLN_2B, io_cmd);				//14:FLT,FLB set
-    	writeb(0x00, io_cmd);
+    	writeb(0, io_cmd);
+
+    	writeb(SETALLPXON | 0, io_cmd);				// all pixel off
+    	writeb(SETALLPXINV | on, io_cmd);			// inversed
 
     	/*partial display*/
-    	writeb(SETPARTCTL, io_cmd);				//12,set partial display control:off
-    	writeb(SETCOMEND_2B, io_cmd);				//com end
-    	writeb(159, io_cmd);						//160
+/*    	writeb(SETPARTCTL, io_cmd);				//12,set partial display control:off
     	writeb(SETPARTSTART_2B, io_cmd);			//display start
     	writeb(0, io_cmd);						//0
     	writeb(SETPARTEND_2B, io_cmd);			//display end
-    	writeb(159, io_cmd);			//160
+    	writeb(159, io_cmd);			//160*/
 
 }
 
@@ -150,9 +172,21 @@ static void uc1698writecmd(unsigned char cmd){
 static void uc1698writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
 	unsigned int i;
-		for(i=0; i<len; i++) writeb(buf[i], io_data);
-		mdelay(10);
-		for (i=0; i<len; i++) buf[i] = readb(io_data);
+	unsigned char dat;
+	static int rlen = 0;
+//		for(i=0; i<len; i++) writeb(buf[i], io_data);
+		uc1698writecmd(SETCOLADDR_L);
+		uc1698writecmd(SETCOLADDR_H);
+		uc1698writecmd(SETROWADDR_L);
+		uc1698writecmd(SETROWADDR_H);
+
+		dat = ((rlen&1) ? 0x88 : 8);
+
+		for(i=0; i<rlen; i++) writeb(dat, io_data);
+		printk(KERN_INFO "len(%d), dat (0x%X)\n",rlen,dat);
+		rlen++;
+//		mdelay(10);
+//		for (i=0; i<len; i++) buf[i] = readb(io_data);
 }
 
 static unsigned int uc1698readinfo(void){

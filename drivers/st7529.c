@@ -78,8 +78,6 @@ static void st7529init(void){
 
 	writeb(0xa7, io_cmd);		// display on
 
-	writeb(0xa7, io_cmd);
-
 }
 
 static unsigned int st7529exit(void){
