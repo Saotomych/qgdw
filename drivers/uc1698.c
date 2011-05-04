@@ -92,13 +92,13 @@
 static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen = 0;
-static unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual i/o indicator addresses
+static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 
 static void uc1698init(void){
     // Хардварная инициализация индикатора
 
         writeb(RESET, io_cmd);						// Reset
-        mdelay(10);
+        mdelay(100);
 
         // Хардварная инициализация индикатора
         // default rgb mode, default 64k color mod
@@ -131,23 +131,23 @@ static void uc1698init(void){
     	writeb(SETWINCOLSTART_2B, io_cmd);
     	writeb(0, io_cmd);
     	writeb(SETWINCOLEND_2B, io_cmd);
-    	writeb(0x5a, io_cmd);							// 90 byte = 160 b/w pixel
+    	writeb(0x5a, io_cmd);							// 80 byte = 160 b/w pixel
 
     	writeb(SETWINROWSTART_2B, io_cmd);
     	writeb(0, io_cmd);
     	writeb(SETWINROWEND_2B, io_cmd);
     	writeb(0x9f, io_cmd);
 
-    	writeb(SETDISPEN | 5, io_cmd);			//display on,select on/off mode.Green Enhance mode disable
-
     	/*scroll line*/
     	writeb(SETSCRLN_L, io_cmd);
     	writeb(SETSCRLN_H, io_cmd);
-    	writeb(SETFIXLN_2B, io_cmd);				//14:FLT,FLB set
+    	writeb(SETFIXLN_2B, io_cmd);			//14:FLT,FLB set
     	writeb(0, io_cmd);
 
-    	writeb(SETALLPXON | 0, io_cmd);				// all pixel off
-    	writeb(SETALLPXINV | on, io_cmd);			// inversed
+    	writeb(SETALLPXON | 0, io_cmd);			// all pixel off
+    	writeb(SETALLPXINV | on, io_cmd);		// inversed
+
+    	writeb(SETDISPEN | 5, io_cmd);			//display on,select on/off mode.Green Enhance mode disable
 
     	/*partial display*/
 /*    	writeb(SETPARTCTL, io_cmd);				//12,set partial display control:off
@@ -170,23 +170,35 @@ static void uc1698writecmd(unsigned char cmd){
 }
 
 static void uc1698writedat(unsigned char *buf, unsigned int len){
-	// Write data buffer to hardware driver
-	unsigned int i;
-	unsigned char dat;
-	static int rlen = 0;
-//		for(i=0; i<len; i++) writeb(buf[i], io_data);
-		uc1698writecmd(SETCOLADDR_L);
-		uc1698writecmd(SETCOLADDR_H);
-		uc1698writecmd(SETROWADDR_L);
-		uc1698writecmd(SETROWADDR_H);
+unsigned int x, y, sadr=0;
+int endx=len%80, endy=len/80;
 
-		dat = ((rlen&1) ? 0x88 : 8);
+// Write data buffer to hardware driver
+// Full rows
+	for (y=0; y < endy; y++){
+		uc1698writecmd(SETCOLADDR_L | 5);
+		uc1698writecmd(SETCOLADDR_H | 2);
+		uc1698writecmd(SETROWADDR_L | (y&0xF) );
+		uc1698writecmd(SETROWADDR_H | (y>>4) );
+		for(x=0; x < 80; x++){
+			writeb(buf[sadr], io_data);
+			sadr++;
+		}
+	}
 
-		for(i=0; i<rlen; i++) writeb(dat, io_data);
-		printk(KERN_INFO "len(%d), dat (0x%X)\n",rlen,dat);
-		rlen++;
-//		mdelay(10);
-//		for (i=0; i<len; i++) buf[i] = readb(io_data);
+// Last row
+	uc1698writecmd(SETCOLADDR_L | 5);
+	uc1698writecmd(SETCOLADDR_H | 2);
+	uc1698writecmd(SETROWADDR_L | (y&0xF) );
+	uc1698writecmd(SETROWADDR_H | (y>>4) );
+	for(x=0; x < endx; x++){
+		writeb(buf[sadr], io_data);
+		sadr++;
+	}
+
+	printk(KERN_INFO "len(%d)\n",len);
+//	mdelay(10);
+//	for (i=0; i<len; i++) buf[i] = readb(io_data);
 }
 
 static unsigned int uc1698readinfo(void){
@@ -214,11 +226,9 @@ static AMLCDFUNC uc1698func = {
 	uc1698exit
 };
 
-PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d, unsigned char *io_cw, unsigned char *io_dw){
+PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d){
 	io_data = io_d;
 	io_cmd = io_c;
-	io_datawr = io_dw;
-	io_cmdwr = io_cw;
 
 	return &uc1698func;
 }

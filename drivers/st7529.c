@@ -27,7 +27,7 @@
 static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen;
-static unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual i/o indicator addresses
+static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 
 static void st7529init(void){
 	writeb(0x30, io_cmd);		//ext = 0
@@ -122,11 +122,9 @@ static AMLCDFUNC st7529func = {
 	st7529exit,
 };
 
-PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d, unsigned char *io_cw, unsigned char *io_dw){
+PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d){
 	io_data = io_d;
 	io_cmd = io_c;
-	io_datawr = io_dw;
-	io_cmdwr = io_cw;
 
     printk(KERN_INFO "set i/o sram: %lX; %lX\n", io_cmd, io_data);
 	return &st7529func;

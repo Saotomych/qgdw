@@ -37,7 +37,7 @@
 #define lightpin		AT91_PIN_PC5
 
 #define PIXMAP_SIZE	1
-#define BUF_LEN		160*160
+#define BUF_LEN		80*160
 
 static unsigned char video[BUF_LEN];
 static PAMLCDFUNC hard;
@@ -87,8 +87,6 @@ static char *mode_option __initdata;
 struct am160160_par;
 static unsigned char *am160160_cmd = (unsigned char *) am160160CMD;		// phys i/o indicator addresses
 static unsigned char *am160160_data = (unsigned char *) am160160DATA;
-static unsigned char *am160160_cmdwr = (unsigned char *) am160160CMDWR;		// phys i/o indicator addresses
-static unsigned char *am160160_datawr = (unsigned char *) am160160DATAWR;
 
 static int device_cnt=0;
 
@@ -498,8 +496,8 @@ static int __init am160160_fb_init(void)
 
 	/* Hardware initialize and testing */
 	// Connect to hardware driver
- 	hard = uc1698_connect(io_cmd, io_data, io_cmdwr, io_datawr);
-//	hard = st7529_connect(io_cmd, io_data, io_cmdwr, io_datawr);
+ 	hard = uc1698_connect(io_cmd, io_data);
+//	hard = st7529_connect(io_cmd, io_data);
 	hard->init();
 	pinfo = hard->readinfo();
 
