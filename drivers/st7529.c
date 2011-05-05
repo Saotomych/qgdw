@@ -29,54 +29,64 @@ static unsigned char *video;
 static unsigned char videolen;
 static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 
+static inline void inlinecmd(unsigned char cmd){
+	// Write command to hardware driver
+	writeb(cmd, io_cmd);
+}
+
+static inline void inlinedat(unsigned char cmd){
+	// Write command to hardware driver
+	writeb(cmd, io_data);
+}
+
 static void st7529init(void){
-	writeb(0x30, io_cmd);		//ext = 0
-	writeb(0x94, io_cmd);		//sleep out
-	writeb(0xd1, io_cmd);		//osc on
-	writeb(0x20, io_cmd);		// power c set
-	writeb(8,io_data);			// booster first
+	inlinecmd(0x30);		//ext = 0
+	inlinecmd(0x94);		//sleep out
+	inlinecmd(0xd1);		//osc on
+	inlinecmd(0x20);		// power c set
+	inlinedat(8);			// booster first
 	mdelay(1);
-	writeb(0x20, io_cmd);		// power c set
-	writeb(0xb, io_data);		// booster regulator follower on
+	inlinecmd(0x20);		// power c set
+	inlinedat(0xb);		// booster regulator follower on
 
-	writeb(0x81, io_cmd);		//electornic ctl
-	writeb(4, io_data);
-	writeb(4, io_data);
+	inlinecmd(0x81);		//electornic ctl
+	inlinedat(4);
+	inlinedat(4);
 
-	writeb(0xca, io_cmd);		// dispaly ctl
-	writeb(0, io_data);
-	writeb(0x27, io_data);
-	writeb(0, io_data);
+	inlinecmd(0xca);		// dispaly ctl
+	inlinedat(0);
+	inlinedat(0x27);
+	inlinedat(0);
 
-	writeb(0xa6, io_cmd);
-	writeb(0xbb, io_cmd);
-	writeb(0, io_data);
+	inlinecmd(0xa6);
+	inlinecmd(0xbb);
+	inlinedat(0);
 
-	writeb(0xbc, io_cmd);		// datascan direct
-	writeb(0, io_data);
-	writeb(0, io_data);
-	writeb(1, io_data);
+	inlinecmd(0xbc);		// datascan direct
+	inlinedat(0);
+	inlinedat(0);
+	inlinedat(1);
 
-	writeb(0x75, io_cmd);
-	writeb(0, io_data);
-	writeb(0x9f, io_data);
+	inlinecmd(0x75);
+	inlinedat(0);
+	inlinedat(0x9f);
 
-	writeb(0x15, io_cmd);
-	writeb(0, io_data);
-	writeb(0x54, io_data);
+	inlinecmd(0x15);
+	inlinedat(0);
+	inlinedat(0x54);
 
-	writeb(0x31, io_cmd);		//ext = 1
-	writeb(0x32, io_cmd);		// analog circuit
-	writeb(0, io_data);
-	writeb(1, io_data);
-	writeb(0, io_data);
+	inlinecmd(0x31);		//ext = 1
+	inlinecmd(0x32);		// analog circuit
+	inlinedat(0);
+	inlinedat(1);
+	inlinedat(0);
 
-	writeb(0x34, io_cmd);		// initial
+	inlinecmd(0x34);		// initial
 
-	writeb(0x30, io_cmd);		// ext =0
-	writeb(0xaf, io_cmd);		// display on
+	inlinecmd(0x30);		// ext =0
+	inlinecmd(0xaf);		// display on
 
-	writeb(0xa7, io_cmd);		// display on
+	inlinecmd(0xa7);		// display on
 
 }
 
@@ -87,16 +97,16 @@ static unsigned int st7529exit(void){
 
 static void st7529writecmd(unsigned char cmd){
 	// Write command to hardware driver
-	writeb(cmd, io_cmd);
+	inlinecmd(cmd);
 }
 
 static void st7529writedat(unsigned char *buf, unsigned int len){
 	// Write data buffer to hardware driver
 unsigned int i;
-	st7529writecmd(0x5c);
-	for (i=0; i<len; i++) writeb(buf[i], io_data);
+	inlinecmd(0x5c);
+	for (i=0; i<len; i++) inlinedat(buf[i]);
 	mdelay(10);
-	st7529writecmd(0x5d);
+	inlinecmd(0x5d);
 	for (i=0; i<len; i++) buf[i] = readb(io_data);
 }
 

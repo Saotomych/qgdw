@@ -94,67 +94,72 @@ static unsigned char *video;
 static unsigned char videolen = 0;
 static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 
+static inline void inlinecmd(unsigned char cmd){
+	// Write command to hardware driver
+	writeb(cmd, io_cmd);
+}
+
 static void uc1698init(void){
     // Хардварная инициализация индикатора
 
-        writeb(RESET, io_cmd);						// Reset
+        inlinecmd(RESET);						// Reset
         mdelay(100);
 
         // Хардварная инициализация индикатора
         // default rgb mode, default 64k color mod
 
-    	writeb(SETLCDBIASRT | 1, io_cmd);			//Bias Ratio:1/10 bias
-    	writeb(SETPWRCTL | 3, io_cmd);				//power control set as internal power
-    	writeb(SETTEMPCOMP | off, io_cmd);			//set temperate compensation as 0%
-    	writeb(SETV_2B, io_cmd);					//electronic potentiometer
-    	writeb(0xc6, io_cmd);						// potentiometer value
+    	inlinecmd(SETLCDBIASRT | 1);			//Bias Ratio:1/10 bias
+    	inlinecmd(SETPWRCTL | 3);				//power control set as internal power
+    	inlinecmd(SETTEMPCOMP | off);			//set temperate compensation as 0%
+    	inlinecmd(SETV_2B);					//electronic potentiometer
+    	inlinecmd(0xc6);						// potentiometer value
 
-    	writeb(SETLCDMAP | 4, io_cmd);					//18:partial display and MX disable,MY enable
-    	writeb(SETLNRATE | 3, io_cmd);				//line rate 15.2klps
-    	writeb(SETPARTCTL | off, io_cmd);			//12:partial display control disable
-    	writeb(SETRAMCTL | 1, io_cmd);
+    	inlinecmd(SETLCDMAP | 4);					//18:partial display and MX disable,MY enable
+    	inlinecmd(SETLNRATE | 3);				//line rate 15.2klps
+    	inlinecmd(SETPARTCTL | off);			//12:partial display control disable
+    	inlinecmd(SETRAMCTL | 1);
 
-    	writeb(SETNLNINV_2B, io_cmd);
-    	writeb(off, io_cmd);						// disable NIV
+    	inlinecmd(SETNLNINV_2B);
+    	inlinecmd(off);						// disable NIV
 
     	/*com scan fuction*/
-    	writeb(SETCOMSCAN | 4, io_cmd);				//enable FRC,PWM,LRM sequence
-    	writeb(SETCOMEND_2B, io_cmd);				//com end
-    	writeb(159, io_cmd);						//160
+    	inlinecmd(SETCOMSCAN | 4);				//enable FRC,PWM,LRM sequence
+    	inlinecmd(SETCOMEND_2B);				//com end
+    	inlinecmd(159);						//160
 
     	/* color functions */
-    	writeb(SETCOLPAT | 1, io_cmd);					// rgb mode
-		writeb(SETCOLMOD | 1, io_cmd);				// 4bit mode
+    	inlinecmd(SETCOLPAT | 1);					// rgb mode
+		inlinecmd(SETCOLMOD | 1);				// 4bit mode
 
     	/*window*/
-    	writeb(SETWINCOLSTART_2B, io_cmd);
-    	writeb(0x0C, io_cmd);
-    	writeb(SETWINCOLEND_2B, io_cmd);
-    	writeb(0x5a, io_cmd);							// 80 byte = 160 b/w pixel
+    	inlinecmd(SETWINCOLSTART_2B);
+    	inlinecmd(0x0C);
+    	inlinecmd(SETWINCOLEND_2B);
+    	inlinecmd(0x5a);							// 80 byte = 160 b/w pixel
 
-    	writeb(SETWINROWSTART_2B, io_cmd);
-    	writeb(0, io_cmd);
-    	writeb(SETWINROWEND_2B, io_cmd);
-    	writeb(0x9f, io_cmd);
-    	writeb(WINPRGMOD, io_cmd);					//inside mode
+    	inlinecmd(SETWINROWSTART_2B);
+    	inlinecmd(0);
+    	inlinecmd(SETWINROWEND_2B);
+    	inlinecmd(0x9f);
+    	inlinecmd(WINPRGMOD);					//inside mode
 
     	/*scroll line*/
-    	writeb(SETSCRLN_L, io_cmd);
-    	writeb(SETSCRLN_H, io_cmd);
-    	writeb(SETFIXLN_2B, io_cmd);			//14:FLT,FLB set
-    	writeb(0, io_cmd);
+    	inlinecmd(SETSCRLN_L);
+    	inlinecmd(SETSCRLN_H);
+    	inlinecmd(SETFIXLN_2B);			//14:FLT,FLB set
+    	inlinecmd(0);
 
-    	writeb(SETALLPXON | 0, io_cmd);			// all pixel off
-    	writeb(SETALLPXINV | on, io_cmd);		// inversed
+    	inlinecmd(SETALLPXON | 0);			// all pixel off
+    	inlinecmd(SETALLPXINV | on);		// inversed
 
-    	writeb(SETDISPEN | 5, io_cmd);			//display on,select on/off mode.Green Enhance mode disable
+    	inlinecmd(SETDISPEN | 5);			//display on,select on/off mode.Green Enhance mode disable
 
     	/*partial display*/
-/*    	writeb(SETPARTCTL, io_cmd);				//12,set partial display control:off
-    	writeb(SETPARTSTART_2B, io_cmd);			//display start
-    	writeb(0, io_cmd);						//0
-    	writeb(SETPARTEND_2B, io_cmd);			//display end
-    	writeb(159, io_cmd);			//160*/
+/*    	inlinecmd(SETPARTCTL, io_cmd);				//12,set partial display control:off
+    	inlinecmd(SETPARTSTART_2B, io_cmd);			//display start
+    	inlinecmd(0, io_cmd);						//0
+    	inlinecmd(SETPARTEND_2B, io_cmd);			//display end
+    	inlinecmd(159, io_cmd);			//160*/
 
 }
 
@@ -176,10 +181,10 @@ int endx=len%80, endy=len/80;
 // Write data buffer to hardware driver
 // Full rows
 	for (y=0; y < endy; y++){
-		uc1698writecmd(SETCOLADDR_L | 5);
-		uc1698writecmd(SETCOLADDR_H | 2);
-		uc1698writecmd(SETROWADDR_L | (y&0xF) );
-		uc1698writecmd(SETROWADDR_H | (y>>4) );
+		inlinecmd(SETCOLADDR_L | 5);
+		inlinecmd(SETCOLADDR_H | 2);
+		inlinecmd(SETROWADDR_L | (y&0xF) );
+		inlinecmd(SETROWADDR_H | (y>>4) );
 		for(x=0; x < 80; x++){
 			writeb(buf[sadr], io_data);
 			sadr++;
@@ -187,10 +192,10 @@ int endx=len%80, endy=len/80;
 	}
 
 // Last row
-	uc1698writecmd(SETCOLADDR_L | 5);
-	uc1698writecmd(SETCOLADDR_H | 2);
-	uc1698writecmd(SETROWADDR_L | (y&0xF) );
-	uc1698writecmd(SETROWADDR_H | (y>>4) );
+	inlinecmd(SETCOLADDR_L | 5);
+	inlinecmd(SETCOLADDR_H | 2);
+	inlinecmd(SETROWADDR_L | (y&0xF) );
+	inlinecmd(SETROWADDR_H | (y>>4) );
 	for(x=0; x < endx; x++){
 		writeb(buf[sadr], io_data);
 		sadr++;
