@@ -31,10 +31,8 @@
 
 #define am160160CMD			AT91_CHIPSELECT_0	// 0x10000000
 #define am160160DATA		(AT91_CHIPSELECT_0 | (1 << 19))
-#define am160160CMDWR		(AT91_CHIPSELECT_0 | (1 << 20))
-#define am160160DATAWR		(AT91_CHIPSELECT_0 | (1 << 19) | (1 <<20))
-#define resetpin		AT91_PIN_PC4
-#define lightpin		AT91_PIN_PC5
+//#define resetpin		AT91_PIN_PC4
+//#define lightpin		AT91_PIN_PC5
 
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160
@@ -42,42 +40,37 @@
 static unsigned char video[BUF_LEN];
 static unsigned char tmpvd[BUF_LEN];
 static PAMLCDFUNC hard;
-unsigned char *io_cmd, *io_data, *io_cmdwr, *io_datawr;								// virtual i/o indicator addresses
+unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
+static char *am160160fbcon;
 
 /* Board depend */
-static struct resource am160160_resources[]={
-		[0]={
-			.start	= am160160CMD,
-			.end 	= am160160CMD + 1,
-			.flags 	= IORESOURCE_MEM,
-		},
-		[1] = {
-			.start 	= am160160DATA,
-			.end 	= am160160DATA + BUF_LEN,
-			.flags 	= IORESOURCE_MEM,
-		},
-		[2] = {
-			.start 	= am160160CMDWR,
-			.end 	= am160160CMDWR + 1,
-			.flags 	= IORESOURCE_MEM,
-		},
-		[3] = {
-			.start 	= am160160DATAWR,
-			.end 	= am160160DATAWR + BUF_LEN,
-			.flags 	= IORESOURCE_MEM,
-		},
-};
-
-static struct platform_device am160160_device = {
-		.name	= "am160160",
-		.id 	= 0,
-		.num_resources	= ARRAY_SIZE(am160160_resources),
-		.resource		= am160160_resources,
-};
-
-static struct platform_device *devices[] __initdata = {
-		&am160160_device,
-};
+static struct resource *am160160_resources[3];
+static struct platform_device *am160160_device;
+unsigned int resetpin;
+unsigned int lightpin;
+//static struct resource am160160_resources[]={
+//		[0]={
+//			.start	= am160160CMD,
+//			.end 	= am160160CMD + 1,
+//			.flags 	= IORESOURCE_MEM,
+//		},
+//		[1] = {
+//			.start 	= am160160DATA,
+//			.end 	= am160160DATA + BUF_LEN,
+//			.flags 	= IORESOURCE_MEM,
+//		},
+//};
+//
+//static struct platform_device am160160_device = {
+//		.name	= "am160160",
+//		.id 	= 0,
+//		.num_resources	= ARRAY_SIZE(am160160_resources),
+//		.resource		= am160160_resources,
+//};
+//
+//static struct platform_device *devices[] __initdata = {
+//		&am160160_device,
+//};
 /* End Board depend */
 
 
@@ -334,6 +327,29 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     int cmap_len, retval;	
 //    unsigned int smem_len;
 
+    am160160_device = pdev;
+
+	am160160_resources[0] = platform_get_resource(pdev, IORESOURCE_IO, 0);
+	am160160_resources[1] = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	am160160_resources[2] = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+
+	printk(KERN_INFO "cmd cmd 0x%X\n", am160160_resources[1]->start);
+	printk(KERN_INFO "cmd dat 0x%X\n", am160160_resources[2]->start);
+	printk(KERN_INFO "reset 0x%X light 0x%X\n", am160160_resources[0]->start, am160160_resources[0]->end);
+	printk(KERN_INFO "device_open (0x%X) 0x%X 0x%X 0x%X\n", pdev, am160160_resources[0], am160160_resources[1], am160160_resources[2]);
+
+//	/* Pins initialize */
+	resetpin = am160160_resources[0]->start;
+	lightpin = am160160_resources[0]->end;
+	at91_set_GPIO_periph(resetpin, 0);
+	at91_set_gpio_output(resetpin, 1);
+	at91_set_GPIO_periph(lightpin, 0);
+	at91_set_gpio_output(lightpin, 1);
+
+//	// Registration I/O mem for indicator registers
+	io_cmd = ioremap(am160160_resources[1]->start, 1);
+	io_data = ioremap(am160160_resources[2]->start, BUF_LEN);
+
     memset(video, 0, BUF_LEN);
     /*
      * Dynamically allocate info and par
@@ -382,8 +398,6 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
-    pinfo = hard->readinfo();
-    printk(KERN_INFO "rd 0x%X 0x%X 0x%X", pinfo[0],pinfo[1],pinfo[2]);
     return 0;
 }
 
@@ -395,7 +409,6 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 static int __exit am160160_fb_remove(struct platform_device *pdev)
 {
 	struct fb_info *info = platform_get_drvdata(pdev);
-	/* or platform_get_drvdata(pdev); */
 	printk(KERN_INFO "fb remove\n");
 
 	if (info) {
@@ -403,10 +416,9 @@ static int __exit am160160_fb_remove(struct platform_device *pdev)
 		fb_dealloc_cmap(&info->cmap);
 		/* ... */
 		framebuffer_release(info);
-	}
+		printk(KERN_INFO "fb removed. OK.\n");
+	}else printk(KERN_INFO "fb don't removed. False.\n");
 
-	printk(KERN_INFO "fb removed. OK.\n");
-	
 	return 0;
 }
 
@@ -459,7 +471,7 @@ static struct platform_driver am160160_fb_driver = {
 #endif /* CONFIG_PM */
 
 	.driver = {
-		.name = "am160160_fb",
+		.name = "am160160",
 		.owner = THIS_MODULE,
 	},
 };
@@ -484,7 +496,6 @@ int __init am160160_fb_setup(char *options)
 static int __init am160160_fb_init(void)
 {
 	int ret;
-	unsigned char *pinfo;
 	/*
 	 *  For kernel boot options (in 'video=am160160_fb:<options>' format)
 	 */
@@ -495,26 +506,24 @@ static int __init am160160_fb_init(void)
 	at91_sys_write(AT91_SMC_PULSE(0), AT91_SMC_NWEPULSE_(13) | AT91_SMC_NCS_WRPULSE_(16) | AT91_SMC_NRDPULSE_(4) | AT91_SMC_NCS_RDPULSE_(8));
 	at91_sys_write(AT91_SMC_CYCLE(0), AT91_SMC_NWECYCLE_(18) | AT91_SMC_NRDCYCLE_(18));
 	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
-
-	/* Pins initialize */
-	at91_set_GPIO_periph(resetpin, 0);
-	at91_set_gpio_output(resetpin, 1);
-	at91_set_GPIO_periph(lightpin, 0);
-	at91_set_gpio_output(lightpin, 1);
 	/* End platform & board depend */
 
-	// Registration I/O mem for indicator registers
-	platform_add_devices(devices, ARRAY_SIZE(devices));
-	io_data = ioremap(am160160_data, BUF_LEN);
-	io_cmd = ioremap(am160160_cmd, 1);
-	io_datawr = ioremap(am160160_data, BUF_LEN);
-	io_cmdwr = ioremap(am160160_cmd, 1);
-
-	/* Hardware initialize and testing */
-	// Connect to hardware driver
- 	hard = uc1698_connect(io_cmd, io_data);
-//	hard = st7529_connect(io_cmd, io_data);
-	hard->init();
+	/* Registering platform device am160160 */
+//	am160160_device = platform_device_alloc("am160160", 0);
+//
+//	/* Pins initialize */
+//	resetpin = am160160_resources[2]->start;
+//	lightpin = am160160_resources[2]->end;
+//
+//	// Registration I/O mem for indicator registers
+//	io_cmd = ioremap(am160160_resources[0]->start, 1);
+//	io_data = ioremap(am160160_resources[1]->start, BUF_LEN);
+//
+//	/* Hardware initialize and testing */
+//	// Connect to hardware driver
+// 	hard = uc1698_connect(io_cmd, io_data);
+////	hard = st7529_connect(io_cmd, io_data);
+//	hard->init();
 
     if (device_cnt++) return -EINVAL;
 
@@ -527,20 +536,27 @@ static int __init am160160_fb_init(void)
 #endif
 
 	ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe);
-	if (ret) {
-		// В случае когда девайс еще не добавлен
-		am160160_fb_device = platform_device_alloc("am160160_fb", 0);
-		if (am160160_fb_device)
-			ret = platform_device_add(am160160_fb_device);
-		else{
-			device_cnt--;
-			ret = -ENOMEM;
-		}
-		if (ret) {
-			platform_device_put(am160160_fb_device);
-			platform_driver_unregister(&am160160_fb_driver);
-		}else ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe); //am160160_fb_probe(am160160_fb_device);
-	}
+
+	/* Hardware initialize and testing */
+	// Connect to hardware driver
+ 	hard = uc1698_connect(io_cmd, io_data);
+//	hard = st7529_connect(io_cmd, io_data);
+	hard->init();
+
+//	if (ret) {
+//		// В случае когда девайс еще не добавлен
+//		am160160_fb_device = platform_device_alloc("am160160_fb", 0);
+//		if (am160160_fb_device)
+//			ret = platform_device_add(am160160_fb_device);
+//		else{
+//			device_cnt--;
+//			ret = -ENOMEM;
+//		}
+//		if (ret) {
+//			platform_device_put(am160160_fb_device);
+//			platform_driver_unregister(&am160160_fb_driver);
+//		}else ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe); //am160160_fb_probe(am160160_fb_device);
+//	}
 
 	printk(KERN_INFO "device_open(%d)\n",ret);
 
@@ -549,10 +565,10 @@ static int __init am160160_fb_init(void)
 
 static void __exit am160160_fb_exit(void)
 {
+	platform_device_put(am160160_fb_device);
 	platform_driver_unregister(&am160160_fb_driver);
 	platform_device_unregister(am160160_fb_device);
-	platform_device_del(&am160160_device);
-	hard->exit();
+//	hard->exit();
 	device_cnt--;
 	printk(KERN_INFO "device_closed\n");
 }
