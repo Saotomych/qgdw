@@ -476,14 +476,6 @@ static int __init am160160_fb_init(void)
 	 *  For kernel boot options (in 'video=am160160_fb:<options>' format)
 	 */
 
-	/* Platform & board depend */
-	/* SMC SRAM Initialise: Byte write access type, NCS0, WR, RD */
-//	at91_sys_write(AT91_SMC_SETUP(0), AT91_SMC_NWESETUP_(1) | AT91_SMC_NCS_WRSETUP_(0) | AT91_SMC_NRDSETUP_(2) | AT91_SMC_NCS_RDSETUP_(0));
-//	at91_sys_write(AT91_SMC_PULSE(0), AT91_SMC_NWEPULSE_(13) | AT91_SMC_NCS_WRPULSE_(16) | AT91_SMC_NRDPULSE_(4) | AT91_SMC_NCS_RDPULSE_(8));
-//	at91_sys_write(AT91_SMC_CYCLE(0), AT91_SMC_NWECYCLE_(18) | AT91_SMC_NRDCYCLE_(18));
-//	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
-	/* End platform & board depend */
-
     if (device_cnt++) return -EINVAL;
 
 #ifndef MODULE
