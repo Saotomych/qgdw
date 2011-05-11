@@ -2,7 +2,7 @@
  * uc1698.c
  *
  *  Created on: 28.04.2011
- *      Author: alex
+ *      Author: alex AAV
  *
  *      This module provide functions for low level working with controller uc1698
  *      init
@@ -22,14 +22,15 @@
  *      6 - NC
  *      7 - нечетные точки с первой
  *
-  *		Screen map - rgb mode, 4 bit
+ *		Screen map - rgb mode, 4 bit
  * 		7bit(a)..3bit(b) | 7bit(c)..3bit(d) | 7bit(e)..3bit(f) | 7bit(g)..3bit(h)
  *
- * 			0			158
- * 1ln		bcdafghe		- 80 byte
- * 2ln
- *
- *
+ *		adr		0			79
+ * 		0ln 		margin	- 80 byte
+ * 		adr		80			159
+ * 		1ln		abdcfehg	- 80 byte
+ * 		adr		160			239
+ * 		2ln					- 80 byte
  *
  */
 #include <linux/kernel.h>

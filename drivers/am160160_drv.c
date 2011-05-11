@@ -4,6 +4,11 @@
  *  Modified to new api Jan 2001 by James Simmons (jsimmons@transvirtual.com)
  *
  *  Created 28 Dec 1997 by Geert Uytterhoeven
+ *
+ *  am160160_drv - driver for indicator am160160 Andorin with support fb
+ *  Created by 04.04.2011
+ *  Author: alex AAV
+ *
  */
 
 #include <linux/module.h>
@@ -16,11 +21,10 @@
 #include <linux/init.h>
 #include <linux/backlight.h>
 #include <linux/platform_device.h>
-//#include <linux/dma-mapping.h>
 #include <linux/fb.h>
 #include <linux/gpio.h>
+#include <linux/console.h>
 #include <asm/uaccess.h>
-
 #include <mach/at91sam9_smc.h>
 
 #include "am160160_drv.h"
@@ -29,13 +33,17 @@
 #undef CONFIG_PCI
 #undef CONFIG_PM
 
-#define am160160CMD			AT91_CHIPSELECT_0	// 0x10000000
-#define am160160DATA		(AT91_CHIPSELECT_0 | (1 << 19))
-//#define resetpin		AT91_PIN_PC4
-//#define lightpin		AT91_PIN_PC5
+#undef MOD_INC_USE_COUNT
+#define MOD_INC_USE_COUNT
+#undef MOD_DEC_USE_COUNT
+#define MOD_DEC_USE_COUNT
 
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160
+
+static char defchipname[]={"uc1698"};
+static char *chipname = defchipname;
+MODULE_PARM_DESC (chipname, "s");
 
 static unsigned char video[BUF_LEN];
 static unsigned char tmpvd[BUF_LEN];
@@ -48,46 +56,18 @@ static struct resource *am160160_resources[3];
 static struct platform_device *am160160_device;
 unsigned int resetpin;
 unsigned int lightpin;
-//static struct resource am160160_resources[]={
-//		[0]={
-//			.start	= am160160CMD,
-//			.end 	= am160160CMD + 1,
-//			.flags 	= IORESOURCE_MEM,
-//		},
-//		[1] = {
-//			.start 	= am160160DATA,
-//			.end 	= am160160DATA + BUF_LEN,
-//			.flags 	= IORESOURCE_MEM,
-//		},
-//};
-//
-//static struct platform_device am160160_device = {
-//		.name	= "am160160",
-//		.id 	= 0,
-//		.num_resources	= ARRAY_SIZE(am160160_resources),
-//		.resource		= am160160_resources,
-//};
-//
-//static struct platform_device *devices[] __initdata = {
-//		&am160160_device,
-//};
-/* End Board depend */
-
 
 /*
  * Driver data
  */
 static char *mode_option __initdata;
 struct am160160_par;
-static unsigned char *am160160_cmd = (unsigned char *) am160160CMD;		// phys i/o indicator addresses
-static unsigned char *am160160_data = (unsigned char *) am160160DATA;
 
 static int device_cnt=0;
 
 static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.id =		"am160160_fb",
-//	.type =		FB_TYPE_PACKED_PIXELS,
-	.type =		FB_TYPE_TEXT,
+	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_MONO01,
 	.xpanstep =	1,
 	.ypanstep =	1,
@@ -496,6 +476,7 @@ int __init am160160_fb_setup(char *options)
 static int __init am160160_fb_init(void)
 {
 	int ret;
+
 	/*
 	 *  For kernel boot options (in 'video=am160160_fb:<options>' format)
 	 */
@@ -507,23 +488,6 @@ static int __init am160160_fb_init(void)
 	at91_sys_write(AT91_SMC_CYCLE(0), AT91_SMC_NWECYCLE_(18) | AT91_SMC_NRDCYCLE_(18));
 	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
 	/* End platform & board depend */
-
-	/* Registering platform device am160160 */
-//	am160160_device = platform_device_alloc("am160160", 0);
-//
-//	/* Pins initialize */
-//	resetpin = am160160_resources[2]->start;
-//	lightpin = am160160_resources[2]->end;
-//
-//	// Registration I/O mem for indicator registers
-//	io_cmd = ioremap(am160160_resources[0]->start, 1);
-//	io_data = ioremap(am160160_resources[1]->start, BUF_LEN);
-//
-//	/* Hardware initialize and testing */
-//	// Connect to hardware driver
-// 	hard = uc1698_connect(io_cmd, io_data);
-////	hard = st7529_connect(io_cmd, io_data);
-//	hard->init();
 
     if (device_cnt++) return -EINVAL;
 
@@ -537,26 +501,18 @@ static int __init am160160_fb_init(void)
 
 	ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe);
 
+	// Устройство добавляется в файле ядра board-sam9260dpm.c
 	/* Hardware initialize and testing */
 	// Connect to hardware driver
- 	hard = uc1698_connect(io_cmd, io_data);
-//	hard = st7529_connect(io_cmd, io_data);
+	if (strstr(chipname,"uc1698")) hard = uc1698_connect(io_cmd, io_data);
+	if (strstr(chipname,"st7529")) hard = st7529_connect(io_cmd, io_data);
 	hard->init();
 
-//	if (ret) {
-//		// В случае когда девайс еще не добавлен
-//		am160160_fb_device = platform_device_alloc("am160160_fb", 0);
-//		if (am160160_fb_device)
-//			ret = platform_device_add(am160160_fb_device);
-//		else{
-//			device_cnt--;
-//			ret = -ENOMEM;
-//		}
-//		if (ret) {
-//			platform_device_put(am160160_fb_device);
-//			platform_driver_unregister(&am160160_fb_driver);
-//		}else ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe); //am160160_fb_probe(am160160_fb_device);
-//	}
+	if (ret) {
+		// В случае когда девайс еще не добавлен
+			platform_driver_unregister(&am160160_fb_driver);
+			return -ENODEV;
+	}
 
 	printk(KERN_INFO "device_open(%d)\n",ret);
 
@@ -574,8 +530,6 @@ static void __exit am160160_fb_exit(void)
 }
 
 /* ------------------------------------------------------------------------- */
-
-
     /*
      *  Modularization
      */
@@ -583,4 +537,7 @@ static void __exit am160160_fb_exit(void)
 module_init(am160160_fb_init);
 module_exit(am160160_fb_exit);
 
+MODULE_AUTHOR("alex AAV");
+//MODULE DESCRIPTION("driver for am160160 based by uc1698 or st7529");
+MODULE_SUPPORTED_DEVICE("am160160");
 MODULE_LICENSE("GPL");

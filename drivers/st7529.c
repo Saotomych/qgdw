@@ -2,7 +2,7 @@
  * st7529.c
  *
  *  Created on: 28.04.2011
- *      Author: alex
+ *      Author: alex AAV
  *      This module provide functions for low level working with controller st7529
  *      init
  *      exit

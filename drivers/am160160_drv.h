@@ -27,34 +27,28 @@
 
 
  /* LCD Controller info data structure, stored in device platform_data */
-struct uc1698_info {
-	spinlock_t		lock;
+struct am160160_info {
+//	spinlock_t		lock;
 	struct fb_info		*info;
 	void __iomem		*mmio;
-	int			irq_base;
-	struct work_struct	task;
-
-	unsigned int		guard_time;
+//	int			irq_base;
+//	struct work_struct	task;
+//	unsigned int		guard_time;
 	unsigned int 		smem_len;
 	struct platform_device	*pdev;
-	struct clk		*bus_clk;
-	struct clk		*lcdc_clk;
+//	struct clk		*bus_clk;
+//	struct clk		*lcdc_clk;
 
-#ifdef CONFIG_BACKLIGHT_ATMEL_LCDC
-	struct backlight_device	*backlight;
-	u8			bl_power;
-#endif
+	// future for fbcon
 	bool			lcdcon_is_backlight;
 	u8			saved_lcdcon;
 
 	u8			default_bpp;
 	u8			lcd_wiring_mode;
 	unsigned int		default_lcdcon2;
-	unsigned int		default_dmacon;
 	void (*u1698_fb_power_control)(int on);
 	struct fb_monspecs	*default_monspecs;
 	u32			pseudo_palette[16];
 };
-
 
 #endif /* __UC1698_H__ */
