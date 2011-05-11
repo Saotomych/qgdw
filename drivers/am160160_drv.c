@@ -38,7 +38,7 @@
 
 static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
-MODULE_PARM_DESC (chipname, "s");
+module_param_string(chip, defchipname, 7, 0);
 
 static unsigned char video[BUF_LEN];
 static unsigned char tmpvd[BUF_LEN];
@@ -313,7 +313,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	printk(KERN_INFO "reset 0x%X light 0x%X\n", am160160_resources[0]->start, am160160_resources[0]->end);
 	printk(KERN_INFO "device_open (0x%X) 0x%X 0x%X 0x%X\n", pdev, am160160_resources[0], am160160_resources[1], am160160_resources[2]);
 
-//	/* Pins initialize */
+	/* Pins initialize */
 	resetpin = am160160_resources[0]->start;
 	lightpin = am160160_resources[0]->end;
 	at91_set_GPIO_periph(resetpin, 0);
@@ -321,7 +321,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	at91_set_GPIO_periph(lightpin, 0);
 	at91_set_gpio_output(lightpin, 1);
 
-//	// Registration I/O mem for indicator registers
+// Registration I/O mem for indicator registers
 	io_cmd = ioremap(am160160_resources[1]->start, 1);
 	io_data = ioremap(am160160_resources[2]->start, BUF_LEN);
 
@@ -451,8 +451,6 @@ static struct platform_driver am160160_fb_driver = {
 	},
 };
 
-static struct platform_device *am160160_fb_device;
-
 #ifndef MODULE
     /*
      *  Setup
@@ -464,7 +462,7 @@ static struct platform_device *am160160_fb_device;
  */
 int __init am160160_fb_setup(char *options)
 {
-    /* Parse user speficied options (`video=am160160_fb:') */
+    /* Parse user speficied options (`video=am160160:') */
 }
 #endif /* MODULE */
 
@@ -481,12 +479,18 @@ static int __init am160160_fb_init(void)
 #ifndef MODULE
 	char *option = NULL;
 
-	if (fb_get_options("am160160_fb", &option))
+	if (fb_get_options("am160160", &option))
 		return -ENODEV;
 	am160160_fb_setup(option);
 #endif
 
 	ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe);
+
+	if (ret) {
+		// В случае когда девайс еще не добавлен
+			platform_driver_unregister(&am160160_fb_driver);
+			return -ENODEV;
+	}
 
 	// Устройство добавляется в файле ядра board-sam9260dpm.c
 	/* Hardware initialize and testing */
@@ -495,12 +499,6 @@ static int __init am160160_fb_init(void)
 	if (strstr(chipname,"st7529")) hard = st7529_connect(io_cmd, io_data);
 	hard->init();
 
-	if (ret) {
-		// В случае когда девайс еще не добавлен
-			platform_driver_unregister(&am160160_fb_driver);
-			return -ENODEV;
-	}
-
 	printk(KERN_INFO "device_open(%d)\n",ret);
 
 	return ret;
@@ -508,10 +506,8 @@ static int __init am160160_fb_init(void)
 
 static void __exit am160160_fb_exit(void)
 {
-	platform_device_put(am160160_fb_device);
 	platform_driver_unregister(&am160160_fb_driver);
-	platform_device_unregister(am160160_fb_device);
-//	hard->exit();
+	hard->exit();
 	device_cnt--;
 	printk(KERN_INFO "device_closed\n");
 }
