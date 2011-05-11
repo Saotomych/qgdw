@@ -33,11 +33,6 @@
 #undef CONFIG_PCI
 #undef CONFIG_PM
 
-#undef MOD_INC_USE_COUNT
-#define MOD_INC_USE_COUNT
-#undef MOD_DEC_USE_COUNT
-#define MOD_DEC_USE_COUNT
-
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160
 
@@ -335,7 +330,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
      * Dynamically allocate info and par
      */
     info = framebuffer_alloc(sizeof(u32) * BUF_LEN, dev);
-//    info = framebuffer_alloc(sizeof(struct uc1698_info), dev);
+//    info = framebuffer_alloc(sizeof(struct am160160_info), dev);
     if (!info) {
 	    /* goto error path */
     	return -ENOMEM;
@@ -483,10 +478,10 @@ static int __init am160160_fb_init(void)
 
 	/* Platform & board depend */
 	/* SMC SRAM Initialise: Byte write access type, NCS0, WR, RD */
-	at91_sys_write(AT91_SMC_SETUP(0), AT91_SMC_NWESETUP_(1) | AT91_SMC_NCS_WRSETUP_(0) | AT91_SMC_NRDSETUP_(2) | AT91_SMC_NCS_RDSETUP_(0));
-	at91_sys_write(AT91_SMC_PULSE(0), AT91_SMC_NWEPULSE_(13) | AT91_SMC_NCS_WRPULSE_(16) | AT91_SMC_NRDPULSE_(4) | AT91_SMC_NCS_RDPULSE_(8));
-	at91_sys_write(AT91_SMC_CYCLE(0), AT91_SMC_NWECYCLE_(18) | AT91_SMC_NRDCYCLE_(18));
-	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
+//	at91_sys_write(AT91_SMC_SETUP(0), AT91_SMC_NWESETUP_(1) | AT91_SMC_NCS_WRSETUP_(0) | AT91_SMC_NRDSETUP_(2) | AT91_SMC_NCS_RDSETUP_(0));
+//	at91_sys_write(AT91_SMC_PULSE(0), AT91_SMC_NWEPULSE_(13) | AT91_SMC_NCS_WRPULSE_(16) | AT91_SMC_NRDPULSE_(4) | AT91_SMC_NCS_RDPULSE_(8));
+//	at91_sys_write(AT91_SMC_CYCLE(0), AT91_SMC_NWECYCLE_(18) | AT91_SMC_NRDCYCLE_(18));
+//	at91_sys_write(AT91_SMC_MODE(0), AT91_SMC_DBW_8 | AT91_SMC_WRITEMODE | AT91_SMC_READMODE | AT91_SMC_TDF_(1) | AT91_SMC_EXNWMODE_DISABLE);
 	/* End platform & board depend */
 
     if (device_cnt++) return -EINVAL;
