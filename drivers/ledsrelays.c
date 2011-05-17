@@ -13,14 +13,11 @@
  * Incoming data bit format (one register)
  * 0 byte != 0xFF
  * 0 byte - register's number (0-1 bit, 2-7 - ignored)
- * 1-8 byte - value of bit (0 bit, 1-7 - ignored)
+ * 1-8 byte - for leds - value of bit with pulse data values: 0 - off, 1-6 - pulse, 7 - on
+ * 1-8 byte - for relays - values: 0 - off, 1 - on
  *
- * Incoming data byte format (all registers)
- * 0 byte == 0xFF
- * 1 byte - 0-7 bits - state register 0
- * 2 byte - 0-7 bits - state register 1
- * 3 byte - 0-7 bits - state register 2
- * 4 byte - 0-7 bits - state register 3
+ * 12.05.2011 - release-1.0
+ *
  */
 
 #include <linux/module.h>
@@ -34,13 +31,17 @@
 #include <linux/init.h>
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
+#include <linux/timer.h>
+#include <linux/jiffies.h>
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
+
+#define TICKSMAX		6
 
 enum{led1, led2, rel1, rel2};
 static struct resource *lr_resources[4];
 static unsigned char __iomem *io_dat[4];
-static unsigned char realstate[4];
+static unsigned char realstate[32];		// реальное состояние и тики мигания светодиода
 static struct platform_device *lr_device;
 
 int nmajor;
@@ -67,32 +68,21 @@ static ssize_t lr_read(struct file *file, char __user *buffer, size_t length, lo
 static ssize_t lr_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
 {
 unsigned char data = 0, mask = 1, tmpd;
-unsigned char num, i, rlen = 9;
+unsigned char num, pos, i, rlen = 9;
 
 	copy_from_user(&num, (const char __user *) buffer, 1);
 
-	if (num == 0xFF){
-		// Byte format
-		for (i = 1; i < 5; i++){
-			copy_from_user(&tmpd, (const char __user *) (buffer + i), 1);
-			*io_dat[i-1] = tmpd;
-			realstate[i-1] = tmpd;
-		}
-		printk(KERN_INFO "file_write (0x%X); data 0x%X; 0x%X; 0x%X; 0x%X.\n",file, realstate[0], realstate[1], realstate[2], realstate[3]);
-	}else{
-		// Bit format
-		num &= 0x3;
+		num &= 0x3; pos = num<<3;
 		if (length < 9) rlen = length;
 		for (i = 1; i < rlen; i++){
 			copy_from_user(&tmpd, (const char __user *) (buffer + i), 1);
+			realstate[pos+i-1] = tmpd & 7;
 			tmpd &= 1;
 			data |= (tmpd ? mask : 0);
 			mask <<=1;
 		}
 		printk(KERN_INFO "file_write (0x%X); num 0x%X; data 0x%X; in_len %d; len %d\n",file, num, data, length, rlen);
 		*io_dat[num] = data;
-		realstate[num] = data;
-	}
 
 	return length;
 }
@@ -119,8 +109,35 @@ static struct file_operations lr_fops = {
 	.flush = lr_flush,
 };
 
+struct timer_list led_timer;
+static unsigned char counter = TICKSMAX;
+void led_timer_func(unsigned long data){
+unsigned int i;
+unsigned char leds, mask;
+
+	if (!counter) counter = TICKSMAX;
+
+	mask = 1; leds = 0;
+	for (i=0; i<8; i++){
+		if (realstate[i] >= counter) leds |= mask;
+		mask <<= 1;
+	}
+	*io_dat[led1] = leds;
+
+	mask = 1; leds = 0;
+	for (i=8; i<16; i++){
+		if (realstate[i] >= counter) leds |= mask;
+		mask <<= 1;
+	}
+	*io_dat[led2] = leds;
+
+	counter--;
+	mod_timer(&led_timer, jiffies + HZ/TICKSMAX);
+}
+
 static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 {
+	int i;
 	int ret;
 	ret = register_chrdev(127, "ledsrelays", &lr_fops);
 	if (ret < 0){
@@ -148,6 +165,12 @@ static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 	*io_dat[1] = 0; realstate[1] = 0;
 	*io_dat[2] = 0; realstate[2] = 0;
 	*io_dat[3] = 0; realstate[3] = 0;
+
+	init_timer(&led_timer);
+	led_timer.expires = jiffies + HZ/TICKSMAX;
+	led_timer.data = 0;
+	led_timer.function = led_timer_func;
+	add_timer(&led_timer);
 
 	printk(KERN_INFO "set virt i/o: 0x%lX; 0x%lX; 0x%lX; 0x%lX\n", io_dat[led1], io_dat[led2], io_dat[rel1], io_dat[rel2]);
 
