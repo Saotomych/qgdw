@@ -36,7 +36,7 @@
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
 
-#define TICKSMAX		6
+#define TICKSMAX		7
 
 enum{led1, led2, rel1, rel2};
 static struct resource *lr_resources[4];
