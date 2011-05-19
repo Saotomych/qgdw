@@ -58,11 +58,11 @@ static ssize_t lr_read(struct file *file, char __user *buffer, size_t length, lo
 	unsigned int  i;
 	unsigned char *prddata = 0;
 
-	for (i=0; i < 4; i++) put_user(realstate[i], (char __user *) (buffer + i));
+	for (i=0; i < 32; i++) put_user(realstate[i], (char __user *) (buffer + i));
 
 	printk(KERN_INFO "file_read (0x%X)\n",file);
 
-	return 4;
+	return 32;
 }
 
 static ssize_t lr_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)

@@ -203,8 +203,6 @@ int endx=len%80, endy=len/80;
 	}
 
 	printk(KERN_INFO "len(%d)\n",len);
-//	mdelay(10);
-//	for (i=0; i<len; i++) buf[i] = readb(io_data);
 }
 
 static unsigned int uc1698readinfo(void){

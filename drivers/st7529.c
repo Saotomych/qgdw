@@ -105,9 +105,6 @@ static void st7529writedat(unsigned char *buf, unsigned int len){
 unsigned int i;
 	inlinecmd(0x5c);
 	for (i=0; i<len; i++) inlinedat(buf[i]);
-	mdelay(10);
-	inlinecmd(0x5d);
-	for (i=0; i<len; i++) buf[i] = readb(io_data);
 }
 
 static unsigned int st7529readinfo(void){

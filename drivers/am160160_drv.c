@@ -435,7 +435,6 @@ static int am160160_fb_resume(struct platform_dev *dev)
 #define am160160_fb_resume NULL
 #endif /* CONFIG_PM */
 
-//static struct platform_device_driver am160160_fb_driver = {
 static struct platform_driver am160160_fb_driver = {
 //	.probe = am160160_fb_probe,
 	.remove = __exit_p(am160160_fb_remove),
