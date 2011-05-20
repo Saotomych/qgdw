@@ -19,11 +19,12 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/init.h>
-#include <linux/backlight.h>
+//#include <linux/backlight.h>
 #include <linux/platform_device.h>
 #include <linux/fb.h>
 #include <linux/gpio.h>
 #include <linux/console.h>
+#include <linux/list.h>
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
 
@@ -61,14 +62,33 @@ struct am160160_par;
 static int device_cnt=0;
 
 static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
-	.id =		"am160160_fb",
+	.id =		"am160160",
 	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_MONO01,
 	.xpanstep =	1,
 	.ypanstep =	1,
 	.ywrapstep =	1, 
 	.accel =	FB_ACCEL_NONE,
+	.line_length = 80,
 };
+
+//static struct fb_monspecs am_monspecs = {
+//
+//};
+
+static struct fb_videomode def_fb_videomode = {
+	.name = "160x160-1@6",
+	.refresh = 6,
+	.xres = 160,
+	.yres = 160,
+	.vmode = FB_VMODE_NONINTERLACED,
+	.flag = FB_IGNOREMON,
+};
+
+static struct fb_info def_fb_info = {
+
+};
+
 
 //static struct fb_info info;
 //static struct am160160__par __initdata current_par;
@@ -270,9 +290,9 @@ static struct fb_ops am160160_fb_ops = {
 //	.fb_setcolreg	= am160160_fb_setcolreg,
 //	.fb_blank	= am160160_fb_blank,
 //	.fb_pan_display	= am160160_fb_pan_display,
-	.fb_fillrect	= cfb_fillrect, 	/* Needed !!! */
-	.fb_copyarea	= cfb_copyarea,	/* Needed !!! */
-	.fb_imageblit	= cfb_imageblit,	/* Needed !!! */
+	.fb_fillrect	= sys_fillrect, 	/* Needed !!! */
+	.fb_copyarea	= sys_copyarea,	/* Needed !!! */
+	.fb_imageblit	= sys_imageblit,	/* Needed !!! */
 //	.fb_cursor	= am160160_fb_cursor,		/* Optional !!! */
 //	.fb_rotate	= am160160_fb_rotate,
 //	.fb_sync	= am160160_fb_sync,
@@ -293,13 +313,15 @@ static struct fb_ops am160160_fb_ops = {
 static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform devs
 {
     struct device *dev = &pdev->dev;
-    struct fb_info *info;
-    unsigned char *pinfo;
-//    struct am160160_info *sinfo;
-//    struct am160160_info *pd_sinfo;
-//    struct resource *map = NULL;
-//    struct fb_var_screeninfo *var;
+    struct fb_info *info = 0;
+    unsigned char *pinfo = 0;
+//    struct am160160_info *aminfo;
+    struct fb_info *pd_sinfo;
+    struct fb_var_screeninfo *var = 0;
+    struct fb_videomode *mode = 0;
     int cmap_len, retval;	
+    struct list_head *head = 0;
+    struct fb_modelist *list = 0;
 //    unsigned int smem_len;
 
     am160160_device = pdev;
@@ -324,48 +346,135 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 // Registration I/O mem for indicator registers
 	io_cmd = ioremap(am160160_resources[1]->start, 1);
 	io_data = ioremap(am160160_resources[2]->start, BUF_LEN);
+	if (!request_mem_region(io_cmd, 1, pdev->name)) return -EBUSY;
+	if (!request_mem_region(io_data, BUF_LEN, pdev->name)){
+		// exception 1
+		release_mem_region(io_cmd, 1);
+		return -EBUSY;
+	}
 
     memset(video, 0, BUF_LEN);
     /*
      * Dynamically allocate info and par
      */
-    info = framebuffer_alloc(sizeof(u32) * BUF_LEN, dev);
-//    info = framebuffer_alloc(sizeof(struct am160160_info), dev);
-    if (!info) {
-	    /* goto error path */
+    var = kmalloc(sizeof(struct fb_var_screeninfo), GFP_KERNEL);
+    if (!var){
+    	// exception 2
+		release_mem_region(io_data, BUF_LEN);
+		release_mem_region(io_cmd, 1);
     	return -ENOMEM;
     }
 
-    info->screen_base = (char __iomem *) io_data;
+    mode = kmalloc(sizeof(struct fb_videomode), GFP_KERNEL);
+    if (!mode){
+    	// exception 3
+    	kfree(var);
+		release_mem_region(io_data, BUF_LEN);
+		release_mem_region(io_cmd, 1);
+    	return -ENOMEM;
+    }
+    memcpy(mode, &def_fb_videomode, sizeof(struct fb_videomode));
+
+    info = framebuffer_alloc(sizeof(u32) * BUF_LEN, dev);
+    if (!info){
+    	// exception 4
+    	kfree(mode);
+    	kfree(var);
+    	release_mem_region(io_data, BUF_LEN);
+		release_mem_region(io_cmd, 1);
+    	return -ENOMEM;
+    }
+
+    if (dev->platform_data){
+    	pd_sinfo = (struct fb_info *) dev->platform_data;
+    	printk(KERN_INFO "Platform data exist\n");
+    }else{
+    	pd_sinfo = &def_fb_info;
+    	printk(KERN_INFO "Platform data not exist, will default data\n");
+    }
+
+    memcpy(info, pd_sinfo, sizeof(struct fb_info));			// copy default fb_info to working fb_info
+
+    mode = &def_fb_videomode;
+    fb_videomode_to_var(var, mode);
+    // Change videomode
+    var->bits_per_pixel = 1;
+    var->xres = 160;
+    var->yres = 160;
+    var->xres_virtual = 160;
+    var->yres_virtual = 160;
+    var->grayscale = 1;
+    var->red.length = 4;
+    var->green.length = 4;
+    var->blue.length = 4;
+    var->red.msb_right =1;
+    var->green.msb_right =1;
+    var->blue.msb_right =1;
+    memcpy(&(info->var), var, sizeof(struct fb_var_screeninfo));
+
     info->fbops = &am160160_fb_ops;
-
-	mode_option = "160x160@60";
-
-    retval = fb_find_mode(&info->var, info, mode_option, NULL, 0, NULL, 8);
-    if (!retval || retval == 4) 	return -EINVAL;
-//    info->var =
-
-    am160160_fb_fix.smem_start = (unsigned long) video;
-    am160160_fb_fix.smem_len = BUF_LEN;
-    am160160_fb_fix.mmio_start = io_data;
-    am160160_fb_fix.mmio_len = BUF_LEN;
     info->fix = am160160_fb_fix; /* this will be the only time am160160_fb_fix will be
      	 	 	 	 	 	 	 * used, so mark it as __devinitdata
      	 	 	 	 	 	 	 */
+    info->flags = FBINFO_FLAG_DEFAULT;
+
+    info->screen_base = (char __iomem *) video;
+    info->screen_size = BUF_LEN;
+    info->monspecs = pd_sinfo->monspecs;
+    info->par = pd_sinfo->par;
+
+// Set videomode
+    mode_option = "160x160-1@6";
+    retval = fb_find_mode(&info->var, info, mode_option, mode, 1, mode, 1);
+    if (!retval || retval == 4){
+    	// exception 5 as 4
+    	kfree(mode);
+    	kfree(var);
+    	release_mem_region(io_data, BUF_LEN);
+		release_mem_region(io_cmd, 1);
+		printk(KERN_INFO "fb not find video mode %s, ret=%d\n", mode_option, retval);
+    	return -EINVAL;
+    }
+//  Video Mode OK
+    printk(KERN_INFO "set fb video mode x:%d, y:%d, bpp:%d, gray:%d, xv:%d, yv:%d\n", info->var.xres, info->var.yres, info->var.bits_per_pixel, info->var.grayscale, info->var.xres_virtual, info->var.yres_virtual);
+    info->mode = mode;
+    head = kmalloc(sizeof(struct list_head), GFP_KERNEL);
+    head->prev=0;
+    head->next=0;
+//    fb_videomode_to_modelist(mode, 0, head);
+
+// Dinamic lets fix
+    am160160_fb_fix.smem_start = am160160_resources[2]->start;
+    am160160_fb_fix.smem_len = BUF_LEN;
+    am160160_fb_fix.mmio_start = io_data;
+    am160160_fb_fix.mmio_len = BUF_LEN;
+    memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
 
     info->pseudo_palette = info->par;
-    info->par = NULL;
-    info->flags = FBINFO_FLAG_DEFAULT;
 
     printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
 
     cmap_len = 16;
-    if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0) return -ENOMEM;
-
-    printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
+    if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0){
+    	// exception 6 as 5 as 4
+    	kfree(head);
+    	kfree(mode);
+    	kfree(var);
+    	release_mem_region(io_data, BUF_LEN);
+		release_mem_region(io_cmd, 1);
+		printk(KERN_INFO "not allocated cmap\n");
+    	return -ENOMEM;
+    }
 
     if (register_framebuffer(info) < 0) {
+    	// exception 7
     	fb_dealloc_cmap(&info->cmap);
+    	kfree(head);
+    	kfree(mode);
+    	kfree(var);
+    	release_mem_region(io_data, BUF_LEN);
+		release_mem_region(io_cmd, 1);
+		printk(KERN_INFO "fb not registered\n");
     	return -EINVAL;
     }
 

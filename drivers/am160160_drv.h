@@ -28,7 +28,7 @@
 
  /* LCD Controller info data structure, stored in device platform_data */
 struct am160160_info {
-//	spinlock_t		lock;
+	spinlock_t		lock;
 	struct fb_info		*info;
 	void __iomem		*mmio;
 //	int			irq_base;
@@ -36,13 +36,9 @@ struct am160160_info {
 //	unsigned int		guard_time;
 	unsigned int 		smem_len;
 	struct platform_device	*pdev;
-//	struct clk		*bus_clk;
-//	struct clk		*lcdc_clk;
 
 	// future for fbcon
-	bool			lcdcon_is_backlight;
 	u8			saved_lcdcon;
-
 	u8			default_bpp;
 	u8			lcd_wiring_mode;
 	unsigned int		default_lcdcon2;
