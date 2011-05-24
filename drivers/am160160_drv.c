@@ -24,6 +24,7 @@
 #include <linux/fb.h>
 #include <linux/gpio.h>
 #include <linux/console.h>
+#include <linux/vt.h>
 #include <linux/list.h>
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
@@ -45,7 +46,7 @@ static unsigned char video[BUF_LEN];
 static unsigned char tmpvd[BUF_LEN];
 static PAMLCDFUNC hard;
 unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
-static char *am160160fbcon;
+static struct console *am160160fbcon;
 
 /* Board depend */
 static struct resource *am160160_resources[3];
@@ -160,9 +161,6 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
 
     hard->writedat(pvideo, rlen << 2);
 
-    printk(KERN_INFO "read %x %x %x %x %x %x %x %x %x %x \n length %d \n", pvideo[0],  pvideo[1],  pvideo[2],  pvideo[3],
-    		 pvideo[4],  pvideo[5],  pvideo[6],  pvideo[8],  pvideo[9],  pvideo[10], rlen);
-
 	return rlen;
 }
 
@@ -171,6 +169,17 @@ static int am160160_fb_release(struct fb_info *info, int user)
 	printk(KERN_INFO "fb_release(%d)\n",user);
 
 	return 0;
+}
+
+static void conwrite(struct console *con, const char *text, unsigned int length){
+
+	printk(KERN_INFO "con_write (%d) %c%c%c%c%c%c%c%c%c%c\n",length,text[0],text[1],text[2],text[3],text[4],text[5],text[6],text[7],text[8],text[9]);
+
+	if (!length) return;
+
+    // Читаем в буфер блок данных
+    if (copy_from_user(tmpvd, (const char __user *) text, length)) return;
+
 }
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
@@ -339,6 +348,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	resetpin = am160160_resources[0]->start;
 	lightpin = am160160_resources[0]->end;
 	at91_set_GPIO_periph(resetpin, 0);
+	at91_set_gpio_output(resetpin, 0);
+	mdelay(10);
 	at91_set_gpio_output(resetpin, 1);
 	at91_set_GPIO_periph(lightpin, 0);
 	at91_set_gpio_output(lightpin, 1);
@@ -352,6 +363,13 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 		release_mem_region(io_cmd, 1);
 		return -EBUSY;
 	}
+
+	// Устройство описано в файле ядра board-sam9260dpm.c
+	/* Hardware initialize and testing */
+	// Connect to hardware driver
+	if (strstr(chipname,"uc1698")) hard = uc1698_connect(io_cmd, io_data);
+	if (strstr(chipname,"st7529")) hard = st7529_connect(io_cmd, io_data);
+	hard->init();
 
     memset(video, 0, BUF_LEN);
     /*
@@ -435,6 +453,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 		printk(KERN_INFO "fb not find video mode %s, ret=%d\n", mode_option, retval);
     	return -EINVAL;
     }
+
 //  Video Mode OK
     printk(KERN_INFO "set fb video mode x:%d, y:%d, bpp:%d, gray:%d, xv:%d, yv:%d\n", info->var.xres, info->var.yres, info->var.bits_per_pixel, info->var.grayscale, info->var.xres_virtual, info->var.yres_virtual);
     info->mode = mode;
@@ -446,7 +465,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 // Dinamic lets fix
     am160160_fb_fix.smem_start = am160160_resources[2]->start;
     am160160_fb_fix.smem_len = BUF_LEN;
-    am160160_fb_fix.mmio_start = io_data;
+    am160160_fb_fix.mmio_start = video;
     am160160_fb_fix.mmio_len = BUF_LEN;
     memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
 
@@ -559,6 +578,8 @@ static struct platform_driver am160160_fb_driver = {
 	},
 };
 
+
+
 #ifndef MODULE
     /*
      *  Setup
@@ -577,6 +598,7 @@ int __init am160160_fb_setup(char *options)
 static int __init am160160_fb_init(void)
 {
 	int ret;
+	struct console *tcon;
 
 	/*
 	 *  For kernel boot options (in 'video=am160160_fb:<options>' format)
@@ -592,20 +614,23 @@ static int __init am160160_fb_init(void)
 	am160160_fb_setup(option);
 #endif
 
+	for(tcon=console_drivers; tcon != NULL; tcon = tcon->next){
+		am160160fbcon = tcon;
+		printk(KERN_INFO "find console \"%s\", ptr=%lX \n", am160160fbcon->name, (long unsigned int) tcon);
+	}
+	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
+	am160160fbcon->write = conwrite;
+	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
+
 	ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe);
 
+	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
+
 	if (ret) {
-		// В случае когда девайс еще не добавлен
+		// В случае когда девайс не добавлен
 			platform_driver_unregister(&am160160_fb_driver);
 			return -ENODEV;
 	}
-
-	// Устройство добавляется в файле ядра board-sam9260dpm.c
-	/* Hardware initialize and testing */
-	// Connect to hardware driver
-	if (strstr(chipname,"uc1698")) hard = uc1698_connect(io_cmd, io_data);
-	if (strstr(chipname,"st7529")) hard = st7529_connect(io_cmd, io_data);
-	hard->init();
 
 	printk(KERN_INFO "device_open(%d)\n",ret);
 

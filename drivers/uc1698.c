@@ -215,7 +215,7 @@ static unsigned int uc1698readinfo(void){
 	return info;
 }
 
-static unsigned char* uc1698readdata(unsigned int len){
+static unsigned char* uc1698readdata(unsigned char *addr, unsigned int len){
 	// Return length & pointer to data buffer
 //	for (i=0; i<len; i++) video[i] = readb(io_data);
 	return video;
