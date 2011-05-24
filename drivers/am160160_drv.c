@@ -44,15 +44,16 @@ module_param_string(chip, defchipname, 7, 0);
 
 static unsigned char video[BUF_LEN];
 static unsigned char tmpvd[BUF_LEN];
-static PAMLCDFUNC hard;
+static PAMLCDFUNC hard = 0;
 unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 static struct console *am160160fbcon;
+static unsigned long old_fb_con_write = 0;
 
 /* Board depend */
 static struct resource *am160160_resources[3];
 static struct platform_device *am160160_device;
-unsigned int resetpin;
-unsigned int lightpin;
+static unsigned int resetpin;
+static unsigned int lightpin;
 
 /*
  * Driver data
@@ -173,12 +174,14 @@ static int am160160_fb_release(struct fb_info *info, int user)
 
 static void conwrite(struct console *con, const char *text, unsigned int length){
 
-	printk(KERN_INFO "con_write (%d) %c%c%c%c%c%c%c%c%c%c\n",length,text[0],text[1],text[2],text[3],text[4],text[5],text[6],text[7],text[8],text[9]);
+//	printk(KERN_INFO "con_write (%d) %c%c%c%c%c%c%c%c%c%c\n",length,text[0],text[1],text[2],text[3],text[4],text[5],text[6],text[7],text[8],text[9]);
 
 	if (!length) return;
 
+	if (hard) hard->writedat(text, length);
+
     // Читаем в буфер блок данных
-    if (copy_from_user(tmpvd, (const char __user *) text, length)) return;
+//    if (copy_from_user(tmpvd, (const char __user *) text, length)) return;
 
 }
 
@@ -619,6 +622,7 @@ static int __init am160160_fb_init(void)
 		printk(KERN_INFO "find console \"%s\", ptr=%lX \n", am160160fbcon->name, (long unsigned int) tcon);
 	}
 	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
+	old_fb_con_write = am160160fbcon->write;
 	am160160fbcon->write = conwrite;
 	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
 
@@ -628,8 +632,9 @@ static int __init am160160_fb_init(void)
 
 	if (ret) {
 		// В случае когда девайс не добавлен
-			platform_driver_unregister(&am160160_fb_driver);
-			return -ENODEV;
+		am160160fbcon->write = old_fb_con_write;
+		platform_driver_unregister(&am160160_fb_driver);
+		return -ENODEV;
 	}
 
 	printk(KERN_INFO "device_open(%d)\n",ret);
@@ -640,6 +645,7 @@ static int __init am160160_fb_init(void)
 static void __exit am160160_fb_exit(void)
 {
 	platform_driver_unregister(&am160160_fb_driver);
+	if (old_fb_con_write) am160160fbcon->write = old_fb_con_write;
 	hard->exit();
 	device_cnt--;
 	printk(KERN_INFO "device_closed\n");

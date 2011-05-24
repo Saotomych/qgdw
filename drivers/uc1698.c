@@ -202,7 +202,6 @@ int endx=len%80, endy=len/80;
 		sadr++;
 	}
 
-	printk(KERN_INFO "len(%d)\n",len);
 }
 
 static unsigned int uc1698readinfo(void){
