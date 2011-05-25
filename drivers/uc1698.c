@@ -177,7 +177,7 @@ static void uc1698writecmd(unsigned char cmd){
 
 static void uc1698writedat(unsigned char *buf, unsigned int len){
 unsigned int x, y, sadr=0;
-int endx=len%80, endy=len/80;
+unsigned int endx=len%80, endy=len/80;
 
 // Write data buffer to hardware driver
 // Full rows

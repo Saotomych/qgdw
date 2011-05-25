@@ -82,7 +82,7 @@ static struct fb_videomode def_fb_videomode = {
 	.refresh = 6,
 	.xres = 160,
 	.yres = 160,
-	.vmode = FB_VMODE_NONINTERLACED,
+	.vmode = FB_VMODE_CONUPDATE,
 	.flag = FB_IGNOREMON,
 };
 
@@ -193,10 +193,10 @@ unsigned char mask;
 //	sys_imageblit(pinfo, image);
 
 	memcpy(tmpvd, image->data, BUF_LEN);
-	// Decode to indicator format from 2color bmp
+	// Decode to indicator format from bmp
     pvideo = video;
     memset(video, 0, BUF_LEN);
-    for (x=0; x < 1940; x++){
+    for (x=0; x < 3200; x++){
     	mask = 0x80;
     	for (i=0; i<8; i++){
     		if (tmpvd[x] & mask){
@@ -209,7 +209,7 @@ unsigned char mask;
 //    printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n", image->data[0],  image->data[1],  image->data[2],  image->data[3],
 //    		 image->data[4],  image->data[5],  image->data[6],  image->data[8],  image->data[9],  image->data[10]);
 
-	if (hard) hard->writedat(pvideo, BUF_LEN);
+	if (hard) hard->writedat(video, BUF_LEN);
 }
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
@@ -461,6 +461,10 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     var->red.msb_right =1;
     var->green.msb_right =1;
     var->blue.msb_right =1;
+    var->pixclock = 6500;
+    var->vmode = FB_VMODE_CONUPDATE;
+    var->activate = FB_ACTIVATE_ALL;
+    var->sync = FB_SYNC_EXT;
     memcpy(&(info->var), var, sizeof(struct fb_var_screeninfo));
 
     info->fbops = &am160160_fb_ops;
