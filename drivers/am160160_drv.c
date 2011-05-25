@@ -47,7 +47,6 @@ static unsigned char tmpvd[BUF_LEN];
 static PAMLCDFUNC hard = 0;
 unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 static struct console *am160160fbcon;
-static unsigned long old_fb_con_write = 0;
 
 /* Board depend */
 static struct resource *am160160_resources[3];
@@ -174,15 +173,43 @@ static int am160160_fb_release(struct fb_info *info, int user)
 
 static void conwrite(struct console *con, const char *text, unsigned int length){
 
-//	printk(KERN_INFO "con_write (%d) %c%c%c%c%c%c%c%c%c%c\n",length,text[0],text[1],text[2],text[3],text[4],text[5],text[6],text[7],text[8],text[9]);
+	printk(KERN_INFO "con_write (%d) %c%c%c%c%c%c%c%c%c%c\n",length,text[0],text[1],text[2],text[3],text[4],text[5],text[6],text[7],text[8],text[9]);
 
 	if (!length) return;
 
-	if (hard) hard->writedat(text, length);
+//	if (hard) hard->writedat(text, length);
 
     // Читаем в буфер блок данных
 //    if (copy_from_user(tmpvd, (const char __user *) text, length)) return;
 
+}
+
+static void my_imageblit(struct fb_info *pinfo, const struct fb_image *image){
+char *pvideo = video;
+unsigned int x, i;
+unsigned char mask;
+//	printk(KERN_INFO "fb_imageblit(%lX), w=%d, h=%d, depth=%d\n", pinfo, image->width, image->height, image->depth);
+
+//	sys_imageblit(pinfo, image);
+
+	memcpy(tmpvd, image->data, BUF_LEN);
+	// Decode to indicator format from 2color bmp
+    pvideo = video;
+    memset(video, 0, BUF_LEN);
+    for (x=0; x < 1940; x++){
+    	mask = 0x80;
+    	for (i=0; i<8; i++){
+    		if (tmpvd[x] & mask){
+    			pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+    		}
+    		mask >>= 1;
+    	}
+    }
+
+//    printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n", image->data[0],  image->data[1],  image->data[2],  image->data[3],
+//    		 image->data[4],  image->data[5],  image->data[6],  image->data[8],  image->data[9],  image->data[10]);
+
+	if (hard) hard->writedat(pvideo, BUF_LEN);
 }
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
@@ -304,7 +331,8 @@ static struct fb_ops am160160_fb_ops = {
 //	.fb_pan_display	= am160160_fb_pan_display,
 	.fb_fillrect	= sys_fillrect, 	/* Needed !!! */
 	.fb_copyarea	= sys_copyarea,	/* Needed !!! */
-	.fb_imageblit	= sys_imageblit,	/* Needed !!! */
+//	.fb_imageblit	= sys_imageblit,	/* Needed !!! */
+	.fb_imageblit	= my_imageblit,	/* Needed !!! */
 //	.fb_cursor	= am160160_fb_cursor,		/* Optional !!! */
 //	.fb_rotate	= am160160_fb_rotate,
 //	.fb_sync	= am160160_fb_sync,
@@ -334,6 +362,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     int cmap_len, retval;	
     struct list_head *head = 0;
     struct fb_modelist *list = 0;
+    struct fb_event event;
+    struct fb_con2fbmap con2fb;
 //    unsigned int smem_len;
 
     am160160_device = pdev;
@@ -425,9 +455,9 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     var->xres_virtual = 160;
     var->yres_virtual = 160;
     var->grayscale = 1;
-    var->red.length = 4;
-    var->green.length = 4;
-    var->blue.length = 4;
+    var->red.length = 1;
+    var->green.length = 1;
+    var->blue.length = 1;
     var->red.msb_right =1;
     var->green.msb_right =1;
     var->blue.msb_right =1;
@@ -463,7 +493,6 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     head = kmalloc(sizeof(struct list_head), GFP_KERNEL);
     head->prev=0;
     head->next=0;
-//    fb_videomode_to_modelist(mode, 0, head);
 
 // Dinamic lets fix
     am160160_fb_fix.smem_start = am160160_resources[2]->start;
@@ -503,6 +532,25 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     platform_set_drvdata(pdev, info);
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
+
+    // Remapping default console to framebuffer
+//    con2fb.console = 0;
+//    con2fb.framebuffer = 0;
+//    event.info = &info;
+//    event.data = &con2fb;
+//    if (!fb_notifier_call_chain(FB_EVENT_GET_CONSOLE_MAP, &event))
+//         printk(KERN_INFO "Begin Info: console %d, fb %d\n", con2fb.console, con2fb.framebuffer);
+//    else printk(KERN_INFO "GET Event Error\n");
+//
+//    con2fb.console = 0;
+//    con2fb.framebuffer = 0;
+//    if (!fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event))
+//         printk(KERN_INFO "Remap OK\n");
+//    else printk(KERN_INFO "Remap Error\n");
+//
+//    if (!fb_notifier_call_chain(FB_EVENT_GET_CONSOLE_MAP, &event))
+//        printk(KERN_INFO "Begin Info: console %d, fb %d\n", con2fb.console, con2fb.framebuffer);
+//    else printk(KERN_INFO "GET Event Error\n");
 
     return 0;
 }
@@ -622,8 +670,6 @@ static int __init am160160_fb_init(void)
 		printk(KERN_INFO "find console \"%s\", ptr=%lX \n", am160160fbcon->name, (long unsigned int) tcon);
 	}
 	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
-	old_fb_con_write = am160160fbcon->write;
-	am160160fbcon->write = conwrite;
 	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
 
 	ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe);
@@ -632,7 +678,6 @@ static int __init am160160_fb_init(void)
 
 	if (ret) {
 		// В случае когда девайс не добавлен
-		am160160fbcon->write = old_fb_con_write;
 		platform_driver_unregister(&am160160_fb_driver);
 		return -ENODEV;
 	}
@@ -645,7 +690,6 @@ static int __init am160160_fb_init(void)
 static void __exit am160160_fb_exit(void)
 {
 	platform_driver_unregister(&am160160_fb_driver);
-	if (old_fb_con_write) am160160fbcon->write = old_fb_con_write;
 	hard->exit();
 	device_cnt--;
 	printk(KERN_INFO "device_closed\n");
