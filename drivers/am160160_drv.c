@@ -66,11 +66,11 @@ static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.id =		"am160160",
 	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_MONO01,
-	.xpanstep =	1,
-	.ypanstep =	1,
-	.ywrapstep =	1, 
+	.xpanstep =	0,
+	.ypanstep =	0,
+	.ywrapstep = 0,
 	.accel =	FB_ACCEL_NONE,
-	.line_length = 80,
+	.line_length = 16,
 };
 
 //static struct fb_monspecs am_monspecs = {
