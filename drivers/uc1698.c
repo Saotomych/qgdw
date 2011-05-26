@@ -151,7 +151,7 @@ static void uc1698init(void){
     	inlinecmd(0);
 
     	inlinecmd(SETALLPXON | 0);			// all pixel off
-    	inlinecmd(SETALLPXINV | on);		// inversed
+    	inlinecmd(SETALLPXINV | off);		// inversed
 
     	inlinecmd(SETDISPEN | 5);			//display on,select on/off mode.Green Enhance mode disable
 
@@ -190,6 +190,7 @@ unsigned int endx=len%80, endy=len/80;
 			writeb(buf[sadr], io_data);
 			sadr++;
 		}
+		writeb(0, io_data);
 	}
 
 // Last row
@@ -201,6 +202,7 @@ unsigned int endx=len%80, endy=len/80;
 		writeb(buf[sadr], io_data);
 		sadr++;
 	}
+	writeb(0, io_data);
 
 }
 
