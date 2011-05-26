@@ -42,8 +42,14 @@ static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
-static unsigned char video[BUF_LEN];
+static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
+static unsigned char convideo[BUF_LEN];	// Console video buffer
+
+#define CONSOLE_MODE	1
+#define GRAPH_MODE		2
+static char	fmode = CONSOLE_MODE;
+
 static PAMLCDFUNC hard = 0;
 unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
 static struct console *am160160fbcon;
@@ -126,6 +132,9 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
     unsigned int x, i;
     unsigned char mask;
 
+    fmode == GRAPH_MODE;
+    if (length < 16) fmode == CONSOLE_MODE;
+
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
 
 	// Вместо офсета в реале приходит какая-то эпическая хуйня, поэтому пока не юзаем
@@ -171,19 +180,7 @@ static int am160160_fb_release(struct fb_info *info, int user)
 	return 0;
 }
 
-static void conwrite(struct console *con, const char *text, unsigned int length){
-
-	printk(KERN_INFO "con_write (%d) %c%c%c%c%c%c%c%c%c%c\n",length,text[0],text[1],text[2],text[3],text[4],text[5],text[6],text[7],text[8],text[9]);
-
-	if (!length) return;
-
-//	if (hard) hard->writedat(text, length);
-
-    // Читаем в буфер блок данных
-//    if (copy_from_user(tmpvd, (const char __user *) text, length)) return;
-
-}
-
+//	according to sys_imageblit(pinfo, image)
 static void my_imageblit(struct fb_info *pinfo, const struct fb_image *image){
 
 unsigned int fg = image->fg_color, bg = image->bg_color;
@@ -194,18 +191,15 @@ unsigned int ll = pinfo->fix.line_length;
 // Start & end addrs of console screen
 unsigned int adrstart, adrstop, lenx;
 
-
 // Pointers to video data in and out
 char *pdat = image->data;
 //char *pvideo = pinfo->screen_base;
-char *pvideo = video;
+char *pvideo;
 
 unsigned int x, y, i;
 unsigned char mask;
 
-//	according to sys_imageblit(pinfo, image)
-
-//	memcpy(tmpvd, pinfo->screen_base, 3200);
+	if (fmode == GRAPH_MODE) return;
 
 	lenx = w >> 3;	// всегда кратна 8
 
@@ -214,7 +208,7 @@ unsigned char mask;
     for (y = 0; y < h; y++){
     	adrstart = lenx * y;
     	adrstop = adrstart + lenx;
-    	pvideo = video + ((dy + y) * 80) + (dx >> 1);
+    	pvideo = convideo + ((dy + y) * 80) + (dx >> 1);
     	for (x = adrstart; x < adrstop; x++){
     		mask = 0x80;
     		for (i=0; i<8; i++){
@@ -231,7 +225,7 @@ unsigned char mask;
 //    printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n", image->data[0],  image->data[1],  image->data[2],  image->data[3],
 //    		 image->data[4],  image->data[5],  image->data[6],  image->data[8],  image->data[9],  image->data[10]);
 
-	if (hard) hard->writedat(video, BUF_LEN);
+	if (hard) hard->writedat(convideo, BUF_LEN);
 }
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
