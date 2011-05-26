@@ -9,6 +9,11 @@
  *  Created by 04.04.2011
  *  Author: alex AAV
  *
+ *  Make console to framebuffer
+ *  Switch mode console to graphic made by writing 1-bit color bitmap to /dev/fb0
+ *	Switch mode graphic to console made by writing any 1-7 bytes to /dev/fb0
+ *	In console mode writing to /dev/tty0
+ *
  */
 
 #include <linux/module.h>
