@@ -124,7 +124,7 @@ static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_
 	unsigned int len=0, i;
 	unsigned char *prddata = 0;
 
-	len = hard->readdata(prddata, BUF_LEN);
+	len = (int) hard->readdata(prddata, BUF_LEN);
 	if ((prddata) && (len)){
 		for(i=0; i<length && i < info->fix.smem_len; i++) put_user(prddata[i], (char __user *) buffer + i);
 		printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
@@ -187,9 +187,10 @@ static int am160160_fb_release(struct fb_info *info, int user)
 }
 
 //	according to sys_imageblit(pinfo, image)
+//  Console graphics inbound to convideo buffer
 static void am160160_fb_imageblit(struct fb_info *pinfo, const struct fb_image *image){
 
-unsigned int fg = image->fg_color, bg = image->bg_color;
+unsigned int fg = image->fg_color, bg = image->bg_color, bt;
 unsigned int dx = image->dx, dy = image->dy;
 unsigned int w = image->width, h = image->height;
 unsigned int ll = pinfo->fix.line_length;
@@ -198,29 +199,31 @@ unsigned int ll = pinfo->fix.line_length;
 unsigned int adrstart, adrstop, lenx;
 
 // Pointers to video data in and out
-char *pdat = image->data;
+char *pdat = (char *) image->data;
 //char *pvideo = pinfo->screen_base;
-char *pvideo;
+unsigned char *pvideo;
 
 unsigned int x, y, i;
 unsigned char mask;
 
-	lenx = w >> 3;	// всегда кратна 8
+	lenx = w >> 3;	// y нас всегда кратна 8
+	if ((fg ^ bg) & fg) fg = 0;
+	else fg = 0xFF;
 
 //	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
 
-	// Clean lower console string
-    pvideo = &convideo[12160];
-    for (y = 0; y < 640; y++){ *pvideo = 0; pvideo++;}
+	// Clean low console string
+	memset(&convideo[12160], fg, 640);
 
     for (y = 0; y < h; y++){
     	adrstart = lenx * y;
     	adrstop = adrstart + lenx;
-    	pvideo = convideo + ((dy + y) * 80) + (dx >> 1);
+    	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
     	for (x = adrstart; x < adrstop; x++){
     		mask = 0x80;
+			bt = pdat[x] ^ fg;
     		for (i=0; i<8; i++){
-    			if (pdat[x] & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
+    			if (bt & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
     			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
     			mask >>= 1;
     			pvideo += (i&1);
