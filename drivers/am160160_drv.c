@@ -205,8 +205,6 @@ char *pvideo;
 unsigned int x, y, i;
 unsigned char mask;
 
-	if (am_fbmode == AMFB_GRAPH_MODE) return;
-
 	lenx = w >> 3;	// всегда кратна 8
 
 //	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
@@ -229,6 +227,8 @@ unsigned char mask;
     		}
     	}
     }
+
+	if (am_fbmode == AMFB_GRAPH_MODE) return;
 
 	if (hard) hard->writedat(convideo, BUF_LEN);
 }
