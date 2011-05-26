@@ -46,9 +46,9 @@ static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
 static unsigned char convideo[BUF_LEN];	// Console video buffer
 
-#define CONSOLE_MODE	1
-#define GRAPH_MODE		2
-static char	fmode = CONSOLE_MODE;
+#define AMFB_CONSOLE_MODE	1
+#define AMFB_GRAPH_MODE		2
+static unsigned char	am_fbmode;
 
 static PAMLCDFUNC hard = 0;
 unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
@@ -104,9 +104,13 @@ static struct fb_info def_fb_info = {
 
 static int am160160_fb_open(struct fb_info *info, int user)
 {
-	printk(KERN_INFO "fb_open(%d)\n",user);
 
-    return 0;
+	if (user > 0) am_fbmode = AMFB_GRAPH_MODE;
+	else am_fbmode = AMFB_CONSOLE_MODE;
+
+	printk(KERN_INFO "fb_open(%d), fb mode = %d\n", user, am_fbmode);
+
+	return 0;
 }
 
 // (struct fb_info *info, char __user *buf,  size_t count, loff_t *ppos);
@@ -132,8 +136,7 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
     unsigned int x, i;
     unsigned char mask;
 
-    fmode == GRAPH_MODE;
-    if (length < 16) fmode == CONSOLE_MODE;
+	if (length < 8) am_fbmode = AMFB_CONSOLE_MODE;
 
 	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
 
@@ -165,9 +168,6 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
     	}
     }
 
-    printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n length %d \n", pvideo[0],  pvideo[1],  pvideo[2],  pvideo[3],
-    		 pvideo[4],  pvideo[5],  pvideo[6],  pvideo[8],  pvideo[9],  pvideo[10], rlen);
-
     hard->writedat(pvideo, rlen << 2);
 
 	return rlen;
@@ -175,7 +175,8 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
 
 static int am160160_fb_release(struct fb_info *info, int user)
 {
-	printk(KERN_INFO "fb_release(%d)\n",user);
+
+	printk(KERN_INFO "fb_release(%d), fb mode = %d\n", user, am_fbmode);
 
 	return 0;
 }
@@ -199,11 +200,15 @@ char *pvideo;
 unsigned int x, y, i;
 unsigned char mask;
 
-	if (fmode == GRAPH_MODE) return;
+	if (am_fbmode == AMFB_GRAPH_MODE) return;
 
 	lenx = w >> 3;	// всегда кратна 8
 
 //	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
+
+	// Clean lower console string
+    pvideo = &convideo[12160];
+    for (y = 0; y < 640; y++){ *pvideo = 0; pvideo++;}
 
     for (y = 0; y < h; y++){
     	adrstart = lenx * y;
@@ -212,8 +217,6 @@ unsigned char mask;
     	for (x = adrstart; x < adrstop; x++){
     		mask = 0x80;
     		for (i=0; i<8; i++){
-//    			if (pdat[x] & mask)	pvideo[(dy * 80) + (x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
-//    			else     			pvideo[(dy * 80) + (x<<2)+(i>>1)] &= ~((i & 1) ? 0x8 : 0x80);
     			if (pdat[x] & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
     			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
     			mask >>= 1;
@@ -222,10 +225,17 @@ unsigned char mask;
     	}
     }
 
-//    printk(KERN_INFO "write %x %x %x %x %x %x %x %x %x %x \n", image->data[0],  image->data[1],  image->data[2],  image->data[3],
-//    		 image->data[4],  image->data[5],  image->data[6],  image->data[8],  image->data[9],  image->data[10]);
-
 	if (hard) hard->writedat(convideo, BUF_LEN);
+}
+
+static void my_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
+	if (am_fbmode == AMFB_GRAPH_MODE) return;
+	sys_fillrect(pinfo, rect);
+}
+
+static void my_copyarea(struct fb_info *pinfo, const struct fb_copyarea *area){
+	if (am_fbmode == AMFB_GRAPH_MODE) return;
+	sys_fillrect(pinfo, area);
 }
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
@@ -345,9 +355,8 @@ static struct fb_ops am160160_fb_ops = {
 //	.fb_setcolreg	= am160160_fb_setcolreg,
 //	.fb_blank	= am160160_fb_blank,
 //	.fb_pan_display	= am160160_fb_pan_display,
-	.fb_fillrect	= sys_fillrect, 	/* Needed !!! */
-	.fb_copyarea	= sys_copyarea,	/* Needed !!! */
-//	.fb_imageblit	= sys_imageblit,	/* Needed !!! */
+	.fb_fillrect	= my_fillrect, 	/* Needed !!! */
+	.fb_copyarea	= my_copyarea,	/* Needed !!! */
 	.fb_imageblit	= my_imageblit,	/* Needed !!! */
 //	.fb_cursor	= am160160_fb_cursor,		/* Optional !!! */
 //	.fb_rotate	= am160160_fb_rotate,
@@ -553,25 +562,6 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 
-    // Remapping default console to framebuffer
-//    con2fb.console = 0;
-//    con2fb.framebuffer = 0;
-//    event.info = &info;
-//    event.data = &con2fb;
-//    if (!fb_notifier_call_chain(FB_EVENT_GET_CONSOLE_MAP, &event))
-//         printk(KERN_INFO "Begin Info: console %d, fb %d\n", con2fb.console, con2fb.framebuffer);
-//    else printk(KERN_INFO "GET Event Error\n");
-//
-//    con2fb.console = 0;
-//    con2fb.framebuffer = 0;
-//    if (!fb_notifier_call_chain(FB_EVENT_SET_CONSOLE_MAP, &event))
-//         printk(KERN_INFO "Remap OK\n");
-//    else printk(KERN_INFO "Remap Error\n");
-//
-//    if (!fb_notifier_call_chain(FB_EVENT_GET_CONSOLE_MAP, &event))
-//        printk(KERN_INFO "Begin Info: console %d, fb %d\n", con2fb.console, con2fb.framebuffer);
-//    else printk(KERN_INFO "GET Event Error\n");
-
     return 0;
 }
 
@@ -684,6 +674,8 @@ static int __init am160160_fb_init(void)
 		return -ENODEV;
 	am160160_fb_setup(option);
 #endif
+
+	am_fbmode = AMFB_CONSOLE_MODE;
 
 	for(tcon=console_drivers; tcon != NULL; tcon = tcon->next){
 		am160160fbcon = tcon;
