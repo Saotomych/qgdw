@@ -70,7 +70,7 @@ static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.ypanstep =	0,
 	.ywrapstep = 0,
 	.accel =	FB_ACCEL_NONE,
-	.line_length = 16,
+	.line_length = 20,
 };
 
 //static struct fb_monspecs am_monspecs = {
@@ -185,24 +185,46 @@ static void conwrite(struct console *con, const char *text, unsigned int length)
 }
 
 static void my_imageblit(struct fb_info *pinfo, const struct fb_image *image){
+
+unsigned int fg = image->fg_color, bg = image->bg_color;
+unsigned int dx = image->dx, dy = image->dy;
+unsigned int w = image->width, h = image->height;
+unsigned int ll = pinfo->fix.line_length;
+
+// Start & end addrs of console screen
+unsigned int adrstart, adrstop, lenx;
+
+
+// Pointers to video data in and out
+char *pdat = image->data;
+//char *pvideo = pinfo->screen_base;
 char *pvideo = video;
-unsigned int x, i;
+
+unsigned int x, y, i;
 unsigned char mask;
-//	printk(KERN_INFO "fb_imageblit(%lX), w=%d, h=%d, depth=%d\n", pinfo, image->width, image->height, image->depth);
 
-//	sys_imageblit(pinfo, image);
+//	according to sys_imageblit(pinfo, image)
 
-	memcpy(tmpvd, image->data, BUF_LEN);
-	// Decode to indicator format from bmp
-    pvideo = video;
-    memset(video, 0, BUF_LEN);
-    for (x=0; x < 3200; x++){
-    	mask = 0x80;
-    	for (i=0; i<8; i++){
-    		if (tmpvd[x] & mask){
-    			pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+//	memcpy(tmpvd, pinfo->screen_base, 3200);
+
+	lenx = w >> 3;	// всегда кратна 8
+
+//	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
+
+    for (y = 0; y < h; y++){
+    	adrstart = lenx * y;
+    	adrstop = adrstart + lenx;
+    	pvideo = video + ((dy + y) * 80) + (dx >> 1);
+    	for (x = adrstart; x < adrstop; x++){
+    		mask = 0x80;
+    		for (i=0; i<8; i++){
+//    			if (pdat[x] & mask)	pvideo[(dy * 80) + (x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+//    			else     			pvideo[(dy * 80) + (x<<2)+(i>>1)] &= ~((i & 1) ? 0x8 : 0x80);
+    			if (pdat[x] & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
+    			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
+    			mask >>= 1;
+    			pvideo += (i&1);
     		}
-    		mask >>= 1;
     	}
     }
 
