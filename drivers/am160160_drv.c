@@ -187,7 +187,7 @@ static int am160160_fb_release(struct fb_info *info, int user)
 }
 
 //	according to sys_imageblit(pinfo, image)
-static void my_imageblit(struct fb_info *pinfo, const struct fb_image *image){
+static void am160160_fb_imageblit(struct fb_info *pinfo, const struct fb_image *image){
 
 unsigned int fg = image->fg_color, bg = image->bg_color;
 unsigned int dx = image->dx, dy = image->dy;
@@ -233,12 +233,12 @@ unsigned char mask;
 	if (hard) hard->writedat(convideo, BUF_LEN);
 }
 
-static void my_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
+static void am160160_fb_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
 	sys_fillrect(pinfo, rect);
 }
 
-static void my_copyarea(struct fb_info *pinfo, const struct fb_copyarea *area){
+static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea *area){
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
 	sys_fillrect(pinfo, area);
 }
@@ -360,9 +360,9 @@ static struct fb_ops am160160_fb_ops = {
 //	.fb_setcolreg	= am160160_fb_setcolreg,
 //	.fb_blank	= am160160_fb_blank,
 //	.fb_pan_display	= am160160_fb_pan_display,
-	.fb_fillrect	= my_fillrect, 	/* Needed !!! */
-	.fb_copyarea	= my_copyarea,	/* Needed !!! */
-	.fb_imageblit	= my_imageblit,	/* Needed !!! */
+	.fb_fillrect	= am160160_fb_fillrect, 	/* Needed !!! */
+	.fb_copyarea	= am160160_fb_copyarea,	/* Needed !!! */
+	.fb_imageblit	= am160160_fb_imageblit,	/* Needed !!! */
 //	.fb_cursor	= am160160_fb_cursor,		/* Optional !!! */
 //	.fb_rotate	= am160160_fb_rotate,
 //	.fb_sync	= am160160_fb_sync,
