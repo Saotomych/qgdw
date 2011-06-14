@@ -590,7 +590,6 @@ static int __exit am160160_fb_remove(struct platform_device *pdev)
 		framebuffer_release(info);
 		printk(KERN_INFO "fb removed. OK.\n");
 	}else printk(KERN_INFO "fb don't removed. False.\n");
-
 	return 0;
 }
 
