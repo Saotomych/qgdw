@@ -1,0 +1,37 @@
+TARGET = main
+
+SRCS := $(wildcard *.c)
+
+OBJS := $(SRCS:.c=.o)
+
+CC = gcc
+
+CCSYSTEM = $(shell $(CC) -dumpmachine)
+
+DEBUG = -g3 -D_DEBUG
+
+CFLAGS = -Wall -c $(DEBUG)
+
+LFLAGS = -Wall
+
+LIBS = -L. -liec -ldlt
+
+
+
+all : $(TARGET)
+
+$(TARGET) : $(OBJS)
+	$(CC) $(LFLAGS) -o $@ $< $(LIBS)
+        
+
+%.o : %.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+
+clean :
+ifeq ($(findstring linux, $(CCSYSTEM)), linux)
+	rm -f $(OBJS) $(TARGET)
+else
+	del /S $(OBJS) $(TARGET).exe
+endif
+
