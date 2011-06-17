@@ -5,6 +5,9 @@
 *.ko
 *.d
 *.mod.c
+*.dll
+*.exe
+main.c
 Module.symvers
 modules.order
 uc1698u160160d.c
