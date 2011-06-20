@@ -11,7 +11,7 @@ Module.symvers
 modules.order
 uc1698u160160d.c
 am_rd
-libmain/main.c
+libcomm/main.c
 libcomm/Makefile
 libcomm/Makefile.bin
 
