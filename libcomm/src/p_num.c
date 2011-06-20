@@ -162,13 +162,20 @@ void buff_put_le_ieee_float(unsigned char *buff, uint32_t offset, float num)
 
 float pow_x(float x, uint8_t pow)
 {
-	uint8_t i;
-
 	float num = 1.0;
 
-	for(i=0; i<pow; i++)
+	while(pow > 0)
 	{
-		num *= x;
+		if (pow % 2 == 0)
+		{
+			pow /= 2;
+			x *= x;
+		}
+		else
+		{
+			pow--;
+			num *= x;
+		}
 	}
 
 	return num;
