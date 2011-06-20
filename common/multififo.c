@@ -11,6 +11,8 @@
 #include "../devlinks/devlink.h"
 #include "multififo.h"
 
+#define LENRINGBUF	1024
+
 char *appname, *pathapp;
 
 // Control child
@@ -18,10 +20,6 @@ pid_t pidchld;
 
 // Control inotify
 int d_inoty;
-
-// List of channels
-static int maxch;
-static struct channel *mychs[8];
 
 // Control channel
 char *sufinit = {"-init"};
@@ -41,64 +39,93 @@ struct channel{
 	int (*in_open)(struct channel *ch);		// IN_OPEN
 	int (*in_close)(struct channel *ch);	// IN_CLOSE
 	int (*in_read)(struct channel *ch);		// IN_MODIFY
-	u08 ring[1024];
-	u08 *bgnframe;	// начало принятого фрейма
-	u08 *bgnring;	// начало несчитанных данных принятого фрейма
-	u08 *endring;	// конец фрейма
+	char ring[LENRINGBUF];
+	char *bgnframe;	// начало принятого фрейма
+	char *bgnring;	// начало несчитанных данных принятого фрейма
+	char *endring;	// конец фрейма
 	int rdlen;		// число прочитанных байт блоков данных с момента открытия канала
 	int rdstr;		// число прочитанных строк с момента открытия канала
 };
 
 // connect device to channel
 struct endpoint{
-	struct device_config;
-	struct channel;
+	struct config_device *edc;
+	struct channel		 *cdc;
 };
 
+// Init channel datas
+char *isstr[5];
+struct config_device *idc;
+
+// List of channels
+static int maxch = 0;
+static struct channel *mychs[16];
+
+// List of endpoints
+static int maxep = 0;
+static struct endpoint *myeps[64];
+
+// ================= Callbacks PROTOTYPES ================================== //
+int init_open(struct channel *ch);
+int sys_open(struct channel *ch);
+int init_close(struct channel *ch);
+int sys_close(struct channel *ch);
+int init_read(struct channel *ch);
+int sys_read(struct channel *ch);
+
 // =================== Private functions =================================== //
-// Read fifo to ring buffer
+// Read from fifo to ring buffer
+// Return not read lenght from ch->bgnring to ch->endring
 int read2channel(struct channel *ch){
-u08 *endring = ch->ring + 1024;
+char *endring = ch->ring + LENRINGBUF;
 int tail;
 int rdlen, len;
+int notreadlen;
 
-	if (ch->bgnframe > ch->endring){
-		tail = ch->bgnframe - ch->endring;
+	if (ch->bgnring > ch->endring){
+		tail = ch->bgnring - ch->endring;
+		notreadlen = ch->endring + LENRINGBUF - ch->bgnring ;
 	}else{
 		tail = endring - ch->endring;
+		notreadlen = ch->endring - ch->bgnring;
 	}
+
 	rdlen = read(ch->descin, ch->endring, tail);
+
 	ch->endring += rdlen;
 	if (rdlen == tail){
-		len = read(ch->descin, ch->ring, count - tail);
+		len = read(ch->descin, ch->ring, ch->bgnframe - ch->ring);
 		ch->endring = ch->ring + len;
 		rdlen += len;
 	}
+
+	return rdlen + notreadlen;
 }
 
-// Move string to user buffer
+// Move string to user bufferBuilding endpoint
 // Frame don't take from ring buffer
 int getstringfromring(struct channel *ch, char *buf){
-u08 *p, *pbuf;
-u08 *endring = ch->ring + 1024;
+char *p, *pbuf;
+char *endring = ch->ring + LENRINGBUF;
 int l = 0;
 	p = ch->bgnring;
 	pbuf = buf;
-	while((*p) || (p != ch->endring)){
+	while((*p) && (p != ch->endring)){
 		*pbuf = *p;
-		p++; l++;
+		pbuf++; p++; l++;
 		if (p >= endring) p = ch->ring;
 	}
-	if (*p) return -1;
-	ch->bgnring = p;
+	if (p == ch->endring) return -1;
+	*pbuf=0; l++;	// include ending zero
+	ch->bgnring = p+1;
 	return l;
 }
 
 int getdatafromring(struct channel *ch, char *buf, int len){
 int len1, len2;
-u08 *endring = ch->ring + 1024;
-u08 *end = ch->bgnring + len;
-	if (len > 1024) return -1;
+char *endring = ch->ring + LENRINGBUF;
+char *end = ch->bgnring + len;
+	if (len > LENRINGBUF) return -1;
 	if (end < endring){
 		len1 = len;
 		len2 = 0;
@@ -114,13 +141,15 @@ u08 *end = ch->bgnring + len;
 	// Move pointer
 	if (len2) ch->bgnring = ch->ring + len2;
 	else ch->bgnring += len1;
+
+	return len;
 }
 
 int getframefromring(struct channel *ch, char *buf, int len){
 int len1, len2;
-u08 *endring = ch->ring + 1024;
-u08 *end;
-	if (len > 1024) return -1;
+char *endring = ch->ring + LENRINGBUF;
+char *end;
+	if (len > LENRINGBUF) return -1;
 	end = ch->bgnframe + len;
 	if (end < endring){
 		len1 = len;
@@ -138,6 +167,7 @@ u08 *end;
 	if (len2) ch->bgnframe = ch->ring + len2;
 	else ch->bgnframe += len1;
 	ch->bgnring = ch->bgnframe;
+
 	return 0;
 }
 
@@ -221,6 +251,7 @@ int len;
 	mychs[maxch]->in_read = init_read;
 
 	maxch++;
+
 	return 0;
 }
 
@@ -230,7 +261,7 @@ int len;
 // конфигурация канала, который нужно захватить для обмена, здесь это будет делать функция connectchannel
 int newchannel(char *apppath, char *appname){
 int len;
-	// Create FIFO
+	// Create downdirection FIFO
 
 	mychs[maxch] = malloc(sizeof(struct channel));
 	if (!mychs[maxch]) return -1;
@@ -262,10 +293,14 @@ int len;
 }
 
 // Создает новый двунаправленный именованый канал
-// Подключает его к уже готовым фифо буферам от верхнего уровня
+// Подключает его к уже готовым фифо буферам от верхнего уровня	*pbuf=0;
+
 int connect2channel(char *apppath, char *appname){
 int len;
+	// Create updirection FIFO
+
 	mychs[maxch] = malloc(sizeof(struct channel));
+
 	if (!mychs[maxch]) return -1;
 	initchannelstruct(maxch);
 
@@ -285,12 +320,11 @@ int len;
 	mychs[maxch]->in_read = sys_read;
 
 	maxch++;
-
 	return 0;
 }
 
 // ======================= End Init functions ================================== //
-
+//
 // =================== Default Inotify Callbacks ========================== //
 // ответная реакция удаленного модуля на вызов in_open init канала	(init_open)
 //		- открытие инит канала на чтение
@@ -340,67 +374,92 @@ int sys_close(struct channel *ch){
 }
 
 // ответная реакция удаленного модуля на вызов in_read init канала	(init_read)
+// Регистрация нового ендпойта всегда, нового канала, если его еще нет.
+// 			- прием конфигурации каналов для ендпойнта: 5 стрингов и структуру:	pathapp, appname, cd->name, cd->protoname, cd->phyname, config_device
 //			- проверка наличия открытого канала к конкретному верхнему уровню, если нет, то:
+//								- регистрация подключения к новому
 //								- добавление в inotify канала на чтение
 //								- открытие канала на запись
-// 			- оба канала открыты, принимаем 5 стрингов:	pathapp, appname, cd->name, cd->protoname, cd->phyname
-//			- и config_device
-// 			- регистрируем endpoint: struct endpoint
+//					 			- оба канала открыты! bingo!
+// 			- регистрируем endpoint: struct endpoint, то есть канал и конфигурацию вместе
 //			- отправляем config_device в буфер приложения
 int init_read(struct channel *ch){
-static char *strs[5];
-char *nbuf;
+char nbuf[100];
 int i;
 int len, rdlen;
 	// 0 - init already
 	printf("%s: system has read init file\n", appname);
-	rdlen = readtochannel(ch->descin, ch->bgnring, 1024);
-
+	rdlen = read2channel(ch);
 	if (rdlen){
-		nbuf = malloc(rdlen);
+
+		printf("%s: string in buffer \"%s\" \n", appname, ch->ring);
+
 		while(rdlen > 0){
+			// Building init point
 			if (ch->rdstr < 5){
+				printf("%s: get string number %d\n", appname, ch->rdstr);
 				// get strings
-				len = getstringfromring(ch, nbuf, rdlen);
-				strs[ch->rdstr] = malloc(len);
-				ch->rdstr++;
+				len = getstringfromring(ch, nbuf);
+				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
+				if (len > 0){
+					isstr[ch->rdstr] = malloc(len);
+					strcpy(isstr[ch->rdstr], nbuf);
+					printf("%s: %d - %s\n", appname, ch->rdstr, isstr[ch->rdstr]);
+					ch->rdstr++;
+					rdlen -= len;
+				}else rdlen = 0;
 			}else{
 				// get config_device
-				len = getdatafromring(ch, nbuf, sizeof(struct device_config));
-				if (len == sizeof(struct device_config)) ch->rdlen += rdlen;
-				else ch->rdlen = 0;
+				len = getdatafromring(ch, nbuf, sizeof(struct config_device));
+				if (len == sizeof(struct config_device)){
+					idc = malloc(sizeof(struct config_device));
+					memcpy(idc, nbuf, sizeof(struct config_device));
+					ch->rdlen += len;
+				}
+				rdlen = 0;
 			}
-			rdlen -= len;
-			if (len == -1) break;
+			printf("%s: rdlen=%d\n",appname,rdlen);
+			if (len == -1) rdlen = 0;;
 		}
-
-		free(nbuf);
 	}
 
-
-
-
-
-
-
-
-
-
-	if (ch->rdlen > applen){
-		nbuf = malloc(applen);
+	if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
+		// Connect to channel
+		printf("%s: connect to channel\n",appname);
 		// find channel in list
-		for (i=1; i<8; i++) if (strstr(nbuf, mychs[i]->appname)) break;
-		if (i == 8){
-			// Channel not found, start new channel
-			printf("%s: start new channel from %s\n", appname, nbuf);
-			if (!connect2channel(nbuf)){
-				// Add new channel to up
-				mychs[maxch-1]->watch = inotify_add_watch(d_inoty, mychs[maxch-1]->f_namein, mychs[maxch-1]->events);
-				mychs[maxch-1]->descout = open(mychs[maxch-1]->f_nameout, O_RDWR | O_NDELAY);
-			}
+		//			- проверка наличия открытого канала к конкретному верхнему уровню, если нет, то:
+        //								- регистрация подключения к новому
+        //								- добавление в inotify канала на чтение
+        //								- открытие канала на запись
+        // 			- оба канала открыты! bingo!
+		for (i=1; i<16; i++){
+			if (mychs[i])
+				if (strstr(isstr[1], mychs[i]->appname)) break;
 		}
+
+		if (i == 16){
+			// Channel not found, start new channel
+			sprintf(nbuf,"%s/%s",isstr[0], isstr[2]);
+			printf("%s: start new channel - %s\n", appname, nbuf);
+			if (!connect2channel(isstr[0], isstr[2])){
+				// Add new channel to up
+				i = maxch-1;
+				mychs[i]->watch = inotify_add_watch(d_inoty, mychs[i]->f_namein, mychs[i]->events);
+				printf("%s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
+				mychs[i]->descout = open(mychs[i]->f_nameout, O_RDWR | O_NDELAY);
+				printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
+			}else return -1;
+		}
+
+		// Building endpoint
+		myeps[maxep] = malloc(sizeof(struct endpoint));
+		myeps[maxep]->cdc = mychs[i];
+		myeps[maxep]->edc = idc;
+
+		// Send SIGNAL config_device to application buffer
+		// will be there
 	}
-	printf("%s: common read len = %d\n", appname, ch->rdlen);
+
 	return 0;
 }
 
@@ -411,6 +470,7 @@ int sys_read(struct channel *ch){
 
 // ===================== END Default Inotify Callbacks ======================== //
 
+// ZZzzz
 
 // ================= External API ============================================== //
 
@@ -419,23 +479,29 @@ int mf_init(char *pathinit, char *a_name){
 int i, mask, ret;
 ssize_t rdlen=0;
 struct inotify_event einoty;
-struct channel *ch;
+struct channel *ch = mychs[0];
 char namebuf[256];
 static int evcnt=0;
 struct timeval tv;
 fd_set readset;
-
 
 	appname = malloc(strlen(a_name));
 	strcpy(appname, a_name);
 	pathapp = malloc(strlen(pathinit));
 	strcpy(pathapp, pathinit);
 
+	if (initchannel(pathinit, a_name)) return -1;
+	d_inoty = inotify_init();
+
 	ret = fork();
 	if (!ret){
-		if (initchannel(pathinit, a_name)) return -1;
-		d_inoty = inotify_init();
+		if (!d_inoty){
+			printf("%s: inotify not init\n", appname);
+			return -1;
+		}
+
 		mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
+		printf("%s: init 0x%X\n", appname, d_inoty);
 
 		do{
 			/* Ждем наступления события или прерывания по отлавливаемому нами
@@ -460,10 +526,12 @@ fd_set readset;
 					// Find channel by watch
 					for (i = 0; i < maxch; i++){
 						ch = mychs[i];
+						printf("%s: find channel %d of %d\n", appname, i, maxch);
 						if (einoty.wd == ch->watch) break;
 					}
 					if (i < maxch){
-						// Calling callback-functions
+						// Calling callback-functions	printf("%s: newep 0x%X\n", appname, d_inoty);
+
 						mask = einoty.mask & ch->events;
 						if (mask & IN_OPEN)	ch->in_open(ch);
 						if (mask & IN_CLOSE) ch->in_close(ch);
@@ -497,10 +565,18 @@ int dninit;
 			ret = execve(cd->name, NULL, NULL);
 			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 		}
-		if (newchannel(pathinit, cd->name)) return -1;
 		printf("%s: run app...OK\n", appname);
 		sleep(1);
 	}else 		printf("low-level application running\n");
+
+	printf("%s: newep 0x%X %d\n", appname, d_inoty, maxch);
+	if (newchannel(pathinit, cd->name)) return -1;
+
+	// Add watch in(up) channel
+	printf("%s: newep 0x%X %d\n", appname, d_inoty, maxch);
+
+	mychs[maxch-1]->watch = inotify_add_watch(d_inoty, mychs[maxch-1]->f_namein, mychs[maxch-1]->events);
+	printf("%s: infile add to watch %d, %s\n", appname, mychs[maxch-1]->watch, mychs[maxch-1]->f_namein);
 
 	// Open init channel
 	strcpy(fname, pathinit);
@@ -511,11 +587,11 @@ int dninit;
 	if (!dninit) return -1;
 
 	// Write config to init channel
-	wrlen = write(dninit, pathapp, strlen(pathapp));
-	wrlen += write(dninit, appname, strlen(appname));
-	wrlen += write(dninit, cd->name, strlen(cd->name));
-	wrlen += write(dninit, cd->protoname, strlen(cd->protoname));
-	wrlen += write(dninit, cd->phyname, strlen(cd->phyname));
+	wrlen  = write(dninit, pathinit, strlen(pathinit)+1);
+	wrlen += write(dninit, appname, strlen(appname)+1);
+	wrlen += write(dninit, cd->name, strlen(cd->name)+1);
+	wrlen += write(dninit, cd->protoname, strlen(cd->protoname)+1);
+	wrlen += write(dninit, cd->phyname, strlen(cd->phyname)+1);
 	wrlen += write(dninit, &cd, sizeof(struct config_device));
 
 	return 0;
