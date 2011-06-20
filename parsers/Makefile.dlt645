@@ -1,0 +1,67 @@
+RELEASE = no
+
+TARGET = libdlt645
+
+SRC_DIR = src
+
+OBJ_DIR = obj
+
+SRCS = src/dlt645.c \
+       src/dlt_frame.c \
+       src/dlt_asdu.c \
+       src/asdu.c \
+       src/p_num.c 
+
+OBJS = $(patsubst $(SRC_DIR)/%, $(OBJ_DIR)/%, $(SRCS:.c=.o))
+
+CC = gcc
+
+CCSYSTEM = $(shell $(CC) -dumpmachine)
+
+DEBUG = -g3 -D_DEBUG
+
+ifeq ($(RELEASE), no)
+CFLAGS = $(DEBUG) -Wall
+else
+CFLAGS = -Wall
+endif
+
+
+ifeq ($(findstring linux, $(CCSYSTEM)), linux)
+CFLAGS += -D__linux__ -fPIC
+else
+CFLAGS += -D_WIN32
+endif
+
+
+LFLAGS = -Wall -shared
+ 
+
+ifeq ($(findstring linux, $(CCSYSTEM)), linux)
+LFLAGS += -Wl,-soname,$(TARGET).so.1
+endif
+
+
+all : $(TARGET)
+
+$(TARGET) : $(OBJS)
+ifeq ($(findstring linux, $(CCSYSTEM)), linux)
+	$(CC) $(LFLAGS) -o $(TARGET).so.1.0.0 $(OBJS)
+	ln -s $(TARGET).so.1.0.0 $(TARGET).so
+	ln -s $(TARGET).so.1.0.0 $(TARGET).so.1
+else
+	$(CC) $(LFLAGS) -o $(TARGET).dll $(OBJS)
+endif
+
+$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+
+clean :
+ifeq ($(findstring linux, $(CCSYSTEM)), linux)
+	rm -f $(OBJS) $(TARGET).so $(TARGET).so.1 $(TARGET).so.1.0.0
+else
+	del /S $(patsubst $(OBJ_DIR)/%, $(OBJ_DIR)\\%, $(OBJS)) $(TARGET).dll
+endif
+
+

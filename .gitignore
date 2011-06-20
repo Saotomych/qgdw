@@ -3,11 +3,19 @@
 *.cmd
 *.o
 *.ko
+*.so
+*.so.*
 *.d
 *.mod.c
+*.dll
+*.exe
 Module.symvers
 modules.order
 uc1698u160160d.c
 am_rd
+parsers/main
+parsers/main.c
+parsers/Makefile
+parsers/Makefile.bin
 
 
