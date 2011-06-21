@@ -18,7 +18,7 @@
 apdu_frame *apdu_frame_create()
 {
 	// try to allocate memory for the structure
-	apdu_frame *frame = (apdu_frame *) calloc(1, sizeof(apdu_frame));
+	apdu_frame *frame = (apdu_frame*) calloc(1, sizeof(apdu_frame));
 
 	return frame;
 }
@@ -123,7 +123,7 @@ void apdu_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, apd
 uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, apdu_frame *frame)
 {
 	// fast check input data
-	if(!buff || buff_len - *offset < APDU_LEN_MIN || !frame) return RES_APDU_INCORRECT;
+	if(!buff || !frame) return RES_APDU_INCORRECT;
 
 	uint8_t res;
 	uint8_t start_byte = 0;
@@ -132,13 +132,21 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	for( ; *offset<buff_len; )
 	{
 		start_byte = buff_get_le_uint8(buff, *offset);
-		*offset += 1;
 
 		if(start_byte == APDU_START_BYTE) break;
+
+		// move to the next byte
+		*offset += 1;
 	}
+
+	// check if rest of the buffer long enough to contain the frame
+	if(buff_len - *offset < APDU_LEN_MIN) return RES_APDU_LEN_INVALID;
 
 	// check if start byte found, otherwise return error
 	if(start_byte != APDU_START_BYTE) return RES_APDU_INCORRECT;
+
+	// skip start byte
+	*offset += 1;
 
 	// get data length
 	frame->data_len = buff_get_le_uint8(buff, *offset) - 4;
@@ -153,7 +161,7 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 		if(frame->data_len > 0 && buff_len - *offset >= frame->data_len)
 		{
 			// allocate memory for the data
-			frame->data = (unsigned char*) malloc(frame->data_len * sizeof(unsigned char));
+			frame->data = (unsigned char*) malloc(frame->data_len);
 
 			// check if memory allocated OK, otherwise return error
 			if(!frame->data)
@@ -218,7 +226,7 @@ uint8_t apdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, apdu_fra
 	*buff_len = 6 + frame->data_len;
 
 	// allocate memory for the buffer
-	*buff = (unsigned char*) malloc(*buff_len * sizeof(unsigned char));
+	*buff = (unsigned char*) malloc(*buff_len);
 
 	// check if memory allocated OK, otherwise return error
 	if(!*buff)
