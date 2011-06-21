@@ -16,16 +16,18 @@
 char *appname, *pathapp;
 
 // Control child
-pid_t pidchld = 0;
+volatile static pid_t pidchld = 0;
 
 // Control inotify
-int d_inoty = 0;
+static int d_inoty = 0;
 
 // Control channel
 char *sufinit = {"-init"};
 char *sufdn = {"-dn"};
 char *sufup = {"-up"};
 
+int (*cb_rcvdata)(char *buf, int len);
+int (*cb_rcvinit)(char *buf, int len);
 
 struct channel{
 	char *appname;
@@ -568,29 +570,32 @@ fd_set readset;
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
 char stack[10000];
-int mf_init(char *pathinit, char *a_name){
+int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit){
 	appname = malloc(strlen(a_name));
 	strcpy(appname, a_name);
 	pathapp = malloc(strlen(pathinit));
 	strcpy(pathapp, pathinit);
+	cb_rcvdata = func_rcvdata;
+	cb_rcvinit = func_rcvinit;
 
 	d_inoty = inotify_init();
 	if (initchannel(pathinit, a_name)) return -1;
 
 	printf("%s: start thread\n", appname);
 
-	pidchld = clone(inotify_thr, (void*)(stack+10000-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
-	printf("func: clone:%d - %s\n",errno, strerror(errno));
+	pidchld = 1;
 
-	if (pidchld == -1) {
-	        exit(1);
-	}
+	return clone(inotify_thr, (void*)(stack+10000-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
 
-	return 0;
+//	if (pidchld == -1){
+//		printf("%s: clone:%d - %s\n", appname, errno, strerror(errno));
+//        exit(1);
+//	}
+//	return pidchld;
 }
 
 void mf_exit(){
-	kill(pidchld, SIGKILL);
+	pidchld = 0;
 }
 
 // Form new endpoint

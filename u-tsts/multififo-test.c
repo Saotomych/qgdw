@@ -9,6 +9,7 @@
  *
  *  1 вызов - инициализация инит-канала (mf_init)
  *  итог: приложением создан, но никем не открыт инит канал
+ *
  *  2 вызов добавляет в приложение нижнего уровня устройство и устанавливает с ним связь (mf_newendpoint (struct config_device *cd))
  *  									- ищет ID приложения нижнего уровня, если не запущен, запускает и
  *																		 создает 2 канала и добавляет в inotify канал на чтение
@@ -60,21 +61,46 @@ struct config_device cd = {
 		11,
 };
 
+int rcvdata(char *buf, int len){
+
+	return 0;
+}
+
+int rcvinit(char *buf, int len){
+
+	return 0;
+}
+
 int main(int argc, char * argv[]){
+static const sigset_t sigmask;
+pid_t chldpid;
+int wait_st;
+int wait_opt = 0;
 
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
 
-	mf_init("/rw/mx00/mainapp","mf_test");
+	chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
 
+	// wait for child process exit
 
-	// wait for SIGNAL
-	for(;;){
+//	sleep(2);
+//	printf("mf_maintest: chldpid %d\n", chldpid);
 
-	}
+//	wait(&wait_st);
+//	waitpid(chldpid , &wait_st, wait_opt);
+//	if ((int) waitpid(chldpid, &wait_st, wait_opt) == -1){
+//		printf("func: clone:%d - %s\n",errno, strerror(errno));
+//		exit(1);
+//	}
 
-//	mf_exit();
+	do{
+		sigsuspend(&sigmask);
+		printf("mf_maintest: detect stop child process with status 0x%X\n", *sigmask.__val);
+	}while(*sigmask.__val != SIGQUIT);
+
+	mf_exit();
 
 	return 0;
 }

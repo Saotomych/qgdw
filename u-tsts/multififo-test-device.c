@@ -47,15 +47,41 @@
 #include "../devlinks/devlink.h"
 #include "../common/multififo.h"
 
+int rcvdata(char *buf, int len){
+
+	return 0;
+}
+
+int rcvinit(char *buf, int len){
+
+	return 0;
+}
+
 int main(int argc, char * argv[]){
+static const sigset_t sigmask;
+pid_t chldpid;
+static int wait_st;
+int wait_opt = 0;
 
-	mf_init("/rw/mx00/devlinks","devlinktest");
+	chldpid = mf_init("/rw/mx00/devlinks","devlinktest", rcvdata, rcvinit);
 
-//	open("/rw/mx00/mainapp/mf_test-init", O_RDWR | O_NDELAY);
+	// wait for child process exit
+//	sleep(1);
+//	printf("mf_devlinktest: chldpid %d\n", chldpid);
 
-	for(;;){
+//	wait(&wait_st);
+//	waitpid(chldpid, &wait_st, wait_opt);
+//	if ((int) waitpid(chldpid, &wait_st, wait_opt) == -1){
+//		printf("func: waitpid:%d - %s\n",errno, strerror(errno));
+//		exit(1);
+//	}
 
-	}
+	do{
+		sigsuspend(&sigmask);
+		printf("mf_maintest: detect stop child process with status 0x%X\n", *sigmask.__val);
+	}while(*sigmask.__val != SIGQUIT);
+
+//	printf("devlinktest: detect stop child process with status %d\n", wait_st);
 
 //	mf_exit();
 

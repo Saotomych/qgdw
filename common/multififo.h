@@ -12,7 +12,8 @@
 // Initialisation
 // in: pathinit - pointer to path to pipes
 // in: devicename - pointer to devicename from config
-extern int mf_init(char *pathinit, char *a_name);
+//extern int mf_init(char *pathinit, char *a_name);
+extern pid_t mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit);
 // Exit from inotify waiting
 extern void mf_exit(void);
 // Create new endpoint in downlink application only
