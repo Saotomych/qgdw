@@ -40,11 +40,11 @@ struct channel{
 	int (*in_close)(struct channel *ch);	// IN_CLOSE
 	int (*in_read)(struct channel *ch);		// IN_MODIFY
 	char ring[LENRINGBUF];
-	char *bgnframe;	// начало принятого фрейма
-	char *bgnring;	// начало несчитанных данных принятого фрейма
-	char *endring;	// конец фрейма
-	int rdlen;		// число прочитанных байт блоков данных с момента открытия канала
-	int rdstr;		// число прочитанных строк с момента открытия канала
+	char *bgnframe;	// start receiving frame
+	char *bgnring;	// start data not readed since frame start
+	char *endring;	// end frame
+	int rdlen;		// bytes read since channel opens
+	int rdstr;		// strings reads since channel opens
 };
 
 // connect device to channel
@@ -225,8 +225,8 @@ struct channel *ch = mychs[num];
 	ch->endring = ch->ring;
 }
 
-// Создает инит-канал, он всегда нулевой
-// Инит-канал открывается приложением следующего верхнего уровня для подачи системных команд
+// Create init channel, it have index = 0 always
+// High level application opens init channel for sending struct config_device => register new endpoint
 int initchannel(char *a_path, char *a_name){
 int len;
 
@@ -260,10 +260,8 @@ int len;
 	return 0;
 }
 
-// Создает новый двунаправленный именованный канал
-// Создаваемый канал предназначен для активации связи с приложением следующего нижнего уровня
-// После создания канала по инит-каналу приложения следующего нижнего уровня  ему будет выдана
-// конфигурация канала, который нужно захватить для обмена, здесь это будет делать функция connectchannel
+// Create new two-direction channel to downlink
+// Channel work for data exchange with lower application
 int newchannel(char *a_path, char *a_name){
 int len;
 	// Create downdirection FIFO
@@ -301,9 +299,9 @@ int len;
 	return 0;
 }
 
-// Создает новый двунаправленный именованый канал
-// Подключает его к уже готовым фифо буферам от верхнего уровня	*pbuf=0;
-
+// Create new two-direction channel to uplink
+// Connect to fifos from high level application
+// Channel work for data exchange with higher application
 int connect2channel(char *a_path, char *a_name){
 int len;
 	// Create updirection FIFO
@@ -340,8 +338,8 @@ int len;
 // ======================= End Init functions ================================== //
 //
 // =================== Default Inotify Callbacks ========================== //
-// ответная реакция удаленного модуля на вызов in_open init канала	(init_open)
-//		- открытие инит канала на чтение
+// answer on in_open for init channel
+//		- open init channel
 int init_open(struct channel *ch){
 	printf("%s: system has opened init file\n", appname);
 	if (!ch->descin){
@@ -357,21 +355,19 @@ int init_open(struct channel *ch){
 }
 
 // ответная реакция текущего модуля на in_open канала на чтение	(sys_open)
-//		- ответное открытие канала на чтение +
-//  	- здесь же открытие канала на запись, т.к. он еще не открыт +
+// answer on in_open for working channel:
+//      - open channel for reading
+//      - open channel for writing
 // ответная реакция удаленного модуля на вызов in_open канала на чтение (sys_open)
-//		- открытие канала на чтение	+
-//  	- канал на запись уже открыт, пропускаем шаг +
+// other application calls sys_open:
+//      - open channel for reading
+//      - open channel for writing passed
 int sys_open(struct channel *ch){
 //int ret;
 	printf("%s: system has opened working file\n", appname);
 	// Открываем канал на чтение
 	if (!ch->descin){
 		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
-//		if (ch->descin != -1){
-//			ch->events &= ~IN_OPEN;
-//			ch->events |= IN_CLOSE;
-//		}else ch->descin = 0;
 		ch->rdlen = 0;
 		ch->rdstr = 0;
 	}
@@ -381,7 +377,7 @@ int sys_open(struct channel *ch){
 	return 0;
 }
 
-// ответная реакция на закрытие инит-канала = закрытие инит-канала
+// answer on close init channel
 int init_close(struct channel *ch){
 	printf("%s: system has closed init file\n", appname);
 	if (ch->descin)	close(ch->descin);
@@ -391,26 +387,25 @@ int init_close(struct channel *ch){
 	return 0;
 }
 
-
+// answer on close working channel
 int sys_close(struct channel *ch){
 	printf("%s: system has closed working file\n", appname);
 	if (ch->descin)	close(ch->descin);
 	ch->descin = 0;
-	ch->events |= IN_OPEN;
-	ch->events &= ~IN_CLOSE;
 	return 0;
 }
 
-// ответная реакция удаленного модуля на вызов in_read init канала	(init_read)
-// Регистрация нового ендпойта всегда, нового канала, если его еще нет.
-// 			- прием конфигурации каналов для ендпойнта: 5 стрингов и структуру:	pathapp, appname, cd->name, cd->protoname, cd->phyname, config_device
-//			- проверка наличия открытого канала к конкретному верхнему уровню, если нет, то:
-//								- регистрация подключения к новому
-//								- добавление в inotify канала на чтение
-//								- открытие канала на запись
-//					 			- оба канала открыты! bingo!
-// 			- регистрируем endpoint: struct endpoint, то есть канал и конфигурацию вместе
-//			- отправляем config_device в буфер приложения
+// Answer on call in_read of init channel
+// Register new endpoint
+// Register new channel for mychs[]->name IF NOT
+//			- receive endpoint: 5 strings and struct config_device (pathapp, appname, cd->name, cd->protoname, cd->phyname, config_device)
+//			- test open channel to mychs[]->name IF NOT:
+//								- connect to channel
+//								- add fifo to inotify for read
+// 								- open fifo for writing
+//					 			- two fifos opens! bingo!
+//			- endpoint registers
+//			- send endpoint to application
 int init_read(struct channel *ch){
 char nbuf[100];
 int i;
@@ -455,11 +450,11 @@ int len, rdlen;
 		// Connect to channel
 		printf("%s: connect to working channel... ",appname);
 		// find channel in list
-		//			- проверка наличия открытого канала к конкретному верхнему уровню, если нет, то:
-        //								- регистрация подключения к новому
-        //								- добавление в inotify канала на чтение
-        //								- открытие канала на запись
-        // 			- оба канала открыты! bingo!
+		//			- test open channel to mychs[]->name IF NOT:
+		//								- connect to channel
+		//								- add fifo to inotify for read
+		// 								- open fifo for writing
+		//					 			- two fifos opens! bingo!
 		for (i = 1; i < maxch; i++){
 			if (mychs[i]){
 				if (strstr(isstr[1], mychs[i]->appname)){
@@ -526,8 +521,7 @@ fd_set readset;
 	printf("%s: init channel in watch %d\n", appname, mychs[0]->watch);
 
 	do{
-		/* Ждем наступления события или прерывания по отлавливаемому нами
-		   сигналу */
+		// Waiting for inotify events
 		FD_ZERO(&readset);
 		FD_SET(d_inoty, &readset);
 		tv.tv_sec = 1;
@@ -572,8 +566,7 @@ fd_set readset;
 
 
 // ================= External API ============================================== //
-
-// Создает инит канал и запускает поток контроля за каналами на чтение
+// Create init-channel and run inotify thread for reading files
 char stack[10000];
 int mf_init(char *pathinit, char *a_name){
 	appname = malloc(strlen(a_name));
@@ -600,6 +593,7 @@ void mf_exit(){
 	kill(pidchld, SIGKILL);
 }
 
+// Form new endpoint
 int mf_newendpoint (struct config_device *cd, char *pathinit){
 int ret, wrlen;
 char fname[160];
@@ -638,6 +632,7 @@ int dninit;
 	wrlen += write(dninit, cd->protoname, strlen(cd->protoname)+1);
 	wrlen += write(dninit, cd->phyname, strlen(cd->phyname)+1);
 	wrlen += write(dninit, &cd, sizeof(struct config_device));
+	printf("%s: %d bytes writes to %s\n", appname, wrlen, fname);
 
 	return 0;
 }

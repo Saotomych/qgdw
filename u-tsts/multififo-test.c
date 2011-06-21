@@ -68,7 +68,8 @@ int main(int argc, char * argv[]){
 	mf_init("/rw/mx00/mainapp","mf_test");
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
 
-	// обязательно дождаться конца операции открытия файла с той стороны
+
+	// wait for SIGNAL
 	for(;;){
 
 	}
