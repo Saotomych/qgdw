@@ -69,9 +69,11 @@ int main(int argc, char * argv[]){
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
 
 	// обязательно дождаться конца операции открытия файла с той стороны
-	sleep(1);
+	for(;;){
 
-	mf_exit();
+	}
+
+//	mf_exit();
 
 	return 0;
 }

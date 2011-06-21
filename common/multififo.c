@@ -16,10 +16,10 @@
 char *appname, *pathapp;
 
 // Control child
-pid_t pidchld;
+pid_t pidchld = 0;
 
 // Control inotify
-int d_inoty;
+int d_inoty = 0;
 
 // Control channel
 char *sufinit = {"-init"};
@@ -227,19 +227,20 @@ struct channel *ch = mychs[num];
 
 // Создает инит-канал, он всегда нулевой
 // Инит-канал открывается приложением следующего верхнего уровня для подачи системных команд
-int initchannel(char *apppath, char *appname){
+int initchannel(char *a_path, char *a_name){
 int len;
+
 	if (maxch) return -1;
 	mychs[0] = malloc(sizeof(struct channel));
 	if (!mychs[maxch]) return -1;
 	initchannelstruct(0);
 
-	mychs[maxch]->appname = malloc(strlen(appname));
-	strcpy(mychs[maxch]->appname, appname);
+	mychs[maxch]->appname = malloc(strlen(a_name));
+	strcpy(mychs[maxch]->appname, a_name);
 
-	len = strlen(apppath) + strlen(appname) + strlen(sufinit) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufinit) + 8;
 	mychs[maxch]->f_namein = malloc(len);
-	sprintf(mychs[0]->f_namein, "%s/%s%s", apppath,appname,sufinit);
+	sprintf(mychs[0]->f_namein, "%s/%s%s", a_path,a_name,sufinit);
 
 	mychs[0]->f_nameout = 0;
 
@@ -250,7 +251,11 @@ int len;
 	mychs[maxch]->in_close = init_close;
 	mychs[maxch]->in_read = init_read;
 
+	printf("%s: init channel %d ready\n", appname, maxch);
+
 	maxch++;
+
+	printf("%s: MAXCH = %d\n", appname, maxch);
 
 	return 0;
 }
@@ -259,7 +264,7 @@ int len;
 // Создаваемый канал предназначен для активации связи с приложением следующего нижнего уровня
 // После создания канала по инит-каналу приложения следующего нижнего уровня  ему будет выдана
 // конфигурация канала, который нужно захватить для обмена, здесь это будет делать функция connectchannel
-int newchannel(char *apppath, char *appname){
+int newchannel(char *a_path, char *a_name){
 int len;
 	// Create downdirection FIFO
 
@@ -267,16 +272,16 @@ int len;
 	if (!mychs[maxch]) return -1;
 	initchannelstruct(maxch);
 
-	mychs[maxch]->appname = malloc(strlen(appname));
-	strcpy(mychs[maxch]->appname, appname);
+	mychs[maxch]->appname = malloc(strlen(a_name));
+	strcpy(mychs[maxch]->appname, a_name);
 
-	len = strlen(apppath) + strlen(appname) + strlen(sufup) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 8;
 	mychs[maxch]->f_namein = malloc(len);
-	sprintf(mychs[maxch]->f_namein, "%s/%s%s", apppath, appname, sufup);
+	sprintf(mychs[maxch]->f_namein, "%s/%s%s", a_path, a_name, sufup);
 
-	len = strlen(apppath) + strlen(appname) + strlen(sufdn) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 8;
 	mychs[maxch]->f_nameout = malloc(len);
-	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", apppath, appname, sufdn);
+	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", a_path, a_name, sufdn);
 
 	unlink(mychs[maxch]->f_namein);
 	if (mknod(mychs[maxch]->f_namein, mychs[maxch]->mode, 0)) return -1;
@@ -287,7 +292,11 @@ int len;
 	mychs[maxch]->in_close = sys_close;
 	mychs[maxch]->in_read = sys_read;
 
+	printf("%s: initialize down channel %d ready. files: in - %s & out - %s\n", appname, maxch, mychs[maxch]->f_namein, mychs[maxch]->f_nameout);
+
 	maxch++;
+
+	printf("%s: MAXCH = %d\n", appname, maxch);
 
 	return 0;
 }
@@ -295,7 +304,7 @@ int len;
 // Создает новый двунаправленный именованый канал
 // Подключает его к уже готовым фифо буферам от верхнего уровня	*pbuf=0;
 
-int connect2channel(char *apppath, char *appname){
+int connect2channel(char *a_path, char *a_name){
 int len;
 	// Create updirection FIFO
 
@@ -304,22 +313,27 @@ int len;
 	if (!mychs[maxch]) return -1;
 	initchannelstruct(maxch);
 
-	mychs[maxch]->appname = malloc(strlen(appname));
-	strcpy(mychs[maxch]->appname, appname);
+	mychs[maxch]->appname = malloc(strlen(a_name));
+	strcpy(mychs[maxch]->appname, a_name);
 
-	len = strlen(apppath) + strlen(appname) + strlen(sufdn) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 8;
 	mychs[maxch]->f_namein = malloc(len);
-	sprintf(mychs[maxch]->f_namein, "%s/%s%s", apppath, appname, sufdn);
+	sprintf(mychs[maxch]->f_namein, "%s/%s%s", a_path, a_name, sufdn);
 
-	len = strlen(apppath) + strlen(appname) + strlen(sufup) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 8;
 	mychs[maxch]->f_nameout = malloc(len);
-	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", apppath, appname, sufup);
+	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", a_path, a_name, sufup);
 
 	mychs[maxch]->in_open = sys_open;
 	mychs[maxch]->in_close = sys_close;
 	mychs[maxch]->in_read = sys_read;
 
+	printf("%s: connect to up channel %d ready. files: in - %s & out - %s\n", appname, maxch, mychs[maxch]->f_namein, mychs[maxch]->f_nameout);
+
 	maxch++;
+
+	printf("%s: MAXCH = %d\n", appname, maxch);
+
 	return 0;
 }
 
@@ -350,10 +364,20 @@ int init_open(struct channel *ch){
 //  	- канал на запись уже открыт, пропускаем шаг +
 int sys_open(struct channel *ch){
 //int ret;
-	printf("%s: system has opened file\n", appname);
+	printf("%s: system has opened working file\n", appname);
 	// Открываем канал на чтение
-	ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
-	if (!ch->descout) ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
+	if (!ch->descin){
+		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
+//		if (ch->descin != -1){
+//			ch->events &= ~IN_OPEN;
+//			ch->events |= IN_CLOSE;
+//		}else ch->descin = 0;
+		ch->rdlen = 0;
+		ch->rdstr = 0;
+	}
+	if (!ch->descout){
+		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
+	}
 	return 0;
 }
 
@@ -369,7 +393,11 @@ int init_close(struct channel *ch){
 
 
 int sys_close(struct channel *ch){
-	printf("%s: system has closed file\n", appname);
+	printf("%s: system has closed working file\n", appname);
+	if (ch->descin)	close(ch->descin);
+	ch->descin = 0;
+	ch->events |= IN_OPEN;
+	ch->events &= ~IN_CLOSE;
 	return 0;
 }
 
@@ -395,7 +423,7 @@ int len, rdlen;
 		printf("%s: string in buffer \"%s\" \n", appname, ch->ring);
 
 		while(rdlen > 0){
-			// Building init point
+			// Building init pointpp
 			if (ch->rdstr < 5){
 				printf("%s: get string number %d\n", appname, ch->rdstr);
 				// get strings
@@ -425,22 +453,26 @@ int len, rdlen;
 
 	if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
 		// Connect to channel
-		printf("%s: connect to channel\n",appname);
+		printf("%s: connect to working channel... ",appname);
 		// find channel in list
 		//			- проверка наличия открытого канала к конкретному верхнему уровню, если нет, то:
         //								- регистрация подключения к новому
         //								- добавление в inotify канала на чтение
         //								- открытие канала на запись
         // 			- оба канала открыты! bingo!
-		for (i=1; i<16; i++){
-			if (mychs[i])
-				if (strstr(isstr[1], mychs[i]->appname)) break;
+		for (i = 1; i < maxch; i++){
+			if (mychs[i]){
+				if (strstr(isstr[1], mychs[i]->appname)){
+					printf("found channel %d\n", i);
+					break;
+				}
+			}
 		}
 
-		if (i == 16){
+		if (i == maxch){
 			// Channel not found, start new channel
 			sprintf(nbuf,"%s/%s",isstr[0], isstr[2]);
-			printf("%s: start new channel - %s\n", appname, nbuf);
+			printf("not found channel for %s\n", isstr[1]);
 			if (!connect2channel(isstr[0], isstr[2])){
 				// Add new channel to up
 				i = maxch-1;
@@ -472,10 +504,8 @@ int sys_read(struct channel *ch){
 
 // ZZzzz
 
-// ================= External API ============================================== //
-
-// Создает инит канал и запускает поток контроля за каналами на чтение
-int mf_init(char *pathinit, char *a_name){
+// Thread function for waiting inotify events
+int inotify_thr(void *arg){
 int i, mask, ret;
 ssize_t rdlen=0;
 struct inotify_event einoty;
@@ -485,65 +515,83 @@ static int evcnt=0;
 struct timeval tv;
 fd_set readset;
 
+	printf("%s: start inotify thread OK\n", appname);
+
+	if (!d_inoty){
+		printf("%s: inotify not init\n", appname);
+		return -1;
+	}
+	printf("%s: init inotify ready, desc=0x%X\n", appname, d_inoty);
+	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
+	printf("%s: init channel in watch %d\n", appname, mychs[0]->watch);
+
+	do{
+		/* Ждем наступления события или прерывания по отлавливаемому нами
+		   сигналу */
+		FD_ZERO(&readset);
+		FD_SET(d_inoty, &readset);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		ret = select(d_inoty + 1, &readset, 0, 0, &tv);
+		if (ret > 0){
+			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
+			if (rdlen){
+				if (einoty.len){
+					rdlen = read(d_inoty, namebuf, einoty.len);
+					if (rdlen > 0){
+						namebuf[rdlen] = 0;
+						printf("%s: name read: %s\n", appname, namebuf);
+					}
+				}
+				evcnt++;
+				printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
+				printf("%s: MAXCH in waiting = %d\n", appname, maxch);
+				// Find channel by watch
+				for (i = 0; i < maxch; i++){
+					ch = mychs[i];
+					if (einoty.wd == ch->watch){
+						printf("%s: find channel %d of %d\n", appname, i, maxch);
+						break;
+					}
+				}
+				if (i < maxch){
+					// Calling callback functions
+					mask = einoty.mask & ch->events;
+					printf("%s: callback 0x%X\n", appname, mask);
+					if (mask & IN_OPEN)	ch->in_open(ch);
+					if (mask & IN_CLOSE) ch->in_close(ch);
+					if (mask & IN_MODIFY) ch->in_read(ch);
+				}
+			}
+		}
+	}while(1);
+	printf("Exit!\n");
+
+	return 0;
+}
+
+
+// ================= External API ============================================== //
+
+// Создает инит канал и запускает поток контроля за каналами на чтение
+char stack[10000];
+int mf_init(char *pathinit, char *a_name){
 	appname = malloc(strlen(a_name));
 	strcpy(appname, a_name);
 	pathapp = malloc(strlen(pathinit));
 	strcpy(pathapp, pathinit);
 
-	if (initchannel(pathinit, a_name)) return -1;
 	d_inoty = inotify_init();
+	if (initchannel(pathinit, a_name)) return -1;
 
-	ret = fork();
-	if (!ret){
-		if (!d_inoty){
-			printf("%s: inotify not init\n", appname);
-			return -1;
-		}
+	printf("%s: start thread\n", appname);
 
-		mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
-		printf("%s: init 0x%X\n", appname, d_inoty);
+	pidchld = clone(inotify_thr, (void*)(stack+10000-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
+	printf("func: clone:%d - %s\n",errno, strerror(errno));
 
-		do{
-			/* Ждем наступления события или прерывания по отлавливаемому нами
-			   сигналу */
-			FD_ZERO(&readset);
-			FD_SET(d_inoty, &readset);
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
-			ret = select(d_inoty + 1, &readset, 0, 0, &tv);
-			if (ret > 0){
-				rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
-				if (rdlen){
-					if (einoty.len){
-						rdlen = read(d_inoty, namebuf, einoty.len);
-						if (rdlen > 0){
-							namebuf[rdlen] = 0;
-							printf("%s: name read: %s\n", appname, namebuf);
-						}
-					}
-					evcnt++;
-					printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
-					// Find channel by watch
-					for (i = 0; i < maxch; i++){
-						ch = mychs[i];
-						printf("%s: find channel %d of %d\n", appname, i, maxch);
-						if (einoty.wd == ch->watch) break;
-					}
-					if (i < maxch){
-						// Calling callback-functions	printf("%s: newep 0x%X\n", appname, d_inoty);
-
-						mask = einoty.mask & ch->events;
-						if (mask & IN_OPEN)	ch->in_open(ch);
-						if (mask & IN_CLOSE) ch->in_close(ch);
-						if (mask & IN_MODIFY) ch->in_read(ch);
-					}
-				}
-			}
-		}while(1);
-		printf("Exit!\n");
+	if (pidchld == -1) {
+	        exit(1);
 	}
-
-	pidchld = ret;
 
 	return 0;
 }
@@ -569,12 +617,9 @@ int dninit;
 		sleep(1);
 	}else 		printf("low-level application running\n");
 
-	printf("%s: newep 0x%X %d\n", appname, d_inoty, maxch);
 	if (newchannel(pathinit, cd->name)) return -1;
 
 	// Add watch in(up) channel
-	printf("%s: newep 0x%X %d\n", appname, d_inoty, maxch);
-
 	mychs[maxch-1]->watch = inotify_add_watch(d_inoty, mychs[maxch-1]->f_namein, mychs[maxch-1]->events);
 	printf("%s: infile add to watch %d, %s\n", appname, mychs[maxch-1]->watch, mychs[maxch-1]->f_namein);
 

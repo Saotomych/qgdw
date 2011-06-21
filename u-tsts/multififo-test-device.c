@@ -53,6 +53,10 @@ int main(int argc, char * argv[]){
 
 //	open("/rw/mx00/mainapp/mf_test-init", O_RDWR | O_NDELAY);
 
+	for(;;){
+
+	}
+
 //	mf_exit();
 
 	return 0;
