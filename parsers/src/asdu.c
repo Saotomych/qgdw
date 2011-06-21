@@ -17,7 +17,7 @@
 asdu *asdu_create()
 {
 	// try to allocate memory for the structure
-	asdu *unit = (asdu *) calloc(1, sizeof(asdu));
+	asdu *unit = (asdu*) calloc(1, sizeof(asdu));
 
 	return unit;
 }

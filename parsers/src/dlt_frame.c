@@ -20,10 +20,10 @@
 
 /* Frame header constants */
 /* Control field masks */
-#define DLT_FNC					0x1F		/* function */
-#define DLT_SSEQ				0x20		/* subsequent data */
-#define DLT_ASYN				0x40		/* asynchronous/synchronous */
-#define DLT_DIR					0x80		/* direction bit */
+#define DLT_FNC					0x1F	/* function */
+#define DLT_SSEQ				0x20	/* subsequent data */
+#define DLT_ASYN				0x40	/* asynchronous/synchronous */
+#define DLT_DIR					0x80	/* direction bit */
 
 
 uint8_t dlt_frame_get_fcs(unsigned char *buff, uint32_t buff_len)
@@ -49,7 +49,7 @@ uint8_t dlt_frame_get_fcs(unsigned char *buff, uint32_t buff_len)
 dlt_frame *dlt_frame_create()
 {
 	// try to allocate memory for the structure
-	dlt_frame *frame = (dlt_frame *) calloc(1, sizeof(dlt_frame));
+	dlt_frame *frame = (dlt_frame*) calloc(1, sizeof(dlt_frame));
 
 	return frame;
 }
@@ -108,7 +108,7 @@ void dlt_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, dlt_
 uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame)
 {
 	// fast check input data
-	if(!buff || buff_len - *offset < DLT_LEN_MIN || !frame) return RES_DLT_INCORRECT;
+	if(!buff || !frame) return RES_DLT_INCORRECT;
 
 	uint8_t fcs = 0;
 	uint8_t start_byte = 0;
@@ -118,13 +118,20 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 	{
 		start_byte = buff_get_le_uint8(buff, *offset);
 
-		*offset += 1;
-
 		if(start_byte == DLT_START_BYTE) break;
+
+		// move to the next byte
+		*offset += 1;
 	}
 
-	// check if both of start bytes found, otherwise return error
-	if(start_byte != DLT_START_BYTE || buff_get_le_uint8(buff, *offset + 6) != DLT_START_BYTE) return RES_DLT_INCORRECT;
+	// check if rest of the buffer long enough to contain the frame
+	if(buff_len - *offset < DLT_LEN_MIN) return RES_DLT_LEN_INVALID;
+
+	// check if both of start bytes were found, otherwise return error
+	if(start_byte != DLT_START_BYTE || buff_get_le_uint8(buff, *offset + 7) != DLT_START_BYTE) return RES_DLT_INCORRECT;
+
+	// skip first start byte
+	*offset += 1;
 
 	frame->adr = buff_get_le_uint64(buff, *offset);
 	*offset += 6;
@@ -147,7 +154,7 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 		if(buff_len - *offset >= frame->data_len)
 		{
 			// allocate memory for the data
-			frame->data = (unsigned char*) malloc(frame->data_len * sizeof(unsigned char));
+			frame->data = (unsigned char*) malloc(frame->data_len);
 
 			// check if memory allocated OK, otherwise return error
 			if(!frame->data)
@@ -212,7 +219,7 @@ uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame
 	*buff_len = 10 + frame->data_len + 2;
 
 	// allocate memory for the buffer
-	*buff = (unsigned char*) malloc(*buff_len * sizeof(unsigned char));
+	*buff = (unsigned char*) malloc(*buff_len);
 
 	// check if memory allocated OK, otherwise return error
 	if(!*buff)

@@ -689,39 +689,6 @@ uint8_t iec_asdu_find_pb_func(uint8_t type, uint8_t *type_size, asdu_pb_funcp *p
 }
 
 
-uint8_t iec_asdu_determine_builder(asdu* iec_asdu, asdu_pb_funcp *p_funcp)
-{
-	uint8_t res;
-
-	// presume that ASDU type not determined (by default)
-	res = RES_IEC_ASDU_UNKNOWN;
-
-	if(iec_asdu->data[0].value_type == ASDU_VAL_BOOL && iec_asdu->data[0].time_tag == 0)
-	{
-		// Single point information with quality descriptor (M_SP_NA_1)
-		*p_funcp = &iec_asdu_build_M_SP;
-
-		res = RES_IEC_ASDU_SUCCESS;
-	}
-	else if(iec_asdu->data[0].value_type == ASDU_VAL_BOOL && iec_asdu->data[0].time_tag > 0)
-	{
-		// Single point information with quality description and time tag CP56Time2a (M_SP_TB_1)
-		*p_funcp = &iec_asdu_build_M_SP;
-
-		res = RES_IEC_ASDU_SUCCESS;
-	}
-	else if(iec_asdu->size == 1 && iec_asdu->data[0].value_type == ASDU_VAL_NONE && iec_asdu->data[0].time_tag > 0)
-	{
-		// Time synchronization command (C_CS_NA_1)
-//		*p_funcp = &iec_type103;
-//
-//		res = RES_IEC_ASDU_SUCCESS;
-	}
-
-	return res;
-}
-
-
 uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
 {
 	// fast check input data
@@ -754,7 +721,7 @@ uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_as
 	if(res != RES_IEC_ASDU_SUCCESS) return res;
 
 	//try to allocate memory for the data unit array
-	iec_asdu->data = (data_unit *) calloc(iec_asdu->size, sizeof(data_unit));
+	iec_asdu->data = (data_unit*) calloc(iec_asdu->size, sizeof(data_unit));
 
 	// check if memory was allocated if not - return error
 	if(iec_asdu->data == NULL)
@@ -794,16 +761,8 @@ uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_
 	uint8_t res, type_size;
 	asdu_pb_funcp asdu_object_build;
 
-	if(iec_asdu->proto == PROTO_IEC101 || iec_asdu->proto == PROTO_IEC104)
-	{
-		// look if builder available
-		res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, NULL, &asdu_object_build);
-	}
-	else
-	{
-		// TODO try to determine needed builder by ASDU structure header and first data unit of array
-		res = iec_asdu_determine_builder(iec_asdu, &asdu_object_build);
-	}
+	// look if builder available
+	res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, NULL, &asdu_object_build);
 
 	// check if build function found, otherwise return error
 	if(res != RES_IEC_ASDU_SUCCESS) return res;
@@ -812,7 +771,7 @@ uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_
 	*buff_len = iec_asdu_calculate_buffer_len(type_size, iec_asdu, cot_len, coa_len, ioa_len);
 
 	// allocate memory for the buffer
-	*buff = (unsigned char*) malloc(*buff_len * sizeof(unsigned char));
+	*buff = (unsigned char*) malloc(*buff_len);
 
 	// check if memory allocated OK, otherwise return error
 	if(!*buff)

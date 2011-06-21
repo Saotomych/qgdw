@@ -60,7 +60,7 @@ uint8_t lpdu_frame_get_fcs(unsigned char *buff, uint32_t buff_len)
 lpdu_frame *lpdu_frame_create()
 {
 	// try to allocate memory for the structure
-	lpdu_frame *frame = (lpdu_frame *) calloc(1, sizeof(lpdu_frame));
+	lpdu_frame *frame = (lpdu_frame*) calloc(1, sizeof(lpdu_frame));
 
 	return frame;
 }
@@ -247,7 +247,7 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 		frame->data_len = user_data_len - 1 - adr_len;
 
 		// allocate memory for the data
-		frame->data = (unsigned char*) malloc(frame->data_len * sizeof(unsigned char));
+		frame->data = (unsigned char*) malloc(frame->data_len);
 
 		// check if memory allocated OK, otherwise return error
 		if(!frame->data)
@@ -356,7 +356,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		*buff_len = 5 + adr_len + frame->data_len + 2;
 
 		// allocate memory for the buffer
-		*buff = (unsigned char*) malloc(*buff_len * sizeof(unsigned char));
+		*buff = (unsigned char*) malloc(*buff_len);
 
 		// check if memory allocated OK, otherwise return error
 		if(!*buff)
@@ -410,7 +410,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		*buff_len = 2 + adr_len + 2;
 
 		// allocate memory for the buffer
-		*buff = (unsigned char*) malloc(*buff_len * sizeof(unsigned char));
+		*buff = (unsigned char*) malloc(*buff_len);
 
 		// check if memory allocated OK, otherwise return error
 		if(!*buff)
@@ -451,7 +451,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		*buff_len = 1;
 
 		// allocate memory for the buffer
-		*buff = (unsigned char*) malloc(*buff_len * sizeof(unsigned char));
+		*buff = (unsigned char*) malloc(*buff_len);
 
 		// check if memory allocated OK, otherwise return error
 		if(!*buff)
@@ -485,7 +485,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 uint8_t lpdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, lpdu_frame *frame, uint8_t format, uint8_t adr_len)
 {
 	// fast check input data
-	if(!buff || buff_len - *offset < LPDU_LEN_MIN || !frame) return RES_LPDU_INCORRECT;
+	if(!buff || !frame) return RES_LPDU_INCORRECT;
 
 	uint8_t res;
 	uint8_t start_byte = 0;
@@ -518,6 +518,7 @@ uint8_t lpdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 			break;
 		}
 
+		// move to the next byte
 		*offset += 1;
 	}
 
