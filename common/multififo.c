@@ -16,7 +16,7 @@
 char *appname, *pathapp;
 
 // Control child
-volatile static pid_t pidchld = 0;
+volatile static int inotifystop = 0;
 
 // Control inotify
 static int d_inoty = 0;
@@ -560,7 +560,7 @@ fd_set readset;
 				}
 			}
 		}
-	}while(1);
+	}while(inotifystop);
 	printf("Exit!\n");
 
 	return 0;
@@ -583,7 +583,7 @@ int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit
 
 	printf("%s: start thread\n", appname);
 
-	pidchld = 1;
+	inotifystop = 1;
 
 	return clone(inotify_thr, (void*)(stack+10000-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
 
@@ -595,7 +595,7 @@ int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit
 }
 
 void mf_exit(){
-	pidchld = 0;
+	inotifystop = 0;
 }
 
 // Form new endpoint

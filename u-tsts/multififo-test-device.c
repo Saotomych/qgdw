@@ -57,8 +57,19 @@ int rcvinit(char *buf, int len){
 	return 0;
 }
 
+void sighandler_sigchld(int arg){
+	printf("devlink: child quit\n");
+	return;
+}
+
+void sighandler_sigquit(int arg){
+	printf("devlink: own quit\n");
+	mf_exit();
+	return;
+}
+
+static sigset_t sigmask;
 int main(int argc, char * argv[]){
-static const sigset_t sigmask;
 pid_t chldpid;
 static int wait_st;
 int wait_opt = 0;
@@ -76,14 +87,16 @@ int wait_opt = 0;
 //		exit(1);
 //	}
 
-	do{
-		sigsuspend(&sigmask);
-		printf("mf_maintest: detect stop child process with status 0x%X\n", *sigmask.__val);
-	}while(*sigmask.__val != SIGQUIT);
+	signal(SIGQUIT, sighandler_sigquit);
+	signal(SIGPWR, SIG_IGN);
+	signal(SIGUSR1, SIG_IGN);
+	signal(SIGUSR2, SIG_IGN);
+	signal(SIGCHLD, sighandler_sigchld);
 
-//	printf("devlinktest: detect stop child process with status %d\n", wait_st);
+	sigsuspend(&sigmask);
+	printf("devlink: detect stop child process\n");
 
-//	mf_exit();
+	mf_exit();
 
 	return 0;
 }
