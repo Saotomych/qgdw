@@ -86,6 +86,11 @@ int tail;
 int rdlen, len;
 int notreadlen;
 
+	if ((ch->bgnframe == ch->endring) && (ch->bgnring != ch->endring)){
+		ch->events &= IN_MODIFY;	// Buffer overflow, read off
+		return -2;
+	}
+
 	if (ch->bgnring > ch->endring){
 		tail = ch->bgnring - ch->endring;
 		notreadlen = ch->endring + LENRINGBUF - ch->bgnring ;
@@ -177,7 +182,7 @@ char *end;
 }
 
 int testrunningapp(char *name){
-int ret;
+int ret, wait_st;
 char pidof[] = {"/bin/pidof"};
 char *par[] = {NULL, name};
 char *env[] = {NULL};
@@ -201,7 +206,7 @@ char buf[16];
 			execve(pidof, par, env);
 			printf("%s: fork error:%d - %s\n",appname, errno, strerror(errno));
 		}
-
+		waitpid(ret, &wait_st, 0);
 		FD_ZERO(&readset);
 	    FD_SET(opipe[0], &readset);
 	    close(opipe[1]);
@@ -211,6 +216,7 @@ char buf[16];
 	    if (ret > 0){
 	    	return read(opipe[0], buf, 16);
 	    }
+		waitpid(ret, &wait_st, 0);
 	    return -1;
 }
 
@@ -450,6 +456,10 @@ int len, rdlen;
 		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
+	if (rdlen == -2){
+		printf("%s: buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		return -1;
+	}
 	if (rdlen){
 		printf("\n%s: RING BUFFER READING WITH LEN = %d!!!\n\n", appname, rdlen);
 		while(rdlen > 0){
@@ -575,9 +585,6 @@ fd_set readset;
 					}
 				}
 				evcnt++;
-
-				if (evcnt > 100) inotifystop = 0;	// Temporary defence from initfile open/close procedure cycle in one module
-
 				printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
 				// Find channel by watch
 				for (i = 0; i < maxch; i++){
@@ -645,13 +652,14 @@ struct channel *ch;
 	if (!testrunningapp(cd->name)){
 		// lowlevel application not running
 		// running it
+		printf("%s: RUN LOW LEVEL APPLICATION. WAITING INITIALIZATION... ", appname);
 		ret = fork();
 		if (!ret){
 			ret = execve(cd->name, NULL, NULL);
 			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 		}
-		printf("%s: run app...OK\n", appname);
-		sleep(1); // Wait for run application and inotify initialise, need to change to other mechanism
+		sleep(1);
+		printf("OK\n");
 	}else 		printf("low-level application running\n");
 
 	if (newchannel(pathinit, cd->name)) return -1;
@@ -667,7 +675,7 @@ struct channel *ch;
 	strcat(fname,cd->name);
 	strcat(fname, sufinit);
 	dninit = open(fname, O_RDWR);
-	if (!dninit) return -1;
+	while (!dninit) return -1;
 
 	// Write config to init channel
 	wrlen  = write(dninit, pathinit, strlen(pathinit)+1);

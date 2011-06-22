@@ -71,26 +71,21 @@ int rcvinit(char *buf, int len){
 	return 0;
 }
 
-void sighandler_sigchld(int arg){
-	printf("mf_maintest: child quit\n");
-	return;
-}
-
 void sighandler_sigquit(int arg){
 	printf("mf_maintest: own quit\n");
 	mf_exit();
-	return;
+	exit(0);
 }
 
 static sigset_t sigmask;
 int main(int argc, char * argv[]){
 pid_t chldpid;
+int wait_st;
+int wait_opt = 0;
+int exit = 0;
 
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
-	signal(SIGUSR1, SIG_IGN);
-	signal(SIGUSR2, SIG_IGN);
-	signal(SIGCHLD, SIG_IGN);
 
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
@@ -99,10 +94,19 @@ pid_t chldpid;
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
 
 	signal(SIGQUIT, sighandler_sigquit);
-	signal(SIGCHLD, sighandler_sigchld);
 
-	sigsuspend(&sigmask);
-	printf("mf_maintest: detect stop child process\n");
+	do{
+		sigsuspend(&sigmask);
+		waitpid(chldpid, &wait_st, 0);
+		if (WIFEXITED(wait_st)){
+			printf("mf_test: child exited by exit(%d).\n", WEXITSTATUS(wait_st));
+			exit = 1;
+		}
+		if (WIFSIGNALED(wait_st)){
+			printf("mf_test: child exited by signal(%d).\n", WTERMSIG(wait_st));
+			exit = 1;
+		}
+	}while(!exit);
 
 	mf_exit();
 
