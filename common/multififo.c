@@ -537,7 +537,26 @@ struct endpoint *ep;
 }
 
 int sys_read(struct channel *ch){
+char *nbuf;
+int i;
+int len, rdlen;
+struct endpoint *ep;
 	printf("%s: system has read file\n", appname);
+	rdlen = read2channel(ch);
+	if (rdlen == -1){
+		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
+		return -1;
+	}
+	if (rdlen == -2){
+		printf("%s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		return -1;
+	}
+	if (rdlen){
+		nbuf = malloc(rdlen);
+		len = getdatafromring(ch, nbuf, rdlen);
+		cb_rcvinit(nbuf, len);
+		free(nbuf);
+	}
 	return 0;
 }
 
