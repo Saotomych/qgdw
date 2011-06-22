@@ -53,13 +53,10 @@ struct channel{
 
 // connect device to channel
 struct endpoint{
+	char *isstr[5];
 	struct config_device *edc;
 	struct channel		 *cdc;
 };
-
-// Init channel datas
-char *isstr[5];
-struct config_device *idc;
 
 // List of channels
 static int maxch = 0;
@@ -450,6 +447,7 @@ int init_read(struct channel *ch){
 char nbuf[100];
 int i;
 int len, rdlen;
+struct endpoint *ep;
 	// 0 - init already
 	rdlen = read2channel(ch);
 	if (rdlen == -1){
@@ -457,22 +455,28 @@ int len, rdlen;
 		return -1;
 	}
 	if (rdlen == -2){
-		printf("%s: buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		printf("%s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 	if (rdlen){
-		printf("\n%s: RING BUFFER READING WITH LEN = %d!!!\n\n", appname, rdlen);
+		if (maxep > 63) return -1;
+		ep = malloc(sizeof(struct endpoint));
+		if (ep > 0){
+			myeps[maxep] = ep;
+			maxep++;
+		}else return -1;
+//		printf("\n%s: RING BUFFER READING WITH LEN = %d!!!\n\n", appname, rdlen);
 		while(rdlen > 0){
 			// Building init pointpp
 			if (ch->rdstr < 5){
-				printf("%s: get string number %d\n", appname, ch->rdstr);
+//				printf("%s: get string number %d\n", appname, ch->rdstr);
 				// get strings
 				len = getstringfromring(ch, nbuf);
-				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
+//				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
 				if (len > 0){
-					isstr[ch->rdstr] = malloc(len);
-					strcpy(isstr[ch->rdstr], nbuf);
-					printf("%s: %d - %s\n", appname, ch->rdstr, isstr[ch->rdstr]);
+					ep->isstr[ch->rdstr] = malloc(len);
+					strcpy(ep->isstr[ch->rdstr], nbuf);
+//					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
 					ch->rdstr++;
 					rdlen -= len;
 				}else rdlen = 0;
@@ -480,59 +484,54 @@ int len, rdlen;
 				// get config_device
 				len = getdatafromring(ch, nbuf, sizeof(struct config_device));
 				if (len == sizeof(struct config_device)){
-					idc = malloc(sizeof(struct config_device));
-					memcpy(idc, nbuf, sizeof(struct config_device));
+					ep->edc = malloc(sizeof(struct config_device));
+					memcpy(ep->edc, nbuf, sizeof(struct config_device));
 					ch->rdlen += len;
 				}
 				rdlen = 0;
 			}
-			printf("%s: rdlen=%d\n",appname,rdlen);
+//			printf("%s: rdlen=%d\n",appname,rdlen);
 			if (len == -1) rdlen = 0;;
 		}
-		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
-		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
-	}
+//		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
+//		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
-	if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
-		// Connect to channel
-		printf("%s: connect to working channel... ",appname);
-		// find channel in list
-		//			- test open channel to mychs[]->name IF NOT:
-		//								- connect to channel
-		//								- add fifo to inotify for read
-		// 								- open fifo for writing
-		//					 			- two fifos opens! bingo!
-		for (i = 1; i < maxch; i++){
-			if (mychs[i]){
-				if (strstr(isstr[1], mychs[i]->appname)){
-					printf("found channel %d\n", i);
-					break;
+		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
+			// Connect to channel
+			printf("%s: connect to working channel... ",appname);
+			// find channel in list
+			//			- test open channel to mychs[]->name IF NOT:
+			//								- connect to channel
+			for (i = 1; i < maxch; i++){
+				if (mychs[i]){
+					if (strstr(ep->isstr[1], mychs[i]->appname)){
+						printf("found channel %d\n", i);
+						break;
+					}
 				}
 			}
-		}
 
-		if (i == maxch){
-			// Channel not found, start new channel
-			sprintf(nbuf,"%s/%s",isstr[0], isstr[2]);
-			printf("not found channel for %s\n", isstr[1]);
-			if (!connect2channel(isstr[0], isstr[2])){
-				// Add new channel to up
-				i = maxch-1;
-				mychs[i]->watch = inotify_add_watch(d_inoty, mychs[i]->f_namein, mychs[i]->events);
-				printf("%s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
-				mychs[i]->descout = open(mychs[i]->f_nameout, O_RDWR | O_NDELAY);
-				printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
-			}else return -1;
-		}
+			if (i == maxch){
+				// Channel not found, start new channel
+				sprintf(nbuf,"%s/%s",ep->isstr[0], ep->isstr[2]);
+				printf("not found channel for %s\n", ep->isstr[1]);
+				if (!connect2channel(ep->isstr[0], ep->isstr[2])){
+					// Add new channel to up
+					i = maxch-1;
+					//	- add fifo to inotify for read
+					mychs[i]->watch = inotify_add_watch(d_inoty, mychs[i]->f_namein, mychs[i]->events);
+					printf("%s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
+					//	- open fifo for writing
+					mychs[i]->descout = open(mychs[i]->f_nameout, O_RDWR | O_NDELAY);
+					printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
+					//	- two fifos opens! bingo!
+				}else return -1;
+			}
+			// Call callback function for working config_device
+			cb_rcvinit((char*)ep, sizeof(struct endpoint));
 
-		// Building endpoint
-		myeps[maxep] = malloc(sizeof(struct endpoint));
-		myeps[maxep]->cdc = mychs[i];
-		myeps[maxep]->edc = idc;
-
-		// Send SIGNAL config_device to application buffer
-		// will be there
-	}
+		} // rdstr == 5 .....
+	}	// rdlen != 0
 
 	return 0;
 }
