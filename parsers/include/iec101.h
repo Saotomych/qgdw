@@ -9,7 +9,15 @@
 
 
 #include <stdint.h>
+#include <stddef.h>
+#include <malloc.h>
+#include "p_num.h"
 #include "iec_def.h"
+#include "lpdu_frame.h"
+#include "asdu.h"
+#include "iec_asdu.h"
+#include "../../common/multififo.h"
+
 
 
 #ifdef __cplusplus

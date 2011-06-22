@@ -9,9 +9,15 @@
 
 
 #include <stdint.h>
-#include "asdu.h"
+#include <stddef.h>
+#include <malloc.h>
+#include <signal.h>
+#include "p_num.h"
 #include "iec_def.h"
-
+#include "apdu_frame.h"
+#include "asdu.h"
+#include "iec_asdu.h"
+#include "../../common/multififo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +39,16 @@ extern "C" {
  *
  */
 
+int iec104_rcvdata(char *buf, int len);
+
+
+int iec104_rcvinit(char *buf, int len);
+
+
+void sighandler_sigchld(int arg);
+
+
+void sighandler_sigquit(int arg);
 
 
 #ifdef __cplusplus
