@@ -9,6 +9,14 @@
 
 
 #include <stdint.h>
+#include <stddef.h>
+#include <malloc.h>
+#include <signal.h>
+#include "p_num.h"
+#include "dlt_frame.h"
+#include "asdu.h"
+#include "dlt_asdu.h"
+#include "../../common/multififo.h"
 
 
 #ifdef __cplusplus
@@ -24,14 +32,6 @@ extern "C" {
  *
  */
 
-/* DLT645 communication configuration */
-typedef struct dlt645_cfg {
-	/* Communication parameters */
-	uint8_t		port;			/* serial port number */
-	uint64_t	adr;			/* link address/ASDU address (slave) */
-	uint8_t		host_type;		/* master/slave */
-	uint8_t		net_type;		/* point-2-point/multiple point-2-point/etc */
-} dlt645_cfg;
 
 /*
  *
@@ -39,6 +39,16 @@ typedef struct dlt645_cfg {
  *
  */
 
+int dlt645_rcvdata(char *buf, int len);
+
+
+int dlt645_rcvinit(char *buf, int len);
+
+
+void sighandler_sigchld(int arg);
+
+
+void sighandler_sigquit(int arg);
 
 
 

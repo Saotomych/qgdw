@@ -4,6 +4,7 @@
  * LLC "Mediakon"
  */
  
+
 #include "../include/iec104.h"
 #include "../../devlinks/devlink.h"
 
@@ -27,7 +28,6 @@ int main(int argc, char *argv[])
 	sigset_t sigmask;
 
 	chldpid = mf_init("/rw/mx00/parsers", "parser-iec104", iec104_rcvdata, iec104_rcvinit);
-//	mf_newendpoint(&cd, "/rw/mx00/devlinks");
 
 	signal(SIGQUIT, sighandler_sigquit);
 	signal(SIGPWR,  SIG_IGN);
