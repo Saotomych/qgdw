@@ -71,26 +71,16 @@ void sighandler_sigquit(int arg){
 static sigset_t sigmask;
 int main(int argc, char * argv[]){
 pid_t chldpid;
-static int wait_st;
-int wait_opt = 0;
 
-	chldpid = mf_init("/rw/mx00/devlinks","devlinktest", rcvdata, rcvinit);
-
-	// wait for child process exit
-//	sleep(1);
-//	printf("mf_devlinktest: chldpid %d\n", chldpid);
-
-//	wait(&wait_st);
-//	waitpid(chldpid, &wait_st, wait_opt);
-//	if ((int) waitpid(chldpid, &wait_st, wait_opt) == -1){
-//		printf("func: waitpid:%d - %s\n",errno, strerror(errno));
-//		exit(1);
-//	}
-
-	signal(SIGQUIT, sighandler_sigquit);
+	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
 	signal(SIGUSR1, SIG_IGN);
 	signal(SIGUSR2, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
+
+	chldpid = mf_init("/rw/mx00/devlinks","devlinktest", rcvdata, rcvinit);
+
+	signal(SIGQUIT, sighandler_sigquit);
 	signal(SIGCHLD, sighandler_sigchld);
 
 	sigsuspend(&sigmask);

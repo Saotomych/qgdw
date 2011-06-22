@@ -12,6 +12,7 @@
 #include "multififo.h"
 
 #define LENRINGBUF	1024
+#define INOTIFYTHR_STACKSIZE	32768
 
 char *appname, *pathapp;
 
@@ -47,7 +48,7 @@ struct channel{
 	char *endring;	// end frame
 	int rdlen;		// bytes read since channel opens
 	int rdstr;		// strings reads since channel opens
-	int ready;		// channel ready to work
+	volatile int ready;		// channel ready to work
 };
 
 // connect device to channel
@@ -605,7 +606,7 @@ fd_set readset;
 
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
-char stack[16384];
+char stack[INOTIFYTHR_STACKSIZE];
 int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit){
 	appname = malloc(strlen(a_name));
 	strcpy(appname, a_name);
@@ -621,7 +622,7 @@ int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit
 
 	inotifystop = 1;
 
-	return clone(inotify_thr, (void*)(stack+16384-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
+	return clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
 
 //	if (pidchld == -1){
 //		printf("%s: clone:%d - %s\n", appname, errno, strerror(errno));
@@ -639,6 +640,7 @@ int mf_newendpoint (struct config_device *cd, char *pathinit){
 int ret, wrlen;
 char fname[160];
 int dninit;
+struct channel *ch;
 
 	if (!testrunningapp(cd->name)){
 		// lowlevel application not running
@@ -655,8 +657,9 @@ int dninit;
 	if (newchannel(pathinit, cd->name)) return -1;
 
 	// Add watch in(up) channel
-	mychs[maxch-1]->watch = inotify_add_watch(d_inoty, mychs[maxch-1]->f_namein, mychs[maxch-1]->events);
-	printf("%s: infile add to watch %d, %s\n", appname, mychs[maxch-1]->watch, mychs[maxch-1]->f_namein);
+	ch = mychs[maxch-1];
+	ch->watch = inotify_add_watch(d_inoty, ch->f_namein, ch->events);
+	printf("%s: infile add to watch %d, %s\n", appname, ch->watch, ch->f_namein);
 
 	// Open init channel
 	strcpy(fname, pathinit);
@@ -674,9 +677,10 @@ int dninit;
 	wrlen += write(dninit, cd->phyname, strlen(cd->phyname)+1);
 	wrlen += write(dninit, &cd, sizeof(struct config_device));
 
-
-
+	while(ch->ready < 2);
 	close(dninit);
+
+	printf("%s: new endpoint completed\n", appname);
 
 	return 0;
 }
