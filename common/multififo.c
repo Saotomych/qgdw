@@ -47,6 +47,7 @@ struct channel{
 	char *endring;	// end frame
 	int rdlen;		// bytes read since channel opens
 	int rdstr;		// strings reads since channel opens
+	int ready;		// channel ready to work
 };
 
 // connect device to channel
@@ -93,6 +94,7 @@ int notreadlen;
 	}
 
 	rdlen = read(ch->descin, ch->endring, tail);
+	if (rdlen == -1) return -1;
 
 	ch->endring += rdlen;
 	if (rdlen == tail){
@@ -196,7 +198,7 @@ char buf[16];
 	        close(opipe[0]);
 	        close(opipe[1]);
 			execve(pidof, par, env);
-			printf("fifo: exec:%d - %s\n",errno, strerror(errno));
+			printf("%s: fork error:%d - %s\n",appname, errno, strerror(errno));
 		}
 
 		FD_ZERO(&readset);
@@ -225,6 +227,7 @@ struct channel *ch = mychs[num];
 	ch->bgnring = ch->ring;
 	ch->bgnframe = ch->ring;
 	ch->endring = ch->ring;
+	ch->ready = 0; // Not ready
 }
 
 // Create init channel, it have index = 0 always
@@ -253,11 +256,10 @@ int len;
 	mychs[maxch]->in_close = init_close;
 	mychs[maxch]->in_read = init_read;
 
-	printf("%s: init channel %d ready\n", appname, maxch);
-
 	maxch++;
 
-	printf("%s: MAXCH = %d\n", appname, maxch);
+	printf("%s: init channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("%s: init channel file ready: %s\n", appname, mychs[maxch-1]->f_namein);
 
 	return 0;
 }
@@ -292,11 +294,10 @@ int len;
 	mychs[maxch]->in_close = sys_close;
 	mychs[maxch]->in_read = sys_read;
 
-	printf("%s: initialize down channel %d ready. files: in - %s & out - %s\n", appname, maxch, mychs[maxch]->f_namein, mychs[maxch]->f_nameout);
-
 	maxch++;
 
-	printf("%s: MAXCH = %d\n", appname, maxch);
+	printf("%s: initialize down channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("%s: channel files ready: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -328,11 +329,10 @@ int len;
 	mychs[maxch]->in_close = sys_close;
 	mychs[maxch]->in_read = sys_read;
 
-	printf("%s: connect to up channel %d ready. files: in - %s & out - %s\n", appname, maxch, mychs[maxch]->f_namein, mychs[maxch]->f_nameout);
-
 	maxch++;
 
-	printf("%s: MAXCH = %d\n", appname, maxch);
+	printf("%s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("%s: channel files ready: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -343,15 +343,16 @@ int len;
 // answer on in_open for init channel
 //		- open init channel
 int init_open(struct channel *ch){
-	printf("%s: system has opened init file\n", appname);
 	if (!ch->descin){
 		ch->descin = open(ch->f_namein, O_RDWR  | O_NDELAY);
-		if (ch->descin != -1){
+		if (ch->descin == -1) ch->descin = 0;
+		if (ch->descin){
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
-		}else ch->descin = 0;
-		ch->rdlen = 0;
-		ch->rdstr = 0;
+			printf("%s: system has opened init file %s\n", appname, ch->f_namein);
+			ch->rdlen = 0;
+			ch->rdstr = 0;
+		}
 	}
 	return 0;
 }
@@ -366,34 +367,64 @@ int init_open(struct channel *ch){
 //      - open channel for writing passed
 int sys_open(struct channel *ch){
 //int ret;
-	printf("%s: system has opened working file\n", appname);
 	// Открываем канал на чтение
 	if (!ch->descin){
 		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
-		ch->rdlen = 0;
-		ch->rdstr = 0;
+		if (ch->descin == -1) ch->descin = 0;
+		if (ch->descin){
+			printf("%s: system has opened working infile %s\n", appname, ch->f_namein);
+			ch->rdlen = 0;
+			ch->rdstr = 0;
+			ch->events &= ~IN_OPEN;
+			ch->events |= IN_CLOSE;
+			ch->ready += 1;
+		}
 	}
 	if (!ch->descout){
 		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
+		if (ch->descout == -1) ch->descout = 0;
+		if (ch->descout){
+			printf("%s: system has opened working outfile %s\n", appname, ch->f_nameout);
+			ch->rdlen = 0;
+			ch->rdstr = 0;
+			ch->events &= ~IN_OPEN;
+			ch->events |= IN_CLOSE;
+			ch->ready += 1;
+		}
 	}
 	return 0;
 }
 
 // answer on close init channel
 int init_close(struct channel *ch){
-	printf("%s: system has closed init file\n", appname);
-	if (ch->descin)	close(ch->descin);
-	ch->descin = 0;
-	ch->events |= IN_OPEN;
-	ch->events &= ~IN_CLOSE;
+	printf("%s: system has closed init file %s\n", appname, ch->f_namein);
+	if (ch->descin){
+		close(ch->descin);
+		ch->descin = 0;
+		ch->events |= IN_OPEN;
+		ch->events &= ~IN_CLOSE;
+	}
 	return 0;
 }
 
 // answer on close working channel
 int sys_close(struct channel *ch){
-	printf("%s: system has closed working file\n", appname);
-	if (ch->descin)	close(ch->descin);
-	ch->descin = 0;
+	if ((ch->descin) && (ch->ready)){
+		close(ch->descin);
+		ch->descin = 0;
+		ch->events |= IN_OPEN;
+		ch->events &= ~IN_CLOSE;
+		printf("%s: system has closed working infile %s\n", appname, ch->f_namein);
+		ch->ready -= 1;
+	}
+	if ((ch->descout) && (ch->ready)){
+		close(ch->descout);
+		ch->descout = 0;
+		ch->events |= IN_OPEN;
+		ch->events &= ~IN_CLOSE;
+		printf("%s: system has closed working outfile %s\n", appname, ch->f_nameout);
+		ch->ready -= 1;
+	}
 	return 0;
 }
 
@@ -413,12 +444,13 @@ char nbuf[100];
 int i;
 int len, rdlen;
 	// 0 - init already
-	printf("%s: system has read init file\n", appname);
 	rdlen = read2channel(ch);
+	if (rdlen == -1){
+		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
+		return -1;
+	}
 	if (rdlen){
-
-		printf("%s: string in buffer \"%s\" \n", appname, ch->ring);
-
+		printf("\n%s: RING BUFFER READING WITH LEN = %d!!!\n\n", appname, rdlen);
 		while(rdlen > 0){
 			// Building init pointpp
 			if (ch->rdstr < 5){
@@ -446,6 +478,8 @@ int len, rdlen;
 			printf("%s: rdlen=%d\n",appname,rdlen);
 			if (len == -1) rdlen = 0;;
 		}
+		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
+		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 	}
 
 	if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
@@ -540,20 +574,22 @@ fd_set readset;
 					}
 				}
 				evcnt++;
+
+				if (evcnt > 100) inotifystop = 0;	// Temporary defence from initfile open/close procedure cycle in one module
+
 				printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
-				printf("%s: MAXCH in waiting = %d\n", appname, maxch);
 				// Find channel by watch
 				for (i = 0; i < maxch; i++){
 					ch = mychs[i];
 					if (einoty.wd == ch->watch){
-						printf("%s: find channel %d of %d\n", appname, i, maxch);
+						printf("%s: found channel %d of %d\n", appname, i, maxch);
 						break;
 					}
 				}
 				if (i < maxch){
 					// Calling callback functions
 					mask = einoty.mask & ch->events;
-					printf("%s: callback 0x%X\n", appname, mask);
+					printf("%s: callback event 0x%X; with event mask 0x%X\n", appname, einoty.mask, mask);
 					if (mask & IN_OPEN)	ch->in_open(ch);
 					if (mask & IN_CLOSE) ch->in_close(ch);
 					if (mask & IN_MODIFY) ch->in_read(ch);
@@ -561,7 +597,7 @@ fd_set readset;
 			}
 		}
 	}while(inotifystop);
-	printf("Exit!\n");
+	printf("%s: inotify thread exit!\n", appname);
 
 	return 0;
 }
@@ -569,7 +605,7 @@ fd_set readset;
 
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
-char stack[10000];
+char stack[16384];
 int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit){
 	appname = malloc(strlen(a_name));
 	strcpy(appname, a_name);
@@ -585,7 +621,7 @@ int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit
 
 	inotifystop = 1;
 
-	return clone(inotify_thr, (void*)(stack+10000-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
+	return clone(inotify_thr, (void*)(stack+16384-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
 
 //	if (pidchld == -1){
 //		printf("%s: clone:%d - %s\n", appname, errno, strerror(errno));
@@ -613,7 +649,7 @@ int dninit;
 			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 		}
 		printf("%s: run app...OK\n", appname);
-		sleep(1);
+		sleep(1); // Wait for run application and inotify initialise, need to change to other mechanism
 	}else 		printf("low-level application running\n");
 
 	if (newchannel(pathinit, cd->name)) return -1;
@@ -637,7 +673,10 @@ int dninit;
 	wrlen += write(dninit, cd->protoname, strlen(cd->protoname)+1);
 	wrlen += write(dninit, cd->phyname, strlen(cd->phyname)+1);
 	wrlen += write(dninit, &cd, sizeof(struct config_device));
-	printf("%s: %d bytes writes to %s\n", appname, wrlen, fname);
+
+
+
+	close(dninit);
 
 	return 0;
 }
