@@ -1,6 +1,6 @@
 RELEASE = no
 
-TARGET = libiec101
+TARGET = ../bin/parser-iec101
 
 SRC_DIR = src
 
@@ -10,9 +10,15 @@ SRCS = src/iec101.c \
        src/lpdu_frame.c \
        src/iec_asdu.c \
        src/asdu.c \
-       src/p_num.c 
+       src/p_num.c \
+       ../common/multififo.c
 
-OBJS = $(patsubst $(SRC_DIR)/%, $(OBJ_DIR)/%, $(SRCS:.c=.o))
+OBJS = obj/iec101.o \
+       obj/lpdu_frame.o \
+       obj/iec_asdu.o \
+       obj/asdu.o \
+       obj/p_num.o \
+       obj/multififo.o
 
 CC = gcc
 
@@ -28,40 +34,45 @@ endif
 
 
 ifeq ($(findstring linux, $(CCSYSTEM)), linux)
-CFLAGS += -D__linux__ -fPIC
+CFLAGS += -D__linux__
 else
 CFLAGS += -D_WIN32
 endif
 
 
-LFLAGS = -Wall -shared
+LFLAGS = -Wall
+
  
-
-ifeq ($(findstring linux, $(CCSYSTEM)), linux)
-LFLAGS += -Wl,-soname,$(TARGET).so.1
-endif
-
-
 all : $(TARGET)
 
 $(TARGET) : $(OBJS)
-ifeq ($(findstring linux, $(CCSYSTEM)), linux)
-	$(CC) $(LFLAGS) -o $(TARGET).so.1.0.0 $(OBJS)
-	ln -s $(TARGET).so.1.0.0 $(TARGET).so
-	ln -s $(TARGET).so.1.0.0 $(TARGET).so.1
-else
-	$(CC) $(LFLAGS) -o $(TARGET).dll $(OBJS)
-endif
+	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
 
-$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c
+
+obj/iec101.o : src/iec101.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/lpdu_frame.o : src/lpdu_frame.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/iec_asdu.o : src/iec_asdu.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/asdu.o : src/asdu.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/p_num.o : src/p_num.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/multififo.o : ../common/multififo.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 
 clean :
 ifeq ($(findstring linux, $(CCSYSTEM)), linux)
-	rm -f $(OBJS) $(TARGET).so $(TARGET).so.1 $(TARGET).so.1.0.0
+	rm -f $(OBJS) $(TARGET)
 else
-	del /S $(patsubst $(OBJ_DIR)/%, $(OBJ_DIR)\\%, $(OBJS)) $(TARGET).dll
+	del /S $(patsubst $(OBJ_DIR)/%, $(OBJ_DIR)\\%, $(OBJS)) $(TARGET).exe
 endif
 
 
