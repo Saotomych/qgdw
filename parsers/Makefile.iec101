@@ -1,6 +1,6 @@
 RELEASE = no
 
-TARGET = parser-iec101
+TARGET = ../bin/parser-iec101
 
 SRC_DIR = src
 
