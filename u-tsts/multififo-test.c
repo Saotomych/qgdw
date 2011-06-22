@@ -71,15 +71,10 @@ int rcvinit(char *buf, int len){
 	return 0;
 }
 
-void sighandler_sigchld(int arg){
-	printf("mf_maintest: child quit\n");
-	return;
-}
-
 void sighandler_sigquit(int arg){
 	printf("mf_maintest: own quit\n");
 	mf_exit();
-	return;
+	exit(0);
 }
 
 static sigset_t sigmask;
@@ -87,6 +82,10 @@ int main(int argc, char * argv[]){
 pid_t chldpid;
 int wait_st;
 int wait_opt = 0;
+int exit = 0;
+
+	signal(SIGQUIT, SIG_IGN);
+	signal(SIGPWR, SIG_IGN);
 
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
@@ -94,26 +93,20 @@ int wait_opt = 0;
 	chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
 
-	// wait for child process exit
-
-//	sleep(2);
-//	printf("mf_maintest: chldpid %d\n", chldpid);
-
-//	wait(&wait_st);
-//	waitpid(chldpid , &wait_st, wait_opt);
-//	if ((int) waitpid(chldpid, &wait_st, wait_opt) == -1){
-//		printf("func: clone:%d - %s\n",errno, strerror(errno));
-//		exit(1);
-//	}
-
 	signal(SIGQUIT, sighandler_sigquit);
-	signal(SIGPWR, SIG_IGN);
-	signal(SIGUSR1, SIG_IGN);
-	signal(SIGUSR2, SIG_IGN);
-	signal(SIGCHLD, sighandler_sigchld);
 
-	sigsuspend(&sigmask);
-	printf("mf_maintest: detect stop child process\n");
+	do{
+		sigsuspend(&sigmask);
+		waitpid(chldpid, &wait_st, 0);
+		if (WIFEXITED(wait_st)){
+			printf("mf_test: child exited by exit(%d).\n", WEXITSTATUS(wait_st));
+			exit = 1;
+		}
+		if (WIFSIGNALED(wait_st)){
+			printf("mf_test: child exited by signal(%d).\n", WTERMSIG(wait_st));
+			exit = 1;
+		}
+	}while(!exit);
 
 	mf_exit();
 
