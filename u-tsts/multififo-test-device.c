@@ -57,10 +57,6 @@ int rcvinit(char *buf, int len){
 	return 0;
 }
 
-void sighandler_sigchld(int arg){
-	printf("devlink: child quit\n");
-}
-
 void sighandler_sigquit(int arg){
 	printf("devlink: own quit\n");
 	mf_exit();

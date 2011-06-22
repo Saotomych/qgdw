@@ -538,9 +538,7 @@ struct endpoint *ep;
 
 int sys_read(struct channel *ch){
 char *nbuf;
-int i;
 int len, rdlen;
-struct endpoint *ep;
 	printf("%s: system has read file\n", appname);
 	rdlen = read2channel(ch);
 	if (rdlen == -1){
