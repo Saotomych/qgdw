@@ -155,9 +155,8 @@ char *end = ch->bgnring + len;
 int getframefromring(struct channel *ch, char *buf, int len){
 int len1, len2;
 char *endring = ch->ring + LENRINGBUF;
-char *end;
+char *end = ch->bgnframe + len;
 	if (len > LENRINGBUF) return -1;
-	end = ch->bgnframe + len;
 	if (end < endring){
 		len1 = len;
 		len2 = 0;
@@ -175,6 +174,11 @@ char *end;
 	else ch->bgnframe += len1;
 	ch->bgnring = ch->bgnframe;
 
+	return len;
+}
+
+int getframefalse(struct channel *ch){
+	ch->bgnframe = ch->bgnring;
 	return 0;
 }
 
@@ -370,25 +374,13 @@ int init_open(struct channel *ch){
 //      - open channel for reading
 //      - open channel for writing passed
 int sys_open(struct channel *ch){
-//int ret;
+int ret;
 	// Открываем канал на чтение
-	if (!ch->descin){
-		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
-		if (ch->descin == -1) ch->descin = 0;
-		if (ch->descin){
-			printf("%s: system has opened working infile %s\n", appname, ch->f_namein);
-			ch->rdlen = 0;
-			ch->rdstr = 0;
-			ch->events &= ~IN_OPEN;
-			ch->events |= IN_CLOSE;
-			ch->ready += 1;
-		}
-	}
 	if (!ch->descout){
 		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
 		if (ch->descout == -1) ch->descout = 0;
 		if (ch->descout){
-			printf("%s: system has opened working outfile %s\n", appname, ch->f_nameout);
+			printf("%s: system has opened working outfile %s, desc = 0x%X\n", appname, ch->f_nameout, ch->descout);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->events &= ~IN_OPEN;
@@ -396,6 +388,21 @@ int sys_open(struct channel *ch){
 			ch->ready += 1;
 		}
 	}
+
+	if (!ch->descin){
+		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
+		if (ch->descin == -1) ch->descin = 0;
+		if (ch->descin){
+			printf("%s: system has opened working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
+			ch->rdlen = 0;
+			ch->rdstr = 0;
+			ch->events &= ~IN_OPEN;
+			ch->events |= IN_CLOSE;
+			ch->ready += 1;
+			if (ch->descout) ret=write(ch->descout, "ready\0", 6);
+		}
+	}
+
 	return 0;
 }
 
@@ -465,7 +472,7 @@ struct endpoint *ep;
 			myeps[maxep] = ep;
 			maxep++;
 		}else return -1;
-//		printf("\n%s: RING BUFFER READING WITH LEN = %d!!!\n\n", appname, rdlen);
+		printf("\n%s: RING BUFFER READING WITH LEN = %d!!!\n\n", appname, rdlen);
 		while(rdlen > 0){
 			// Building init pointpp
 			if (ch->rdstr < 5){
@@ -493,8 +500,8 @@ struct endpoint *ep;
 //			printf("%s: rdlen=%d\n",appname,rdlen);
 			if (len == -1) rdlen = 0;;
 		}
-//		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
-//		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
+		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
+		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
 		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
 			// Connect to channel
@@ -505,7 +512,7 @@ struct endpoint *ep;
 			for (i = 1; i < maxch; i++){
 				if (mychs[i]){
 					if (strstr(ep->isstr[1], mychs[i]->appname)){
-						printf("found channel %d\n", i);
+						printf("%s: found channel %d\n", appname, i);
 						break;
 					}
 				}
@@ -514,7 +521,7 @@ struct endpoint *ep;
 			if (i == maxch){
 				// Channel not found, start new channel
 				sprintf(nbuf,"%s/%s",ep->isstr[0], ep->isstr[2]);
-				printf("not found channel for %s\n", ep->isstr[1]);
+				printf("%s: not found channel for %s\n", appname, ep->isstr[1]);
 				if (!connect2channel(ep->isstr[0], ep->isstr[2])){
 					// Add new channel to up
 					i = maxch-1;
@@ -529,7 +536,7 @@ struct endpoint *ep;
 			}
 			// Call callback function for working config_device
 			cb_rcvinit((char*)ep, sizeof(struct endpoint));
-
+			getframefalse(ch);
 		} // rdstr == 5 .....
 	}	// rdlen != 0
 
@@ -539,8 +546,9 @@ struct endpoint *ep;
 int sys_read(struct channel *ch){
 char *nbuf;
 int len, rdlen;
-	printf("%s: system has read file\n", appname);
+	if (ch->ready < 3) ch->ready = 3;	// Channel ready to send data
 	rdlen = read2channel(ch);
+	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 	if (rdlen == -1){
 		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
@@ -551,8 +559,8 @@ int len, rdlen;
 	}
 	if (rdlen){
 		nbuf = malloc(rdlen);
-		len = getdatafromring(ch, nbuf, rdlen);
-		cb_rcvinit(nbuf, len);
+		len = getframefromring(ch, nbuf, rdlen);
+		cb_rcvdata(nbuf, len);
 		free(nbuf);
 	}
 	return 0;
@@ -613,7 +621,7 @@ fd_set readset;
 				if (i < maxch){
 					// Calling callback functions
 					mask = einoty.mask & ch->events;
-					printf("%s: callback event 0x%X; with event mask 0x%X\n", appname, einoty.mask, mask);
+					printf("%s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
 					if (mask & IN_OPEN)	ch->in_open(ch);
 					if (mask & IN_CLOSE) ch->in_close(ch);
 					if (mask & IN_MODIFY) ch->in_read(ch);
@@ -663,7 +671,7 @@ int ret;
 
 	inotifystop = 1;
 
-	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
+	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
 
 	signal(SIGQUIT, sighandler_sigquit);
 //	signal(SIGCHLD, sighandler_sigchld);
@@ -716,17 +724,32 @@ struct channel *ch;
 	wrlen += write(dninit, cd->name, strlen(cd->name)+1);
 	wrlen += write(dninit, cd->protoname, strlen(cd->protoname)+1);
 	wrlen += write(dninit, cd->phyname, strlen(cd->phyname)+1);
-	wrlen += write(dninit, &cd, sizeof(struct config_device));
+	wrlen += write(dninit, cd, sizeof(struct config_device));
 
 	while(ch->ready < 2);
 	close(dninit);
 
+	while(ch->ready < 3);
 	printf("%s: new endpoint completed\n", appname);
 
 	return 0;
 }
 
 int mf_toendpoint(struct config_device *cd, char *buf, int len){
+int i, wrlen;
+	printf("%s: mf2endpoint start, maxch = %d\n", appname, maxch);
+	// Find channel for cd by name
+	for (i=1; i<maxch; i++){
+		if (strstr(cd->name, mychs[i]->appname)) break;
+	}
+	if (i == maxch){
+		printf("%s: channel %s not found", appname, cd->name);
+	}else{
+		printf("%s: find channel %d of %d\n", appname, i, maxch-1);
+		// Write data to channel
+		wrlen = write(mychs[i]->descout, buf, len);
+		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+	}
 
 	return 0;
 }

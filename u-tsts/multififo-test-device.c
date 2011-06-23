@@ -49,10 +49,18 @@
 
 int rcvdata(char *buf, int len){
 
+	printf("\nDEVLINKTEST HAS READ DATA: %s\n\n", buf);
+
 	return 0;
 }
 
-int rcvinit(char *buf, int len){
+int rcvinit(char **buf, int len){
+
+	printf("\nDEVLINKTEST HAS READ INIT DATA: %s\n", buf[0]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", buf[1]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", buf[2]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", buf[3]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n\n", buf[4]);
 
 	return 0;
 }

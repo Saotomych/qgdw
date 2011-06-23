@@ -46,6 +46,8 @@
 #include "../devlinks/devlink.h"
 #include "../common/multififo.h"
 
+char testdata[] = {"Do you see this string? Data received, all right.\0"};
+
 //char devlink[] = {"multififo-test-device"};
 char devlink[] = {"devlinktest"};
 char protoname[] = {"prototest"};
@@ -63,10 +65,12 @@ struct config_device cd = {
 
 int rcvdata(char *buf, int len){
 
+	printf("\nMF_TEST HAS READ DATA: %s\n\n", buf);
+
 	return 0;
 }
 
-int rcvinit(char *buf, int len){
+int rcvinit(char **buf, int len){
 
 	return 0;
 }
@@ -80,7 +84,10 @@ int exit = 0;
 	strcpy(appname, argv[0]);
 
 	chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
+
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
+
+	mf_toendpoint(&cd, testdata, strlen(testdata)+1);
 
 	do{
 		sigsuspend(&sigmask);
