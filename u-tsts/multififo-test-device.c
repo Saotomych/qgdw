@@ -79,15 +79,6 @@ int exit = 0;
 
 	do{
 		sigsuspend(&sigmask);
-		waitpid(chldpid, &wait_st, 0);
-		if (WIFEXITED(wait_st)){
-			printf("devlink: child exited by exit(%d).\n", WEXITSTATUS(wait_st));
-			exit = 1;
-		}
-		if (WIFSIGNALED(wait_st)){
-			printf("devlink: child exited by signal(%d).\n", WTERMSIG(wait_st));
-			exit = 1;
-		}
 	}while(!exit);
 
 
