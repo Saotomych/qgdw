@@ -71,29 +71,16 @@ int rcvinit(char *buf, int len){
 	return 0;
 }
 
-void sighandler_sigquit(int arg){
-	printf("mf_maintest: own quit\n");
-	mf_exit();
-	exit(0);
-}
-
 static sigset_t sigmask;
 int main(int argc, char * argv[]){
 pid_t chldpid;
-int wait_st;
-int wait_opt = 0;
 int exit = 0;
-
-	signal(SIGQUIT, SIG_IGN);
-	signal(SIGPWR, SIG_IGN);
 
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
 
 	chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
 	mf_newendpoint(&cd, "/rw/mx00/devlinks");
-
-	signal(SIGQUIT, sighandler_sigquit);
 
 	do{
 		sigsuspend(&sigmask);

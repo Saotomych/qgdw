@@ -627,10 +627,28 @@ fd_set readset;
 }
 
 
+// ================= Signal Handlers  ========================================== //
+void sighandler_sigchld(int arg){
+	printf("mf_maintest: sigchld\n");
+	mf_exit();
+}
+
+void sighandler_sigquit(int arg){
+	printf("mf_maintest: own quit\n");
+	mf_exit();
+	exit(0);
+}
+
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
 char stack[INOTIFYTHR_STACKSIZE];
 int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit){
+int ret;
+
+	signal(SIGQUIT, SIG_IGN);
+	signal(SIGPWR, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
+
 	appname = malloc(strlen(a_name));
 	strcpy(appname, a_name);
 	pathapp = malloc(strlen(pathinit));
@@ -645,13 +663,12 @@ int mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit
 
 	inotifystop = 1;
 
-	return clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
+	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM /*| CLONE_FS | CLONE_FILES*/, NULL);
 
-//	if (pidchld == -1){
-//		printf("%s: clone:%d - %s\n", appname, errno, strerror(errno));
-//        exit(1);
-//	}
-//	return pidchld;
+	signal(SIGQUIT, sighandler_sigquit);
+//	signal(SIGCHLD, sighandler_sigchld);
+
+	return ret;
 }
 
 void mf_exit(){
