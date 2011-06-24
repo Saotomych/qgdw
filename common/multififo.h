@@ -20,10 +20,7 @@ extern void mf_exit(void);
 extern int mf_newendpoint (struct config_device *cd, char *pathinit);
 // Send data to endpoint in any direction (up-down)
 extern int mf_toendpoint(struct config_device *cd, char *buf, int len);
-
-// Data Receiving
-// Signal registration in main program: signal (SIGPOLL, poll_handler)
-// in: len - data length in buffer
-extern void poll_handler(int len);
+// Read data from ring buffer (for use in callback function)
+extern int mf_readbuffer(char *buf, int len);
 
 #endif /* MULTIFIFO_H_ */

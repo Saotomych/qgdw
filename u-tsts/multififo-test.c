@@ -63,8 +63,10 @@ struct config_device cd = {
 		11,
 };
 
-int rcvdata(char *buf, int len){
+int rcvdata(int len){
+char buf[100];
 
+	mf_readbuffer(buf, len);
 	printf("\nMF_TEST HAS READ DATA: %s\n\n", buf);
 
 	return 0;

@@ -27,7 +27,7 @@ char *sufinit = {"-init"};
 char *sufdn = {"-dn"};
 char *sufup = {"-up"};
 
-int (*cb_rcvdata)(char *buf, int len);
+int (*cb_rcvdata)(int len);
 int (*cb_rcvinit)(char *buf, int len);
 
 struct channel{
@@ -61,6 +61,7 @@ struct endpoint{
 // List of channels
 static int maxch = 0;
 static struct channel *mychs[16];
+static struct channel *actchannel;	// Actual channel for data reading
 
 // List of endpoints
 static int maxep = 0;
@@ -172,7 +173,6 @@ char *end = ch->bgnframe + len;
 	// Move pointers
 	if (len2) ch->bgnframe = ch->ring + len2;
 	else ch->bgnframe += len1;
-	ch->bgnring = ch->bgnframe;
 
 	return len;
 }
@@ -535,7 +535,7 @@ struct endpoint *ep;
 				}else return -1;
 			}
 			// Call callback function for working config_device
-			cb_rcvinit((char*)ep, sizeof(struct endpoint));
+			cb_rcvinit((char*) ep, sizeof(struct endpoint));
 			getframefalse(ch);
 		} // rdstr == 5 .....
 	}	// rdlen != 0
@@ -544,8 +544,7 @@ struct endpoint *ep;
 }
 
 int sys_read(struct channel *ch){
-char *nbuf;
-int len, rdlen;
+int rdlen;
 	if (ch->ready < 3) ch->ready = 3;	// Channel ready to send data
 	rdlen = read2channel(ch);
 	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
@@ -558,10 +557,8 @@ int len, rdlen;
 		return -1;
 	}
 	if (rdlen){
-		nbuf = malloc(rdlen);
-		len = getframefromring(ch, nbuf, rdlen);
-		cb_rcvdata(nbuf, len);
-		free(nbuf);
+		actchannel = ch;
+		cb_rcvdata(rdlen);
 	}
 	return 0;
 }
@@ -754,4 +751,8 @@ int i, wrlen;
 	return 0;
 }
 
+int mf_readbuffer(char *buf, int len){
+
+	return getframefromring(actchannel, buf, len);
+}
 // ================= End External API ============================================== //
