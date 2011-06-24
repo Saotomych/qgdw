@@ -559,6 +559,7 @@ int rdlen;
 	if (rdlen){
 		actchannel = ch;
 		cb_rcvdata(rdlen);
+		actchannel = 0;
 	}
 	return 0;
 }
@@ -753,6 +754,7 @@ int i, wrlen;
 
 int mf_readbuffer(char *buf, int len){
 
+	if (!actchannel) return -1;
 	return getframefromring(actchannel, buf, len);
 }
 // ================= End External API ============================================== //
