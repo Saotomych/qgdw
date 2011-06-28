@@ -730,6 +730,8 @@ void mf_exit(){
 }
 
 // Form new endpoint
+// Return 0: OK
+// Return -1: Error. Endpoint not created or cnahhel not created
 int mf_newendpoint (struct config_device *cd, char *pathinit, u32 ep_num){
 int ret, wrlen;
 char fname[160];
@@ -802,6 +804,13 @@ struct endpoint *ep;
 	return 0;
 }
 
+// Send data to Endpoint by addr and to direction (DIRUP || DIRDN - priority)
+// Return writing length: OK
+// Return -1: Error. Endpoint not created or not exist or Cnahhel not exist
+int mfs_toendpoint(TRANSACTINFO *tai){
+	return mf_toendpoint(tai->buf, tai->len, tai->addr, tai->direct);
+}
+
 int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
 struct channel *ch = 0;
@@ -832,8 +841,24 @@ struct endpoint *ep = 0;
 	return wrlen;
 }
 
-int mf_readbuffer(char *buf, int len){
+// Read data from actual channel
+// Return:
+// int real reading length
+// unit unique addr by pointer
+// direction of received data by pointer
+int mfs_readbuffer(TRANSACTINFO *tai){
+	return mf_readbuffer(tai->buf, tai->len, &(tai->addr), &(tai->direct));
+}
+
+int mf_readbuffer(char *buf, int len, int *addr, int *direct){
+int i;
+struct endpoint *ep;
 	if (!actchannel) return -1;
+	// Find endpoint
+	for(i = 0; i < maxep; i++){
+		if (myeps[i]->cdcdn == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRDN; break;}
+		if (myeps[i]->cdcup == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRUP; break;}
+	}
 	return getframefromring(actchannel, buf, len);
 }
 // ================= End External API ============================================== //
