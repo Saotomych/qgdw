@@ -531,6 +531,9 @@ struct endpoint *ep = myeps[maxep-1];
 		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
 		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
+			ep->edc->name = ep->isstr[2];
+			ep->edc->protoname = ep->isstr[3];
+			ep->edc->phyname = ep->isstr[4];
 			// Connect to channel
 			printf("%s: connect to working channel... ",appname);
 			// find channel in list
@@ -752,9 +755,9 @@ struct endpoint *ep;
 		ep->isstr[0] = malloc(strlen(pathinit) + 1);
 		strcpy(ep->isstr[0], pathinit);
 		ep->isstr[1] = appname;
-		strcpy(ep->isstr[2], cd->name);
-		strcpy(ep->isstr[3], cd->protoname);
-		strcpy(ep->isstr[4], cd->phyname);
+		ep->isstr[2] = cd->name;
+		ep->isstr[3] = cd->protoname;
+		ep->isstr[4] = cd->phyname;
 	}
 	if (newchannel(pathinit, cd->name)) return -1;
 
