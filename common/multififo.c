@@ -70,7 +70,7 @@ static struct channel *actchannel;	// Actual channel for data reading
 // List of endpoints
 static int maxep = 0;
 static struct endpoint *myeps[64];
-static struct endpoint *actep;		// Actual endpoint for work in all functions
+//static struct endpoint *actep;		// Actual endpoint for work in all functions
 
 // ================= Callbacks PROTOTYPES ================================== //
 int init_open(struct channel *ch);
@@ -793,8 +793,8 @@ struct endpoint *ep;
 
 int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
+struct channel *ch = 0;
 struct endpoint *ep = 0;
-struct config_device *cd = 0;
 	printf("%s: mf2endpoint start, maxch = %d\n", appname, maxch);
 
 	// Find endpoint by addr
@@ -814,8 +814,11 @@ struct config_device *cd = 0;
 	printf("%s: find channel %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
 	wrlen = write(mychs[i]->descout, buf, len);
-	printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
-	return 0;
+	if (wrlen == -1) {
+		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+		return -1;
+	}
+	return wrlen;
 }
 
 int mf_readbuffer(char *buf, int len){
