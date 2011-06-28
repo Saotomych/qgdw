@@ -406,6 +406,7 @@ struct endpoint *ep;
 //      - open channel for writing passed
 int sys_open(struct channel *ch){
 int ret;
+struct endpoint *ep = myeps[maxep - 1];
 	// Открываем канал на чтение
 	if (!ch->descout){
 		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
@@ -430,7 +431,7 @@ int ret;
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
 			ch->ready += 1;
-			if (ch->descout) ret=write(ch->descout, "ready\0", 6);
+			if (ch->descout) ret=write(ch->descout, &(ep->my_ep), 6);
 		}
 	}
 
@@ -485,7 +486,7 @@ int init_read(struct channel *ch){
 char nbuf[100];
 int i;
 int len, rdlen;
-struct endpoint *ep = myeps[maxep-1];
+struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 	// 0 - init already
 	rdlen = read2channel(ch);
 	if (rdlen == -1){
@@ -514,7 +515,7 @@ struct endpoint *ep = myeps[maxep-1];
 				}else rdlen = 0;
 			}else{
 				// get config_device
-				len = getdatafromring(ch, nbuf, sizeof(struct config_device));
+				len = getdatafromring(ch, nbuf, sizeof(struct config_device) + sizeof(int));
 				if (len >= sizeof(struct config_device)){
 					ep->edc = malloc(sizeof(struct config_device));
 					memcpy(ep->edc, nbuf, sizeof(struct config_device));
@@ -530,7 +531,7 @@ struct endpoint *ep = myeps[maxep-1];
 		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
 		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
-		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device))){
+		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device) + sizeof(int))){
 			ep->edc->name = ep->isstr[2];
 			ep->edc->protoname = ep->isstr[3];
 			ep->edc->phyname = ep->isstr[4];
@@ -562,11 +563,16 @@ struct endpoint *ep = myeps[maxep-1];
 					mychs[i]->descout = open(mychs[i]->f_nameout, O_RDWR | O_NDELAY);
 					printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
 					//	- two fifos opens! bingo!
+					ep->cdcup = mychs[i];
+					mychs[i]->ready = 3;
 				}else return -1;
 			}
 			// Call callback function for working config_device
 			cb_rcvinit((char*) ep, sizeof(struct endpoint));
 			getframefalse(ch);
+
+			printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+			printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		} // rdstr == 5 .....
 	}	// rdlen != 0
 
@@ -574,7 +580,7 @@ struct endpoint *ep = myeps[maxep-1];
 }
 
 int sys_read(struct channel *ch){
-int rdlen, len;
+int rdlen, len, numep;
 struct endpoint *ep = myeps[maxep-1];
 
 	rdlen = read2channel(ch);
@@ -582,7 +588,10 @@ struct endpoint *ep = myeps[maxep-1];
 
 	if (ch->ready < 3){
 		// Get ep->ep_dn - downlink endpoint's number
-		len = getdatafromring(ch, (char *) &(ep->ep_dn), sizeof(struct config_device));
+		len = getdatafromring(ch, (char*) &numep, sizeof(int));
+		if (len == sizeof(int)) memcpy(&(ep->ep_dn), &numep, sizeof(int));
+		printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		// Channel ready to send data
 		ch->ready = 3;
 	}
@@ -766,7 +775,6 @@ struct endpoint *ep;
 	// Add watch in(up) line fo channel
 	ch->watch = inotify_add_watch(d_inoty, ch->f_namein, ch->events);
 	printf("%s: infile add to watch %d, %s\n", appname, ch->watch, ch->f_namein);
-
 
 	// Open init channel for having endpoint
 	strcpy(fname, ep->isstr[0]);
