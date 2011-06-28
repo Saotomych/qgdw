@@ -133,7 +133,8 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 	// skip first start byte
 	*offset += 1;
 
-	frame->adr = buff_get_le_uint64(buff, *offset);
+	frame->adr     = buff_bcd_get_le_uint(buff, *offset, 6);
+	frame->adr_hex = buff_get_le_uint48(buff, *offset);
 	*offset += 6;
 
 	// skip second start byte
@@ -236,7 +237,10 @@ uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame
 	buff_put_le_uint8(*buff, offset, DLT_START_BYTE);
 	offset += 1;
 
-	buff_put_le_uint64(*buff, offset, frame->adr);
+	if(frame->adr > 0)
+		buff_bcd_put_le_uint(*buff, offset, frame->adr, 6);
+	else
+		buff_put_le_uint48(*buff, offset, frame->adr_hex);
 	offset += 6;
 
 	// put second start byte

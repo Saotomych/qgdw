@@ -9,7 +9,7 @@
 
 
 #include <time.h>
-#include "asdu.h"
+#include "../../common/asdu.h"
 
 
 #ifdef __cplusplus

@@ -11,7 +11,7 @@
 #include <time.h>
 #include "iec_def.h"
 #include "iec_types.h"
-#include "asdu.h"
+#include "../../common/asdu.h"
 
 
 #ifdef __cplusplus
