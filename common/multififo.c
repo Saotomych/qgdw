@@ -807,7 +807,7 @@ struct endpoint *ep;
 // Send data to Endpoint by addr and to direction (DIRUP || DIRDN - priority)
 // Return writing length: OK
 // Return -1: Error. Endpoint not created or not exist or Cnahhel not exist
-int mfs_toendpoint(TRANSACTINFO *tai){
+int mftai_toendpoint(TRANSACTINFO *tai){
 	return mf_toendpoint(tai->buf, tai->len, tai->addr, tai->direct);
 }
 
@@ -846,7 +846,7 @@ struct endpoint *ep = 0;
 // int real reading length
 // unit unique addr by pointer
 // direction of received data by pointer
-int mfs_readbuffer(TRANSACTINFO *tai){
+int mftai_readbuffer(TRANSACTINFO *tai){
 	return mf_readbuffer(tai->buf, tai->len, &(tai->addr), &(tai->direct));
 }
 
