@@ -87,9 +87,9 @@ int exit = 0;
 
 	chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
 
-	mf_newendpoint(&cd, "/rw/mx00/devlinks");
+	mf_newendpoint(&cd, "/rw/mx00/devlinks", 0);
 
-	mf_toendpoint(&cd, testdata, strlen(testdata)+1);
+	mf_toendpoint(testdata, strlen(testdata)+1, cd.addr, DIRDN);
 
 	do{
 		sigsuspend(&sigmask);
