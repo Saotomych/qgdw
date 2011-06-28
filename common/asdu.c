@@ -5,14 +5,14 @@
  */
  
 #include <malloc.h>
-#include "../include/asdu.h"
+#include "asdu.h"
+
 
 /*
  *
- * Constants and byte flags/masks
+ * Functions
  *
  */
-
 
 asdu *asdu_create()
 {

@@ -9,7 +9,7 @@ OBJ_DIR = obj
 SRCS = src/iec104.c \
        src/apdu_frame.c \
        src/iec_asdu.c \
-       src/asdu.c \
+       ../common/asdu.c \
        src/p_num.c \
        ../common/multififo.c
 
@@ -58,7 +58,7 @@ obj/apdu_frame.o : src/apdu_frame.c
 obj/iec_asdu.o : src/iec_asdu.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-obj/asdu.o : src/asdu.c
+obj/asdu.o : ../common/asdu.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 obj/p_num.o : src/p_num.c
