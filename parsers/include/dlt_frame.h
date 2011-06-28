@@ -56,7 +56,8 @@ typedef struct dlt_frame {
 	uint8_t			asyn;		/* asynchronous slave response(1)/synchronous slave response(0) */
 	uint8_t			dir;		/* from controlled station(1)/from controlling station(0) */
 
-	uint64_t 		adr;		/* link address */
+	uint16_t 		adr;		/* link address */
+	uint64_t 		adr_hex;	/* link address in BCD format or address mask or broadcast address */
 
 	/* Data */
 	uint8_t			data_len;	/* length of the data */

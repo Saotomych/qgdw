@@ -34,7 +34,8 @@ extern "C" {
 #define ASDU_VAL_INT		1	/* integer 32-bit */
 #define ASDU_VAL_UINT		2	/* unsigned integer 32-bit */
 #define ASDU_VAL_FLT		3	/* float */
-#define ASDU_VAL_BOOL		4	/* boolean*/
+#define ASDU_VAL_BOOL		4	/* boolean */
+#define ASDU_VAL_TIME		5	/* time */
 
 
 /*
@@ -65,8 +66,8 @@ typedef struct data_unit {
 typedef struct asdu {
 	/* Header */
 	uint16_t		proto;		/* protocol identifier */
-	uint32_t		type;		/* protocol specific ASDU type */
-	uint64_t		adr;		/* ASDU address */
+	uint8_t			type;		/* protocol specific ASDU type */
+	uint16_t		adr;		/* ASDU address */
 	uint8_t			fnc;		/* protocol specific command/function/cause/etc. */
 	uint8_t			attr;		/* additional protocol specific ASDU attributes */
 
