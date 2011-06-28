@@ -431,7 +431,7 @@ struct endpoint *ep = myeps[maxep - 1];
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
 			ch->ready += 1;
-			if (ch->descout) ret=write(ch->descout, &(ep->my_ep), 6);
+			if (ch->descout) ret=write(ch->descout, &(ep->my_ep), sizeof(int));
 		}
 	}
 
@@ -507,9 +507,9 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 				len = getstringfromring(ch, nbuf);
 //				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
 				if (len > 0){
-					ep->isstr[ch->rdstr] = malloc(len);
+					ep->isstr[ch->rdstr] = malloc(len + 1);
 					strcpy(ep->isstr[ch->rdstr], nbuf);
-//					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
+					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
 					ch->rdstr++;
 					rdlen -= len;
 				}else rdlen = 0;
@@ -747,6 +747,7 @@ struct endpoint *ep;
 		if (!ret){
 			ret = execve(cd->name, NULL, NULL);
 			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
+			exit(0);
 		}
 		sleep(1);
 		printf("OK\n");

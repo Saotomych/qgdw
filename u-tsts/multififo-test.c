@@ -65,8 +65,10 @@ struct config_device cd = {
 
 int rcvdata(int len){
 char buf[100];
+int addr;
+int dir;
 
-	mf_readbuffer(buf, len);
+	mf_readbuffer(buf, len, &addr, &dir);
 	printf("\nMF_TEST HAS READ DATA: %s\n\n", buf);
 
 	return 0;

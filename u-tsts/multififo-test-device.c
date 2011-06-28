@@ -47,8 +47,12 @@
 #include "../devlinks/devlink.h"
 #include "../common/multififo.h"
 
-int rcvdata(char *buf, int len){
+int rcvdata(int len){
+char buf[100];
+int addr;
+int dir;
 
+	mf_readbuffer(buf, len, &addr, &dir);
 	printf("\nDEVLINKTEST HAS READ DATA: %s\n\n", buf);
 
 	return 0;

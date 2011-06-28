@@ -12,8 +12,7 @@
 #define DIRDN		0x59
 
 // ================= External API =========================================
-
-// Offer to add this structure as one parameter for  mf_toendpoint and mf_readbuffer
+// this structure added as one parameter for  mf_toendpoint and mf_readbuffer
 typedef struct _transactinfo{
 	char *buf;
 	int len;
