@@ -1,7 +1,10 @@
-all : parsers
+all : mkdirs parsers u-tsts
+	
+clean : parsers-clean u-tsts-clean
 
-clean : parsers-clean
 
+mkdirs :
+	if test -d bin; then echo "directory bin already exists"; else mkdir bin; fi
 
 parsers : Makefile force
 	cd parsers; $(MAKE) -f Makefile all

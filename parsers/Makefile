@@ -1,7 +1,10 @@
-all : iec104 iec101 dlt645
+all : mkdirs iec104 iec101 dlt645
 
 clean : iec104-clean  iec101-clean
 
+
+mkdirs :
+	if test -d obj; then echo "directory obj already exists"; else mkdir obj; fi
 
 iec104 : Makefile.iec104 force
 	$(MAKE) -f Makefile.iec104 all

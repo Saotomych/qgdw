@@ -23,4 +23,4 @@ rebuild: clean all
 all: multififo-test multififo-test-device
 
 clean:
-	-rm mainapptest devlinktest $(OBJS1) $(OBJS2)
+	rm -f mainapptest devlinktest $(OBJS1) $(OBJS2)
