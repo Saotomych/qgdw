@@ -619,9 +619,9 @@ char buf[100];
 
 	if (rdlen){
 		actchannel = ch;
-//		cb_rcvdata(rdlen);
-		len = getframefromring(ch, buf, rdlen);
-		printf("%s: getframefromring: %s\n", appname, buf);
+		cb_rcvdata(rdlen);
+//		len = getframefromring(ch, buf, rdlen);
+//		printf("%s: getframefromring: %s\n", appname, buf);
 		actchannel = 0;
 		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
 		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
