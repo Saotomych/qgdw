@@ -584,8 +584,6 @@ int sys_read(struct channel *ch){
 int rdlen, len, numep;
 struct endpoint *ep = myeps[maxep-1];
 
-char buf[100];
-
 	rdlen = read2channel(ch);
 	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 
@@ -877,11 +875,10 @@ struct endpoint *ep;
 	// Find endpoint
 //	printf("%s: readbuffer len=%d\n", appname, len);
 	for(i = 1; i < maxep; i++){
-		if (myeps[i]->cdcdn == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRDN; break;}
-		if (myeps[i]->cdcup == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRUP; break;}
+		ep = myeps[i];
+		if (ep->cdcdn == actchannel) {*addr = ep->edc->addr; *direct = DIRDN; break;}
+		if (ep->cdcup == actchannel) {*addr = ep->edc->addr; *direct = DIRUP; break;}
 	}
-	if (i < maxep) printf("%s: endpoint found 0x%X and channel 0x%X with addr=%d & direct=0x%X \n", appname, ep, actchannel, *addr, *direct);
-	else printf("%s: endpoint not found\n", appname);
 	return getframefromring(actchannel, buf, len);
 }
 // ================= End External API ============================================== //
