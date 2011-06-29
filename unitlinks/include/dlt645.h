@@ -14,8 +14,9 @@
 #include <signal.h>
 #include "p_num.h"
 #include "dlt_frame.h"
-#include "asdu.h"
+#include "../../common/asdu.h"
 #include "dlt_asdu.h"
+#include "../../devlinks/devlink.h"
 #include "../../common/multififo.h"
 
 
@@ -25,6 +26,8 @@ extern "C" {
 
 
 /* Constants and byte flags/masks */
+#define APP_NAME	"unitlink-dlt645"
+#define APP_PATH 	"/rw/mx00/unitlinks"
 
 /*
  *
@@ -39,7 +42,7 @@ extern "C" {
  *
  */
 
-int dlt645_rcvdata(char *buf, int len);
+int dlt645_rcvdata(int len);
 
 
 int dlt645_rcvinit(char *buf, int len);

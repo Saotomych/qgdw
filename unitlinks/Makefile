@@ -1,6 +1,6 @@
 all : mkdirs iec104 iec101 dlt645
 
-clean : iec104-clean  iec101-clean
+clean : iec104-clean  iec101-clean dlt645-clean
 
 
 mkdirs :

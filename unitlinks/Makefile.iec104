@@ -1,20 +1,20 @@
 RELEASE = no
 
-TARGET = ../bin/parser-iec101
+TARGET = ../bin/unitlink-iec104
 
 SRC_DIR = src
 
 OBJ_DIR = obj
 
-SRCS = src/iec101.c \
-       src/lpdu_frame.c \
+SRCS = src/iec104.c \
+       src/apdu_frame.c \
        src/iec_asdu.c \
        ../common/asdu.c \
        src/p_num.c \
        ../common/multififo.c
 
-OBJS = obj/iec101.o \
-       obj/lpdu_frame.o \
+OBJS = obj/iec104.o \
+       obj/apdu_frame.o \
        obj/iec_asdu.o \
        obj/asdu.o \
        obj/p_num.o \
@@ -49,10 +49,10 @@ $(TARGET) : $(OBJS)
 	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
 
 
-obj/iec101.o : src/iec101.c
+obj/iec104.o : src/iec104.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-obj/lpdu_frame.o : src/lpdu_frame.c
+obj/apdu_frame.o : src/apdu_frame.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 obj/iec_asdu.o : src/iec_asdu.c

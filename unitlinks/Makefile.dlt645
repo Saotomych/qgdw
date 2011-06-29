@@ -1,6 +1,6 @@
 RELEASE = no
 
-TARGET = ../bin/parser-dlt645
+TARGET = ../bin/unitlink-dlt645
 
 SRC_DIR = src
 
