@@ -585,7 +585,7 @@ int rdlen, len, numep;
 struct endpoint *ep = myeps[maxep-1];
 
 	rdlen = read2channel(ch);
-	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
+//	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 
 	if (ch->ready < 3){
 		// Get ep->ep_dn - downlink endpoint's number
@@ -849,7 +849,7 @@ struct endpoint *ep = 0;
 	if (!ch) return -1;
 
 	// Find channel for cd by name
-	printf("%s: find channel for writing %d of %d\n", appname, i, maxch-1);
+//	printf("%s: find channel for writing %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
 	wrlen = write(mychs[i]->descout, buf, len);
 	if (wrlen == -1) {
