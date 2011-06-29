@@ -64,12 +64,12 @@ struct endpoint{
 
 // List of channels
 static int maxch = 0;
-static struct channel *mychs[16];
+static struct channel *mychs[MAXCH];
 static struct channel *actchannel;	// Actual channel for data reading
 
 // List of endpoints
 static int maxep = 1;
-static struct endpoint *myeps[64];
+static struct endpoint *myeps[MAXEP];
 //static struct endpoint *actep;		// Actual endpoint for work in all functions
 
 // ================= Callbacks PROTOTYPES ================================== //
