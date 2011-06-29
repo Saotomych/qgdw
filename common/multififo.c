@@ -272,8 +272,8 @@ int len;
 
 	maxch++;
 
-	printf("%s: init channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
-	printf("%s: init channel file ready: %s\n", appname, mychs[maxch-1]->f_namein);
+	printf("%s: INIT CHANNEL %d READY, MAXCH = %d\n", appname, maxch-1, maxch);
+//	printf("%s: init channel file ready: %s\n", appname, mychs[maxch-1]->f_namein);
 
 	return 0;
 }
@@ -310,8 +310,8 @@ int len;
 
 	maxch++;
 
-	printf("%s: initialize down channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
-	printf("%s: channel files ready: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
+//	printf("%s: initialize down channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("%s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -345,8 +345,8 @@ int len;
 
 	maxch++;
 
-	printf("%s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
-	printf("%s: channel files ready: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
+//	printf("%s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("%s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -510,7 +510,7 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 				if (len > 0){
 					ep->isstr[ch->rdstr] = malloc(len + 1);
 					strcpy(ep->isstr[ch->rdstr], nbuf);
-					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
+//					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
 					ch->rdstr++;
 					rdlen -= len;
 				}else rdlen = 0;
@@ -537,14 +537,14 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 			ep->edc->protoname = ep->isstr[3];
 			ep->edc->phyname = ep->isstr[4];
 			// Connect to channel
-			printf("%s: connect to working channel... ",appname);
+//			printf("%s: connect to working channel... ",appname);
 			// find channel in list
 			//			- test open channel to mychs[]->name IF NOT:
 			//								- connect to channel
 			for (i = 1; i < maxch; i++){
 				if (mychs[i]){
 					if (strstr(ep->isstr[1], mychs[i]->appname)){
-						printf("%s: found channel %d\n", appname, i);
+//						printf("%s: found channel %d\n", appname, i);
 						break;
 					}
 				}
@@ -553,7 +553,7 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 			if (i == maxch){
 				// Channel not found, start new channel
 				sprintf(nbuf,"%s/%s",ep->isstr[0], ep->isstr[2]);
-				printf("%s: not found channel for %s\n", appname, ep->isstr[1]);
+//				printf("%s: not found channel for %s\n", appname, ep->isstr[1]);
 				if (!connect2channel(ep->isstr[0], ep->isstr[2])){
 					// Add new channel to up
 					i = maxch-1;
@@ -645,15 +645,15 @@ static int evcnt=0;
 struct timeval tv;
 fd_set readset;
 
-	printf("%s: start inotify thread OK\n", appname);
+//	printf("%s: start inotify thread OK\n", appname);
 
 	if (!d_inoty){
 		printf("%s: inotify not init\n", appname);
 		return -1;
 	}
-	printf("%s: init inotify ready, desc=0x%X\n", appname, d_inoty);
+//	printf("%s: init inotify ready, desc=0x%X\n", appname, d_inoty);
 	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
-	printf("%s: init channel in watch %d\n", appname, mychs[0]->watch);
+//	printf("%s: init channel in watch %d\n", appname, mychs[0]->watch);
 
 	do{
 		// Waiting for inotify events
@@ -669,23 +669,23 @@ fd_set readset;
 					rdlen = read(d_inoty, namebuf, einoty.len);
 					if (rdlen > 0){
 						namebuf[rdlen] = 0;
-						printf("%s: name read: %s\n", appname, namebuf);
+//						printf("%s: name read: %s\n", appname, namebuf);
 					}
 				}
 				evcnt++;
-				printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
+//				printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
 				// Find channel by watch
 				for (i = 0; i < maxch; i++){
 					ch = mychs[i];
 					if (einoty.wd == ch->watch){
-						printf("%s: found channel %d of %d\n", appname, i, maxch);
+//						printf("%s: found channel %d of %d\n", appname, i, maxch);
 						break;
 					}
 				}
 				if (i < maxch){
 					// Calling callback functions
 					mask = einoty.mask & ch->events;
-					printf("%s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
+//					printf("%s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
 					if (mask & IN_OPEN)	ch->in_open(ch);
 					if (mask & IN_CLOSE) ch->in_close(ch);
 					if (mask & IN_MODIFY) ch->in_read(ch);
@@ -693,7 +693,7 @@ fd_set readset;
 			}
 		}
 	}while(inotifystop);
-	printf("%s: inotify thread exit!\n", appname);
+//	printf("%s: inotify thread exit!\n", appname);
 
 	return 0;
 }
@@ -731,7 +731,7 @@ int ret;
 	d_inoty = inotify_init();
 	if (initchannel(pathinit, a_name)) return -1;
 
-	printf("%s: start thread\n", appname);
+//	printf("%s: start thread\n", appname);
 
 	inotifystop = 1;
 
@@ -760,16 +760,16 @@ struct endpoint *ep;
 	if (!testrunningapp(cd->name)){
 		// lowlevel application not running
 		// running it
-		printf("%s: RUN LOW LEVEL APPLICATION. WAITING INITIALIZATION... ", appname);
+//		printf("%s: RUN LOW LEVEL APPLICATION. WAITING INITIALIZATION... ", appname);
 		ret = fork();
 		if (!ret){
 			ret = execve(cd->name, NULL, NULL);
-			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
+//			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
 		sleep(1);
 		printf("OK\n");
-	}else 		printf("low-level application running\n");
+	}else 		printf("RUNNING LOW LEVEL APPLICATION\n");
 
 	if (ep_num){
 		// Forward existing endpoint
@@ -834,11 +834,11 @@ int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
 struct channel *ch = 0;
 struct endpoint *ep = 0;
-	printf("%s: mf2endpoint start, maxch = %d, maxep = %d\n", appname, maxch, maxep);
+//	printf("%s: mf2endpoint start, maxch = %d, maxep = %d\n", appname, maxch, maxep);
 
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
-		printf("%s: test addr ep %d = %d\n",appname,i,myeps[i]->edc->addr);
+//		printf("%s: test addr ep %d = %d\n",appname,i,myeps[i]->edc->addr);
 		if (myeps[i]->edc->addr == addr){
 			ep = myeps[i];
 			if (direct == DIRDN) ch = ep->cdcdn;
@@ -851,7 +851,7 @@ struct endpoint *ep = 0;
 	if (!ch) return -1;
 
 	// Find channel for cd by name
-	printf("%s: find channel %d of %d\n", appname, i, maxch-1);
+	printf("%s: find channel for writing %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
 	wrlen = write(mychs[i]->descout, buf, len);
 	if (wrlen == -1) {
@@ -875,12 +875,12 @@ int i;
 struct endpoint *ep;
 	if (!actchannel) return -1;
 	// Find endpoint
-	printf("%s: readbuffer len=%d\n", appname, len);
+//	printf("%s: readbuffer len=%d\n", appname, len);
 	for(i = 1; i < maxep; i++){
 		if (myeps[i]->cdcdn == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRDN; break;}
 		if (myeps[i]->cdcup == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRUP; break;}
 	}
-	if (i < maxep) printf("%s: find endpoint 0x%X and channel 0x%X with addr=%d & direct=0x%X \n", appname, ep, actchannel, *addr, *direct);
+	if (i < maxep) printf("%s: endpoint found 0x%X and channel 0x%X with addr=%d & direct=0x%X \n", appname, ep, actchannel, *addr, *direct);
 	else printf("%s: endpoint not found\n", appname);
 	return getframefromring(actchannel, buf, len);
 }
