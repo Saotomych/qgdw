@@ -49,9 +49,9 @@
 char testdata[] = {"Do you see this string? Data received, all right.\0"};
 
 //char devlink[] = {"multififo-test-device"};
-char devlink[] = {"devlinktest"};
-char protoname[] = {"prototest"};
-char physlink[] = {"phystest"};
+char devlink[] 		= {"devlinktest"};
+char protoname[] 	= {"prototest"};
+char physlink[] 	= {"phystest"};
 
 char *appname;
 

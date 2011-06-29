@@ -68,7 +68,7 @@ static struct channel *mychs[16];
 static struct channel *actchannel;	// Actual channel for data reading
 
 // List of endpoints
-static int maxep = 0;
+static int maxep = 1;
 static struct endpoint *myeps[64];
 //static struct endpoint *actep;		// Actual endpoint for work in all functions
 
@@ -178,6 +178,7 @@ char *end = ch->bgnframe + len;
 	// Move pointers
 	if (len2) ch->bgnframe = ch->ring + len2;
 	else ch->bgnframe += len1;
+	ch->bgnring = ch->bgnframe;
 
 	return len;
 }
@@ -356,7 +357,7 @@ struct endpoint *ep;
 	ep = malloc(sizeof(struct endpoint));
 	if (ep > 0){
 		myeps[maxep] = ep;
-		ep->my_ep = maxep + 1;
+		ep->my_ep = maxep;
 		maxep++;
 	}else return NULL;
 
@@ -583,6 +584,8 @@ int sys_read(struct channel *ch){
 int rdlen, len, numep;
 struct endpoint *ep = myeps[maxep-1];
 
+char buf[100];
+
 	rdlen = read2channel(ch);
 	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 
@@ -594,21 +597,36 @@ struct endpoint *ep = myeps[maxep-1];
 		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		// Channel ready to send data
 		ch->ready = 3;
+		getframefalse(ch);
+
+		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
+		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
+
+		return 0;
+//		rdlen -= len;
+//		getframefalse(ch);
 	}
 
 	if (rdlen == -1){
 		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
+
 	if (rdlen == -2){
 		printf("%s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
+
 	if (rdlen){
 		actchannel = ch;
-		cb_rcvdata(rdlen);
+//		cb_rcvdata(rdlen);
+		len = getframefromring(ch, buf, rdlen);
+		printf("%s: getframefromring: %s\n", appname, buf);
 		actchannel = 0;
+		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
+		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 	}
+
 	return 0;
 }
 
@@ -816,10 +834,11 @@ int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
 struct channel *ch = 0;
 struct endpoint *ep = 0;
-	printf("%s: mf2endpoint start, maxch = %d\n", appname, maxch);
+	printf("%s: mf2endpoint start, maxch = %d, maxep = %d\n", appname, maxch, maxep);
 
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
+		printf("%s: test addr ep %d = %d\n",appname,i,myeps[i]->edc->addr);
 		if (myeps[i]->edc->addr == addr){
 			ep = myeps[i];
 			if (direct == DIRDN) ch = ep->cdcdn;
@@ -856,10 +875,13 @@ int i;
 struct endpoint *ep;
 	if (!actchannel) return -1;
 	// Find endpoint
-	for(i = 0; i < maxep; i++){
+	printf("%s: readbuffer len=%d\n", appname, len);
+	for(i = 1; i < maxep; i++){
 		if (myeps[i]->cdcdn == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRDN; break;}
 		if (myeps[i]->cdcup == actchannel) {ep = myeps[i]; *addr = ep->edc->addr; *direct = DIRUP; break;}
 	}
+	if (i < maxep) printf("%s: find endpoint 0x%X and channel 0x%X with addr=%d & direct=0x%X \n", appname, ep, actchannel, *addr, *direct);
+	else printf("%s: endpoint not found\n", appname);
 	return getframefromring(actchannel, buf, len);
 }
 // ================= End External API ============================================== //
