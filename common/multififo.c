@@ -825,7 +825,25 @@ struct endpoint *ep;
 // Return writing length: OK
 // Return -1: Error. Endpoint not created or not exist or Cnahhel not exist
 int mftai_toendpoint(TRANSACTINFO *tai){
-	return mf_toendpoint(tai->buf, tai->len, tai->addr, tai->direct);
+	if (tai->addr) return mf_toendpoint(tai->buf, tai->len, tai->addr, tai->direct);
+	else return mf_toendpoint_by_index(tai->buf, tai->len, tai->ep_index, tai->direct);
+}
+
+int mf_toendpoint_by_index(char *buf, int len, int index, int direct){
+int wrlen;
+struct channel *ch = mychs[index];
+struct endpoint *ep = myeps[index];
+
+	if (!ep) return -1;
+	if (!ch) return -1;
+
+	wrlen = write(ch->descout, buf, len);
+	if (wrlen == -1) {
+		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+		return -1;
+	}
+
+	return wrlen;
 }
 
 int mf_toendpoint(char *buf, int len, int addr, int direct){
@@ -848,10 +866,9 @@ struct endpoint *ep = 0;
 	if (!ep) return -1;
 	if (!ch) return -1;
 
-	// Find channel for cd by name
 //	printf("%s: find channel for writing %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
-	wrlen = write(mychs[i]->descout, buf, len);
+	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1) {
 		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
 		return -1;
@@ -859,13 +876,28 @@ struct endpoint *ep = 0;
 	return wrlen;
 }
 
-// Read data from actual channel
+// Read data from actual channel, set functions
 // Return:
 // int real reading length
 // unit unique addr by pointer
 // direction of received data by pointer
 int mftai_readbuffer(TRANSACTINFO *tai){
-	return mf_readbuffer(tai->buf, tai->len, &(tai->addr), &(tai->direct));
+	if (tai->addr) return mf_readbuffer(tai->buf, tai->len, &(tai->addr), &(tai->direct));
+	else return mf_readbuffer_by_index(tai->buf, tai->len, &(tai->ep_index), &(tai->direct));
+}
+
+int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct){
+	int i;
+	struct endpoint *ep;
+		if (!actchannel) return -1;
+		// Find endpoint
+	//	printf("%s: readbuffer len=%d\n", appname, len);
+		for(i = 1; i < maxep; i++){
+			ep = myeps[i];
+			if (ep->cdcdn == actchannel) {*index = i; *direct = DIRDN; break;}
+			if (ep->cdcup == actchannel) {*index = i; *direct = DIRUP; break;}
+		}
+		return getframefromring(actchannel, buf, len);
 }
 
 int mf_readbuffer(char *buf, int len, int *addr, int *direct){

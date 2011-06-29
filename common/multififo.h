@@ -21,6 +21,7 @@ typedef struct _transactinfo{
 	int len;
 	int addr;
 	int direct;
+	int ep_index;
 } TRANSACTINFO;
 
 // Initialisation
@@ -34,9 +35,12 @@ extern void mf_exit(void);
 extern int mf_newendpoint (struct config_device *cd, char *pathinit, u32 ep_num);
 // Send data to endpoint in any direction (up-down)
 extern int mftai_toendpoint(TRANSACTINFO *tai);
+extern int mf_toendpoint_by_index(char *buf, int len, int index, int direct);
 extern int mf_toendpoint(char *buf, int len, int addr, int direct);
+
 // Read data from ring buffer (for use in callback function)
 extern int mftai_readbuffer(TRANSACTINFO *tai);
+extern int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct);
 extern int mf_readbuffer(char *buf, int len, int *addr, int *direct);
 
 #endif /* MULTIFIFO_H_ */
