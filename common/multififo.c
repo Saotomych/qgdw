@@ -8,7 +8,7 @@
  *
  */
 
-#include "../devlinks/devlink.h"
+#include "../common/common.h"
 #include "multififo.h"
 
 #define LENRINGBUF	1024
