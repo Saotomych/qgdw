@@ -47,6 +47,12 @@ typedef struct ep_data_header {
 	uint32_t		len;		/* user data length */
 } ep_data_header;
 
-
+struct config_device{
+	char   	*name;
+	char 	*protoname;			// ptr to protokol name
+	char 	*phyname;			// physlink number
+	u32		addr;
+	u32		extaddr;
+};
 
 #endif /* COMMON_H_ */
