@@ -28,34 +28,34 @@ fd_set rd_socks;
 fd_set wr_socks;
 fd_set ex_socks;
 
-char cfgparse(char *key, char *buf){
+int cfgparse(char *key, char *buf){
 char *par;
 struct in_addr adr;
 
-	par = strstr(key, buf);
+	par = strstr(buf, key);
 	if (par) par+=6;
 	else return 0;
 
-	if (strstr("mask",key)){
+	if (strstr(key, "mask")){
 		inet_aton(par, &adr);
 		return adr.s_addr;
 	}
 
-	if (strstr("addr", key)){
+	if (strstr(key, "addr")){
 		inet_aton(par, &adr);
 		return adr.s_addr;
 	}
 
-	if (strstr("port", key)){
+	if (strstr(key, "port")){
 		return atoi(par);
 	}
 
-	if (strstr("mode", key)){
-		if (strstr("LISTEN", par)) return LISTEN;
-		if (strstr("CONNECT", par)) return CONNECT;
+	if (strstr(key, "mode")){
+		if (strstr(par, "LISTEN")) return LISTEN;
+		if (strstr(par, "CONNECT")) return CONNECT;
 	}
 
-	if (strstr("name", key)){
+	if (strstr(key, "name")){
 		return (u32) par;
 	}
 
@@ -89,7 +89,7 @@ int rdlen;
 }
 
 int rcvinit(ep_init_header *ih){
-int i;
+int i, ret;
 struct phy_route *pr;
 config_device *cd;
 
@@ -114,12 +114,26 @@ config_device *cd;
 	pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 	if (pr->socdesc){
 		FD_SET(pr->socdesc, &rd_socks);
-		FD_SET(pr->socdesc, &wr_socks);
+//		FD_SET(pr->socdesc, &wr_socks);
 		FD_SET(pr->socdesc, &ex_socks);
-		bind(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	}
 
+	printf("Phylink TCP/IP: Socket 0x%X SET: addr = 0x%X, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
+
 	// listen&accept || connect making in main function
+	if (pr->mode == CONNECT){
+		printf("Connect to 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
+		ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
+		if (ret) printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
+		else printf("Phylink TCP/IP: bind established, connect waiting...\n");
+	}
+
+	if (pr->mode == LISTEN){
+		ret = bind(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
+		if (ret) printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
+		else printf("Phylink TCP/IP: bind established, listen waiting...\n");
+		listen(pr->socdesc, 256);
+	}
 
 	return 0;
 }
@@ -127,7 +141,7 @@ config_device *cd;
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
-int exit = 0, ret;
+int exit = 0, ret, i;
 struct timeval tv;	// for sockets select
 
 FILE *addrcfg;
@@ -144,9 +158,9 @@ struct phy_route *pr;
 			p = fgets(outbuf, 250, addrcfg);
 			if (p){
 				// Parse string
-				myprs[maxpr] = firstpr + sizeof(struct phy_route) * maxpr;
+				myprs[maxpr] = (struct phy_route*) (firstpr + sizeof(struct phy_route) * maxpr);
 				pr = myprs[maxpr];
-				pr->asdu = atoi(p);
+				pr->asdu = atoi(outbuf);
 				if (pr->asdu){
 					pr->mode = cfgparse("-mode", outbuf);
 					pr->mask = cfgparse("-mask", outbuf);
@@ -178,9 +192,29 @@ struct phy_route *pr;
 	    tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(myprs[maxpr-1]->socdesc + 1, &rd_socks, &wr_socks, &ex_socks, &tv);
+//	    ret = select(myprs[maxpr-1]->socdesc + 1, NULL, NULL, &ex_socks, &tv);
 	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    else
+	    if (ret){
+	    	for (i=0; i<maxpr; i++){
+		    	if (FD_ISSET(myprs[i]->socdesc, &rd_socks)){
+		    		printf("Phylink TCP/IP: Event desc num %d reading\n", i);
+		    		ret = read(myprs[i]->socdesc, outbuf, 250);
+		    		if (ret == -1) printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
+		    		else printf("ret = %d\n", ret);
+		    	}
+		    	if (FD_ISSET(myprs[i]->socdesc, &wr_socks)){
+		    		printf("Phylink TCP/IP: Event desc num %d writing\n", i);
+		    	}
+		    	if (FD_ISSET(myprs[i]->socdesc, &ex_socks)){
+		    		printf("Phylink TCP/IP: Event desc num %d exception\n", i);
+		    	}
+	    	}
+	    }
+	    else printf("Phylink TCP/IP: Timeout\n");
 
 		// Cycle select for sockets descriptors
+
 
 	    // Установка связи
 	    // через коннект
