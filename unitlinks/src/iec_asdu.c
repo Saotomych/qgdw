@@ -605,10 +605,7 @@ uint8_t iec_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 	*offset += 1;
 
 	// build cause of transmission
-	if(iec_asdu->proto == PROTO_IEC101 || iec_asdu->proto == PROTO_IEC104)
-		bytex = iec_asdu->fnc | (iec_asdu->attr & ~IEC_ASDU_HEAD_CAUSE);
-	else
-		bytex = COT_InroGen;
+	bytex = iec_asdu->fnc | (iec_asdu->attr & ~IEC_ASDU_HEAD_CAUSE);
 
 	buff_put_le_uint8(buff, *offset, bytex);
 	*offset += 1;
