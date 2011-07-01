@@ -28,7 +28,7 @@ char *sufdn = {"-dn"};
 char *sufup = {"-up"};
 
 int (*cb_rcvdata)(int len);
-int (*cb_rcvinit)(ep_init_header *ih, int len);
+int (*cb_rcvinit)(ep_init_header *ih);
 
 struct channel{
 	char *appname;
@@ -573,7 +573,7 @@ ep_init_header ih, *eih;
 				}else return -1;
 			}
 			// Call callback function for working config_device
-			cb_rcvinit(&ih, sizeof(ep_init_header));
+			cb_rcvinit(&ih);
 			getframefalse(ch);
 
 			printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);

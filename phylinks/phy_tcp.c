@@ -15,6 +15,8 @@
 #include "../common/multififo.h"
 #include "local-phyints.h"
 
+#include "fake-unitlink.h"
+
 #define LISTEN	0x42
 #define CONNECT 0x43
 
@@ -86,15 +88,10 @@ int rdlen;
 	return 0;
 }
 
-int rcvinit(ep_init_header *ih, int len){
+int rcvinit(ep_init_header *ih){
 int i;
 struct phy_route *pr;
 config_device *cd;
-
-	// Init new phy_route
-	myprs[maxpr] = firstpr + sizeof(struct phy_route) * maxpr;
-	pr = myprs[maxpr];
-	strcpy(pr->name, ih->isstr[2]);
 
 	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[0]);
 	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[1]);
@@ -102,7 +99,7 @@ config_device *cd;
 	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[3]);
 	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[4]);
 
-	cd = ih-> edc;
+	cd = ih->edc;
 
 	printf("TCP_LINK HAS READ CONFIG_DEVICE: %d\n\n", cd->addr);
 
@@ -111,6 +108,8 @@ config_device *cd;
 		if (myprs[i]->asdu == cd->addr){ pr = myprs[i]; break;}
 	}
 	if (i == maxpr) return 0;
+	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", cd->addr, i);
+	pr = myprs[i];
 	// Create & bind new socket
 	pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 	if (pr->socdesc){
@@ -118,7 +117,7 @@ config_device *cd;
 		FD_SET(pr->socdesc, &wr_socks);
 		FD_SET(pr->socdesc, &ex_socks);
 		bind(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
-	}else return 0;
+	}
 
 	// listen&accept || connect making in main function
 
@@ -151,7 +150,7 @@ struct phy_route *pr;
 				if (pr->asdu){
 					pr->mode = cfgparse("-mode", outbuf);
 					pr->mask = cfgparse("-mask", outbuf);
-					pr->sai.sin_addr.s_addr = htons(cfgparse("-addr", outbuf));
+					pr->sai.sin_addr.s_addr = htonl(cfgparse("-addr", outbuf));
 					pr->sai.sin_port = htons(cfgparse("-port", outbuf));
 					pr->ep_index = maxpr;
 					pr->socdesc = 0;
@@ -170,6 +169,10 @@ struct phy_route *pr;
 
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
+
+	// Call for TEST
+	rcvinit(&fakeih);
+	// END Call for TEST
 
 	do{
 	    tv.tv_sec = 1;
