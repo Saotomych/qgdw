@@ -27,6 +27,7 @@ int maxpr = 0;
 fd_set rd_socks;
 fd_set wr_socks;
 fd_set ex_socks;
+int maxdesc;
 
 int cfgparse(char *key, char *buf){
 char *par;
@@ -112,27 +113,37 @@ config_device *cd;
 	pr = myprs[i];
 	// Create & bind new socket
 	pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
-	if (pr->socdesc){
-		FD_SET(pr->socdesc, &rd_socks);
-//		FD_SET(pr->socdesc, &wr_socks);
-		FD_SET(pr->socdesc, &ex_socks);
-	}
+	if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
+	else{
+		pr->sai.sin_family = AF_INET;
 
-	printf("Phylink TCP/IP: Socket 0x%X SET: addr = 0x%X, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
+		maxdesc = pr->socdesc;
+		if (pr->socdesc){
+			FD_SET(pr->socdesc, &rd_socks);
+//			FD_SET(pr->socdesc, &wr_socks);
+			FD_SET(pr->socdesc, &ex_socks);
+		}
+
+		printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
 
 	// listen&accept || connect making in main function
-	if (pr->mode == CONNECT){
-		printf("Connect to 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
-		ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
-		if (ret) printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
-		else printf("Phylink TCP/IP: bind established, connect waiting...\n");
-	}
+		if (pr->mode == CONNECT){
+			printf("Connect to 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
+			ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
+			if (ret) printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
+			else printf("Phylink TCP/IP: bind established, connect waiting...\n");
+		}
 
-	if (pr->mode == LISTEN){
-		ret = bind(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
-		if (ret) printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
-		else printf("Phylink TCP/IP: bind established, listen waiting...\n");
-		listen(pr->socdesc, 256);
+		if (pr->mode == LISTEN){
+			printf("Listen 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
+
+			// Bind привязывает к локальному адресу
+			pr->sai.sin_addr.s_addr = INADDR_ANY;
+			ret = bind(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr));
+			if (ret) printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
+			else printf("Phylink TCP/IP: bind established, listen waiting...\n");
+			listen(pr->socdesc, 256);
+		}
 	}
 
 	return 0;
@@ -191,8 +202,7 @@ struct phy_route *pr;
 	do{
 	    tv.tv_sec = 1;
 	    tv.tv_usec = 0;
-	    ret = select(myprs[maxpr-1]->socdesc + 1, &rd_socks, &wr_socks, &ex_socks, &tv);
-//	    ret = select(myprs[maxpr-1]->socdesc + 1, NULL, NULL, &ex_socks, &tv);
+	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
 	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
 	    else
 	    if (ret){
