@@ -43,7 +43,7 @@
  *
  */
 
-#include "../devlinks/devlink.h"
+#include "../common/common.h"
 #include "../common/multififo.h"
 
 char testdata[] = {"Do you see this string? Data received, all right.\0"};
@@ -74,7 +74,7 @@ int dir;
 	return 0;
 }
 
-int rcvinit(char **buf, int len){
+int rcvinit(ep_init_header *ih, int len){
 
 	return 0;
 }

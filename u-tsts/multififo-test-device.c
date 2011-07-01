@@ -58,13 +58,13 @@ int dir;
 	return 0;
 }
 
-int rcvinit(char **buf, int len){
+int rcvinit(ep_init_header *ih, int len){
 
-	printf("\nDEVLINKTEST HAS READ INIT DATA: %s\n", buf[0]);
-	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", buf[1]);
-	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", buf[2]);
-	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", buf[3]);
-	printf("DEVLINKTEST HAS READ INIT DATA: %s\n\n", buf[4]);
+	printf("\nDEVLINKTEST HAS READ INIT DATA: %s\n", ih->isstr[0]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", ih->isstr[1]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", ih->isstr[2]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n", ih->isstr[3]);
+	printf("DEVLINKTEST HAS READ INIT DATA: %s\n\n", ih->isstr[4]);
 
 	return 0;
 }
