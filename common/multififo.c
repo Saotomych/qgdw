@@ -28,7 +28,7 @@ char *sufdn = {"-dn"};
 char *sufup = {"-up"};
 
 int (*cb_rcvdata)(int len);
-int (*cb_rcvinit)(char *buf, int len);
+int (*cb_rcvinit)(ep_init_header *ih);
 
 struct channel{
 	char *appname;
@@ -488,6 +488,7 @@ char nbuf[100];
 int i;
 int len, rdlen;
 struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
+ep_init_header ih, *eih;
 	// 0 - init already
 	rdlen = read2channel(ch);
 	if (rdlen == -1){
@@ -509,6 +510,7 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 //				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
 				if (len > 0){
 					ep->isstr[ch->rdstr] = malloc(len + 1);
+					ih.isstr[ch->rdstr] = ep->isstr[ch->rdstr];
 					strcpy(ep->isstr[ch->rdstr], nbuf);
 //					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
 					ch->rdstr++;
@@ -516,14 +518,16 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 				}else rdlen = 0;
 			}else{
 				// get config_device
-				len = getdatafromring(ch, nbuf, sizeof(struct config_device) + sizeof(int));
-				if (len >= sizeof(struct config_device)){
+				len = getdatafromring(ch, nbuf, sizeof(ep_init_header));
+				eih = (ep_init_header*) nbuf;
+				if (len == sizeof(ep_init_header)){
 					ep->edc = malloc(sizeof(struct config_device));
 					memcpy(ep->edc, nbuf, sizeof(struct config_device));
+					ih.edc = ep->edc;
+					ep->ep_up = eih->numch;
+					ih.numch = eih->numch;
 					ch->rdlen += len;
 				}
-				len -= sizeof(struct config_device);
-				if (len >= sizeof(int)) memcpy(&(ep->ep_up), nbuf + sizeof(struct config_device), sizeof(int));
 				rdlen = 0;
 			}
 //			printf("%s: rdlen=%d\n",appname,rdlen);
@@ -532,7 +536,7 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
 		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
-		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(struct config_device) + sizeof(int))){
+		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(ep_init_header))){
 			ep->edc->name = ep->isstr[2];
 			ep->edc->protoname = ep->isstr[3];
 			ep->edc->phyname = ep->isstr[4];
@@ -569,7 +573,7 @@ struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 				}else return -1;
 			}
 			// Call callback function for working config_device
-			cb_rcvinit((char*) ep, sizeof(struct endpoint));
+			cb_rcvinit(&ih);
 			getframefalse(ch);
 
 			printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);

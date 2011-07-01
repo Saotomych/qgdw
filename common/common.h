@@ -23,9 +23,9 @@
 #include <netdb.h>
 
 #include <sys/select.h>
+#include <sys/inotify.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/inotify.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -60,12 +60,17 @@ typedef struct ep_data_header {
 	uint32_t		len;		/* user data length */
 } ep_data_header;
 
-struct config_device{
+typedef struct ep_init_header {
+	char *isstr[5];
+	struct config_device	*edc;
+	int numch;
+} ep_init_header;
+
+typedef struct config_device{
 	char   	*name;
 	char 	*protoname;			// ptr to protokol name
 	char 	*phyname;			// physlink number
 	u32		addr;
-	u32		extaddr;
-};
+} config_device;
 
 #endif /* COMMON_H_ */
