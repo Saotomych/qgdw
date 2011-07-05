@@ -21,6 +21,7 @@
 #define IEC101_BALANCED			1		/* balanced mode */
 #define IEC101_UNBALANCED		2		/* unbalanced mode */
 
+/* default constants values */
 #define IEC101_COT_LEN			1		/* cause of transmission default length */
 #define IEC101_COA_LEN			1		/* common object (ASDU) address default length */
 #define IEC101_IOA_LEN			2		/* information object address default length */
@@ -29,9 +30,18 @@
 
 
 /* IEC-104 */
-#define IEC104_COT_LEN			2		/* cause of transmission default length */
-#define IEC104_COA_LEN			2		/* common object (ASDU) address default length */
-#define IEC104_IOA_LEN			3		/* information object address default length */
+/* default constants values */
+#define IEC104_COT_LEN			2		/* cause of transmission length */
+#define IEC104_COA_LEN			2		/* common object (ASDU) address length */
+#define IEC104_IOA_LEN			3		/* information object address length */
+
+#define IEC104_T0				30		/* timeout of connection establishment */
+#define IEC104_T1				15		/* timeout of send or test APDUs */
+#define IEC104_T2				10		/* timeout for acknowledges in case of no data messages (t2<t1) */
+#define IEC104_T3				20		/* timeout for sending test frames in case of long idle state */
+
+#define IEC104_K				12		/* maximum difference receive sequence number to sent state variable */
+#define IEC104_W				8		/* latest acknowledge after receiving "w" I-Format frames */
 
 #define IEC104_APDU_LEN_MAX		253		/* default maximum APDU length for IEC-104 */
 
