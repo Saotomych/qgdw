@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <malloc.h>
+#include <time.h>
 #include <signal.h>
 #include "p_num.h"
 #include "iec_def.h"
@@ -42,16 +43,18 @@ extern "C" {
  *
  */
 
+/* Structure for extend end-point with protocol specific data */
 typedef struct iec104_ep_ext {
 	uint16_t		adr;		/* link (ASDU) address */
 	uint8_t			host_type;	/* master/slave */
 
-	uint16_t		send_num;	/* send sequence number */
-	uint16_t		recv_num;	/* receive sequence number */
+	uint16_t		vs;			/* send sequence number counter */
+	uint16_t		vr;			/* receive sequence number counter*/
 
-	uint16_t		ack_num;	/* last sent acknowledged ASDU */
+	uint16_t		as;			/* last sent ASDU with acknowledge received from remote peer */
+	uint16_t		ar;			/* last received ASDU with acknowledge sent to remote peer */
 
-
+	uint8_t			link_state;	/* communication link ON(1)/OFF(0) */
 } iec104_ep_ext;
 
 
@@ -64,27 +67,33 @@ typedef struct iec104_ep_ext {
 int iec104_recv_data(int len);
 
 
-int iec104_recv_init(char **buf, int len);
+int iec104_recv_init(ep_init_header *ih);
 
+void iec104_init_ep_exts();
 iec104_ep_ext* iec104_get_ep_ext(uint16_t adr);
+uint8_t iec104_add_ep_ext(uint16_t adr, uint8_t host_type);
+
 
 uint8_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir);
-uint8_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len);
+uint8_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);
 
 
 uint8_t iec104_frame_u_send(uint8_t u_cmd, uint16_t adr, uint8_t dir);
-uint8_t iec104_frame_u_recv();
+uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext);
 
-uint8_t iec104_frame_s_send(uint16_t recv_num, uint16_t adr, uint8_t dir);
-uint8_t iec104_frame_s_recv();
+uint8_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir);
+uint8_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext);
 
 
-uint8_t iec104_frame_i_send(asdu *iec_asdu, uint16_t send_num, uint16_t recv_num, uint16_t adr, uint8_t dir);
-uint8_t iec104_frame_i_recv();
+uint8_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir);
+uint8_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext);
 
 
 uint8_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir);
-uint8_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len);
+uint8_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr);
+
+uint8_t iec104_frame_check_send_num(iec104_ep_ext *ep_ext, uint16_t send_num);
+uint8_t iec104_frame_check_recv_num(iec104_ep_ext *ep_ext, uint16_t recv_num);
 
 
 void sighandler_sigchld(int arg);
