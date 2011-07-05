@@ -2,6 +2,10 @@
 
 u16 phy_handle;
 
+#ifdef __unix__
+typedef int	SOCKET;
+#endif
+
 // Structure consists data for route frames by path: multififo <-> socket
 struct phy_route{
 	u16 asdu;
@@ -10,7 +14,7 @@ struct phy_route{
 	u32 mask;
 	u32 ep_index;
 	// sockets
-	int socdesc;
+	SOCKET socdesc;
 	struct sockaddr_in 	sai;	// sai->sin_addr; sai->sin_port
 	int state;
 };
