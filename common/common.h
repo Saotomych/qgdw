@@ -46,8 +46,6 @@
 #define EP_MSG_CONNECT_CLOSE	7		/* connection close request */
 #define EP_MSG_CONNECT_LOST		8		/* connection lost/closed by remote peer */
 
-
-
 /*
  *
  * Structures

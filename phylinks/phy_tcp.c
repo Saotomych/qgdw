@@ -63,7 +63,7 @@ struct in_addr adr;
 	return -1;
 }
 
-char inoti_buf[100];
+char inoti_buf[256];
 int rcvdata(int len){
 TRANSACTINFO tai;
 struct phy_route *pr;
@@ -76,14 +76,22 @@ int rdlen;
 
 	rdlen = mftai_readbuffer(&tai);
 	// Get phy_route by index
-	if (tai.ep_index) pr = myprs[tai.ep_index];
+	if (tai.ep_index) pr = myprs[tai.ep_index-1];
+	else return 0;
 	edh = (struct ep_data_header *) inoti_buf;
-	if (!edh->sys_msg){
-		// Write data to socket
+	tai.buf = inoti_buf + sizeof(struct ep_data_header);
+	switch(edh->sys_msg){
+	case EP_USER_DATA:	// Write data to socket
+			send(pr->socdesc, &(tai.buf), len, 0);
+			break;
 
-	}else{
-		// System command
+	case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
 
+			break;
+
+	case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
+
+			break;
 	}
 
 	return 0;
@@ -118,11 +126,6 @@ config_device *cd;
 		pr->sai.sin_family = AF_INET;
 
 		maxdesc = pr->socdesc;
-		if (pr->socdesc){
-			FD_SET(pr->socdesc, &rd_socks);
-//			FD_SET(pr->socdesc, &wr_socks);
-			FD_SET(pr->socdesc, &ex_socks);
-		}
 
 		printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
 
@@ -131,7 +134,7 @@ config_device *cd;
 			printf("Connect to 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
 			ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 			if (ret) printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
-			else printf("Phylink TCP/IP: bind established, connect waiting...\n");
+			else printf("Phylink TCP/IP: connect established.\n");
 		}
 
 		if (pr->mode == LISTEN){
@@ -175,8 +178,8 @@ struct phy_route *pr;
 				if (pr->asdu){
 					pr->mode = cfgparse("-mode", outbuf);
 					pr->mask = cfgparse("-mask", outbuf);
-					pr->sai.sin_addr.s_addr = htonl(cfgparse("-addr", outbuf));
-					pr->sai.sin_port = htons(cfgparse("-port", outbuf));
+					pr->sai.sin_addr.s_addr = cfgparse("-addr", outbuf);	// inet_aton returns net order (big endian)
+					pr->sai.sin_port = htons(cfgparse("-port", outbuf));		// atoi returns little endian
 					pr->ep_index = maxpr;
 					pr->socdesc = 0;
 					pr->state = 0;
@@ -199,8 +202,19 @@ struct phy_route *pr;
 	rcvinit(&fakeih);
 	// END Call for TEST
 
+	// Cycle select for sockets descriptors
 	do{
-	    tv.tv_sec = 1;
+		FD_ZERO(&rd_socks);
+		FD_ZERO(&wr_socks);
+		FD_ZERO(&ex_socks);
+    	for (i=0; i<maxpr; i++){
+    		pr = myprs[i];
+    		FD_SET(pr->socdesc, &rd_socks);
+    		FD_SET(pr->socdesc, &wr_socks);
+    		FD_SET(pr->socdesc, &ex_socks);
+    	}
+
+		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
 	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
@@ -208,12 +222,15 @@ struct phy_route *pr;
 	    if (ret){
 	    	for (i=0; i<maxpr; i++){
 		    	if (FD_ISSET(myprs[i]->socdesc, &rd_socks)){
+		    	    // Прием фрейма данных
+		    	    // отправка его на все подключенные каналы
 		    		printf("Phylink TCP/IP: Event desc num %d reading\n", i);
-		    		ret = read(myprs[i]->socdesc, outbuf, 250);
+		    		ret = recv(myprs[i]->socdesc, outbuf, 250, 0);
 		    		if (ret == -1) printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
 		    		else printf("ret = %d\n", ret);
 		    	}
 		    	if (FD_ISSET(myprs[i]->socdesc, &wr_socks)){
+		    		// Socket was writing
 		    		printf("Phylink TCP/IP: Event desc num %d writing\n", i);
 		    	}
 		    	if (FD_ISSET(myprs[i]->socdesc, &ex_socks)){
@@ -222,16 +239,6 @@ struct phy_route *pr;
 	    	}
 	    }
 	    else printf("Phylink TCP/IP: Timeout\n");
-
-		// Cycle select for sockets descriptors
-
-
-	    // Установка связи
-	    // через коннект
-	    // через листен
-
-	    // Прием фрейма данных
-	    // отправка его на все подключенные каналы
 
 	}while(!exit);
 
