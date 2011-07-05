@@ -170,7 +170,7 @@ ep_data_header edh;
 
 	// listen&accept || connect making in main function
 		if (pr->mode == CONNECT){
-			printf("Connect to 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
+			printf("Connect to 0x%s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 			ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 			if (ret){
 				edh.adr = pr->asdu;
