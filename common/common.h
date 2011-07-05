@@ -21,7 +21,12 @@
 #include <signal.h>
 #include <errno.h>
 #include <netdb.h>
+#include <langinfo.h>
+#include <ctype.h>
+#include <termios.h> /* Объявления управления POSIX-терминалом */
+#include <fcntl.h>   /* Управление файлами */
 
+//#include <iostream>
 #include <sys/select.h>
 #include <sys/inotify.h>
 #include <sys/types.h>

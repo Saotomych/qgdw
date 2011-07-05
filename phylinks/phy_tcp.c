@@ -1,9 +1,9 @@
 /*
  *  phyint.c
  *  Created on: 01.06.2011
- *      Author: alex AAV
+ *      Author: Alex AVAlon
  *
- *	Linked data from physical device through parser to main application
+ *	Linked data from physical device (socket) through parser to main application
  *
  *	Handles name consists:
  *	- last part of iec device name
@@ -15,6 +15,7 @@
 #include "../common/multififo.h"
 #include "local-phyints.h"
 
+// Test config_device
 #include "fake-unitlink.h"
 
 #define LISTEN	0x42
@@ -37,6 +38,10 @@ struct in_addr adr;
 	if (par) par+=6;
 	else return 0;
 
+	if (strstr(key, "name")){
+		return (int) strstr(par, "phy_tcp");
+	}
+
 	if (strstr(key, "mask")){
 		inet_aton(par, &adr);
 		return adr.s_addr;
@@ -56,11 +61,44 @@ struct in_addr adr;
 		if (strstr(par, "CONNECT")) return CONNECT;
 	}
 
-	if (strstr(key, "name")){
-		return (u32) par;
-	}
-
 	return -1;
+}
+
+int createroutetable(void){
+FILE *addrcfg;
+struct phy_route *pr;
+char *p;
+char outbuf[256];
+
+// Init physical routes structures by phys.cfg file
+	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
+	addrcfg = fopen("/rw/mx00/configs/phys.cfg", "r");
+	if (addrcfg){
+		// Create phy_route tables
+		do{
+			p = fgets(outbuf, 250, addrcfg);
+			if (p){
+				// Parse string
+				myprs[maxpr] = (struct phy_route*) (firstpr + sizeof(struct phy_route) * maxpr);
+				pr = myprs[maxpr];
+				pr->asdu = atoi(outbuf);
+				if (pr->asdu){
+					if (cfgparse("-name", outbuf)){
+						pr->sai.sin_addr.s_addr = cfgparse("-addr", outbuf);	// inet_aton returns net order (big endian)
+						pr->mode = cfgparse("-mode", outbuf);
+						pr->mask = cfgparse("-mask", outbuf);
+						pr->sai.sin_port = htons(cfgparse("-port", outbuf));		// atoi returns little endian
+						pr->ep_index = maxpr;
+						pr->socdesc = 0;
+						pr->state = 0;
+						maxpr++;
+					}
+				}
+			}
+		}while(p);
+	}else return -1;
+
+	return 0;
 }
 
 char inoti_buf[256];
@@ -166,36 +204,10 @@ pid_t chldpid;
 int exit = 0, ret, i;
 struct timeval tv;	// for sockets select
 
-FILE *addrcfg;
 char outbuf[256];
-char *p;
 struct phy_route *pr;
 
-	// Init physical routes structures by phys.cfg file
-	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
-	addrcfg = fopen("/rw/mx00/configs/phys.cfg", "r");
-	if (addrcfg){
-		// Create phy_route tables
-		do{
-			p = fgets(outbuf, 250, addrcfg);
-			if (p){
-				// Parse string
-				myprs[maxpr] = (struct phy_route*) (firstpr + sizeof(struct phy_route) * maxpr);
-				pr = myprs[maxpr];
-				pr->asdu = atoi(outbuf);
-				if (pr->asdu){
-					pr->mode = cfgparse("-mode", outbuf);
-					pr->mask = cfgparse("-mask", outbuf);
-					pr->sai.sin_addr.s_addr = cfgparse("-addr", outbuf);	// inet_aton returns net order (big endian)
-					pr->sai.sin_port = htons(cfgparse("-port", outbuf));		// atoi returns little endian
-					pr->ep_index = maxpr;
-					pr->socdesc = 0;
-					pr->state = 0;
-					maxpr++;
-				}
-			}
-		}while(p);
-	}
+	if (createroutetable() == -1){	printf("Phylink TCP/IP: config file not found\n"); return 0;}
 	printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
 
 	// Init select sets for sockets
