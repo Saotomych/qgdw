@@ -88,7 +88,7 @@ char outbuf[256];
 						pr->mode = cfgparse("-mode", outbuf);
 						pr->mask = cfgparse("-mask", outbuf);
 						pr->sai.sin_port = htons(cfgparse("-port", outbuf));		// atoi returns little endian
-						pr->ep_index = maxpr;
+						pr->ep_index = 0;
 						pr->socdesc = 0;
 						pr->state = 0;
 						maxpr++;
@@ -139,6 +139,7 @@ int rcvinit(ep_init_header *ih){
 int i, ret;
 struct phy_route *pr;
 config_device *cd;
+ep_data_header edh;
 
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
@@ -158,6 +159,7 @@ config_device *cd;
 	if (myprs[i]->state) return 0;	// Route init already
 	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", cd->addr, i);
 	pr = myprs[i];
+	pr->ep_index = ih->numch;
 	// Create & bind new socket
 	pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 	if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
@@ -171,10 +173,19 @@ config_device *cd;
 			printf("Connect to 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
 			ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 			if (ret){
+				edh.adr = pr->asdu;
+				edh.sys_msg = EP_MSG_CONNECT_NACK;
+				edh.len = sizeof(ep_data_header);
+				mf_toendpoint_by_index((char*)&edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
 				printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
 				return 0;
+			}else{
+				edh.adr = pr->asdu;
+				edh.sys_msg = EP_MSG_CONNECT_ACK;
+				edh.len = sizeof(ep_data_header);
+				mf_toendpoint_by_index((char*)&edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
+printf("Phylink TCP/IP: connect established.\n");
 			}
-			else printf("Phylink TCP/IP: connect established.\n");
 			maxdesc = pr->socdesc;
 			pr->state = 1;
 		}
@@ -204,7 +215,7 @@ pid_t chldpid;
 int exit = 0, ret, i;
 struct timeval tv;	// for sockets select
 
-char outbuf[256];
+char outbuf[300];
 struct phy_route *pr;
 ep_data_header *edh;
 
@@ -232,7 +243,7 @@ ep_data_header *edh;
     		pr = myprs[i];
     		if (pr->state){
     			FD_SET(pr->socdesc, &rd_socks);
-    			FD_SET(pr->socdesc, &wr_socks);
+//    			FD_SET(pr->socdesc, &wr_socks);
     			FD_SET(pr->socdesc, &ex_socks);
     		}
     	}
@@ -246,29 +257,41 @@ ep_data_header *edh;
 	    	for (i=0; i<maxpr; i++){
 	    		if (myprs[i]->state){
 			    	if (FD_ISSET(myprs[i]->socdesc, &rd_socks)){
-			    		if (myprs[i]->mode == LISTEN){
+	    				pr = myprs[i];
+	    				edh = (ep_data_header*) outbuf;
+	    				edh->adr = myprs[i]->asdu;
+			    		if (pr->mode == LISTEN){
 			    			// Accept connection
 			    			printf("Phylink TCP/IP: accept\n");
-			    			ret = accept(myprs[i]->socdesc, NULL, NULL);
-			    			if (ret == -1) printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
-			    			else{
+			    			ret = accept(pr->socdesc, NULL, NULL);
+			    			if (ret == -1){
+			    				printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
+
+			    				edh->sys_msg = EP_MSG_CONNECT_NACK;
+			    				edh->len = sizeof(ep_data_header);
+			    				mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    			}else{
 			    				printf("Phylink TCP/IP: accept OK\n");
-			    				myprs[i]->socdesc = ret;
+
+			    				pr->socdesc = ret;
+			    				pr->mode = LISTEN + CONNECT;
+
+			    				edh->sys_msg = EP_MSG_CONNECT_ACK;
+			    				edh->len = sizeof(ep_data_header);
+			    				mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
 			    			}
 			    		}else{
 			    			// Receive frame
 			    			printf("Phylink TCP/IP: Event desc num %d reading\n", i);
-			    			ret = recv(myprs[i]->socdesc, outbuf + sizeof(ep_data_header), 250, 0);
+			    			ret = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 256, 0);
 			    			if (ret == -1){
 			    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
 			    			}else{
 			    				printf("ret = %d\n", ret);
 			    				// Send frame to endpoint
-			    				edh = outbuf;
-			    				edh->adr = myprs[i]->asdu;
-			    				edh->sysmsg = EP_USER_DATA;
+			    				edh->sys_msg = EP_USER_DATA;
 			    				edh->len = ret;
-			    				mf_toendpoint_by_index(outbuf, ret + sizeof(ep_data_header), myprs[i]->ep_index, DIRUP);
+			    				mf_toendpoint_by_index(outbuf, ret + sizeof(ep_data_header), pr->ep_index, DIRUP);
 			    			}
 			    		}
 			    	}
