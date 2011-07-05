@@ -207,7 +207,7 @@ struct phy_route *pr;
 	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
 
 	// Call for TEST
-	rcvinit(&fakeih);
+//	rcvinit(&fakeih);
 	// END Call for TEST
 
 	// Cycle select for sockets descriptors
