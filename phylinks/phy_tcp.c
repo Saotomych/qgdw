@@ -159,7 +159,7 @@ int exit = 0, ret, i;
 struct timeval tv;	// for sockets select
 
 FILE *addrcfg;
-char outbuf[251];
+char outbuf[256];
 char *p;
 struct phy_route *pr;
 
@@ -199,7 +199,7 @@ struct phy_route *pr;
 	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
 
 	// Call for TEST
-	rcvinit(&fakeih);
+//	rcvinit(&fakeih);
 	// END Call for TEST
 
 	// Cycle select for sockets descriptors
@@ -222,23 +222,39 @@ struct phy_route *pr;
 	    if (ret){
 	    	for (i=0; i<maxpr; i++){
 		    	if (FD_ISSET(myprs[i]->socdesc, &rd_socks)){
-		    	    // Прием фрейма данных
-		    	    // отправка его на все подключенные каналы
-		    		printf("Phylink TCP/IP: Event desc num %d reading\n", i);
-		    		ret = recv(myprs[i]->socdesc, outbuf, 250, 0);
-		    		if (ret == -1) printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
-		    		else printf("ret = %d\n", ret);
+		    		if (myprs[i]->mode == LISTEN){
+		    			// Accept connection
+		    			printf("Phylink TCP/IP: accept\n");
+		    			ret = accept(myprs[i]->socdesc, NULL, NULL);
+		    			if (ret == -1) printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
+		    			else{
+		    				printf("Phylink TCP/IP: accept OK\n");
+		    				myprs[i]->socdesc = ret;
+		    			}
+		    		}else{
+		    			// Receive frame
+		    			printf("Phylink TCP/IP: Event desc num %d reading\n", i);
+		    			ret = recv(myprs[i]->socdesc, outbuf, 250, 0);
+		    			if (ret == -1){
+		    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
+		    			}
+		    			else printf("ret = %d\n", ret);
+		    			// Send frame to endpoint
+		    			mf_toendpoint_by_index(outbuf, ret, myprs[i]->ep_index, DIRUP);
+		    		}
 		    	}
+
 		    	if (FD_ISSET(myprs[i]->socdesc, &wr_socks)){
 		    		// Socket was writing
 		    		printf("Phylink TCP/IP: Event desc num %d writing\n", i);
 		    	}
+
 		    	if (FD_ISSET(myprs[i]->socdesc, &ex_socks)){
 		    		printf("Phylink TCP/IP: Event desc num %d exception\n", i);
 		    	}
 	    	}
 	    }
-	    else printf("Phylink TCP/IP: Timeout\n");
+//	    else printf("Phylink TCP/IP: Timeout\n");
 
 	}while(!exit);
 
