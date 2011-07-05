@@ -36,6 +36,10 @@ extern "C" {
 #define APCI_TYPE_S				0x01	/* S-Format frame */
 #define APCI_TYPE_U				0x03	/* U-Format frame */
 
+#define APCI_LINK_ON			1
+#define APCI_LINK_OFF			0
+
+
 /* U-Format flags */
 #define APCI_U_STARTDT_ACT		0x04	/* start data transfer activation request */
 #define APCI_U_STARTDT_CON		0x08	/* start data transfer confirmation */
