@@ -206,6 +206,7 @@ struct timeval tv;	// for sockets select
 
 char outbuf[256];
 struct phy_route *pr;
+ep_data_header *edh;
 
 	if (createroutetable() == -1){	printf("Phylink TCP/IP: config file not found\n"); return 0;}
 	printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
@@ -257,13 +258,18 @@ struct phy_route *pr;
 			    		}else{
 			    			// Receive frame
 			    			printf("Phylink TCP/IP: Event desc num %d reading\n", i);
-			    			ret = recv(myprs[i]->socdesc, outbuf, 250, 0);
+			    			ret = recv(myprs[i]->socdesc, outbuf + sizeof(ep_data_header), 250, 0);
 			    			if (ret == -1){
 			    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
+			    			}else{
+			    				printf("ret = %d\n", ret);
+			    				// Send frame to endpoint
+			    				edh = outbuf;
+			    				edh->adr = myprs[i]->asdu;
+			    				edh->sysmsg = EP_USER_DATA;
+			    				edh->len = ret;
+			    				mf_toendpoint_by_index(outbuf, ret + sizeof(ep_data_header), myprs[i]->ep_index, DIRUP);
 			    			}
-			    			else printf("ret = %d\n", ret);
-			    			// Send frame to endpoint
-			    			mf_toendpoint_by_index(outbuf, ret, myprs[i]->ep_index, DIRUP);
 			    		}
 			    	}
 
