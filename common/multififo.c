@@ -53,8 +53,8 @@ struct channel{
 
 // connect device to channel
 struct endpoint{
-	char *isstr[5];
-	struct config_device	*edc;
+//	char *isstr[5];
+	ep_init_header			*eih;
 	struct channel			*cdcup;
 	struct channel			*cdcdn;
 	int my_ep;			// unique endpoint's identify application inside
@@ -356,11 +356,13 @@ struct endpoint *ep;
 	if (maxep > 63) return NULL;
 	ep = malloc(sizeof(struct endpoint));
 	if (ep > 0){
-		myeps[maxep] = ep;
-		ep->my_ep = maxep;
-		maxep++;
+		ep->eih = malloc(sizeof(ep_init_header));
+		if (ep->eih > 0){
+			myeps[maxep] = ep;
+			ep->my_ep = maxep;
+			maxep++;
+		}
 	}else return NULL;
-
 	return ep;
 }
 
@@ -488,7 +490,7 @@ char nbuf[300];
 int i;
 int len, rdlen;
 struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
-ep_init_header ih, *eih;
+ep_init_header *eih;
 	// 0 - init already
 	rdlen = read2channel(ch);
 	if (rdlen == -1){
@@ -504,15 +506,14 @@ ep_init_header ih, *eih;
 		while(rdlen > 0){
 			// Building init pointpp
 			if (ch->rdstr < 5){
-//				printf("%s: get string number %d\n", appname, ch->rdstr);
+				printf("%s: get string number %d\n", appname, ch->rdstr);
 				// get strings
 				len = getstringfromring(ch, nbuf);
-//				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
+				printf("%s: get string \"%s\"; number %d; len %d;\n", appname, nbuf, ch->rdstr, len);
 				if (len > 0){
-					ep->isstr[ch->rdstr] = malloc(len + 1);
-					ih.isstr[ch->rdstr] = ep->isstr[ch->rdstr];
-					strcpy(ep->isstr[ch->rdstr], nbuf);
-//					printf("%s: %d - %s\n", appname, ch->rdstr, ep->isstr[ch->rdstr]);
+					ep->eih->isstr[ch->rdstr] = malloc(len + 1);
+					strcpy(ep->eih->isstr[ch->rdstr], nbuf);
+					printf("%s: %d - %s\n", appname, ch->rdstr, ep->eih->isstr[ch->rdstr]);
 					ch->rdstr++;
 					rdlen -= len;
 				}else rdlen = 0;
@@ -521,34 +522,28 @@ ep_init_header ih, *eih;
 				len = getdatafromring(ch, nbuf, sizeof(ep_init_header));
 				eih = (ep_init_header*) nbuf;
 				if (len == sizeof(ep_init_header)){
-					ep->edc = malloc(sizeof(struct config_device));
-					memcpy(ep->edc, nbuf, sizeof(struct config_device));
-					ih.edc = ep->edc;
+					memcpy(ep->eih, nbuf, sizeof(ep_init_header));
 					ep->ep_up = eih->numch;
-					ih.numch = eih->numch;
 					ch->rdlen += len;
 				}
 				rdlen = 0;
 			}
-//			printf("%s: rdlen=%d\n",appname,rdlen);
+			printf("%s: rdlen=%d\n",appname,rdlen);
 			if (len == -1) rdlen = 0;
 		}
 		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
 		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
 		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(ep_init_header))){
-			ep->edc->name = ep->isstr[2];
-			ep->edc->protoname = ep->isstr[3];
-			ep->edc->phyname = ep->isstr[4];
 			// Connect to channel
-//			printf("%s: connect to working channel... ",appname);
+			printf("%s: connect to working channel... ",appname);
 			// find channel in list
 			//			- test open channel to mychs[]->name IF NOT:
 			//								- connect to channel
 			for (i = 1; i < maxch; i++){
 				if (mychs[i]){
-					if (strstr(ep->isstr[1], mychs[i]->appname)){
-//						printf("%s: found channel %d\n", appname, i);
+					if (strstr(ep->eih->isstr[1], mychs[i]->appname)){
+						printf("%s: found channel %d\n", appname, i);
 						break;
 					}
 				}
@@ -556,9 +551,9 @@ ep_init_header ih, *eih;
 
 			if (i == maxch){
 				// Channel not found, start new channel
-				sprintf(nbuf,"%s/%s",ep->isstr[0], ep->isstr[2]);
-//				printf("%s: not found channel for %s\n", appname, ep->isstr[1]);
-				if (!connect2channel(ep->isstr[0], ep->isstr[2])){
+				sprintf(nbuf,"%s/%s",ep->eih->isstr[0], ep->eih->isstr[2]);
+				printf("%s: not found channel for %s\n", appname, ep->eih->isstr[1]);
+				if (!connect2channel(ep->eih->isstr[0], ep->eih->isstr[2])){
 					// Add new channel to up
 					i = maxch-1;
 					//	- add fifo to inotify for read
@@ -573,7 +568,7 @@ ep_init_header ih, *eih;
 				}else return -1;
 			}
 			// Call callback function for working config_device
-			cb_rcvinit(&ih);
+			cb_rcvinit(ep->eih);
 			getframefalse(ch);
 
 			printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
@@ -783,13 +778,13 @@ struct endpoint *ep;
 		ep = create_ep();
 		if (!ep) return -1;		// channel don't create
 		// Init new channel
-		ep->edc = cd;			// config_device must have in memory always
-		ep->isstr[0] = malloc(strlen(pathinit) + 1);
-		strcpy(ep->isstr[0], pathinit);
-		ep->isstr[1] = appname;
-		ep->isstr[2] = cd->name;
-		ep->isstr[3] = cd->protoname;
-		ep->isstr[4] = cd->phyname;
+		ep->eih = malloc(sizeof(ep_init_header));			// config_device must have in memory always
+		ep->eih->isstr[0] = malloc(strlen(pathinit) + 1);
+		strcpy(ep->eih->isstr[0], pathinit);
+		ep->eih->isstr[1] = appname;
+		ep->eih->isstr[2] = cd->name;
+		ep->eih->isstr[3] = cd->protoname;
+		ep->eih->isstr[4] = cd->phyname;
 	}
 	if (newchannel(pathinit, cd->name)) return -1;
 
@@ -800,21 +795,22 @@ struct endpoint *ep;
 	printf("%s: infile add to watch %d, %s\n", appname, ch->watch, ch->f_namein);
 
 	// Open init channel for having endpoint
-	strcpy(fname, ep->isstr[0]);
+	strcpy(fname, ep->eih->isstr[0]);
 	strcat(fname,"/");
-	strcat(fname, ep->isstr[2]);
+	strcat(fname, ep->eih->isstr[2]);
 	strcat(fname, sufinit);
 	dninit = open(fname, O_RDWR);
 	if (!dninit) return -1;
 
+	ep->eih->addr = cd->addr;
+	ep->eih->numch = maxch-1;
 	// Write config to init channel
-	wrlen  = write(dninit, pathinit, strlen(pathinit)+1);
-	wrlen += write(dninit, appname, strlen(appname)+1);
-	wrlen += write(dninit, ep->isstr[2], strlen(cd->name)+1);
-	wrlen += write(dninit, ep->isstr[3], strlen(cd->protoname)+1);
-	wrlen += write(dninit, ep->isstr[4], strlen(cd->phyname)+1);
-	wrlen += write(dninit, cd, sizeof(struct config_device));
-	wrlen += write(dninit, &(ep->my_ep), sizeof(u32));
+	wrlen  = write(dninit, ep->eih->isstr[0], strlen(pathinit)+1);
+	wrlen += write(dninit, ep->eih->isstr[1], strlen(appname)+1);
+	wrlen += write(dninit, ep->eih->isstr[2], strlen(cd->name)+1);
+	wrlen += write(dninit, ep->eih->isstr[3], strlen(cd->protoname)+1);
+	wrlen += write(dninit, ep->eih->isstr[4], strlen(cd->phyname)+1);
+	wrlen += write(dninit, &(ep->eih), sizeof(struct ep_init_header));
 
 	while(ch->ready < 2);
 	close(dninit);
@@ -858,8 +854,7 @@ struct endpoint *ep = 0;
 
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
-//		printf("%s: test addr ep %d = %d\n",appname,i,myeps[i]->edc->addr);
-		if (myeps[i]->edc->addr == addr){
+		if (myeps[i]->eih->addr == addr){
 			ep = myeps[i];
 			if (direct == DIRDN) ch = ep->cdcdn;
 			if (direct == DIRUP) ch = ep->cdcup;
@@ -912,8 +907,8 @@ struct endpoint *ep;
 //	printf("%s: readbuffer len=%d\n", appname, len);
 	for(i = 1; i < maxep; i++){
 		ep = myeps[i];
-		if (ep->cdcdn == actchannel) {*addr = ep->edc->addr; *direct = DIRDN; break;}
-		if (ep->cdcup == actchannel) {*addr = ep->edc->addr; *direct = DIRUP; break;}
+		if (ep->cdcdn == actchannel) {*addr = ep->eih->addr; *direct = DIRDN; break;}
+		if (ep->cdcup == actchannel) {*addr = ep->eih->addr; *direct = DIRUP; break;}
 	}
 	return getframefromring(actchannel, buf, len);
 }

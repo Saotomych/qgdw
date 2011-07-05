@@ -141,11 +141,13 @@ struct phy_route *pr;
 config_device *cd;
 ep_data_header edh;
 
+#ifdef _DEBUG
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[2]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[3]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
+#endif
 
 	cd = ih->edc;
 
