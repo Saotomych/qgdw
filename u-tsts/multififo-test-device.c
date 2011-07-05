@@ -44,7 +44,7 @@
  *
  */
 
-#include "../devlinks/devlink.h"
+#include "../common/common.h"
 #include "../common/multififo.h"
 
 int rcvdata(int len){
