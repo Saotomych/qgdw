@@ -14,9 +14,9 @@
 #include "p_num.h"
 #include "iec_def.h"
 #include "lpdu_frame.h"
+#include "../../common/common.h"
 #include "../../common/asdu.h"
 #include "iec_asdu.h"
-#include "../../devlinks/devlink.h"
 #include "../../common/multififo.h"
 
 

@@ -22,20 +22,25 @@ extern "C" {
  *
  */
 
+/* Response codes */
+#define RES_ASDU_SUCCESS		0x00	/* no error(s) */
+#define RES_ASDU_INCORRECT		0x01	/* ASDU or/and buffer are incorrect */
+#define RES_ASDU_MEM_ALLOC		0x02	/* memory allocation error */
+
 /* Protocols */
-#define PROTO_UNKNOWN		0
-#define PROTO_IEC101		1
-#define PROTO_IEC104		2
-#define PROTO_DLT645		3
+#define PROTO_UNKNOWN			0
+#define PROTO_IEC101			1
+#define PROTO_IEC104			2
+#define PROTO_DLT645			3
 
 
 /* Value types */
-#define ASDU_VAL_NONE		0	/* no value (used in ASDU like time synchronization, broadcast request, etc.) */
-#define ASDU_VAL_INT		1	/* integer 32-bit */
-#define ASDU_VAL_UINT		2	/* unsigned integer 32-bit */
-#define ASDU_VAL_FLT		3	/* float */
-#define ASDU_VAL_BOOL		4	/* boolean */
-#define ASDU_VAL_TIME		5	/* time */
+#define ASDU_VAL_NONE			0		/* no value (used in ASDU like time synchronization, broadcast request, etc.) */
+#define ASDU_VAL_INT			1		/* integer 32-bit */
+#define ASDU_VAL_UINT			2		/* unsigned integer 32-bit */
+#define ASDU_VAL_FLT			3		/* float */
+#define ASDU_VAL_BOOL			4		/* boolean */
+#define ASDU_VAL_TIME			5		/* time */
 
 
 /*
@@ -92,6 +97,11 @@ void asdu_destroy(asdu **unit);
 /* cleanup data array of asdu structure insides */
 void asdu_cleanup_data(asdu *unit);
 
+/* copies byte array to asdu in a correct way */
+uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit);
+
+/* copies asdu to byte array in a correct way */
+uint8_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit);
 
 
 #ifdef __cplusplus

@@ -14,9 +14,9 @@
 #include <signal.h>
 #include "p_num.h"
 #include "dlt_frame.h"
+#include "../../common/common.h"
 #include "../../common/asdu.h"
 #include "dlt_asdu.h"
-#include "../../devlinks/devlink.h"
 #include "../../common/multififo.h"
 
 
