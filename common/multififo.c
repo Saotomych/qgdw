@@ -484,7 +484,7 @@ int sys_close(struct channel *ch){
 //			- endpoint registers
 //			- send endpoint to application
 int init_read(struct channel *ch){
-char nbuf[100];
+char nbuf[300];
 int i;
 int len, rdlen;
 struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()

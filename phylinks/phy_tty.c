@@ -21,7 +21,7 @@ typedef struct ttydev{
 	u08 rts;
 } TTYDEF;
 
-struct TTYDEF tdev[8];
+TTYDEF tdev[8];
 int maxtdev;
 
 struct phy_route *myprs[MAXEP];	// One phy_route for one endpoint
@@ -96,6 +96,7 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
 int cfgparse(char *key, char *buf){
 char *par;
 struct in_addr adr;
+int i;
 
 	par = strstr(buf, key);
 	if (par) par+=6;
@@ -197,7 +198,10 @@ int rcvinit(ep_init_header *ih){
 int main(int argc, char * argv[]){
 pid_t chldpid;
 
-	if (createroutetable() == -1){	printf("Phylink TTY: config file not found\n"); return 0;}
+	if (createroutetable() == -1){
+		printf("Phylink TTY: config file not found\n");
+		return 0;
+	}
 	printf("Phylink TTY: config table ready, %d records\n", maxpr);
 
 	// Init select sets for sockets

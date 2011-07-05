@@ -101,9 +101,9 @@ char outbuf[256];
 	return 0;
 }
 
-char inoti_buf[256];
 int rcvdata(int len){
 TRANSACTINFO tai;
+char inoti_buf[256];
 struct phy_route *pr;
 struct ep_data_header *edh;
 int rdlen;
@@ -184,7 +184,7 @@ ep_data_header edh;
 				edh.sys_msg = EP_MSG_CONNECT_ACK;
 				edh.len = sizeof(ep_data_header);
 				mf_toendpoint_by_index((char*)&edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
-printf("Phylink TCP/IP: connect established.\n");
+				printf("Phylink TCP/IP: connect established.\n");
 			}
 			maxdesc = pr->socdesc;
 			pr->state = 1;
@@ -219,7 +219,10 @@ char outbuf[300];
 struct phy_route *pr;
 ep_data_header *edh;
 
-	if (createroutetable() == -1){	printf("Phylink TCP/IP: config file not found\n"); return 0;}
+	if (createroutetable() == -1){
+		printf("Phylink TCP/IP: config file not found\n");
+		return 0;
+	}
 	printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
 
 	// Init select sets for sockets
