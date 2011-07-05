@@ -16,7 +16,7 @@
 #include "local-phyints.h"
 
 // Test config_device
-#include "fake-unitlink.h"
+//#include "fake-unitlink.h"
 
 #define LISTEN	0x42
 #define CONNECT 0x43
@@ -175,14 +175,14 @@ ep_data_header edh;
 			if (ret){
 				edh.adr = pr->asdu;
 				edh.sys_msg = EP_MSG_CONNECT_NACK;
-				edh.len = sizeof(ep_data_header);
+				edh.len = 0;
 				mf_toendpoint_by_index((char*)&edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
 				printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
 				return 0;
 			}else{
 				edh.adr = pr->asdu;
 				edh.sys_msg = EP_MSG_CONNECT_ACK;
-				edh.len = sizeof(ep_data_header);
+				edh.len = 0;
 				mf_toendpoint_by_index((char*)&edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
 				printf("Phylink TCP/IP: connect established.\n");
 			}
@@ -271,7 +271,7 @@ ep_data_header *edh;
 			    				printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
 
 			    				edh->sys_msg = EP_MSG_CONNECT_NACK;
-			    				edh->len = sizeof(ep_data_header);
+			    				edh->len = 0;
 			    				mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
 			    				pr->state = 0;
 			    			}else{
@@ -281,7 +281,7 @@ ep_data_header *edh;
 			    				pr->mode = LISTEN + CONNECT;
 
 			    				edh->sys_msg = EP_MSG_CONNECT_ACK;
-			    				edh->len = sizeof(ep_data_header);
+			    				edh->len = 0;
 			    				mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
 			    			}
 			    		}else{
