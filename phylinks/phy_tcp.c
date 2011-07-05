@@ -270,6 +270,7 @@ ep_data_header *edh;
 			    				edh->sys_msg = EP_MSG_CONNECT_NACK;
 			    				edh->len = sizeof(ep_data_header);
 			    				mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    				pr->state = 0;
 			    			}else{
 			    				printf("Phylink TCP/IP: accept OK\n");
 
@@ -286,6 +287,7 @@ ep_data_header *edh;
 			    			ret = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 256, 0);
 			    			if (ret == -1){
 			    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
+			    				pr->state = 0;
 			    			}else{
 			    				printf("ret = %d\n", ret);
 			    				// Send frame to endpoint
