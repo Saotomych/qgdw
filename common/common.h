@@ -45,11 +45,11 @@
 #define EP_MSG_INIT_CFG			1		/* initialization configuration */
 #define EP_MSG_INIT_ACK			2		/* initialization acknowledgment */
 #define EP_MSG_INIT_NACK		3		/* initialization negative acknowledgment */
-#define EP_MSG_RECONNECT		4		/* re-connection request */
-#define EP_MSG_CONNECT_ACK		5		/* connection acknowledgment */
-#define EP_MSG_CONNECT_NACK		6		/* connection negative acknowledgment */
-#define EP_MSG_CONNECT_CLOSE	7		/* connection close request */
-#define EP_MSG_CONNECT_LOST		8		/* connection lost/closed by remote peer */
+#define EP_MSG_RECONNECT		4		/* re-connection request - up2down */
+#define EP_MSG_CONNECT_ACK		5		/* connection acknowledgment - down2up after connect ops */
+#define EP_MSG_CONNECT_NACK		6		/* connection negative acknowledgment - down2up after refused connect ops */
+#define EP_MSG_CONNECT_CLOSE	7		/* connection close request - up2down */
+#define EP_MSG_CONNECT_LOST		8		/* connection lost/closed by remote peer - down2up after exception */
 
 /*
  *

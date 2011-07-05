@@ -17,4 +17,7 @@ struct phy_route{
 	SOCKET socdesc;
 	struct sockaddr_in 	sai;	// sai->sin_addr; sai->sin_port
 	int state;
+	// symbol device
+	int fdesc;
+	int devindex;
 };

@@ -140,15 +140,15 @@ int i, ret;
 struct phy_route *pr;
 config_device *cd;
 
-	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[0]);
-	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[1]);
-	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[2]);
-	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[3]);
-	printf("TCP_LINK HAS READ INIT DATA: %s\n", ih->isstr[4]);
+	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
+	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
+	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[2]);
+	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[3]);
+	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
 
 	cd = ih->edc;
 
-	printf("TCP_LINK HAS READ CONFIG_DEVICE: %d\n\n", cd->addr);
+	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d\n\n", cd->addr);
 
 	// For connect route struct to socket find equal address ASDU in route struct set
 	for (i = 0 ; i < maxpr; i++){
