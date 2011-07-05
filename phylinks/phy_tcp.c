@@ -138,7 +138,6 @@ int rdlen;
 int rcvinit(ep_init_header *ih){
 int i, ret;
 struct phy_route *pr;
-config_device *cd;
 ep_data_header edh;
 
 #ifdef _DEBUG
@@ -149,17 +148,15 @@ ep_data_header edh;
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
 #endif
 
-	cd = ih->edc;
-
-	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d\n\n", cd->addr);
+	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
 
 	// For connect route struct to socket find equal address ASDU in route struct set
 	for (i = 0 ; i < maxpr; i++){
-		if (myprs[i]->asdu == cd->addr){ pr = myprs[i]; break;}
+		if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
 	}
 	if (i == maxpr) return 0;	// Route not found
 	if (myprs[i]->state) return 0;	// Route init already
-	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", cd->addr, i);
+	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", ih->addr, i);
 	pr = myprs[i];
 	pr->ep_index = ih->numch;
 	// Create & bind new socket

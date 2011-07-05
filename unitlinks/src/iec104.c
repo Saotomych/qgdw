@@ -244,6 +244,7 @@ int iec104_recv_data(int len)
 
 int iec104_recv_init(ep_init_header *ih)
 {
+struct config_device cd;
 
 #ifdef _DEBUG
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
@@ -253,11 +254,14 @@ int iec104_recv_init(ep_init_header *ih)
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
 #endif
 
-	iec104_add_ep_ext(ih->edc->addr, IEC_HOST_MASTER);
+	iec104_add_ep_ext(ih->addr, IEC_HOST_MASTER);
 
-	ih->edc->name = ih->edc->phyname;
+	cd.addr = ih->addr;
+	cd.name = ih->isstr[2];
+	cd.protoname = ih->isstr[3];
+	cd.phyname = ih->isstr[4];
 
-	mf_newendpoint(ih->edc, "/rw/mx00/phyints", 0);
+	mf_newendpoint(&cd, "/rw/mx00/phyints", 0);
 
 	return 0;
 }
