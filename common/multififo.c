@@ -11,7 +11,7 @@
 #include "../common/common.h"
 #include "multififo.h"
 
-#define LENRINGBUF	1024
+#define LENRINGBUF	128
 #define INOTIFYTHR_STACKSIZE	32768
 
 char *appname, *pathapp;
@@ -85,8 +85,9 @@ int sys_read(struct channel *ch);
 int read2channel(struct channel *ch){
 char *endring = ch->ring + LENRINGBUF;
 int tail;
-int rdlen, len;
+int rdlen=0, len;
 int notreadlen;
+int attemptout = 10;
 
 	if ((ch->bgnframe == ch->endring) && (ch->bgnring != ch->endring)){
 		ch->events &= IN_MODIFY;	// Buffer overflow, read off
@@ -101,7 +102,10 @@ int notreadlen;
 		notreadlen = ch->endring - ch->bgnring;
 	}
 
-	rdlen = read(ch->descin, ch->endring, tail);
+	do{
+		attemptout--;
+		rdlen = read(ch->descin, ch->endring, tail);
+	}while((attemptout) && (rdlen <= 0));
 	if (rdlen == -1) return -1;
 
 	ch->endring += rdlen;
@@ -387,7 +391,7 @@ struct endpoint *ep;
 		if (ch->descin){
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
-			printf("%s: system has opened init file %s\n", appname, ch->f_namein);
+			printf("%s: system has open init file %s\n", appname, ch->f_namein);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 		}
@@ -411,7 +415,7 @@ struct endpoint *ep = myeps[maxep - 1];
 		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
 		if (ch->descout == -1) ch->descout = 0;
 		if (ch->descout){
-			printf("%s: system has opened working outfile %s, desc = 0x%X\n", appname, ch->f_nameout, ch->descout);
+			printf("%s: system has open working outfile %s, desc = 0x%X\n", appname, ch->f_nameout, ch->descout);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->events &= ~IN_OPEN;
@@ -424,7 +428,7 @@ struct endpoint *ep = myeps[maxep - 1];
 		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
 		if (ch->descin == -1) ch->descin = 0;
 		if (ch->descin){
-			printf("%s: system has opened working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
+			printf("%s: system has open working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->events &= ~IN_OPEN;
@@ -589,10 +593,6 @@ struct endpoint *ep = myeps[maxep-1];
 		// Channel ready to send data
 		ch->ready = 3;
 		getframefalse(ch);
-
-		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
-		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
-
 		return 0;
 //		rdlen -= len;
 //		getframefalse(ch);
@@ -614,8 +614,6 @@ struct endpoint *ep = myeps[maxep-1];
 //		len = getframefromring(ch, buf, rdlen);
 //		printf("%s: getframefromring: %s\n", appname, buf);
 		actchannel = 0;
-		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
-		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 	}
 
 	return 0;
@@ -824,10 +822,13 @@ int mftai_toendpoint(TRANSACTINFO *tai){
 
 int mf_toendpoint_by_index(char *buf, int len, int index, int direct){
 int wrlen;
-struct channel *ch = mychs[index];
+struct channel *ch = 0;
 struct endpoint *ep = myeps[index];
 
 	if (!ep) return -1;
+
+	if (direct == DIRDN) ch = ep->cdcdn;
+	if (direct == DIRUP) ch = ep->cdcup;
 	if (!ch) return -1;
 
 	wrlen = write(ch->descout, buf, len);

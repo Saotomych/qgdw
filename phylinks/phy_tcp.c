@@ -154,8 +154,14 @@ ep_data_header edh;
 	for (i = 0 ; i < maxpr; i++){
 		if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
 	}
-	if (i == maxpr) return 0;	// Route not found
-	if (myprs[i]->state) return 0;	// Route init already
+	if (i == maxpr){
+		printf("This connect not found\n");
+		return 0;	// Route not found
+	}
+	if (myprs[i]->state){
+		printf("This connect setting already\n");
+		return 0;	// Route init already
+	}
 	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", ih->addr, i);
 	pr = myprs[i];
 	pr->ep_index = ih->numch;
@@ -246,13 +252,13 @@ ep_data_header *edh;
     		if (pr->state){
     			FD_SET(pr->socdesc, &rd_socks);
 //    			FD_SET(pr->socdesc, &wr_socks);
-    			FD_SET(pr->socdesc, &ex_socks);
+//    			FD_SET(pr->socdesc, &ex_socks);
     		}
     	}
 
-		tv.tv_sec = 1;
+		tv.tv_sec = 0;
 	    tv.tv_usec = 0;
-	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
+	    ret = select(maxdesc + 1, &rd_socks, NULL, NULL, &tv);
 	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
 	    else
 	    if (ret){

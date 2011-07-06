@@ -12,7 +12,7 @@
 #define DIRDN		0x59
 
 #define MAXEP		64
-#define MAXCH		16
+#define MAXCH		64
 
 // ================= External API =========================================
 // this structure added as one parameter for  mf_toendpoint and mf_readbuffer
