@@ -49,9 +49,9 @@
 char testdata[] = {"Do you see this string? Data received, all right.\0"};
 
 //char devlink[] = {"multififo-test-device"};
-char devlink[] 		= {"devlinktest"};
+char devlink[] 		= {"phy_tcp"};
 char protoname[] 	= {"prototest"};
-char physlink[] 	= {"phystest"};
+char physlink[] 	= {"phy_tcp"};
 
 char *appname;
 
@@ -60,7 +60,6 @@ struct config_device cd = {
 		protoname,
 		physlink,
 		10,
-		11,
 };
 
 int rcvdata(int len){
@@ -87,9 +86,9 @@ int exit = 0;
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
 
-	chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
+	chldpid = mf_init("/rw/mx00/devlinks", appname, rcvdata, rcvinit);
 
-	mf_newendpoint(&cd, "/rw/mx00/devlinks", 0);
+	mf_newendpoint(&cd, "/rw/mx00/phyints", 0);
 
 	mf_toendpoint(testdata, strlen(testdata)+1, cd.addr, DIRDN);
 

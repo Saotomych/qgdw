@@ -65,7 +65,7 @@ typedef struct ep_data_header {
 
 typedef struct ep_init_header {
 	char *isstr[5];
-	struct config_device	*edc;
+	u32 addr;
 	int numch;
 } ep_init_header;
 
