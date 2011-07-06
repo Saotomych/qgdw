@@ -110,7 +110,7 @@ int i;
 		// Find and open device
 		for(i=0; i<maxtdev; i++){
 			// Find ttydev by name
-			if (ststr(tdev[i]->name, par)) break;
+			if (strstr(tdev[i].devname, par)) break;
 		}
 		if (i == maxtdev){
 			// tty device not found
@@ -178,25 +178,23 @@ int rcvdata(int len){
 int rcvinit(ep_init_header *ih){
 	int i, ret;
 	struct phy_route *pr;
-	config_device *cd;
 
+#ifdef _DEBUG
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[1]);
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[2]);
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[3]);
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[4]);
-
-		cd = ih->edc;
-
-		printf("Phylink TTY: HAS READ CONFIG_DEVICE: %d\n\n", cd->addr);
+		printf("Phylink TTY: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
+#endif
 
 		// For connect route struct to socket find equal address ASDU in route struct set
 		for (i = 0 ; i < maxpr; i++){
-			if (myprs[i]->asdu == cd->addr){ pr = myprs[i]; break;}
+			if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
 		}
 		if (i == maxpr) return 0;	// Route not found
 		if (myprs[i]->state) return 0;	// Route init already
-		printf("Phylink TTY: route found: addr = %d, num = %d\n", cd->addr, i);
+		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
 
 //		pr->fdesc = // uart's descriptor
