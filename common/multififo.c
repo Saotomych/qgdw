@@ -607,9 +607,9 @@ struct endpoint *ep = myeps[maxep-1];
 		printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		// Channel ready to send data
-		ch->ready = 3;
 		getframefalse(ch);
-		return 0;
+		ch->ready = 3;
+		rdlen -= len;
 	}
 
 	if (rdlen){

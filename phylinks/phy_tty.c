@@ -105,11 +105,21 @@ int i;
 	if (strstr(key, "name")){
 		par = strstr(par, "phy_tty");
 		if (!par) return 0;
+		par += 8;	// par set to name of physical device
+
 		// Find and open device
 		for(i=0; i<maxtdev; i++){
-			// NEED THINK
-			//if (tdev[i]->desc
+			// Find ttydev by name
+			if (ststr(tdev[i]->name, par)) break;
 		}
+		if (i == maxtdev){
+			// tty device not found
+			// parse device configuration
+			// initialize
+		}
+		// tty device found
+		// connect descriptor to phy_route
+
 	}
 
 	if (strstr(key, "addr")){
