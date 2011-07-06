@@ -11,7 +11,7 @@
 #include "../common/common.h"
 #include "multififo.h"
 
-#define LENRINGBUF	128
+#define LENRINGBUF	1024
 #define INOTIFYTHR_STACKSIZE	32768
 
 char *appname, *pathapp;
@@ -87,7 +87,6 @@ char *endring = ch->ring + LENRINGBUF;
 int tail;
 int rdlen=0, len;
 int notreadlen;
-int attemptout = 10;
 
 	if ((ch->bgnframe == ch->endring) && (ch->bgnring != ch->endring)){
 		ch->events &= IN_MODIFY;	// Buffer overflow, read off
@@ -102,10 +101,7 @@ int attemptout = 10;
 		notreadlen = ch->endring - ch->bgnring;
 	}
 
-	do{
-		attemptout--;
-		rdlen = read(ch->descin, ch->endring, tail);
-	}while((attemptout) && (rdlen <= 0));
+	rdlen = read(ch->descin, ch->endring, tail);
 	if (rdlen == -1) return -1;
 
 	ch->endring += rdlen;
@@ -381,6 +377,7 @@ int i;
 //		- open init channel
 int init_open(struct channel *ch){
 struct endpoint *ep;
+	if (ch->ready) return 0;
 	if (!ch->descin){
 		// Init open for new endpoint => make new endpoint
 		ep = create_ep();
@@ -394,6 +391,7 @@ struct endpoint *ep;
 			printf("%s: system has open init file %s\n", appname, ch->f_namein);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
+			ch->ready = 1;
 		}
 	}
 	return 0;
@@ -450,6 +448,7 @@ int init_close(struct channel *ch){
 		ch->events |= IN_OPEN;
 		ch->events &= ~IN_CLOSE;
 	}
+	ch->ready = 0;
 	return 0;
 }
 
@@ -471,6 +470,7 @@ int sys_close(struct channel *ch){
 		printf("%s: system has closed working outfile %s\n", appname, ch->f_nameout);
 		ch->ready -= 1;
 	}
+	if (ch->ready == 1) ch->ready = 0;
 	return 0;
 }
 
@@ -492,9 +492,13 @@ int len, rdlen;
 struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 ep_init_header *eih;
 	// 0 - init already
+
+	if (!ch->ready) return 0;	// Init file dont open
+	if (ch->ready == 2) return 0; // ep_init_header received already
+
 	rdlen = read2channel(ch);
 	if (rdlen == -1){
-		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
+		printf("%s: read2channel init error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 	if (rdlen == -2){
@@ -533,6 +537,7 @@ ep_init_header *eih;
 		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
 		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(ep_init_header))){
+			ch->ready = 2;
 //			// Connect to channel
 //			printf("%s: connect to working channel... ",appname);
 			// find channel in list
@@ -556,10 +561,10 @@ ep_init_header *eih;
 					i = maxch-1;
 					//	- add fifo to inotify for read
 					mychs[i]->watch = inotify_add_watch(d_inoty, mychs[i]->f_namein, mychs[i]->events);
-//					printf("%s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
+					printf("%s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
 					//	- open fifo for writing
 					mychs[i]->descout = open(mychs[i]->f_nameout, O_RDWR | O_NDELAY);
-//					printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
+					printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
 					//	- two fifos opens! bingo!
 					ep->cdcup = mychs[i];
 					mychs[i]->ready = 3;
@@ -581,6 +586,7 @@ int sys_read(struct channel *ch){
 int rdlen, len, numep;
 struct endpoint *ep = myeps[maxep-1];
 
+	if (!ch->ready) return 0;
 	rdlen = read2channel(ch);
 //	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 
@@ -599,7 +605,7 @@ struct endpoint *ep = myeps[maxep-1];
 	}
 
 	if (rdlen == -1){
-		printf("%s: read2channel error:%d - %s\n", appname, errno, strerror(errno));
+		printf("%s: read2channel system error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
@@ -794,7 +800,7 @@ struct endpoint *ep;
 	if (!dninit) return -1;
 
 	ep->eih.addr = cd->addr;
-	ep->eih.numch = 1; //maxep-1;
+	ep->eih.numch = maxep-1;
 	// Write config to init channel
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
 	wrlen += write(dninit, ep->eih.isstr[1], strlen(appname)+1);

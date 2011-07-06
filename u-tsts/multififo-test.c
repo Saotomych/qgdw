@@ -82,15 +82,23 @@ static sigset_t sigmask;
 int main(int argc, char * argv[]){
 pid_t chldpid;
 int exit = 0;
+int i;
 
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
 
 	chldpid = mf_init("/rw/mx00/devlinks", appname, rcvdata, rcvinit);
 
+
+	for(i=0; i<64;i++){
+
 	mf_newendpoint(&cd, "/rw/mx00/phyints", 0);
 
 	mf_toendpoint(testdata, strlen(testdata)+1, cd.addr, DIRDN);
+
+	printf("open %i endpoint\n", i);
+
+	}
 
 	do{
 		sigsuspend(&sigmask);
