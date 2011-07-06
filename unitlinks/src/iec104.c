@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
 	ep_header_out.len     = 0;
 
 	mf_toendpoint((char*) &ep_header_out, sizeof(ep_data_header), 967, DIRDN);
+	printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Length = %d\n", APP_NAME, ep_header_out.adr, ep_header_out.len);
 #endif
 
 	do{
@@ -124,7 +125,7 @@ int iec104_recv_data(int len)
 	mf_readbuffer(buff, len, &adr, &dir);
 
 #ifdef _DEBUG
-			printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
+	printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 #endif
 
 	offset = 0;
@@ -134,7 +135,7 @@ int iec104_recv_data(int len)
 		if(len - offset < sizeof(ep_data_header))
 		{
 #ifdef _DEBUG
-				printf("%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
+			printf("%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
 #endif
 
 			free(buff);
@@ -151,7 +152,7 @@ int iec104_recv_data(int len)
 		if(len - offset < ep_header_in.len)
 		{
 #ifdef _DEBUG
-				printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, sizeof(ep_data_header) + ep_header_in.len, len);
+			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, sizeof(ep_data_header) + ep_header_in.len, len);
 #endif
 
 			free(buff);
@@ -164,7 +165,7 @@ int iec104_recv_data(int len)
 			if(ep_header_in.sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+			printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
 #endif
 				// asdu received
 				iec104_asdu_recv((unsigned char*)(buff + offset), ep_header_in.len, ep_header_in.adr);
@@ -199,6 +200,10 @@ int iec104_recv_data(int len)
 				switch(ep_header_in.sys_msg)
 				{
 				case EP_MSG_CONNECT_ACK:
+#ifdef _DEBUG
+					printf("%s: System message EP_MSG_CONNECT_ACK received.\n", APP_NAME);
+#endif
+
 					ep_ext = iec104_get_ep_ext(ep_header_in.adr);
 
 					if(ep_ext)
@@ -223,6 +228,10 @@ int iec104_recv_data(int len)
 				case EP_MSG_CONNECT_NACK:
 				case EP_MSG_CONNECT_CLOSE:
 				case EP_MSG_CONNECT_LOST:
+#ifdef _DEBUG
+					printf("%s: System message EP_MSG_CONNECT_NACK(CLOSE,LOST) received.\n", APP_NAME);
+#endif
+
 					ep_ext = iec104_get_ep_ext(ep_header_in.adr);
 
 					if(ep_ext)
