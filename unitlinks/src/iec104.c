@@ -363,6 +363,9 @@ uint8_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 			case APCI_TYPE_I:
 				iec104_frame_i_recv(a_fr, ep_ext);
+#ifdef _DEBUG
+				iec104_frame_s_send(ep_ext, DIRDN);
+#endif
 				break;
 
 			default:
@@ -431,7 +434,7 @@ uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	{
 	case APCI_U_STARTDT_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STARTDT(act).\n", APP_NAME);
+		printf("%s: U-Format frame received. STARTDT (act).\n", APP_NAME);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_APDU_SUCCESS;
@@ -443,7 +446,7 @@ uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STARTDT_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STARTDT(con).\n", APP_NAME);
+		printf("%s: U-Format frame received. STARTDT (con).\n", APP_NAME);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_APDU_SUCCESS;
@@ -453,7 +456,7 @@ uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STOPDT_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STOPDT(act).\n", APP_NAME);
+		printf("%s: U-Format frame received. STOPDT (act).\n", APP_NAME);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_APDU_SUCCESS;
@@ -464,7 +467,7 @@ uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STOPDT_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STOPDT(con).\n", APP_NAME);
+		printf("%s: U-Format frame received. STOPDT (con).\n", APP_NAME);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_APDU_SUCCESS;
@@ -474,7 +477,7 @@ uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_TESTFR_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. TESTFR(act).\n", APP_NAME);
+		printf("%s: U-Format frame received. TESTFR (act).\n", APP_NAME);
 #endif
 
 		iec104_frame_u_send(APCI_U_TESTFR_CON, ep_ext->adr, DIRDN);
@@ -482,7 +485,7 @@ uint8_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_TESTFR_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. TESTFR(con).\n", APP_NAME);
+		printf("%s: U-Format frame received. TESTFR (con).\n", APP_NAME);
 #endif
 
 		break;
