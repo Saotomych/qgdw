@@ -4,10 +4,10 @@ CCFLAGS += -c -Os -Wall
 LDFLAGS += -Wl
 
 phy_tty: $(OBJS_TTY)
-	cc $(LDFLAGS) -o phy_tty $(OBJS_TTY)
+	cc $(LDFLAGS) -o ../bin/phy_tty $(OBJS_TTY)
 
 phy_tcp: $(OBJS_TCP)
-	cc $(LDFLAGS) -o phy_tcp $(OBJS_TCP)
+	cc $(LDFLAGS) -o ../bin/phy_tcp $(OBJS_TCP)
 
 phy_tcp.o: phy_tcp.c
 	cc $(CCFLAGS) phy_tcp.c -o phy_tcp.o
