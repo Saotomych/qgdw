@@ -48,7 +48,7 @@ struct channel{
 	char *endring;	// end frame
 	int rdlen;		// bytes read since channel opens
 	int rdstr;		// strings reads since channel opens
-	volatile int ready;		// channel ready to work
+	volatile int ready;		// channel ready to work (sync variable)
 };
 
 // connect device to channel
@@ -590,20 +590,6 @@ struct endpoint *ep = myeps[maxep-1];
 	rdlen = read2channel(ch);
 //	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 
-	if (ch->ready < 3){
-		// Get ep->ep_dn - downlink endpoint's number
-		len = getdatafromring(ch, (char*) &numep, sizeof(int));
-		if (len == sizeof(int)) memcpy(&(ep->ep_dn), &numep, sizeof(int));
-		printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
-		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
-		// Channel ready to send data
-		ch->ready = 3;
-		getframefalse(ch);
-		return 0;
-//		rdlen -= len;
-//		getframefalse(ch);
-	}
-
 	if (rdlen == -1){
 		printf("%s: read2channel system error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
@@ -614,11 +600,22 @@ struct endpoint *ep = myeps[maxep-1];
 		return -1;
 	}
 
+	if (ch->ready < 3){
+		// Get ep->ep_dn - downlink endpoint's number
+		len = getdatafromring(ch, (char*) &numep, sizeof(int));
+		if (len == sizeof(int)) memcpy(&(ep->ep_dn), &numep, sizeof(int));
+		printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
+		// Channel ready to send data
+		ch->ready = 3;
+		getframefalse(ch);
+		return 0;
+	}
+
 	if (rdlen){
 		actchannel = ch;
 		cb_rcvdata(rdlen);
-//		len = getframefromring(ch, buf, rdlen);
-//		printf("%s: getframefromring: %s\n", appname, buf);
+		getframefalse(ch);
 		actchannel = 0;
 	}
 
@@ -626,7 +623,6 @@ struct endpoint *ep = myeps[maxep-1];
 }
 
 // ===================== END Default Inotify Callbacks ======================== //
-
 // ZZzzz
 
 // Thread function for waiting inotify events
