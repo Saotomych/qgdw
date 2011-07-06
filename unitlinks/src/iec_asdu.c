@@ -741,6 +741,10 @@ uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_as
 		asdu_object_parse(buff, &offset, &iec_asdu->data[i], iec_asdu->type);
 	}
 
+#ifdef _DEBUG
+	printf("%s: ASDU parsed OK. Type = %d, IO num = %d\n", "unitlink-iec10x", iec_asdu->type, iec_asdu->size);
+#endif
+
 	return res;
 }
 
@@ -792,6 +796,10 @@ uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_
 
 		asdu_object_build(*buff, &offset, &iec_asdu->data[i], iec_asdu->type);
 	}
+
+#ifdef _DEBUG
+	printf("%s: ASDU builded OK. Type = %d, IO num = %d\n", "unitlink-iec10x", iec_asdu->type, iec_asdu->size);
+#endif
 
 	return res;
 }
