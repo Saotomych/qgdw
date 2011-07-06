@@ -8,25 +8,8 @@
 #include "../include/iec104.h"
 
 
-
-#ifdef _DEBUG
-	char name[] 		= {"phy_tcp"};
-	char unitlink[] 	= {APP_NAME};
-	char physlink[] 	= {"phy_tcp"};
-
-	struct config_device cd = {
-			name,
-			unitlink,
-			physlink,
-			967
-	};
-#endif
-
-
-
-
 /*End-point extensions array */
-static iec104_ep_ext *ep_exts[MAXEP];
+static iec104_ep_ext *ep_exts[MAXEP] = {0};
 
 /* Common ASDU parameters */
 static uint8_t cot_len = IEC104_COT_LEN;
@@ -52,13 +35,29 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	int exit = 0;
 
-	iec104_init_ep_exts();
-
 	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, iec104_recv_init);
 
 #ifdef _DEBUG
+	char name[] 		= {"phy_tcp"};
+	char unitlink[] 	= {APP_NAME};
+	char physlink[] 	= {"phy_tcp"};
+
+	struct config_device cd = {
+			name,
+			unitlink,
+			physlink,
+			967
+	};
+
+	ep_data_header ep_header_out;
 	iec104_add_ep_ext(967, IEC_HOST_MASTER);
 	mf_newendpoint(&cd, "/rw/mx00/phyints", 0);
+
+	ep_header_out.adr     = 967;
+	ep_header_out.sys_msg = EP_MSG_CONNECT;
+	ep_header_out.len     = 0;
+
+	mf_toendpoint((char*) &ep_header_out, sizeof(ep_data_header), 967, DIRDN);
 #endif
 
 	do{
@@ -68,17 +67,6 @@ int main(int argc, char *argv[])
 	mf_exit();
 
 	return 0;
-}
-
-
-void iec104_init_ep_exts()
-{
-	int i;
-
-	for(i=0; i<MAXEP; i++)
-	{
-		ep_exts[i] = NULL;
-	}
 }
 
 
@@ -125,7 +113,8 @@ int iec104_recv_data(int len)
 {
 	char *buff;
 	int adr, dir;
-	ep_data_header ep_header;
+	uint32_t offset;
+	ep_data_header ep_header_in, ep_header_out;
 	iec104_ep_ext* ep_ext = NULL;
 
 	buff = malloc(len);
@@ -134,104 +123,137 @@ int iec104_recv_data(int len)
 
 	mf_readbuffer(buff, len, &adr, &dir);
 
-	if(len < sizeof(ep_data_header))
-	{
-		free(buff);
-		return -1;
-	}
+#ifdef _DEBUG
+			printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
+#endif
 
-	memcpy((void*)&ep_header, (void*)buff, sizeof(ep_data_header));
+	offset = 0;
 
-	if(len < sizeof(ep_data_header) + ep_header.len)
+	while(offset < len)
 	{
-		free(buff);
-		return -1;
-	}
-
-	if(dir == DIRDN)
-	{
-		// direction is down
-		if(ep_header.sys_msg == EP_USER_DATA)
+		if(len - offset < sizeof(ep_data_header))
 		{
 #ifdef _DEBUG
-			printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header.adr, ep_header.len);
+				printf("%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
 #endif
-			// asdu received
-			iec104_asdu_recv((unsigned char*)(buff + sizeof(ep_data_header)), ep_header.len, ep_header.adr);
+
+			free(buff);
+			return -1;
 		}
-		else
-		{
+
+		memcpy((void*)&ep_header_in, (void*)buff, sizeof(ep_data_header));
+		offset += sizeof(ep_data_header);
+
 #ifdef _DEBUG
-			printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header.adr, ep_header.len);
-#endif
-			// system message received
-		}
-	}
-	else
-	{
-		// direction is up
-		if(ep_header.sys_msg == EP_USER_DATA)
-		{
-#ifdef _DEBUG
-			printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header.adr, ep_header.len);
+		printf("%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in.adr, ep_header_in.sys_msg, ep_header_in.len);
 #endif
 
-			// apdu frame received
-			iec104_frame_recv((unsigned char*)(buff + sizeof(ep_data_header)), ep_header.len, ep_header.adr);
-		}
-		else
+		if(len - offset < ep_header_in.len)
 		{
 #ifdef _DEBUG
-			printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header.adr, ep_header.len);
+				printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, sizeof(ep_data_header) + ep_header_in.len, len);
 #endif
 
-			// system message received
-			switch(ep_header.sys_msg)
+			free(buff);
+			return -1;
+		}
+
+		if(dir == DIRUP)
+		{
+			// direction is down
+			if(ep_header_in.sys_msg == EP_USER_DATA)
 			{
-			case EP_MSG_CONNECT_ACK:
-				ep_ext = iec104_get_ep_ext(ep_header.adr);
-
-				if(ep_ext)
-				{
-					ep_ext->vs = 0;
-					ep_ext->vr = 0;
-					ep_ext->as = 0;
-					ep_ext->ar = 0;
-
-					ep_ext->link_state = APCI_LINK_OFF;
-
-					if(ep_ext->host_type == IEC_HOST_MASTER)
-					{
-						iec104_frame_u_send(APCI_U_STARTDT_ACT, ep_ext->adr, DIRDN);
-					}
-
-					//TODO Put initialization of a timers here later!!!!
-				}
-
-				break;
-
-			case EP_MSG_CONNECT_NACK:
-			case EP_MSG_CONNECT_CLOSE:
-			case EP_MSG_CONNECT_LOST:
-				ep_ext = iec104_get_ep_ext(ep_header.adr);
-
-				if(ep_ext)
-				{
-					ep_ext->link_state = APCI_LINK_OFF;
-
-					if(ep_ext->host_type == IEC_HOST_MASTER)
-					{
-						//TODO Put re-connect here!!!
-					}
-				}
-
-				break;
-
-			default:
-				break;
+#ifdef _DEBUG
+				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+#endif
+				// asdu received
+				iec104_asdu_recv((unsigned char*)(buff + offset), ep_header_in.len, ep_header_in.adr);
+			}
+			else
+			{
+#ifdef _DEBUG
+				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+#endif
+				// system message received
 			}
 		}
+		else
+		{
+			// direction is up
+			if(ep_header_in.sys_msg == EP_USER_DATA)
+			{
+#ifdef _DEBUG
+				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+#endif
+
+				// apdu frame received
+				iec104_frame_recv((unsigned char*)(buff + offset), ep_header_in.len, ep_header_in.adr);
+			}
+			else
+			{
+#ifdef _DEBUG
+				printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+#endif
+
+				// system message received
+				switch(ep_header_in.sys_msg)
+				{
+				case EP_MSG_CONNECT_ACK:
+					ep_ext = iec104_get_ep_ext(ep_header_in.adr);
+
+					if(ep_ext)
+					{
+						ep_ext->vs = 0;
+						ep_ext->vr = 0;
+						ep_ext->as = 0;
+						ep_ext->ar = 0;
+
+						ep_ext->link_state = APCI_LINK_OFF;
+
+						if(ep_ext->host_type == IEC_HOST_MASTER)
+						{
+							iec104_frame_u_send(APCI_U_STARTDT_ACT, ep_ext->adr, DIRDN);
+						}
+
+						//TODO Put initialization of a timers here later!!!!
+					}
+
+					break;
+
+				case EP_MSG_CONNECT_NACK:
+				case EP_MSG_CONNECT_CLOSE:
+				case EP_MSG_CONNECT_LOST:
+					ep_ext = iec104_get_ep_ext(ep_header_in.adr);
+
+					if(ep_ext)
+					{
+						ep_ext->link_state = APCI_LINK_OFF;
+
+						if(ep_ext->host_type == IEC_HOST_MASTER)
+						{
+							ep_header_out.adr     = ep_ext->adr;
+							ep_header_out.sys_msg = EP_MSG_RECONNECT;
+							ep_header_out.len     = 0;
+
+							mf_toendpoint((char*) &ep_header_out, sizeof(ep_data_header), ep_ext->adr, DIRDN);
+
+#ifdef _DEBUG
+							printf("%s: System message EP_MSG_RECONNECT sent. Address = %d, Length = %d\n", APP_NAME, ep_header_out.adr, ep_header_out.len);
+#endif
+						}
+					}
+
+					break;
+
+				default:
+					break;
+				}
+			}
+		}
+
+		offset += ep_header_in.len;
 	}
+
 
 
 
