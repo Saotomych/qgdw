@@ -836,6 +836,7 @@ struct endpoint *ep = myeps[index];
 	if (direct == DIRDN) ch = ep->cdcdn;
 	if (direct == DIRUP) ch = ep->cdcup;
 	if (!ch) return -1;
+	if (ch->ready < 3) return -1;
 
 	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1) {
@@ -864,6 +865,7 @@ struct endpoint *ep = 0;
 
 	if (!ep) return -1;
 	if (!ch) return -1;
+	if (ch->ready < 3) return -1;
 
 //	printf("%s: find channel for writing %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
