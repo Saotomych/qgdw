@@ -157,7 +157,7 @@ int t;
 int createroutetable(void){
 FILE *addrcfg;
 struct phy_route *pr;
-char p, *pport;
+char *p, *pport;
 char outbuf[256];
 int i = 1;
 
@@ -219,8 +219,10 @@ struct phy_route *pr;
 		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
 
-//		pr-> = // uart's descriptor
+		if (!tdev[pr->devindex].desc){ // uart's descriptor
+			// open port and init by tdev pars
 
+		}
 
 	return 0;
 }
