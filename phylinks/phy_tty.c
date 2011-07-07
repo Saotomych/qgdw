@@ -38,7 +38,7 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
     cfsetospeed(&CommOptions, Speed);
     CommOptions.c_cflag |= (CLOCAL | CREAD); /* Разрешение приемника и установка  локального режима - всегда обязательно */
     CommOptions.c_cflag &= ~CSIZE;
-    CommOptions.c_cflag |= CS8;             // битность
+    CommOptions.c_cflag |= Bits;             // битность
 
     // Обработка параметров входных
     if (Parity) CommOptions.c_cflag |= PARENB;      // четность есть
@@ -138,10 +138,16 @@ int i;
 
 void portparse(char *pars, TTYDEV *td){
 int t;
-	td->speed = atoi(pars);
-	pars+=2;
 	t = atoi(pars);
-	td->bits = t;
+	if (t == 1200) td->speed = B1200;
+	if (t == 2400) td->speed = B2400;
+	if (t == 9600) td->speed = B9600;
+	if (t == 19200) td->speed = B19200;
+	pars+=2;
+	if (*pars == 5) td->bits = CS5;
+	if (*pars == 6) td->bits = CS6;
+	if (*pars == 7) td->bits = CS7;
+	if (*pars == 8) td->bits = CS8;
 	pars++;
 	if (*pars == 'N') td->parity = 0;	// R T L
 	if (*pars == 'E') td->parity = 1;	// E A E
@@ -183,6 +189,7 @@ int i = 1;
 						pr->ep_index = maxpr;
 						pr->state = 0;
 						maxpr++;
+						printf("Phylink TTY: added device connect to %s, asdu = %d, realadr = %d\n", tdev[pr->devindex].devname, pr->asdu, pr->realaddr);
 					}
 				}
 			}
@@ -200,6 +207,7 @@ int rcvdata(int len){
 int rcvinit(ep_init_header *ih){
 int i, ret;
 struct phy_route *pr;
+TTYDEV *td;
 
 #ifdef _DEBUG
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
@@ -219,9 +227,20 @@ struct phy_route *pr;
 		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
 
-		if (!tdev[pr->devindex].desc){ // uart's descriptor
+		td = &tdev[pr->devindex];
+		if (!td->desc){ // uart's descriptor
 			// open port and init by tdev pars
+		    td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
 
+		    if (td->desc == -1) {
+		    	fprintf(stderr, "Can't open dev\n");
+		    	return 0;
+		    }
+		    CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
+
+		    // Read setting with non-blocking
+		    //	return to blocking ops: fcntl(fd, F_SETFL, 0);
+		    fcntl(td->desc, F_SETFL, FNDELAY);
 		}
 
 	return 0;
@@ -243,8 +262,6 @@ int maxdesc;
 
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata, rcvinit);
-
-
 
 	mf_exit();
 
