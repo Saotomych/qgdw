@@ -82,7 +82,7 @@ int sys_read(struct channel *ch);
 // =================== Private functions =================================== //
 // Read from fifo to ring buffer
 // Return not read lenght from ch->bgnring to ch->endring
-int read2channel(struct channel *ch){
+int readchannel(struct channel *ch){
 char *endring = ch->ring + LENRINGBUF;
 int tail;
 int rdlen=0, len;
@@ -107,8 +107,10 @@ int notreadlen;
 	ch->endring += rdlen;
 	if (rdlen == tail){
 		len = read(ch->descin, ch->ring, ch->bgnframe - ch->ring);
-		ch->endring = ch->ring + len;
-		rdlen += len;
+		if (len != -1){
+			ch->endring = ch->ring + len;
+			rdlen += len;
+		}
 	}
 
 	return rdlen + notreadlen;
@@ -496,9 +498,9 @@ ep_init_header *eih;
 	if (!ch->ready) return 0;	// Init file dont open
 	if (ch->ready == 2) return 0; // ep_init_header received already
 
-	rdlen = read2channel(ch);
+	rdlen = readchannel(ch);
 	if (rdlen == -1){
-		printf("%s: read2channel init error:%d - %s\n", appname, errno, strerror(errno));
+		printf("%s: readchannel init error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 	if (rdlen == -2){
@@ -587,11 +589,11 @@ int rdlen, len, numep;
 struct endpoint *ep = myeps[maxep-1];
 
 	if (!ch->ready) return 0;
-	rdlen = read2channel(ch);
+	rdlen = readchannel(ch);
 //	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
 
 	if (rdlen == -1){
-		printf("%s: read2channel system error:%d - %s\n", appname, errno, strerror(errno));
+		printf("%s: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
@@ -836,7 +838,7 @@ fd_set rd, ex;
 	if (ch->ready < 3) return -1;
 
 	wrlen = write(ch->descout, buf, len);
-	if (wrlen == -1) {
+	if (wrlen == -1){
 		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
 		if (errno == 11){	// Resource temporarily unavailable
 			FD_ZERO(&rd); FD_ZERO(&ex);
@@ -849,7 +851,6 @@ fd_set rd, ex;
 				}
 		}
 	}
-
 	return wrlen;
 }
 
