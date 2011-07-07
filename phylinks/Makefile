@@ -1,6 +1,6 @@
 OBJS_TCP = phy_tcp.o multififo.o
 OBJS_TTY = phy_tty.o multififo.o
-CCFLAGS += -c -Os -Wall
+CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 
 phy_tty: $(OBJS_TTY)

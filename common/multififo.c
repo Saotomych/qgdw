@@ -826,6 +826,7 @@ int mf_toendpoint_by_index(char *buf, int len, int index, int direct){
 int wrlen;
 struct channel *ch = 0;
 struct endpoint *ep = myeps[index];
+fd_set rd, ex;
 
 	if (!ep) return -1;
 
@@ -837,7 +838,16 @@ struct endpoint *ep = myeps[index];
 	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1) {
 		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
-		return -1;
+		if (errno == 11){	// Resource temporarily unavailable
+			FD_ZERO(&rd); FD_ZERO(&ex);
+			FD_SET(ch->descout, &rd);
+			FD_SET(ch->descout, &ex);
+			if (select(ch->descout, &rd, NULL, &ex, NULL) > 0)
+				if (write(ch->descout, buf, len) == -1){
+					printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+					return -1;
+				}
+		}
 	}
 
 	return wrlen;

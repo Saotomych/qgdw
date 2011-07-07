@@ -20,4 +20,5 @@ struct phy_route{
 	// symbol device
 	int fdesc;
 	int devindex;
+	volatile u08 nowrite;		// disable send to socket from moment writing to moment exception
 };

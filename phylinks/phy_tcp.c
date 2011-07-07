@@ -120,6 +120,7 @@ int rdlen, ret;
 	tai.buf = inoti_buf + sizeof(struct ep_data_header);
 	switch(edh->sys_msg){
 	case EP_USER_DATA:	// Write data to socket
+			while(pr->nowrite);
 			send(pr->socdesc, tai.buf, len - sizeof(struct ep_data_header), 0);
 			break;
 
@@ -157,7 +158,6 @@ int rdlen, ret;
 						mf_toendpoint_by_index((char*)&edout, sizeof(ep_data_header), pr->ep_index, DIRUP);
 						printf("Phylink TCP/IP: connect established.\n");
 					}
-					maxdesc = pr->socdesc;
 					pr->state = 1;
 				}
 
@@ -172,7 +172,6 @@ int rdlen, ret;
 					}
 					else printf("Phylink TCP/IP: bind established, listen waiting...\n");
 					listen(pr->socdesc, 256);
-					maxdesc = pr->socdesc;
 					pr->state = 1;
 				}
 			}
@@ -222,7 +221,7 @@ pid_t chldpid;
 int exit = 0, ret, i;
 struct timeval tv;	// for sockets select
 
-char outbuf[300];
+char outbuf[1024];
 struct phy_route *pr;
 ep_data_header *edh;
 
@@ -249,12 +248,14 @@ ep_data_header *edh;
 		FD_ZERO(&rd_socks);
 		FD_ZERO(&wr_socks);
 		FD_ZERO(&ex_socks);
+		maxdesc = 0;
     	for (i=0; i<maxpr; i++){
     		pr = myprs[i];
-    		if (pr->state){
+    		if ((pr->state) && (pr->socdesc)){
+    			if (pr->socdesc > maxdesc)	maxdesc = pr->socdesc;
     			FD_SET(pr->socdesc, &rd_socks);
-//    			FD_SET(pr->socdesc, &wr_socks);
-//    			FD_SET(pr->socdesc, &ex_socks);
+    			FD_SET(pr->socdesc, &wr_socks);
+    			FD_SET(pr->socdesc, &ex_socks);
     		}
     	}
 
@@ -266,8 +267,8 @@ ep_data_header *edh;
 	    if (ret){
 	    	for (i=0; i<maxpr; i++){
 	    		if (myprs[i]->state){
-			    	if (FD_ISSET(myprs[i]->socdesc, &rd_socks)){
-	    				pr = myprs[i];
+    				pr = myprs[i];
+			    	if (FD_ISSET(pr->socdesc, &rd_socks)){
 	    				edh = (ep_data_header*) outbuf;
 	    				edh->adr = myprs[i]->asdu;
 			    		if (pr->mode == LISTEN){
@@ -293,28 +294,31 @@ ep_data_header *edh;
 			    			}
 			    		}else{
 			    			// Receive frame
-			    			printf("Phylink TCP/IP: Event desc num %d reading\n", i);
-			    			ret = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 256, 0);
+			    			ret = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024, 0);
 			    			if (ret == -1){
 			    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
 			    				pr->state = 0;
 			    			}else{
-			    				printf("ret = %d\n", ret);
-			    				// Send frame to endpoint
-			    				edh->sys_msg = EP_USER_DATA;
-			    				edh->len = ret;
-			    				mf_toendpoint_by_index(outbuf, ret + sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    				if (ret){
+			    					printf("Phylink TCP/IP: Event desc num %d reading with len = %d\n", i, ret);
+			    					// Send frame to endpoint
+			    					edh->sys_msg = EP_USER_DATA;
+			    					edh->len = ret;
+			    					mf_toendpoint_by_index(outbuf, ret + sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    				}
 			    			}
 			    		}
 			    	}
 
-			    	if (FD_ISSET(myprs[i]->socdesc, &wr_socks)){
+			    	if (FD_ISSET(pr->socdesc, &wr_socks)){
 			    		// Socket was writing
-			    		printf("Phylink TCP/IP: Event desc num %d writing\n", i);
+			    		pr->nowrite = 1;
+//			    		printf("Phylink TCP/IP: Event desc num %d writing\n", i);
 			    	}
 
-			    	if (FD_ISSET(myprs[i]->socdesc, &ex_socks)){
-			    		printf("Phylink TCP/IP: Event desc num %d exception\n", i);
+			    	if (FD_ISSET(pr->socdesc, &ex_socks)){
+			    		pr->nowrite = 0;
+//			    		printf("Phylink TCP/IP: Event desc num %d exception\n", i);
 			    	}
 	    		}
 	    	}
