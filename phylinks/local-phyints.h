@@ -15,10 +15,10 @@ struct phy_route{
 	u32 ep_index;
 	// sockets
 	SOCKET socdesc;
-	struct sockaddr_in 	sai;	// sai->sin_addr; sai->sin_port
+	struct sockaddr_in 	sai;		// sai->sin_addr; sai->sin_port
+	struct sockaddr_in 	sailist;	// sai->sin_addr; sai->sin_port
 	int state;
 	// symbol device
 	int fdesc;
 	int devindex;
-	volatile u08 nowrite;		// disable send to socket from moment writing to moment exception
 };
