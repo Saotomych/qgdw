@@ -12,26 +12,23 @@
 #include "../common/multififo.h"
 #include "local-phyints.h"
 
+// TODO  tty common defines
 typedef struct ttydev{
 	char devname[15];
 	int desc;
-	u08 speed;
+	int speed;
+	u08 bits;
 	u08 stop;
 	u08 parity;
 	u08 rts;
-} TTYDEF;
+} TTYDEV;
 
-TTYDEF tdev[8];
+TTYDEV tdev[8];
 int maxtdev;
 
 struct phy_route *myprs[MAXEP];	// One phy_route for one endpoint
 struct phy_route *firstpr;
 int maxpr = 0;
-
-fd_set rd_socks;
-fd_set wr_socks;
-fd_set ex_socks;
-int maxdesc;
 
 void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int AddStopBit, int RTS){
     struct termios CommOptions;
@@ -95,7 +92,6 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
 
 int cfgparse(char *key, char *buf){
 char *par;
-struct in_addr adr;
 int i;
 
 	par = strstr(buf, key);
@@ -104,7 +100,7 @@ int i;
 
 	if (strstr(key, "name")){
 		par = strstr(par, "phy_tty");
-		if (!par) return 0;
+		if (!par) return -1;
 		par += 8;	// par set to name of physical device
 
 		// Find and open device
@@ -114,31 +110,56 @@ int i;
 		}
 		if (i == maxtdev){
 			// tty device not found
-			// parse device configuration
-			// initialize
+			strcpy(tdev[maxtdev].devname, "/dev/");
+			for (i = 5; (i < 15) && (*par >= '0'); i++){		// copy tty dev name
+				tdev[maxtdev].devname[i] = *par; par++;
+			}
+			tdev[maxtdev].devname[i] = 0;
+			i = maxtdev;
+			maxtdev++;
 		}
-		// tty device found
-		// connect descriptor to phy_route
-
+		tdev[i].desc = 0; // device descriptor = 0;
+		// return index of tty device struct
+		return i;
 	}
 
 	if (strstr(key, "addr")){
-		inet_aton(par, &adr);
-		return adr.s_addr;
+		// return real address of device
+		return atoi(par);
 	}
 
 	if (strstr(key, "port")){
+		// parse device configuration
 		return (int)par;
 	}
 
 	return -1;
 }
 
+void portparse(char *pars, TTYDEV *td){
+int t;
+	td->speed = atoi(pars);
+	pars+=2;
+	t = atoi(pars);
+	td->bits = t;
+	pars++;
+	if (*pars == 'N') td->parity = 0;	// R T L
+	if (*pars == 'E') td->parity = 1;	// E A E
+	if (*pars == 'O') td->parity = 2;	// D B T
+	pars++;
+	if (*pars == '1') td->stop = 1;
+	if (*pars == '2') td->stop = 2;
+	pars+=2;
+	td->rts = 0;
+	if (*pars == 'Y') td->rts = 1;
+}
+
 int createroutetable(void){
 FILE *addrcfg;
 struct phy_route *pr;
-char *p;
+char p, *pport;
 char outbuf[256];
+int i = 1;
 
 // Init physical routes structures by phys.cfg file
 	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
@@ -153,18 +174,19 @@ char outbuf[256];
 				pr = myprs[maxpr];
 				pr->asdu = atoi(outbuf);
 				if (pr->asdu){
-					if (cfgparse("-name", outbuf)){
-						pr->sai.sin_addr.s_addr = cfgparse("-addr", outbuf);	// inet_aton returns net order (big endian)
-						pr->mode = cfgparse("-mode", outbuf);
-						pr->mask = cfgparse("-mask", outbuf);
-						pr->sai.sin_port = htons(cfgparse("-port", outbuf));		// atoi returns little endian
+					pr->devindex = cfgparse("-name", outbuf);
+					if (pr->devindex != -1){
+						pr->realaddr = cfgparse("-addr", outbuf);
+						pport = (char*) cfgparse("-port", outbuf);
+						portparse(pport, &tdev[pr->devindex]);  // parse port's parameters,
+						// init other variables
 						pr->ep_index = maxpr;
-						pr->socdesc = 0;
 						pr->state = 0;
 						maxpr++;
 					}
 				}
 			}
+			i++;
 		}while(p);
 	}else return -1;
 	return 0;
@@ -176,8 +198,8 @@ int rcvdata(int len){
 }
 
 int rcvinit(ep_init_header *ih){
-	int i, ret;
-	struct phy_route *pr;
+int i, ret;
+struct phy_route *pr;
 
 #ifdef _DEBUG
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
@@ -188,7 +210,7 @@ int rcvinit(ep_init_header *ih){
 		printf("Phylink TTY: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
 #endif
 
-		// For connect route struct to socket find equal address ASDU in route struct set
+		// For route struct connect to socket find equal address ASDU in route struct set
 		for (i = 0 ; i < maxpr; i++){
 			if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
 		}
@@ -197,7 +219,7 @@ int rcvinit(ep_init_header *ih){
 		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
 
-//		pr->fdesc = // uart's descriptor
+//		pr-> = // uart's descriptor
 
 
 	return 0;
@@ -205,6 +227,8 @@ int rcvinit(ep_init_header *ih){
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
+fd_set rd_socks;
+int maxdesc;
 
 	if (createroutetable() == -1){
 		printf("Phylink TTY: config file not found\n");
@@ -214,11 +238,13 @@ pid_t chldpid;
 
 	// Init select sets for sockets
 	FD_ZERO(&rd_socks);
-	FD_ZERO(&wr_socks);
-	FD_ZERO(&ex_socks);
 
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata, rcvinit);
+
+
+
+	mf_exit();
 
 	return 0;
 }
