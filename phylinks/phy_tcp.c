@@ -27,6 +27,14 @@ int maxpr = 0;
 
 int desclist = 0;	// Descriptor for listen
 
+void send_sys_msg(struct phy_route *pr, int msg){
+ep_data_header edh;
+	edh.adr = pr->asdu;
+	edh.sys_msg = msg;
+	edh.len = 0;
+	mf_toendpoint_by_index((char*) &edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
+}
+
 int cfgparse(char *key, char *buf){
 char *par;
 struct in_addr adr;
@@ -129,25 +137,23 @@ int ret;
 
 void set_connect(struct phy_route *pr){
 int ret;
-ep_data_header edout;
 	printf("Connect to 0x%s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
-		edout.adr = pr->asdu;
-		edout.sys_msg = EP_MSG_CONNECT_NACK;
-		edout.len = 0;
-		mf_toendpoint_by_index((char*)&edout, sizeof(ep_data_header), pr->ep_index, DIRUP);
+		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
 		printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
-		return;
 	}else{
 		fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
-		edout.adr = pr->asdu;
-		edout.sys_msg = EP_MSG_CONNECT_ACK;
-		edout.len = 0;
-		mf_toendpoint_by_index((char*)&edout, sizeof(ep_data_header), pr->ep_index, DIRUP);
+		send_sys_msg(pr, EP_MSG_CONNECT_ACK);
+		pr->state = 1;
 		printf("Phylink TCP/IP: connect established.\n");
 	}
-	pr->state = 1;
+}
+
+void connect_by_config(struct phy_route *pr){
+	pr->sai.sin_family = AF_INET;
+	if (pr->mode == CONNECT) set_connect(pr);
+	if (pr->mode == LISTEN) set_listen(pr);
 }
 
 int rcvdata(int len){
@@ -174,11 +180,14 @@ int rdlen;
 			break;
 
 	case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
-
+			close(pr->socdesc);
+			pr->socdesc = 0;
+			pr->state = 0;
+			connect_by_config(pr);
 			break;
 
 	case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
-
+			close(pr->socdesc);
 			break;
 
 	case EP_MSG_CONNECT:
@@ -186,12 +195,8 @@ int rdlen;
 			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 			if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
 			else{
-				pr->sai.sin_family = AF_INET;
 				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
-
-		// listen&accept || connect making in main function
-				if (pr->mode == CONNECT) set_connect(pr);
-				if (pr->mode == LISTEN) set_listen(pr);
+				connect_by_config(pr);
 			}
 
 			break;
@@ -246,6 +251,7 @@ struct sockaddr_in sin;
 socklen_t sinlen;
 
 fd_set rd_socks;
+fd_set ex_socks;
 int maxdesc;
 
 	if (createroutetable() == -1){
@@ -260,18 +266,20 @@ int maxdesc;
 	// Cycle select for sockets descriptors
 	do{
 	    FD_ZERO(&rd_socks);
+	    FD_ZERO(&ex_socks);
 		maxdesc = 0;
 		for (i=0; i<maxpr; i++){
 			pr = myprs[i];
 			if ((pr->state) && (pr->socdesc)){
 				if (pr->socdesc > maxdesc)	maxdesc = pr->socdesc;
 				FD_SET(pr->socdesc, &rd_socks);
+				FD_SET(pr->socdesc, &ex_socks);
 			}
 		}
 
 		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
-	    ret = select(maxdesc + 1, &rd_socks, NULL, NULL, &tv);
+	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
 	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
 	    else
 	    if (ret){
@@ -279,8 +287,6 @@ int maxdesc;
 	    		if (myprs[i]->state){
     				pr = myprs[i];
 			    	if (FD_ISSET(pr->socdesc, &rd_socks)){
-	    				edh = (ep_data_header*) outbuf;
-	    				edh->adr = myprs[i]->asdu;
 			    		if (pr->mode == LISTEN){
 			    			// Accept connection
 			    			printf("Phylink TCP/IP: accept\n");
@@ -288,19 +294,14 @@ int maxdesc;
 			    			rdlen = accept(pr->socdesc, (struct sockaddr *) &sin, &sinlen);
 			    			if (rdlen == -1){
 			    				printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
-
-			    				edh->sys_msg = EP_MSG_CONNECT_NACK;
-			    				edh->len = 0;
-			    				mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    				send_sys_msg(pr, EP_MSG_CONNECT_NACK);
 			    				pr->state = 0;
 			    			}else{
 			    				if (pr->sai.sin_addr.s_addr == sin.sin_addr.s_addr){
 			    					fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
 			    					pr->socdesc = rdlen;
 			    					pr->mode = LISTEN + CONNECT;
-			    					edh->sys_msg = EP_MSG_CONNECT_ACK;
-			    					edh->len = 0;
-			    					mf_toendpoint_by_index(outbuf, sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
 			    					printf("Phylink TCP/IP: accept OK\n");
 			    				}else{
 			    					close(pr->socdesc);
@@ -318,8 +319,10 @@ int maxdesc;
 			    			}else{
 			    				if (rdlen){
 						    		printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
-			    					// Send frame to endpoint
-			    					edh->sys_msg = EP_USER_DATA;
+			    					// Send data frame to endpoint
+				    				edh = (ep_data_header*) outbuf;
+				    				edh->adr = pr->asdu;
+						    		edh->sys_msg = EP_USER_DATA;
 			    					edh->len = rdlen;
 			    					mf_toendpoint_by_index(outbuf, rdlen + sizeof(ep_data_header), pr->ep_index, DIRUP);
 			    				}
@@ -327,6 +330,12 @@ int maxdesc;
 			    		}
 			    	}
 
+			    	if (FD_ISSET(pr->socdesc, &ex_socks)){
+			    		close(pr->socdesc);
+			    		pr->state = 0;
+			    		pr->socdesc = 0;
+			    		send_sys_msg(pr, EP_MSG_CONNECT_LOST);
+			    	}
 	    		}
 	    	}
 	    }

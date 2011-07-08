@@ -13,11 +13,11 @@ struct phy_route{
 	char *name;				// example: device name kipp2m.phy_tcp
 	u32 mask;
 	u32 ep_index;
+	int state;
 	// sockets for phy_tcp
 	SOCKET socdesc;
 	struct sockaddr_in 	sai;		// sai->sin_addr; sai->sin_port
 	struct sockaddr_in 	sailist;	// sai->sin_addr; sai->sin_port
-	int state;
 	// symbol devices for phy_tty
 	int realaddr;
 	int devindex;
