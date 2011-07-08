@@ -411,6 +411,23 @@ int sys_open(struct channel *ch){
 int ret;
 struct endpoint *ep = myeps[maxep - 1];
 	// Открываем канал на чтение
+	if (!ch->descin){
+		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
+		if (ch->descin == -1) ch->descin = 0;
+		if (ch->descin){
+			printf("%s: system has open working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
+			ch->rdlen = 0;
+			ch->rdstr = 0;
+			ch->events &= ~IN_OPEN;
+			ch->events |= IN_CLOSE;
+			ch->ready += 1;
+			if (ch->descout){
+				ret=write(ch->descout, &(ep->my_ep), sizeof(int));
+				ch->ready = 3;
+			}
+		}
+	}
+
 	if (!ch->descout){
 		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
 		if (ch->descout == -1) ch->descout = 0;
@@ -423,21 +440,6 @@ struct endpoint *ep = myeps[maxep - 1];
 			ch->ready += 1;
 		}
 	}
-
-	if (!ch->descin){
-		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
-		if (ch->descin == -1) ch->descin = 0;
-		if (ch->descin){
-			printf("%s: system has open working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
-			ch->rdlen = 0;
-			ch->rdstr = 0;
-			ch->events &= ~IN_OPEN;
-			ch->events |= IN_CLOSE;
-			ch->ready += 1;
-			if (ch->descout) ret=write(ch->descout, &(ep->my_ep), sizeof(int));
-		}
-	}
-
 	return 0;
 }
 
