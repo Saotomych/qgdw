@@ -17,6 +17,6 @@ unitlinks-clean : Makefile force
 u-tsts-clean : Makefile force
 	cd u-tsts; $(MAKE) -f Makefile clean
 phylinks-clean : Makefile force
-	cd unitlinks; $(MAKE) -f Makefile clean
+	cd phylinks; $(MAKE) -f Makefile clean
 
 force : ;
