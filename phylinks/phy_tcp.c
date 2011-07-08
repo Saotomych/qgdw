@@ -108,19 +108,17 @@ char outbuf[256];
 	return 0;
 }
 
-int sendall(int s, char *buf, int len, int flags)
-{
-    int total = 0;
-    int n;
+int sendall(int s, char *buf, int len, int flags){
+int total = 0;
+int n;
 
-    while(total < len)
-    {
+	while(total < len){
         n = send(s, buf+total, len-total, flags);
-        if(n == -1) { break; }
+        if (n == -1) break;
         total += n;
     }
 
-    return (n==-1 ? -1 : total);
+	return (n==-1 ? -1 : total);
 }
 
 void set_listen(struct phy_route *pr){
@@ -316,7 +314,7 @@ int maxdesc;
 			    			}
 			    		}else{
 			    			// Receive frame
-			    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024, 0);
+			    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024  - sizeof(ep_data_header), 0);
 			    			if (rdlen == -1){
 			    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
 			    				close(pr->socdesc);

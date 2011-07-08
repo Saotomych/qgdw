@@ -12,7 +12,9 @@
 #include "../common/multififo.h"
 #include "local-phyints.h"
 
-// TODO  tty common defines
+static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
+
+// tty common defines
 typedef struct ttydev{
 	char devname[15];
 	int desc;
@@ -88,6 +90,14 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
     TCSAFLUSH    Очистить буфера ввода/вывода и произвести изменения
     */
     tcsetattr(hPort, TCSAFLUSH, &CommOptions);      // установили новые атрибуты порта
+}
+
+void send_sys_msg(struct phy_route *pr, int msg){
+ep_data_header edh;
+	edh.adr = pr->asdu;
+	edh.sys_msg = msg;
+	edh.len = 0;
+	mf_toendpoint_by_index((char*) &edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
 }
 
 int cfgparse(char *key, char *buf){
@@ -199,9 +209,84 @@ int i = 1;
 	return 0;
 }
 
-int rcvdata(int len){
+int writeall(int s, char *buf, int len){
+int total = 0;
+int n;
 
-	return 0;
+	while(total < len){
+        n = write(s, buf+total, len-total);
+        if (n == -1) break;
+        total += n;
+    }
+
+    return (n==-1 ? -1 : total);
+}
+
+int start_ttydevice(TTYDEV *td){
+	// open port and init by tdev pars
+    td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
+
+    if (td->desc == -1) {
+    	fprintf(stderr, "Phylink TTY:  Can't open tty device %s\n", td->devname);
+    	return -1;
+    }
+    CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
+    // Read setting with non-blocking
+    //	return to blocking ops: fcntl(fd, F_SETFL, 0);
+    fcntl(td->desc, F_SETFL, FNDELAY);
+
+    return td->desc;
+}
+
+int rcvdata(int len){
+TRANSACTINFO tai;
+char inoti_buf[256];
+struct phy_route *pr;
+ep_data_header *edh;
+int rdlen;
+
+		tai.buf = inoti_buf;
+		tai.len = len;
+		tai.addr = 0;
+
+		rdlen = mftai_readbuffer(&tai);
+		// Get phy_route by index
+		if (tai.ep_index) pr = myprs[tai.ep_index-1];
+		else return 0;
+
+		edh = (struct ep_data_header *) inoti_buf;				// set start structure
+		tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
+		switch(edh->sys_msg){
+		case EP_USER_DATA:	// Write data to socket
+				writeall(pr->socdesc, tai.buf, len - sizeof(struct ep_data_header));
+				break;
+
+		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
+				close(tdev[pr->devindex].desc);
+				if (start_ttydevice(&tdev[pr->devindex]) == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+				else{
+					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
+					pr->state = 1;
+				}
+				break;
+
+		case EP_MSG_CONNECT_CLOSE: // Disconnect endpoint
+				break;
+
+		case EP_MSG_CONNECT:
+				if (tdev[pr->devindex].desc == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+				else{
+					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
+					pr->state = 1;
+				}
+				break;
+
+		case EP_MSG_QUIT:
+				appexit = 1;
+				break;
+		}
+
+		return 0;
 }
 
 // Actions by Receiving of init data:
@@ -210,9 +295,8 @@ int rcvdata(int len){
 // setup tty device
 // exchange ready to go
 int rcvinit(ep_init_header *ih){
-int i, ret;
+int i;
 struct phy_route *pr;
-TTYDEV *td;
 
 #ifdef _DEBUG
 		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
@@ -231,30 +315,22 @@ TTYDEV *td;
 		if (myprs[i]->state) return 0;	// Route init already
 		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
-
-		td = &tdev[pr->devindex];
-		if (!td->desc){ // uart's descriptor
-			// open port and init by tdev pars
-		    td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
-
-		    if (td->desc == -1) {
-		    	fprintf(stderr, "Can't open dev\n");
-		    	return 0;
-		    }
-		    CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
-
-		    // Read setting with non-blocking
-		    //	return to blocking ops: fcntl(fd, F_SETFL, 0);
-		    fcntl(td->desc, F_SETFL, FNDELAY);
-		}
+		if (tdev[pr->devindex].desc) start_ttydevice(&tdev[pr->devindex]);
 
 	return 0;
 }
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
-fd_set rd_socks;
-int exit = 0, maxdesc;
+fd_set rd_desc, ex_desc;
+int i, j, maxdesc, ret, rdlen;
+
+TTYDEV *td;
+struct phy_route *pr;
+ep_data_header *edh;
+
+struct timeval tv;	// for sockets select
+char outbuf[300];
 
 	if (createroutetable() == -1){
 		printf("Phylink TTY: config file not found\n");
@@ -262,15 +338,62 @@ int exit = 0, maxdesc;
 	}
 	printf("Phylink TTY: config table ready, %d records\n", maxpr);
 
-	// Init select sets for sockets
-	FD_ZERO(&rd_socks);
-
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata, rcvinit);
 
 	do{
+	    FD_ZERO(&rd_desc);
+	    FD_ZERO(&ex_desc);
+		maxdesc = 0;
+		for (i=0; i<maxtdev; i++){
+			td = &tdev[i];
+			if (td->desc > 0){
+				if (td->desc > maxdesc)	maxdesc = td->desc;
+				FD_SET(td->desc, &rd_desc);
+				FD_SET(td->desc, &ex_desc);
+			}
+		}
 
-	}while(!exit);
+		tv.tv_sec = 1;
+	    tv.tv_usec = 0;
+	    ret = select(maxdesc + 1, &rd_desc, NULL, &ex_desc, &tv);
+	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    else
+	    if (ret){
+	    	for (i=0; i<maxtdev; i++){
+	    		td = &tdev[i];
+
+				if (FD_ISSET(td->desc, &rd_desc)){
+		    		// Read device
+		    		rdlen = read(td->desc, outbuf + sizeof(ep_data_header), 300 - sizeof(ep_data_header));
+    				if (rdlen){
+    					// Send to all endpoints connected to this device
+    					for(j=0; j<maxpr; j++){
+    						pr = myprs[j];
+    						if ((pr->state) && (pr->devindex == i)){ 	// connected and live
+    							// send buffer to endpoint
+    							printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
+    							// Send data frame to endpoint
+    							edh = (ep_data_header*) outbuf;
+    							edh->adr = pr->asdu;
+    							edh->sys_msg = EP_USER_DATA;
+    							edh->len = rdlen;
+    							mf_toendpoint_by_index(outbuf, rdlen + sizeof(ep_data_header), pr->ep_index, DIRUP);
+    						}
+		    			}
+		    		}
+		    	}
+
+		    	if (FD_ISSET(td->desc, &ex_desc)){
+					send_sys_msg(pr, EP_MSG_CONNECT_LOST);
+					close(td->desc);
+					td->desc = 0;
+		    	}
+
+	    	} // for i
+	    } // ret
+
+	}while(!appexit);
 
 
 	mf_exit();
