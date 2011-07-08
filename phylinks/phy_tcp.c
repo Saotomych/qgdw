@@ -21,6 +21,8 @@
 #define LISTEN	0x42
 #define CONNECT 0x43
 
+static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
+
 struct phy_route *myprs[MAXEP];	// One phy_route for one endpoint
 struct phy_route *firstpr;
 int maxpr = 0;
@@ -198,7 +200,10 @@ int rdlen;
 				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
 				connect_by_config(pr);
 			}
+			break;
 
+	case EP_MSG_QUIT:
+			appexit = 1;
 			break;
 	}
 
@@ -241,7 +246,7 @@ struct phy_route *pr;
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
-int exit = 0, ret, i, rdlen;
+int ret, i, rdlen;
 struct timeval tv;	// for sockets select
 
 char outbuf[1024];
@@ -341,7 +346,7 @@ int maxdesc;
 	    }
 //	    else printf("Phylink TCP/IP: Timeout\n");
 
-	}while(!exit);
+	}while(!appexit);
 
 	mf_exit();
 

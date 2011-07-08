@@ -204,6 +204,11 @@ int rcvdata(int len){
 	return 0;
 }
 
+// Actions by Receiving of init data:
+// Find config of tty device
+// open tty device
+// setup tty device
+// exchange ready to go
 int rcvinit(ep_init_header *ih){
 int i, ret;
 struct phy_route *pr;
@@ -249,7 +254,7 @@ TTYDEV *td;
 int main(int argc, char * argv[]){
 pid_t chldpid;
 fd_set rd_socks;
-int maxdesc;
+int exit = 0, maxdesc;
 
 	if (createroutetable() == -1){
 		printf("Phylink TTY: config file not found\n");
@@ -262,6 +267,11 @@ int maxdesc;
 
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata, rcvinit);
+
+	do{
+
+	}while(!exit);
+
 
 	mf_exit();
 

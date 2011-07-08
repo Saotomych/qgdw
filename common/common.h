@@ -51,6 +51,7 @@
 #define EP_MSG_CONNECT_CLOSE	7		/* connection close request - up2down */
 #define EP_MSG_CONNECT_LOST		8		/* connection lost/closed by remote peer - down2up after exception */
 #define EP_MSG_CONNECT			9		/* connection request - up2down */
+#define EP_MSG_QUIT				10		/* quit application - up2down */
 
 /*
  *
