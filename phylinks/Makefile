@@ -23,4 +23,4 @@ rebuild: clean all
 all: phy_tcp phy_tty
 
 clean:
-	rm -f phy_tcp $(OBJS_TCP) phy_tty $(OBJS_TTY)
+	rm -f ../bin/phy_tcp $(OBJS_TCP) ../bin/phy_tty $(OBJS_TTY)
