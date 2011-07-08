@@ -569,7 +569,6 @@ ep_init_header *eih;
 					printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
 					//	- two fifos opens! bingo!
 					ep->cdcup = mychs[i];
-					mychs[i]->ready = 3;
 				}else return -1;
 			}
 //			// Call callback function for working config_device
