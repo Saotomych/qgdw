@@ -40,8 +40,8 @@
 #define IEC104_T2				10		/* timeout for acknowledges in case of no data messages (t2<t1) */
 #define IEC104_T3				20		/* timeout for sending test frames in case of long idle state */
 
-#define IEC104_K				12		/* maximum difference receive sequence number to sent state variable */
-#define IEC104_W				8		/* latest acknowledge after receiving "w" I-Format frames */
+#define IEC104_K				12		/* maximum difference receive sequence number */
+#define IEC104_W				8		/* latest acknowledge after receiving I-Format frame */
 
 #define IEC104_APDU_LEN_MAX		253		/* default maximum APDU length for IEC-104 */
 
