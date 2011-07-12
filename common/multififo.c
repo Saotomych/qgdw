@@ -727,8 +727,6 @@ int ret;
 	d_inoty = inotify_init();
 	if (initchannel(pathinit, a_name)) return -1;
 
-//	printf("MFI %s: start thread\n", appname);
-
 	inotifystop = 1;
 
 	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);

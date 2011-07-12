@@ -179,7 +179,7 @@ int i = 1;
 
 // Init physical routes structures by phys.cfg file
 	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
-	addrcfg = fopen("/rw/mx00/configs/phys.cfg", "r");
+	addrcfg = fopen("/rw/mx00/configs/lowlevel.cfg", "r");
 	if (addrcfg){
 		// Create phy_route tables
 		do{

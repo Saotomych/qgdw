@@ -16,8 +16,8 @@ struct phy_route{
 	int state;
 	// sockets for phy_tcp
 	SOCKET socdesc;
-	struct sockaddr_in 	sai;		// sai->sin_addr; sai->sin_port
-	struct sockaddr_in 	sailist;	// sai->sin_addr; sai->sin_port
+	struct sockaddr_in 	sai;		// sai->sin_addr->sadr; sai->sin_port
+	struct sockaddr_in 	sailist;	// sai->sin_addr->sadr; sai->sin_port
 	// symbol devices for phy_tty
 	int realaddr;
 	int devindex;
