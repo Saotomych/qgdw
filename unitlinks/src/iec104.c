@@ -120,7 +120,7 @@ uint16_t iec104_read_config(const char *file_name)
 	}
 
 	if(ep_num)
-		return RES_APDU_SUCCESS;
+		return RES_SUCCESS;
 	else
 		return RES_NOT_FOUND;
 }
@@ -396,9 +396,9 @@ uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 	res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
 
 	if(res > 0)
-		return RES_APDU_SUCCESS;
+		return RES_SUCCESS;
 	else
-		return RES_APDU_INCORRECT;
+		return RES_INCORRECT;
 }
 
 
@@ -411,7 +411,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 	ep_ext = iec104_get_ep_ext(adr);
 
-	if(!ep_ext) return RES_APDU_UNKNOWN;
+	if(!ep_ext) return RES_UNKNOWN;
 
 	if(dir == DIRUP)
 	{
@@ -531,7 +531,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 		}
 	}
 
-	return RES_APDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -545,7 +545,7 @@ uint16_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir)
 
 	res = apdu_frame_buff_build(&a_buff, &a_len, a_fr);
 
-	if(res == RES_APDU_SUCCESS)
+	if(res == RES_SUCCESS)
 	{
 		ep_buff = (char*) malloc(sizeof(ep_data_header) + a_len);
 
@@ -564,7 +564,7 @@ uint16_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir)
 		}
 		else
 		{
-			res = RES_APDU_MEM_ALLOC;
+			res = RES_MEM_ALLOC;
 		}
 
 		free(a_buff);
@@ -583,7 +583,7 @@ uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 	ep_ext = iec104_get_ep_ext(adr);
 
-	if(!ep_ext) return RES_APDU_INCORRECT;
+	if(!ep_ext) return RES_INCORRECT;
 
 	offset = 0;
 
@@ -591,11 +591,11 @@ uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	{
 		a_fr = apdu_frame_create();
 
-		if(!a_fr) return RES_APDU_MEM_ALLOC;
+		if(!a_fr) return RES_MEM_ALLOC;
 
 		res = apdu_frame_buff_parse(buff, buff_len, &offset, a_fr);
 
-		if(res == RES_APDU_SUCCESS)
+		if(res == RES_SUCCESS)
 		{
 			if(ep_ext->timer_t3 > 0)
 			{
@@ -622,7 +622,7 @@ uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 				break;
 
 			default:
-				res = RES_APDU_INCORRECT;
+				res = RES_UNKNOWN;
 				break;
 			}
 		}
@@ -641,7 +641,7 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 
 	a_fr = apdu_frame_create();
 
-	if(!a_fr) return RES_APDU_MEM_ALLOC;
+	if(!a_fr) return RES_MEM_ALLOC;
 
 	switch(u_cmd)
 	{
@@ -662,7 +662,7 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 	res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 
 #ifdef _DEBUG
-	if(res == RES_APDU_SUCCESS)
+	if(res == RES_SUCCESS)
 	{
 		switch(u_cmd)
 		{
@@ -705,13 +705,13 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		printf("%s: U-Format frame received. STARTDT (act).\n", APP_NAME);
 #endif
 
-		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_APDU_SUCCESS;
+		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
 
 		ep_ext->u_cmd = APCI_U_STARTDT_ACT;
 
 		res = iec104_frame_u_send(APCI_U_STARTDT_CON, ep_ext, DIRDN);
 
-		if(res == RES_APDU_SUCCESS)
+		if(res == RES_SUCCESS)
 		{
 			ep_ext->u_cmd = APCI_U_STARTDT_CON;
 
@@ -731,7 +731,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		printf("%s: U-Format frame received. STARTDT (con).\n", APP_NAME);
 #endif
 
-		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_APDU_SUCCESS;
+		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
 
 		ep_ext->u_cmd = APCI_U_STARTDT_CON;
 
@@ -753,13 +753,13 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		printf("%s: U-Format frame received. STOPDT (act).\n", APP_NAME);
 #endif
 
-		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_APDU_SUCCESS;
+		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
 
 		ep_ext->u_cmd = APCI_U_STOPDT_ACT;
 
 		res = iec104_frame_u_send(APCI_U_STOPDT_CON, ep_ext, DIRDN);
 
-		if(res == RES_APDU_SUCCESS) ep_ext->u_cmd = APCI_U_STOPDT_CON;
+		if(res == RES_SUCCESS) ep_ext->u_cmd = APCI_U_STOPDT_CON;
 
 		break;
 
@@ -768,7 +768,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		printf("%s: U-Format frame received. STOPDT (con).\n", APP_NAME);
 #endif
 
-		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_APDU_SUCCESS;
+		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
 
 		ep_ext->u_cmd = APCI_U_STOPDT_CON;
 		break;
@@ -799,31 +799,31 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		printf("%s: U-Format frame received. ERROR - Unknown command.\n", APP_NAME);
 #endif
 
-		return RES_APDU_INCORRECT;
+		return RES_INCORRECT;
 		break;
 	}
 
-	return RES_APDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
 uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 {
-	if(ep_ext->u_cmd == APCI_U_TESTFR_ACT || (ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)) return RES_APDU_INCORRECT;
+	if(ep_ext->u_cmd == APCI_U_TESTFR_ACT || (ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)) return RES_INCORRECT;
 
 	uint8_t res;
 	apdu_frame *a_fr = NULL;
 
 	a_fr = apdu_frame_create();
 
-	if(!a_fr) return RES_APDU_MEM_ALLOC;
+	if(!a_fr) return RES_MEM_ALLOC;
 
 	a_fr->type = APCI_TYPE_S;
 	a_fr->recv_num = ep_ext->vr;
 
 	res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 
-	if(res == RES_APDU_SUCCESS)
+	if(res == RES_SUCCESS)
 	{
 		ep_ext->ar = ep_ext->vr;
 
@@ -848,7 +848,7 @@ uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		printf("%s: S-Format frame received (N(R) = %d).\n", APP_NAME, a_fr->recv_num);
 #endif
 
-	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) == RES_APDU_SUCCESS)
+	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) == RES_SUCCESS)
 	{
 		ep_ext->as = a_fr->recv_num;
 
@@ -862,16 +862,16 @@ uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 #endif
 		}
 
-		return RES_APDU_SUCCESS;
+		return RES_SUCCESS;
 	}
 
-	return RES_APDU_INCORRECT;
+	return RES_INCORRECT;
 }
 
 
 uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 {
-	if(ep_ext->u_cmd == APCI_U_TESTFR_ACT || (ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)) return RES_APDU_INCORRECT;
+	if(ep_ext->u_cmd == APCI_U_TESTFR_ACT || (ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)) return RES_INCORRECT;
 
 	uint8_t res;
 	apdu_frame *a_fr = NULL;
@@ -880,13 +880,13 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 
 	a_fr = apdu_frame_create();
 
-	if(!a_fr) return RES_APDU_MEM_ALLOC;
+	if(!a_fr) return RES_MEM_ALLOC;
 
 	res  = iec_asdu_buff_build(&a_buff, &a_len, iec_asdu, cot_len, coa_len, ioa_len);
 
 	//TODO Add check for maximum difference receive sequence number to sent state variable!!!
 
-	if(res == RES_IEC_ASDU_SUCCESS)
+	if(res == RES_SUCCESS)
 	{
 		a_fr->type = APCI_TYPE_I;
 		a_fr->send_num = ep_ext->vs;
@@ -896,7 +896,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 
 		res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 
-		if(res == RES_APDU_SUCCESS)
+		if(res == RES_SUCCESS)
 		{
 			ep_ext->vs = (ep_ext->vs + 1) % 32767;
 
@@ -915,7 +915,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 	}
 	else
 	{
-		res = RES_APDU_MEM_ALLOC;
+		res = RES_MEM_ALLOC;
 	}
 
 	apdu_frame_destroy(&a_fr);
@@ -933,9 +933,9 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	uint8_t res;
 	asdu *iec_asdu = NULL;
 
-	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) != RES_APDU_SUCCESS)
+	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) != RES_SUCCESS)
 	{
-		return RES_APDU_INCORRECT;
+		return RES_INCORRECT;
 	}
 
 	ep_ext->as = a_fr->recv_num;
@@ -950,13 +950,13 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 #endif
 	}
 
-	if(iec104_frame_check_send_num(ep_ext, a_fr->send_num) != RES_APDU_SUCCESS)
+	if(iec104_frame_check_send_num(ep_ext, a_fr->send_num) != RES_SUCCESS)
 	{
 		iec104_frame_s_send(ep_ext, DIRDN);
 
 		iec104_sys_msg_send(EP_MSG_RECONNECT, ep_ext->adr, DIRDN);
 
-		return RES_APDU_INCORRECT;
+		return RES_INCORRECT;
 	}
 
 	if((ep_ext->vr - ep_ext->ar + 32767) % 32767 >= w)
@@ -966,15 +966,15 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	iec_asdu = asdu_create();
 
-	if(!iec_asdu) return RES_APDU_MEM_ALLOC;
+	if(!iec_asdu) return RES_MEM_ALLOC;
 
 	res = iec_asdu_buff_parse(a_fr->data, a_fr->data_len, iec_asdu, cot_len, coa_len, ioa_len);
 
-	if(res == RES_IEC_ASDU_SUCCESS)
+	if(res == RES_SUCCESS)
 	{
 		res = iec104_asdu_send(iec_asdu, ep_ext->adr, DIRUP);
 
-		if(res == RES_ASDU_SUCCESS)
+		if(res == RES_SUCCESS)
 		{
 			ep_ext->vr = (ep_ext->vr + 1) % 32767;
 		}
@@ -996,7 +996,7 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 
 	res = asdu_to_byte(&a_buff, &a_len, iec_asdu);
 
-	if(res == RES_ASDU_SUCCESS)
+	if(res == RES_SUCCESS)
 	{
 		ep_buff = (char*) malloc(sizeof(ep_data_header) + a_len);
 
@@ -1012,13 +1012,13 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 
 			mf_toendpoint(ep_buff, sizeof(ep_data_header) + a_len, adr, dir);
 
-			res = RES_ASDU_SUCCESS;
+			res = RES_SUCCESS;
 
 			free(ep_buff);
 		}
 		else
 		{
-			res = RES_ASDU_MEM_ALLOC;
+			res = RES_MEM_ALLOC;
 		}
 
 		free(a_buff);
@@ -1040,7 +1040,7 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	res = asdu_from_byte(buff, buff_len, &iec_asdu);
 
-	if(res == RES_ASDU_SUCCESS && iec_asdu->adr == ep_ext->adr)
+	if(res == RES_SUCCESS && iec_asdu->adr == ep_ext->adr)
 	{
 		//TODO Add check for maximum difference receive sequence number to sent state variable!!!
 
@@ -1048,7 +1048,7 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 	}
 	else
 	{
-		res = RES_ASDU_INCORRECT;
+		res = RES_INCORRECT;
 	}
 
 	asdu_destroy(&iec_asdu);
@@ -1059,25 +1059,25 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 uint16_t iec104_frame_check_send_num(iec104_ep_ext *ep_ext, uint16_t send_num)
 {
-	if(send_num == ep_ext->vr) return RES_APDU_SUCCESS;
+	if(send_num == ep_ext->vr) return RES_SUCCESS;
 
 #ifdef _DEBUG
 	printf("%s: ERROR - expected N(S) = %d, but received N(S) = %d. Frame lost or reordered.\n", APP_NAME, ep_ext->vr, send_num);
 #endif
 
-	return RES_APDU_INCORRECT;
+	return RES_INCORRECT;
 }
 
 
 uint16_t iec104_frame_check_recv_num(iec104_ep_ext *ep_ext, uint16_t recv_num)
 {
-	if( (recv_num - ep_ext->as + 32767) % 32767 <= (ep_ext->vs - ep_ext->as + 32767) % 32767 ) return RES_APDU_SUCCESS;
+	if( (recv_num - ep_ext->as + 32767) % 32767 <= (ep_ext->vs - ep_ext->as + 32767) % 32767 ) return RES_SUCCESS;
 
 #ifdef _DEBUG
 	printf("%s: ERROR - expected %d <= N(S) <= %d, but received N(S) = %d. Frame lost or reordered.\n", APP_NAME, ep_ext->as, ep_ext->vs, recv_num);
 #endif
 
-	return RES_APDU_INCORRECT;
+	return RES_INCORRECT;
 }
 
 

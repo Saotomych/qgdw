@@ -17,16 +17,6 @@ extern "C" {
 
 
 /* Constants and byte flags/masks */
-/* Response codes */
-#define RES_DLT_SUCCESS			0x00	/* no error(s) */
-#define RES_DLT_INCORRECT		0x01	/* frame or/and buffer are incorrect */
-#define RES_DLT_UNKNOWN			0x02	/* unknown frame type */
-#define RES_DLT_UNSUPPORTED		0x04	/* unsupported frame type */
-#define RES_DLT_MEM_ALLOC		0x08	/* memory allocation error */
-#define RES_DLT_FCS_INCORRECT	0x10	/* frame checksum incorrect */
-#define RES_DLT_LEN_INVALID		0x20	/* frame length invalid */
-
-
 /* Function codes of control field */
 #define FNC_TIME_SYNC			0x08	/* time synchronization broadcast */
 #define FNC_READ_DATA			0x11	/* read data */

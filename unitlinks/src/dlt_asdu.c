@@ -7,12 +7,13 @@
 #include <malloc.h>
 #include <string.h>
 #include "../include/dlt_asdu.h"
+#include "../../common/resp_codes.h"
 #include "../include/p_num.h"
 
 
 uint8_t dlt_asdu_parse_header(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
 {
-	return RES_DLT_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -22,16 +23,16 @@ uint8_t dlt_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 
 	// start building header field by field
 
-	return RES_DLT_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
 uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_asdu)
 {
 	// fast check input data
-	if(!buff || buff_len < DLT_ASDU_LEN_MIN) return RES_DLT_ASDU_INCORRECT;
+	if(!buff || buff_len < DLT_ASDU_LEN_MIN) return RES_INCORRECT;
 
-	return RES_DLT_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -42,8 +43,8 @@ uint8_t dlt_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *dlt_
 	uint32_t offset = 0;
 
 	// fast check input data
-	if(!buff || !dlt_asdu || !dlt_asdu->data) return RES_DLT_ASDU_INCORRECT;
+	if(!buff || !dlt_asdu || !dlt_asdu->data) return RES_INCORRECT;
 
-	return RES_DLT_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 

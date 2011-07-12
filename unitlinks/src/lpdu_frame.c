@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "../include/lpdu_frame.h"
+#include "../../common/resp_codes.h"
 #include "../include/p_num.h"
 
 
@@ -195,7 +196,7 @@ void lpdu_frame_buff_build_link_address(unsigned char *buff, uint32_t *offset, u
 uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint32_t *offset, lpdu_frame *frame, uint8_t adr_len)
 {
 	// fast check input data
-	if(!buff || buff_len - *offset < LPDU_LEN_MIN) return RES_LPDU_INCORRECT;
+	if(!buff || buff_len - *offset < LPDU_LEN_MIN) return RES_INCORRECT;
 
 	uint8_t res;
 	uint8_t fcs = 0;
@@ -217,11 +218,11 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 		*offset += 1;
 
 		// compare first user data length with received copy, if not the same return error
-		if(user_data_len != buff_get_le_uint8(buff, *offset)) return RES_LPDU_LEN_INVALID;
+		if(user_data_len != buff_get_le_uint8(buff, *offset)) return RES_LEN_INVALID;
 		*offset += 1;
 
 		// get and check second start byte, if not correct return error
-		if( buff_get_le_uint8(buff, *offset) != LPDU_FT_12_START_VAR) return RES_LPDU_INCORRECT;
+		if( buff_get_le_uint8(buff, *offset) != LPDU_FT_12_START_VAR) return RES_INCORRECT;
 		*offset += 1;
 
 		// check if buffer long enough to contain frame
@@ -236,7 +237,7 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 			*offset = buff_len;
 
 			// return error
-			return RES_LPDU_LEN_INVALID;
+			return RES_LEN_INVALID;
 		}
 
 		lpdu_frame_buff_parse_ctrl_field(buff, offset, frame);
@@ -255,7 +256,7 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 			// set data length to zero
 			frame->data_len = 0;
 
-			return RES_LPDU_MEM_ALLOC;
+			return RES_MEM_ALLOC;
 		}
 
 		// copy data from the buffer
@@ -268,14 +269,14 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 		fcs = lpdu_frame_get_fcs(buff + (*offset - 1 - adr_len - frame->data_len), 1 + adr_len + frame->data_len);
 
 		// compare calculated and received frame checksums, if not the same return error
-		if(fcs != buff_get_le_uint8(buff, *offset)) return RES_LPDU_FCS_INCORRECT;
+		if(fcs != buff_get_le_uint8(buff, *offset)) return RES_FCS_INCORRECT;
 		*offset += 1;
 
 		// check if stop byte is correct, otherwise return error
-		if(buff_get_le_uint8(buff, *offset) != LPDU_FT_12_STOP) return RES_LPDU_INCORRECT;
+		if(buff_get_le_uint8(buff, *offset) != LPDU_FT_12_STOP) return RES_INCORRECT;
 		*offset += 1;
 
-		res = RES_LPDU_SUCCESS;
+		res = RES_SUCCESS;
 
 		break;
 
@@ -283,7 +284,7 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 		// frame with fixed length
 
 		// check if buffer long enough to contain frame
-		if(buff_len - *offset < 1 + adr_len + 2) return RES_LPDU_LEN_INVALID;
+		if(buff_len - *offset < 1 + adr_len + 2) return RES_LEN_INVALID;
 
 		frame->type = LPDU_FT_FIX_LEN;
 
@@ -299,14 +300,14 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 		fcs = lpdu_frame_get_fcs(buff + (*offset - 1 - adr_len), 1 + adr_len);
 
 		// compare calculated and received frame checksums, if not the same return error
-		if(fcs != buff_get_le_uint8(buff, *offset)) return RES_LPDU_FCS_INCORRECT;
+		if(fcs != buff_get_le_uint8(buff, *offset)) return RES_FCS_INCORRECT;
 		*offset += 1;
 
 		// check if stop byte is correct
-		if(buff_get_le_uint8(buff, *offset) != LPDU_FT_12_STOP) return RES_LPDU_INCORRECT;
+		if(buff_get_le_uint8(buff, *offset) != LPDU_FT_12_STOP) return RES_INCORRECT;
 		*offset += 1;
 
-		res = RES_LPDU_SUCCESS;
+		res = RES_SUCCESS;
 
 		break;
 
@@ -322,14 +323,14 @@ uint8_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint3
 		frame->data_len = 0;
 		frame->data = NULL;
 
-		res = RES_LPDU_SUCCESS;
+		res = RES_SUCCESS;
 
 		break;
 
 	default:
 		// unknown frame format
 
-		res = RES_LPDU_UNKNOWN;
+		res = RES_UNKNOWN;
 
 		break;
 	}
@@ -350,7 +351,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		// frame with variable length
 
 		// check if data is OK
-		if(frame->data_len == 0 || frame->data == NULL) return RES_LPDU_INCORRECT;
+		if(frame->data_len == 0 || frame->data == NULL) return RES_INCORRECT;
 
 		// calculate buffer length
 		*buff_len = 5 + adr_len + frame->data_len + 2;
@@ -364,7 +365,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 			// set buffer length to zero
 			*buff_len = 0;
 
-			return RES_LPDU_MEM_ALLOC;
+			return RES_MEM_ALLOC;
 		}
 
 		// start filling buffer
@@ -399,7 +400,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		buff_put_le_uint8(*buff, offset, LPDU_FT_12_STOP);
 		offset += 1;
 
-		res =  RES_LPDU_SUCCESS;
+		res =  RES_SUCCESS;
 
 		break;
 
@@ -418,7 +419,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 			// set buffer length to zero
 			*buff_len = 0;
 
-			return RES_LPDU_MEM_ALLOC;
+			return RES_MEM_ALLOC;
 		}
 
 		// start filling buffer
@@ -438,7 +439,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		buff_put_le_uint8(*buff, offset, LPDU_FT_12_STOP);
 		offset += 1;
 
-		res = RES_LPDU_SUCCESS;
+		res = RES_SUCCESS;
 
 		break;
 
@@ -446,7 +447,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		// single character response
 
 		// check if data is OK
-		if(frame->data_len != 1 || frame->data == NULL) return RES_LPDU_INCORRECT;
+		if(frame->data_len != 1 || frame->data == NULL) return RES_INCORRECT;
 
 		*buff_len = 1;
 
@@ -459,7 +460,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 			// set buffer length to zero
 			*buff_len = 0;
 
-			return RES_LPDU_MEM_ALLOC;
+			return RES_MEM_ALLOC;
 		}
 
 		// start filling buffer
@@ -467,13 +468,13 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 		buff_put_le_uint8(*buff, offset, frame->sc);
 		offset += 1;
 
-		res = RES_LPDU_SUCCESS;
+		res = RES_SUCCESS;
 
 		break;
 
 	default:
 
-		res = RES_LPDU_UNKNOWN;
+		res = RES_UNKNOWN;
 
 		break;
 	}
@@ -485,7 +486,7 @@ uint8_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpd
 uint8_t lpdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, lpdu_frame *frame, uint8_t format, uint8_t adr_len)
 {
 	// fast check input data
-	if(!buff || !frame) return RES_LPDU_INCORRECT;
+	if(!buff || !frame) return RES_INCORRECT;
 
 	uint8_t res;
 	uint8_t start_byte = 0;
@@ -510,11 +511,11 @@ uint8_t lpdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 		case LPDU_FT_3_START_2:
 		case LPDU_FT_3_SC_1:
 		case LPDU_FT_3_SC_2:
-			res = RES_LPDU_UNSUPPORTED;
+			res = RES_UNSUPPORTED;
 			break;
 
 		default:
-			res = RES_LPDU_UNKNOWN;
+			res = RES_UNKNOWN;
 			break;
 		}
 
@@ -532,7 +533,7 @@ uint8_t lpdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, lpdu_fra
 	*buff_len = 0;
 
 	// fast check input data
-	if(!buff || !frame) return RES_LPDU_INCORRECT;
+	if(!buff || !frame) return RES_INCORRECT;
 
 	uint8_t res;
 
@@ -545,10 +546,11 @@ uint8_t lpdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, lpdu_fra
 	case LPDU_FT_11:
 	case LPDU_FT_2:
 	case LPDU_FT_3:
-		res = RES_LPDU_UNSUPPORTED;
+		res = RES_UNSUPPORTED;
+		break;
 
 	default:
-		res = RES_LPDU_UNKNOWN;
+		res = RES_UNKNOWN;
 		break;
 	}
 

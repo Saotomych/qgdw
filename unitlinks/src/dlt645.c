@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
 	mf_exit();
 
-	return 0;
+	exit(0);
 }
 
 

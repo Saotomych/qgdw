@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "../include/apdu_frame.h"
+#include "../../common/resp_codes.h"
 #include "../include/p_num.h"
 
 
@@ -123,7 +124,7 @@ void apdu_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, apd
 uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, apdu_frame *frame)
 {
 	// fast check input data
-	if(!buff || !frame) return RES_APDU_INCORRECT;
+	if(!buff || !frame) return RES_INCORRECT;
 
 	uint8_t res;
 	uint8_t start_byte = 0;
@@ -140,10 +141,10 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	}
 
 	// check if rest of the buffer long enough to contain the frame
-	if(buff_len - *offset < APDU_LEN_MIN) return RES_APDU_LEN_INVALID;
+	if(buff_len - *offset < APDU_LEN_MIN) return RES_LEN_INVALID;
 
 	// check if start byte found, otherwise return error
-	if(start_byte != APDU_START_BYTE) return RES_APDU_INCORRECT;
+	if(start_byte != APDU_START_BYTE) return RES_INCORRECT;
 
 	// skip start byte
 	*offset += 1;
@@ -169,7 +170,7 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 				// set data length to zero
 				frame->data_len = 0;
 
-				return RES_APDU_MEM_ALLOC;
+				return RES_MEM_ALLOC;
 			}
 
 			// copy data from the buffer
@@ -178,7 +179,7 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 			// move over data in the buffer
 			*offset += frame->data_len;
 
-			res = RES_APDU_SUCCESS;
+			res = RES_SUCCESS;
 		}
 		else
 		{
@@ -191,7 +192,7 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 			*offset = buff_len;
 
 			// return error
-			res = RES_APDU_LEN_INVALID;
+			res = RES_LEN_INVALID;
 		}
 		break;
 
@@ -201,11 +202,11 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 		frame->data_len = 0;
 		frame->data = NULL;
 
-		res = RES_APDU_SUCCESS;
+		res = RES_SUCCESS;
 		break;
 
 	default:
-		res = RES_APDU_INCORRECT;
+		res = RES_INCORRECT;
 		break;
 	}
 
@@ -220,7 +221,7 @@ uint8_t apdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, apdu_fra
 	uint32_t offset = 0;
 
 	// fast check input data
-	if(!buff || !frame || (frame->type == APCI_TYPE_I && (frame->data_len == 0 || frame->data == NULL))) return RES_APDU_INCORRECT;
+	if(!buff || !frame || (frame->type == APCI_TYPE_I && (frame->data_len == 0 || frame->data == NULL))) return RES_INCORRECT;
 
 	// calculate buffer length
 	*buff_len = 6 + frame->data_len;
@@ -234,7 +235,7 @@ uint8_t apdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, apdu_fra
 		// set buffer length to zero
 		*buff_len = 0;
 
-		return RES_APDU_MEM_ALLOC;
+		return RES_MEM_ALLOC;
 	}
 
 	// start filling buffer
@@ -255,7 +256,7 @@ uint8_t apdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, apdu_fra
 		offset += frame->data_len;
 	}
 
-	return RES_APDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
