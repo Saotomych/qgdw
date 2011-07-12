@@ -10,20 +10,21 @@
 
 static sigset_t sigmask;
 
+static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
+
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
-	int exit = 0;
 
 	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_rcvdata, dlt645_rcvinit);
 
 	do{
 		sigsuspend(&sigmask);
-	}while(!exit);
+	}while(!appexit);
 
 	mf_exit();
 
-	return 0;
+	exit(0);
 }
 
 

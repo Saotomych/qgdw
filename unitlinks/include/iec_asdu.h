@@ -25,13 +25,6 @@ extern "C" {
  *
  */
 
-/* Response codes */
-#define RES_IEC_ASDU_SUCCESS		0x00	/* no error(s) */
-#define RES_IEC_ASDU_INCORRECT		0x01	/* ASDU or/and buffer are incorrect */
-#define RES_IEC_ASDU_UNKNOWN		0x02	/* unknown information object type */
-#define RES_IEC_ASDU_MEM_ALLOC		0x04	/* memory allocation error */
-#define RES_IEC_ASDU_LEN_INVALID	0x08	/* frame length invalid */
-
 /* ASDU constants */
 #define IEC_ASDU_LEN_MIN			4		/* ASDU minimum length */
 

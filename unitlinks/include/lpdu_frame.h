@@ -17,16 +17,6 @@ extern "C" {
 
 
 /* Constants and byte flags/masks */
-/* Response codes */
-#define RES_LPDU_SUCCESS		0x00	/* no error(s) */
-#define RES_LPDU_INCORRECT		0x01	/* frame or/and buffer are incorrect */
-#define RES_LPDU_UNKNOWN		0x02	/* unknown frame type */
-#define RES_LPDU_UNSUPPORTED	0x04	/* unsupported frame type */
-#define RES_LPDU_MEM_ALLOC		0x08	/* memory allocation error */
-#define RES_LPDU_FCS_INCORRECT	0x10	/* frame checksum incorrect */
-#define RES_LPDU_LEN_INVALID	0x20	/* frame length invalid */
-
-
 /* LPDU constants */
 #define LPDU_FT_11				1		/* FT 1.1 format */
 #define LPDU_FT_12				2		/* FT 1.2 format */

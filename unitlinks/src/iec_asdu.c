@@ -8,6 +8,7 @@
 #include <string.h>
 #include "../include/iec_asdu_def.h"
 #include "../include/iec_asdu.h"
+#include "../../common/resp_codes.h"
 #include "../include/p_num.h"
 
 
@@ -17,10 +18,10 @@ uint8_t iec_asdu_check_io_buffer_len(uint32_t buff_len, uint32_t offset, uint8_t
 	if(((iec_asdu->attr & 0x01) == 0 && buff_len - offset < iec_asdu->size * (ioa_len + type_size)) ||
 	   ((iec_asdu->attr & 0x01) == 1 && buff_len - offset < ioa_len + iec_asdu->size * type_size))
 	{
-		return RES_IEC_ASDU_INCORRECT;
+		return RES_INCORRECT;
 	}
 
-	return RES_IEC_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -563,7 +564,7 @@ void iec_asdu_build_M_SP(unsigned char *buff, uint32_t *offset, data_unit *unit,
 uint8_t iec_asdu_parse_header(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len)
 {
 	// check size of the buffer
-	if(!buff || buff_len - *offset < 1 + 1 + cot_len + coa_len) return RES_IEC_ASDU_INCORRECT;
+	if(!buff || buff_len - *offset < 1 + 1 + cot_len + coa_len) return RES_INCORRECT;
 
 	// start parsing header field by field
 
@@ -583,7 +584,7 @@ uint8_t iec_asdu_parse_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 
 	iec_asdu->adr = iec_asdu_parse_obj_address(buff, offset, coa_len);
 
-	return RES_IEC_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -616,7 +617,7 @@ uint8_t iec_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 	// build ASDU address
 	iec_asdu_build_obj_address(buff, offset, iec_asdu->adr, coa_len);
 
-	return RES_IEC_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -662,14 +663,14 @@ uint8_t iec_asdu_find_pb_func(uint8_t type, uint8_t *type_size, asdu_pb_funcp *p
 	uint8_t res, i;
 
 	// presume that ASDU type not found (by default)
-	res = RES_IEC_ASDU_UNKNOWN;
+	res = RES_UNKNOWN;
 
 	// look for specific ASDU type
 	for(i=0; iec_asdu_pb_tab[i].type != 0 ; i++)
 	{
 		if(iec_asdu_pb_tab[i].type == type)
 		{
-			res = RES_IEC_ASDU_SUCCESS;
+			res = RES_SUCCESS;
 
 			// take size of a type and pointer to the parser/builder
 			if(type_size != NULL) *type_size = iec_asdu_pb_tab[i].type_size;
@@ -689,7 +690,7 @@ uint8_t iec_asdu_find_pb_func(uint8_t type, uint8_t *type_size, asdu_pb_funcp *p
 uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
 {
 	// fast check input data
-	if(!buff || buff_len < IEC_ASDU_LEN_MIN || !cot_len || !coa_len || !ioa_len) return RES_IEC_ASDU_INCORRECT;
+	if(!buff || buff_len < IEC_ASDU_LEN_MIN || !cot_len || !coa_len || !ioa_len) return RES_INCORRECT;
 
 	// declare variables and function pointer to work with the buffer
 	uint8_t res, type_size;
@@ -703,19 +704,19 @@ uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_as
 	res = iec_asdu_parse_header(buff, buff_len, &offset, iec_asdu, cot_len, coa_len);
 
 	// check if header is OK
-	if(res != RES_IEC_ASDU_SUCCESS) return res;
+	if(res != RES_SUCCESS) return res;
 
 	// look if parser available
 	res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, &asdu_object_parse, NULL);
 
 	// check if parse function found, otherwise return error
-	if(res != RES_IEC_ASDU_SUCCESS) return res;
+	if(res != RES_SUCCESS) return res;
 
 	// check if rest of the buffer is long enough to contain all information objects
 	res = iec_asdu_check_io_buffer_len(buff_len, offset, type_size, iec_asdu, ioa_len);
 
 	// if rest of the buffer is not long enough return error
-	if(res != RES_IEC_ASDU_SUCCESS) return res;
+	if(res != RES_SUCCESS) return res;
 
 	//try to allocate memory for the data unit array
 	iec_asdu->data = (data_unit*) calloc(iec_asdu->size, sizeof(data_unit));
@@ -724,7 +725,7 @@ uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_as
 	if(iec_asdu->data == NULL)
 	{
 		iec_asdu->size = 0;
-		return RES_IEC_ASDU_MEM_ALLOC;
+		return RES_MEM_ALLOC;
 	}
 
 	int i;
@@ -756,7 +757,7 @@ uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_
 	uint32_t offset = 0;
 
 	// fast check input data
-	if(!buff || !iec_asdu || !iec_asdu->data || !cot_len || !coa_len || !ioa_len) return RES_IEC_ASDU_INCORRECT;
+	if(!buff || !iec_asdu || !iec_asdu->data || !cot_len || !coa_len || !ioa_len) return RES_INCORRECT;
 
 	// declare variables and function pointer to work with the buffer
 	uint8_t res, type_size;
@@ -766,7 +767,7 @@ uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_
 	res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, NULL, &asdu_object_build);
 
 	// check if build function found, otherwise return error
-	if(res != RES_IEC_ASDU_SUCCESS) return res;
+	if(res != RES_SUCCESS) return res;
 
 	// calculate needed buffer length based on unit header info and size of an unit of an information object type
 	*buff_len = iec_asdu_calculate_buffer_len(type_size, iec_asdu, cot_len, coa_len, ioa_len);
@@ -780,7 +781,7 @@ uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_
 		// set buffer length to zero
 		*buff_len = 0;
 
-		return RES_IEC_ASDU_MEM_ALLOC;
+		return RES_MEM_ALLOC;
 	}
 
 	// build ASDU header

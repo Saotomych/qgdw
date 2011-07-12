@@ -17,16 +17,6 @@ extern "C" {
 
 
 /* Constants and byte flags/masks */
-/* Response codes */
-#define RES_APDU_SUCCESS		0x00	/* no error(s) */
-#define RES_APDU_INCORRECT		0x01	/* frame or/and buffer are incorrect */
-#define RES_APDU_UNKNOWN		0x02	/* unknown frame type */
-#define RES_APDU_UNSUPPORTED	0x04	/* unsupported frame type */
-#define RES_APDU_MEM_ALLOC		0x08	/* memory allocation error */
-#define RES_APDU_FCS_INCORRECT	0x10	/* frame checksum incorrect */
-#define RES_APDU_LEN_INVALID	0x20	/* frame length invalid */
-
-
 /* APDU constants */
 #define APDU_LEN_MIN			6		/* minimum LPDU length */
 

@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "../include/dlt_frame.h"
+#include "../../common/resp_codes.h"
 #include "../include/p_num.h"
 
 
@@ -108,7 +109,7 @@ void dlt_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, dlt_
 uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame)
 {
 	// fast check input data
-	if(!buff || !frame) return RES_DLT_INCORRECT;
+	if(!buff || !frame) return RES_INCORRECT;
 
 	uint8_t fcs = 0;
 	uint8_t start_byte = 0;
@@ -125,10 +126,10 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 	}
 
 	// check if rest of the buffer long enough to contain the frame
-	if(buff_len - *offset < DLT_LEN_MIN) return RES_DLT_LEN_INVALID;
+	if(buff_len - *offset < DLT_LEN_MIN) return RES_LEN_INVALID;
 
 	// check if both of start bytes were found, otherwise return error
-	if(start_byte != DLT_START_BYTE || buff_get_le_uint8(buff, *offset + 7) != DLT_START_BYTE) return RES_DLT_INCORRECT;
+	if(start_byte != DLT_START_BYTE || buff_get_le_uint8(buff, *offset + 7) != DLT_START_BYTE) return RES_INCORRECT;
 
 	// skip first start byte
 	*offset += 1;
@@ -163,7 +164,7 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 				// set data length to zero
 				frame->data_len = 0;
 
-				return RES_DLT_MEM_ALLOC;
+				return RES_MEM_ALLOC;
 			}
 
 			uint8_t i;
@@ -188,7 +189,7 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 			*offset = buff_len;
 
 			// return error
-			return RES_DLT_LEN_INVALID;
+			return RES_LEN_INVALID;
 		}
 	}
 
@@ -196,14 +197,14 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 	fcs = dlt_frame_get_fcs(buff + (*offset - 10 - frame->data_len), 10 + frame->data_len);
 
 	// compare calculated and received frame checksums, if not the same return error
-	if(fcs != buff_get_le_uint8(buff, *offset)) return RES_DLT_FCS_INCORRECT;
+	if(fcs != buff_get_le_uint8(buff, *offset)) return RES_FCS_INCORRECT;
 	*offset += 1;
 
 	// check if stop byte is correct, otherwise return error
-	if(buff_get_le_uint8(buff, *offset) != DLT_STOP_BYTE) return RES_DLT_INCORRECT;
+	if(buff_get_le_uint8(buff, *offset) != DLT_STOP_BYTE) return RES_INCORRECT;
 	*offset += 1;
 
-	return RES_DLT_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
@@ -214,7 +215,7 @@ uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame
 	uint32_t offset = 0;
 
 	// fast check input data
-	if(!buff || !frame || (frame->data_len > 0 && frame->data == NULL)) return RES_DLT_INCORRECT;
+	if(!buff || !frame || (frame->data_len > 0 && frame->data == NULL)) return RES_INCORRECT;
 
 	// calculate buffer length
 	*buff_len = 10 + frame->data_len + 2;
@@ -228,7 +229,7 @@ uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame
 		// set buffer length to zero
 		*buff_len = 0;
 
-		return RES_DLT_MEM_ALLOC;
+		return RES_MEM_ALLOC;
 	}
 
 	// start filling buffer
@@ -274,7 +275,7 @@ uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame
 	buff_put_le_uint8(*buff, offset, DLT_STOP_BYTE);
 	offset += 1;
 
-	return RES_DLT_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
