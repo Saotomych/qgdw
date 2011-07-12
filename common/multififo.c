@@ -29,6 +29,7 @@ char *sufup = {"-up"};
 
 int (*cb_rcvdata)(int len);
 int (*cb_rcvinit)(ep_init_header *ih);
+int (*cb_rcvclose)(char* fn);
 
 struct channel{
 	char *appname;
@@ -212,7 +213,7 @@ char buf[16];
 	        close(opipe[0]);
 	        close(opipe[1]);
 			execve(pidof, par, env);
-			printf("%s: fork error:%d - %s\n",appname, errno, strerror(errno));
+			printf("MFI %s: fork error:%d - %s\n",appname, errno, strerror(errno));
 		}
 		waitpid(ret, &wait_st, 0);
 		FD_ZERO(&readset);
@@ -273,8 +274,8 @@ int len;
 
 	maxch++;
 
-	printf("%s: INIT CHANNEL %d READY, MAXCH = %d\n", appname, maxch-1, maxch);
-//	printf("%s: init channel file ready: %s\n", appname, mychs[maxch-1]->f_namein);
+	printf("MFI %s: INIT CHANNEL %d READY, MAXCH = %d\n", appname, maxch-1, maxch);
+//	printf("MFI %s: init channel file ready: %s\n", appname, mychs[maxch-1]->f_namein);
 
 	return 0;
 }
@@ -311,8 +312,8 @@ int len;
 
 	maxch++;
 
-//	printf("%s: initialize down channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
-	printf("%s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
+//	printf("MFI %s: initialize down channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("MFI %s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -346,8 +347,8 @@ int len;
 
 	maxch++;
 
-//	printf("%s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
-	printf("%s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
+//	printf("MFI %s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+	printf("MFI %s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -390,7 +391,7 @@ struct endpoint *ep;
 		if (ch->descin){
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
-			printf("%s: system has open init file %s\n", appname, ch->f_namein);
+			printf("MFI %s: system has open init file %s\n", appname, ch->f_namein);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->ready = 1;
@@ -415,7 +416,7 @@ struct endpoint *ep = myeps[maxep - 1];
 		ch->descin = open(ch->f_namein, O_RDWR | O_NDELAY);
 		if (ch->descin == -1) ch->descin = 0;
 		if (ch->descin){
-			printf("%s: system has open working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
+			printf("MFI %s: system has open working infile %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->events &= ~IN_OPEN;
@@ -432,7 +433,7 @@ struct endpoint *ep = myeps[maxep - 1];
 		ch->descout = open(ch->f_nameout, O_RDWR | O_NDELAY);
 		if (ch->descout == -1) ch->descout = 0;
 		if (ch->descout){
-			printf("%s: system has open working outfile %s, desc = 0x%X\n", appname, ch->f_nameout, ch->descout);
+			printf("MFI %s: system has open working outfile %s, desc = 0x%X\n", appname, ch->f_nameout, ch->descout);
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->events &= ~IN_OPEN;
@@ -445,7 +446,7 @@ struct endpoint *ep = myeps[maxep - 1];
 
 // answer on close init channel
 int init_close(struct channel *ch){
-	printf("%s: system has closed init file %s\n", appname, ch->f_namein);
+	printf("MFI %s: system has closed init file %s\n", appname, ch->f_namein);
 	if (ch->descin){
 		close(ch->descin);
 		ch->descin = 0;
@@ -463,18 +464,19 @@ int sys_close(struct channel *ch){
 		ch->descin = 0;
 		ch->events |= IN_OPEN;
 		ch->events &= ~IN_CLOSE;
-		printf("%s: system has closed working infile %s\n", appname, ch->f_namein);
+		printf("MFI %s: system has closed working infile %s\n", appname, ch->f_namein);
 		ch->ready -= 1;
+		if (cb_rcvclose) cb_rcvclose(ch->f_namein);		// callback if infile close
 	}
 	if ((ch->descout) && (ch->ready)){
 		close(ch->descout);
 		ch->descout = 0;
 		ch->events |= IN_OPEN;
 		ch->events &= ~IN_CLOSE;
-		printf("%s: system has closed working outfile %s\n", appname, ch->f_nameout);
+		printf("MFI %s: system has closed working outfile %s\n", appname, ch->f_nameout);
 		ch->ready -= 1;
 	}
-	if (ch->ready == 1) ch->ready = 0;
+	if (ch->ready > 0) ch->ready = 0;
 	return 0;
 }
 
@@ -502,11 +504,11 @@ ep_init_header *eih;
 
 	rdlen = readchannel(ch);
 	if (rdlen == -1){
-		printf("%s: readchannel init error:%d - %s\n", appname, errno, strerror(errno));
+		printf("MFI %s: readchannel init error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 	if (rdlen == -2){
-		printf("%s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		printf("MFI %s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 	if (rdlen){
@@ -514,7 +516,7 @@ ep_init_header *eih;
 		while(rdlen > 0){
 			// Building init pointpp
 			if (ch->rdstr < 5){
-//				printf("%s: get string number %d\n", appname, ch->rdstr);
+//				printf("MFI %s: get string number %d\n", appname, ch->rdstr);
 				// get strings
 				len = getstringfromring(ch, nbuf);
 				if (len > 0){
@@ -543,14 +545,14 @@ ep_init_header *eih;
 		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(ep_init_header))){
 			ch->ready = 2;
 //			// Connect to channel
-//			printf("%s: connect to working channel... ",appname);
+//			printf("MFI %s: connect to working channel... ",appname);
 			// find channel in list
 			//			- test open channel to mychs[]->name IF NOT:
 			//								- connect to channel
 			for (i = 1; i < maxch; i++){
 				if (mychs[i]){
 					if (strstr(ep->eih.isstr[1], mychs[i]->appname)){
-//						printf("%s: found channel %d\n", appname, i);
+//						printf("MFI %s: found channel %d\n", appname, i);
 						break;
 					}
 				}
@@ -559,25 +561,25 @@ ep_init_header *eih;
 			if (i == maxch){
 				// Channel not found, start new channel
 				sprintf(nbuf,"%s/%s",ep->eih.isstr[0], ep->eih.isstr[2]);
-//				printf("%s: not found channel for %s\n", appname, ep->eih.isstr[1]);
+//				printf("MFI %s: not found channel for %s\n", appname, ep->eih.isstr[1]);
 				if (!connect2channel(ep->eih.isstr[0], ep->eih.isstr[2])){
 					// Add new channel to up
 					i = maxch-1;
 					//	- add fifo to inotify for read
 					mychs[i]->watch = inotify_add_watch(d_inoty, mychs[i]->f_namein, mychs[i]->events);
-					printf("%s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
+					printf("MFI %s: infile %s add to watch %d\n", appname, mychs[i]->f_namein, mychs[i]->watch);
 					//	- open fifo for writing
 					mychs[i]->descout = open(mychs[i]->f_nameout, O_RDWR | O_NDELAY);
-					printf("%s: outfile opens %s\n", appname, mychs[i]->f_nameout);
+					printf("MFI %s: outfile opens %s\n", appname, mychs[i]->f_nameout);
 					//	- two fifos opens! bingo!
 					ep->cdcup = mychs[i];
 				}else return -1;
 			}
 //			// Call callback function for working config_device
-			cb_rcvinit(&(ep->eih));
+			if (cb_rcvinit) cb_rcvinit(&(ep->eih));
 			getframefalse(ch);
 
-			printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+			printf("MFI %s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 			printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		} // rdstr == 5 .....
 	}	// rdlen != 0
@@ -591,15 +593,15 @@ struct endpoint *ep = myeps[maxep-1];
 
 	if (!ch->ready) return 0;
 	rdlen = readchannel(ch);
-//	printf("%s: system has read data with rdlen = %d\n", appname, rdlen);
+//	printf("MFI %s: system has read data with rdlen = %d\n", appname, rdlen);
 
 	if (rdlen == -1){
-		printf("%s: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
+		printf("MFI %s: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
 	if (rdlen == -2){
-		printf("%s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		printf("MFI %s: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
@@ -607,7 +609,7 @@ struct endpoint *ep = myeps[maxep-1];
 		// Get ep->ep_dn - downlink endpoint's number
 		len = getdatafromring(ch, (char*) &numep, sizeof(int));
 		if (len == sizeof(int)) memcpy(&(ep->ep_dn), &numep, sizeof(int));
-		printf("%s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+		printf("MFI %s: READY ENDPOINT:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		// Channel ready to send data
 		getframefalse(ch);
@@ -617,7 +619,7 @@ struct endpoint *ep = myeps[maxep-1];
 
 	if (rdlen){
 		actchannel = ch;
-		cb_rcvdata(rdlen);
+		if (cb_rcvdata) cb_rcvdata(rdlen);
 		getframefalse(ch);
 		actchannel = 0;
 	}
@@ -639,15 +641,15 @@ static int evcnt=0;
 struct timeval tv;
 fd_set readset;
 
-//	printf("%s: start inotify thread OK\n", appname);
+//	printf("MFI %s: start inotify thread OK\n", appname);
 
 	if (!d_inoty){
-		printf("%s: inotify not init\n", appname);
+		printf("MFI %s: inotify not init\n", appname);
 		return -1;
 	}
-//	printf("%s: init inotify ready, desc=0x%X\n", appname, d_inoty);
+//	printf("MFI %s: init inotify ready, desc=0x%X\n", appname, d_inoty);
 	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
-//	printf("%s: init channel in watch %d\n", appname, mychs[0]->watch);
+//	printf("MFI %s: init channel in watch %d\n", appname, mychs[0]->watch);
 
 	do{
 		// Waiting for inotify events
@@ -663,23 +665,23 @@ fd_set readset;
 					rdlen = read(d_inoty, namebuf, einoty.len);
 					if (rdlen > 0){
 						namebuf[rdlen] = 0;
-//						printf("%s: name read: %s\n", appname, namebuf);
+//						printf("MFI %s: name read: %s\n", appname, namebuf);
 					}
 				}
 				evcnt++;
-//				printf("%s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
+//				printf("MFI %s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
 				// Find channel by watch
 				for (i = 0; i < maxch; i++){
 					ch = mychs[i];
 					if (einoty.wd == ch->watch){
-//						printf("%s: found channel %d of %d\n", appname, i, maxch);
+//						printf("MFI %s: found channel %d of %d\n", appname, i, maxch);
 						break;
 					}
 				}
 				if (i < maxch){
 					// Calling callback functions
 					mask = einoty.mask & ch->events;
-//					printf("%s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
+//					printf("MFI %s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
 					if (mask & IN_OPEN)	ch->in_open(ch);
 					if (mask & IN_CLOSE) ch->in_close(ch);
 					if (mask & IN_MODIFY) ch->in_read(ch);
@@ -687,7 +689,7 @@ fd_set readset;
 			}
 		}
 	}while(inotifystop);
-//	printf("%s: inotify thread exit!\n", appname);
+//	printf("MFI %s: inotify thread exit!\n", appname);
 
 	return 0;
 }
@@ -725,7 +727,7 @@ int ret;
 	d_inoty = inotify_init();
 	if (initchannel(pathinit, a_name)) return -1;
 
-//	printf("%s: start thread\n", appname);
+//	printf("MFI %s: start thread\n", appname);
 
 	inotifystop = 1;
 
@@ -754,11 +756,11 @@ struct endpoint *ep;
 	if (!testrunningapp(cd->name)){
 		// lowlevel application not running
 		// running it
-//		printf("%s: RUN LOW LEVEL APPLICATION. WAITING INITIALIZATION... ", appname);
+//		printf("MFI %s: RUN LOW LEVEL APPLICATION. WAITING INITIALIZATION... ", appname);
 		ret = fork();
 		if (!ret){
 			ret = execve(cd->name, NULL, NULL);
-//			printf("%s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
+//			printf("MFI %s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
 		sleep(1);
@@ -788,7 +790,7 @@ struct endpoint *ep;
 	ep->cdcdn = ch;
 	// Add watch in(up) line fo channel
 	ch->watch = inotify_add_watch(d_inoty, ch->f_namein, ch->events);
-	printf("%s: infile add to watch %d, %s\n", appname, ch->watch, ch->f_namein);
+	printf("MFI %s: infile add to watch %d, %s\n", appname, ch->watch, ch->f_namein);
 
 	// Open init channel for having endpoint
 	strcpy(fname, ep->eih.isstr[0]);
@@ -812,7 +814,7 @@ struct endpoint *ep;
 	close(dninit);
 
 	while(ch->ready < 3);
-	printf("%s: new endpoint completed\n", appname);
+	printf("MFI %s: new endpoint completed\n", appname);
 
 	return 0;
 }
@@ -840,14 +842,14 @@ fd_set rd, ex;
 
 	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1){
-		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+		printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));
 		if (errno == 11){	// Resource temporarily unavailable
 			FD_ZERO(&rd); FD_ZERO(&ex);
 			FD_SET(ch->descout, &rd);
 			FD_SET(ch->descout, &ex);
 			if (select(ch->descout, &rd, NULL, &ex, NULL) > 0)
 				if (write(ch->descout, buf, len) == -1){
-					printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+					printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));
 					return -1;
 				}
 		}
@@ -859,7 +861,7 @@ int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
 struct channel *ch = 0;
 struct endpoint *ep = 0;
-//	printf("%s: mf2endpoint start, maxch = %d, maxep = %d\n", appname, maxch, maxep);
+//	printf("MFI %s: mf2endpoint start, maxch = %d, maxep = %d\n", appname, maxch, maxep);
 
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
@@ -875,11 +877,11 @@ struct endpoint *ep = 0;
 	if (!ch) return -1;
 	if (ch->ready < 3) return -1;
 
-//	printf("%s: find channel for writing %d of %d\n", appname, i, maxch-1);
+//	printf("MFI %s: find channel for writing %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
 	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1) {
-		printf("%s: write error:%d - %s\n",appname, errno, strerror(errno));
+		printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));
 		return -1;
 	}
 	return wrlen;
@@ -900,7 +902,7 @@ int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct){
 	struct endpoint *ep;
 		if (!actchannel) return -1;
 		// Find endpoint
-	//	printf("%s: readbuffer len=%d\n", appname, len);
+	//	printf("MFI %s: readbuffer len=%d\n", appname, len);
 		for(i = 1; i < maxep; i++){
 			ep = myeps[i];
 			if (ep->cdcdn == actchannel) {*index = i; *direct = DIRDN; break;}
@@ -914,12 +916,16 @@ int i;
 struct endpoint *ep;
 	if (!actchannel) return -1;
 	// Find endpoint
-//	printf("%s: readbuffer len=%d\n", appname, len);
+//	printf("MFI %s: readbuffer len=%d\n", appname, len);
 	for(i = 1; i < maxep; i++){
 		ep = myeps[i];
 		if (ep->cdcdn == actchannel) {*addr = ep->eih.addr; *direct = DIRDN; break;}
 		if (ep->cdcup == actchannel) {*addr = ep->eih.addr; *direct = DIRUP; break;}
 	}
 	return getframefromring(actchannel, buf, len);
+}
+
+void mf_set_cb_rcvclose(void *func_rcvclose){
+	cb_rcvclose = func_rcvclose;
 }
 // ================= End External API ============================================== //
