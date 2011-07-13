@@ -1,2 +1,2 @@
 
-extern void XMLDefCall(char *xml);
+extern void XMLSelectSource(char *xml);

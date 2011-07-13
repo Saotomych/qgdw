@@ -1,4 +1,4 @@
-OBJS += startiec.o virtualize.o ssd.o xml.o
+OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o
 CCFLAGS += -c -Os -Wall
 LDFLAGS += -Wl
 
@@ -13,6 +13,8 @@ ssd.o: ssd.c
 	cc $(CCFLAGS) ssd.c -o ssd.o
 xml.o: startiec.c
 	cc $(CCFLAGS) xml.c -o xml.o
+multififo.o: ../common/multififo.c
+	cc $(CCFLAGS) ../common/multififo.c -o multififo.o
 
 rebuild: clean all
 

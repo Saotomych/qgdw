@@ -6,6 +6,56 @@
  *
 */
 
+#include "../common/common.h"
+#include "iec61850.h"
+
+u08 Encoding, EndScript;
+
+//*** Tag RAW working ***//
+
+void TagSetHeader(const char *pTag){
+
+}
+
+void TagEndHeader(const char *pTag){
+
+}
+
+void TagEndIED(const char *pTag){
+
+}
+
+void TagEndSubs(const char *pTag){
+
+}
+
+void TagEndLN(const char *pTag){
+
+}
+
+void TagEndLNType(const char *pTag){
+
+}
+
+void TagEndDobj(const char *pTag){
+
+}
+
+void TagEndDType(const char *pTag){
+
+}
+
+void TagEndAttr(const char *pTag){
+
+}
+
+void TagEndEnum(const char *pTag){
+
+}
+
+void TagEndEnumVal(const char *pTag){
+
+}
 
 void TagSetXml(const char *pTag){
   const char *pS=strstr(pTag,"encoding");
@@ -14,8 +64,11 @@ void TagSetXml(const char *pTag){
     if (strstr(pTag,"Windows-1251")) Encoding=WIN;
     if (strstr(pTag,"windows-1251")) Encoding=WIN;
     if (strstr(pTag,"ASCII")) Encoding=DOS;
+    if (strstr(pTag,"UTF")) Encoding=UTF;
   }
 }
+
+//*** End Tag RAW working ***//
 
 typedef struct _XML_Name{
 	char *Name;
@@ -25,6 +78,8 @@ typedef struct _XML_Name{
 static const XML_Name XTags[] = {
   {"Header", TagSetHeader},
   {"/Header", TagEndHeader},
+  {"IED", ssd_create_ied},
+  {"/IED", TagEndIED},
   {"Substation", ssd_create_subst},
   {"/Substation", TagEndSubs},
   {"LNode", ssd_create_ln},
@@ -33,7 +88,7 @@ static const XML_Name XTags[] = {
   {"/LNodeType", TagEndLNType},
   {"DO", ssd_create_dobj},
   {"/DO", TagEndDobj},
-  {"DOType", ssd_create_dtype},
+  {"DOType", ssd_create_dobjtype},
   {"/DOType", TagEndDType},
   {"DA", ssd_create_attr},
   {"/DA", TagEndAttr},
@@ -46,11 +101,11 @@ static const XML_Name XTags[] = {
 
 void OpenTag(const char *pS){
 const char *pT=pS;
-BYTE s;
+u08 s, i;
 
   while((*pS == ' ') || (*pS == 9)) pS++;
 
-  for(BYTE i=0; i < sizeof(XTags)/sizeof(XML_Name); i++){
+  for(i=0; i < sizeof(XTags)/sizeof(XML_Name); i++){
     s=0; pS=pT;
     while((*pS != ' ') && (*pS != 9) && (*pS == XTags[i].Name[s])){
         pS++; s++;
@@ -63,7 +118,7 @@ BYTE s;
 }
 
 void XMLParser(const char *XMLScript){
-  const char *pS=XMLScript;
+const char *pS=XMLScript;
 
   EndScript = 0;
   while (!EndScript){
@@ -74,10 +129,10 @@ void XMLParser(const char *XMLScript){
 
 }
 
-void XMLDefCall(char *xml){
+void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
 
 	if (pt) XMLParser(pt);
-	else XMLParser(DefaultConfig);
+//	else XMLParser(DefaultConfig);
 
 }

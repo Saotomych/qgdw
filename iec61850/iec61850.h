@@ -21,6 +21,12 @@ struct _LNODE_LIST;
 struct _IED;
 struct _IED_LIST;
 
+/* XML Params */
+#define WIN	1
+#define DOS 2
+#define UTF 3
+extern u08 Encoding;
+
 /* Attributes */
 typedef struct _ATTR_LIST{
 	struct _ATTR{
@@ -95,13 +101,17 @@ typedef struct _IED_LIST{
 	struct _IED_LIST *prev;
 } IED;
 
-extern int ssd_create_ied(char* cstr);			// call parse ied
-extern int ssd_create_ln(char* cstr);			// call parse ln
-extern int ssd_create_lntype(char* cstr);		// call parse lntype
-extern int ssd_create_dobj(char* cstr);			// call parse do
-extern int ssd_create_dobjtype(char* cstr);		// call parse dotype
-extern int ssd_create_enum(char* cstr);			// call parse enumtype
-extern int ssd_create_enumval(char *cstr);		// call parse enumval
-extern int ssd_create_subst(char* cstr);		// call parse substation
+extern int virt_start();
+
+extern void ssd_create_ied(const char *pTag);			// call parse ied
+extern void ssd_create_ln(const char *pTag);			// call parse ln
+extern void ssd_create_lntype(const char *pTag);		// call parse lntype
+extern void ssd_create_dobj(const char *pTag);			// call parse do
+extern void ssd_create_dobjtype(const char *pTag);		// call parse dotype
+extern void ssd_create_attr(const char *pTag);			// call parse attr
+extern void ssd_create_enum(const char *pTag);			// call parse enumtype
+extern void ssd_create_enumval(const char *pTag);		// call parse enumval
+extern void ssd_create_subst(const char *pTag);		// call parse substation
+
 
 #endif /* IEC61850_H_ */

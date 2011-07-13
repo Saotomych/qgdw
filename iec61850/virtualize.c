@@ -75,129 +75,133 @@ int maxasdu;
 
 // find struct in struct_list have 1 pars = val
 void *find_by_int(int val){
+char *p = 0;
 
+	return p;
 }
 
 int rcvdata(int len){
 
+	return 0;
 }
 
 int rcvinit(ep_init_header *ih){
 
+	return 0;
 }
 
-void ssd2asdu_parse(char *str, int mode){
-SCADA_ASDU *prev, *act=0;
-DATA *data=0;
-int i;
-char *p;
-
-	switch(mode){
-	case 1: // parse "asdu"
-		if (!maxasdu){
-			firstasdu = malloc(sizeof(SCADA_ASDU));
-			if (firstasdu){
-				act = firstasdu;
-				act->next = 0;
-				maxasdu++;
-			}
-		}else{
-			prev = actasdu;
-			prev->next = malloc(sizeof(SCADA_ASDU));
-			if (prev->next) {
-				act = (SCADA_ASDU*) prev->next;
-				act->next = 0;
-				maxasdu++;
-			}
-		}
-
-		if (act){
-			// init ASDUaddr
-			p = strstr(str, "asdu");
-			if (p){
-				while(*p != '"') p++;
-				p++;
-				// copy asdu addr
-				act->sa.ASDUaddr = atoi(p);
-			}
-
-			// init NAME
-			p = strstr(str, "name");
-			if (p){
-				while(*p != '"') p++;
-				p++; i = 0;
-				// copy iedname
-				while(*p > ' '){
-					act->sa.iedname[i] = *p;
-					i++; p++;
-				}
-			}
-
-			// Init DATASET
-			act->sa.ds.maxdata = 0;
-			act->sa.ds.fdat = 0;
-			strcpy(act->sa.ds.name, "scada_dataset");
-
-			// Set actual asdu
-			actasdu = act;
-			printf("IEC: Create new scada_asdu %d\n", maxasdu-1);
-		}else  printf("IEC: Error of creating new scada_asdu %d\n", maxasdu-1);
-
-		break;
-
-	case 2: // parse "asdupos"
-		if (actasdu){
-			act = actasdu;
-			if (!act->sa.ds.maxdata){
-				act->sa.ds.fdat = malloc(sizeof(DATA));
-				if (act->sa.ds.fdat){
-					data = act->sa.ds.fdat;
-					data->next = 0;
-					data->prev = 0;
-					act->sa.ds.maxdata++;
-				}
-			}else{
-				data = lastdata;
-				data->next = malloc(sizeof(DATA));
-				if (data->next){
-					data = (DATA*) data->next;
-					data->next = 0;
-					data->prev = 0;
-					act->sa.ds.maxdata++;
-				}
-			}
-
-			if (data){
-				// init NAME
-				p = strstr(str, "name");
-				if (p){
-					while(*p != '"') p++;
-					p++; i = 0;
-					// copy iedname
-					while(*p > ' '){
-						data->dat.name[i] = *p;
-						i++; p++;
-					}
-				}
-			}
-		}
-
-		// Set last setting data
-		lastdata = data;
-		printf("IEC: Create new data for scada\n");
-
-		break;
-
-	}
-
-
-}
-
-
+//void ssd2asdu_parse(char *str, int mode){
+//SCADA_ASDU *prev, *act=0;
+//DATA *data=0;
+//int i;
+//char *p;
+//
+//	switch(mode){
+//	case 1: // parse "asdu"
+//		if (!maxasdu){
+//			firstasdu = malloc(sizeof(SCADA_ASDU));
+//			if (firstasdu){
+//				act = firstasdu;
+//				act->next = 0;
+//				maxasdu++;
+//			}
+//		}else{
+//			prev = actasdu;
+//			prev->next = malloc(sizeof(SCADA_ASDU));
+//			if (prev->next) {
+//				act = (SCADA_ASDU*) prev->next;
+//				act->next = 0;
+//				maxasdu++;
+//			}
+//		}
+//
+//		if (act){
+//			// init ASDUaddr
+//			p = strstr(str, "asdu");
+//			if (p){
+//				while(*p != '"') p++;
+//				p++;
+//				// copy asdu addr
+//				act->sa.ASDUaddr = atoi(p);
+//			}
+//
+//			// init NAME
+//			p = strstr(str, "name");
+//			if (p){
+//				while(*p != '"') p++;
+//				p++; i = 0;
+//				// copy iedname
+//				while(*p > ' '){
+//					act->sa.iedname[i] = *p;
+//					i++; p++;
+//				}
+//			}
+//
+//			// Init DATASET
+//			act->sa.ds.maxdata = 0;
+//			act->sa.ds.fdat = 0;
+//			strcpy(act->sa.ds.name, "scada_dataset");
+//
+//			// Set actual asdu
+//			actasdu = act;
+//			printf("IEC: Create new scada_asdu %d\n", maxasdu-1);
+//		}else  printf("IEC: Error of creating new scada_asdu %d\n", maxasdu-1);
+//
+//		break;
+//
+//	case 2: // parse "asdupos"
+//		if (actasdu){
+//			act = actasdu;
+//			if (!act->sa.ds.maxdata){
+//				act->sa.ds.fdat = malloc(sizeof(DATA));
+//				if (act->sa.ds.fdat){
+//					data = act->sa.ds.fdat;
+//					data->next = 0;
+//					data->prev = 0;
+//					act->sa.ds.maxdata++;
+//				}
+//			}else{
+//				data = lastdata;
+//				data->next = malloc(sizeof(DATA));
+//				if (data->next){
+//					data = (DATA*) data->next;
+//					data->next = 0;
+//					data->prev = 0;
+//					act->sa.ds.maxdata++;
+//				}
+//			}
+//
+//			if (data){
+//				// init NAME
+//				p = strstr(str, "name");
+//				if (p){
+//					while(*p != '"') p++;
+//					p++; i = 0;
+//					// copy iedname
+//					while(*p > ' '){
+//						data->dat.name[i] = *p;
+//						i++; p++;
+//					}
+//				}
+//			}
+//		}
+//
+//		// Set last setting data
+//		lastdata = data;
+//		printf("IEC: Create new data for scada\n");
+//
+//		break;
+//
+//	}
+//
+//
+//}
 
 
 int virt_start(){
 pid_t chldpid;
+
+	// TODO Building mapping meter asdu to ssd asdu
 
 	// Run multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
