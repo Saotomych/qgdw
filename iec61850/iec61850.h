@@ -95,12 +95,13 @@ typedef struct _IED_LIST{
 	struct _IED_LIST *prev;
 } IED;
 
-
 extern int ssd_create_ied(char* cstr);			// call parse ied
-extern int ssd_create_ln(char* cstr);				// call parse ln
-extern int ssd_create_data(char* cstr);			// call parse data
-extern int ssd_create_datatype(char* cstr);		// call parse data_type
-extern int ssd_create_enum(char* cstr);			// call parse enum
-extern int ssd_create_subst(char* cstr);			// call parse substation
+extern int ssd_create_ln(char* cstr);			// call parse ln
+extern int ssd_create_lntype(char* cstr);		// call parse lntype
+extern int ssd_create_dobj(char* cstr);			// call parse do
+extern int ssd_create_dobjtype(char* cstr);		// call parse dotype
+extern int ssd_create_enum(char* cstr);			// call parse enumtype
+extern int ssd_create_enumval(char *cstr);		// call parse enumval
+extern int ssd_create_subst(char* cstr);		// call parse substation
 
 #endif /* IEC61850_H_ */

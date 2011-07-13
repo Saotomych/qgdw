@@ -13,15 +13,23 @@ int ssd_create_ln(char* cstr){			// call parse ln
 
 }
 
-int ssd_create_data(char* cstr){			// call parse data
+int ssd_create_lntype(char* cstr){			// call parse ln
 
 }
 
-int ssd_create_datatype(char* cstr){		// call parse data_type
+int ssd_create_dobj(char* cstr){			// call parse data
+
+}
+
+int ssd_create_dobjtype(char* cstr){		// call parse data_type
 
 }
 
 int ssd_create_enum(char* cstr){			// call parse enum
+
+}
+
+int ssd_create_enumval(char* cstr){			// call parse enum
 
 }
 
