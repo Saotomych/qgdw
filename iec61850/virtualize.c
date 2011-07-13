@@ -8,8 +8,8 @@
  *
  */
 
-#include "../../common/common.h"
-#include "../../common/multififo.h"
+#include "../common/common.h"
+#include "../common/multififo.h"
 
 struct config_device_list{
 	struct config_device cd;
@@ -50,7 +50,7 @@ typedef struct data_list{
 // There: for SCADA_ASDU
 typedef struct _DATASET{
 	char 			name[20];
-	struct DATA 	*fdat;
+	DATA 	*fdat;
 	int 			maxdata;
 } DATASET;
 
@@ -183,7 +183,7 @@ char *p;
 		}
 
 		// Set last setting data
-		lastdata = dat;
+		lastdata = data;
 		printf("IEC: Create new data for scada\n");
 
 		break;
