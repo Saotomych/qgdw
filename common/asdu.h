@@ -33,7 +33,6 @@ extern "C" {
 #define PROTO_IEC104			2
 #define PROTO_DLT645			3
 
-
 /* Value types */
 #define ASDU_VAL_NONE			0		/* no value (used in ASDU like time synchronization, broadcast request, etc.) */
 #define ASDU_VAL_INT			1		/* integer 32-bit */
@@ -41,7 +40,6 @@ extern "C" {
 #define ASDU_VAL_FLT			3		/* float */
 #define ASDU_VAL_BOOL			4		/* boolean */
 #define ASDU_VAL_TIME			5		/* time */
-
 
 /*
  *
