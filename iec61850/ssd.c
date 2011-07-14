@@ -36,10 +36,8 @@ LIST *new;
 // Out: key - pointer to string with key of SCL file
 //      par - pointer to string par for this key without ""
 char* get_next_parameter(char *p, char **key, char **par){
-int mode;
+int mode=0;
 
-	printf("switch to key mode\n");
-	mode = 0;
 	*key = p;
 	while (*p != '>'){
 		if (!mode){
@@ -47,20 +45,17 @@ int mode;
 			if (*p == '='){
 				mode = 1;	// switch to par mode
 				*p = 0;
-				printf("key found %s\n", *key);
 			}
 		}else{
 			// Par mode
 			if (*p == '"'){
 				if (mode == 2){
 					*p = 0;
-					printf("switch to key mode\n");
-					return p+1;
+					return p+1;		// key + par ready
 				}
 				if (mode == 1){
 					mode = 2;
 					*par = p+1;
-					printf("switch to par end mode\n");
 				}
 			}
 		}
@@ -89,20 +84,38 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-
-
-
 	printf("IEC: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
 
 }
 
 void ssd_create_ln(const char *pTag){			// call parse ln
+char *p;
+char *key=0, *par=0;
 	flastln = create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
 
+	// Parse parameters for ied
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "lnclass")) flastln->ln.lnclass = par;
+			else
+			if (strstr((char*) key, "lninst")) flastln->ln.lninst = par;
+			else
+			if (strstr((char*) key, "iedname")) flastln->ln.iedname = par;
+			else
+			if (strstr((char*) key, "lntype")) flastln->ln.lntype = par;
+			else
+			if (strstr((char*) key, "ldinst")) flastln->ln.ldinst = par;
+		}
+	}while(p);
+
+	printf("IEC: new LN: class=%s inst=%s iedname=%s ldclass=%s\n", flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);
 }
 
 void ssd_create_lntype(const char *pTag){			// call parse ln
 	flastlntype = create_next_struct_in_list(&(flastlntype->l), sizeof(LNTYPE));
+	printf("dfsd\n");
 
 }
 

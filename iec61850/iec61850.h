@@ -86,6 +86,8 @@ typedef struct _LNODE_LIST{
 		char *lninst;
 		char *lnclass;
 		char *lntype;
+		char *iedname;
+		char *ldinst;
 		struct _IED *pmyied;
 		struct _LNODETYPE *pmytype;
 	} ln;

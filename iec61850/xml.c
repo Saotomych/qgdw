@@ -114,16 +114,18 @@ void OpenTag(const char *pS){
 const char *pT=pS;
 u08 s, i;
 
-  while((*pS == ' ') || (*pS == 9)) pS++;
+  while(*pS < 'A') pS++;
+  pS--;
+  if ((*pS != '?') && (*pS != '/')) pS++;
 
-  for(i=0; i < sizeof(XTags)/sizeof(XML_Name); i++){
+  for(i = 0; i < sizeof(XTags)/sizeof(XML_Name); i++){
     s=0; pS=pT;
-    while((*pS != ' ') && (*pS != 9) && (*pS == XTags[i].Name[s])){
+    while(*pS == XTags[i].Name[s]){
         pS++; s++;
     }
-    if (XTags[i].Name[s] == 0){
-      XTags[i].Function(pS);
-      break;
+    if ((XTags[i].Name[s] == 0) && (*pS <= 'A')){
+    	XTags[i].Function(pS);
+    	break;
     }
   }
 }
