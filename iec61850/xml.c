@@ -57,6 +57,15 @@ void TagEndEnumVal(const char *pTag){
 
 }
 
+void TagSetSCL(const char *pTag){
+	printf("IEC: Start parse\n");
+}
+
+void TagEndSCL(const char *pTag){
+	EndScript=1;
+	printf("IEC: Stop parse\n");
+}
+
 void TagSetXml(const char *pTag){
   const char *pS=strstr(pTag,"encoding");
   Encoding=WIN;
@@ -96,6 +105,8 @@ static const XML_Name XTags[] = {
   {"/EnumType", TagEndEnum},
   {"EnumVal", ssd_create_enumval},
   {"/EnumVal", TagEndEnumVal},
+  {"SCL", TagSetSCL},
+  {"/SCL", TagEndSCL},
   {"?xml", TagSetXml},
 };
 
