@@ -8,6 +8,9 @@
 #include "../common/common.h"
 #include "iec61850.h"
 
+struct _LNODETYPE *actlnodetype;
+struct _DTYPE  *actdtype;
+
 // Start points
 LIST fied, fln, flntype, fdo, fdtype, fattr;
 IED *flastied = (IED*) &fied;
@@ -81,11 +84,10 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "name")) flastied->ied.name = par;
 			else
 			if (strstr((char*) key, "inst")) flastied->ied.inst = par;
-			else flastied->ied.options = par;
 		}
 	}while(p);
 
-	printf("IEC: new IED: name=%s inst=%s options=%s\n", flastied->ied.name, flastied->ied.inst, flastied->ied.options);
+	printf("IEC: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
 
 }
 
@@ -108,10 +110,12 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "lntype")) flastln->ln.lntype = par;
 			else
 			if (strstr((char*) key, "ldinst")) flastln->ln.ldinst = par;
+			else flastln->ln.options = par;
 		}
 	}while(p);
 
-	printf("IEC: new LN: class=%s inst=%s iedname=%s ldclass=%s\n", flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);
+	printf("IEC: new LN: class=%s inst=%s iedname=%s ldclass=%s options=%s\n",
+			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst, flastln->ln.options);
 }
 
 void ssd_create_lntype(const char *pTag){			// call parse ln
@@ -129,6 +133,8 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "lnclass")) flastlntype->lntype.lnclass = par;
 		}
 	}while(p);
+
+	actlnodetype = &flastlntype->lntype;
 
 	printf("IEC: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
@@ -149,6 +155,8 @@ char *key=0, *par=0;
 			else flastdo->dobj.options = par;
 		}
 	}while(p);
+
+	flastdo->dobj.pmynodetype = actlnodetype;
 
 	printf("IEC: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }

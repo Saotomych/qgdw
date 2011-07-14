@@ -89,6 +89,7 @@ typedef struct _LNODE_LIST{
 		char *lntype;
 		char *iedname;
 		char *ldinst;
+		char *options;
 		struct _IED *pmyied;
 		struct _LNODETYPE *pmytype;
 	} ln;
@@ -100,10 +101,11 @@ typedef struct _IED_LIST{
 	struct _IED{
 		char *name;
 		char *inst;
-		char *options;
 		LNODE *fln;
 	} ied;
 } IED;
+
+extern LIST fied, fln, flntype, fdo, fdtype, fattr;
 
 extern int virt_start();
 
