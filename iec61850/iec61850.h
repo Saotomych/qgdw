@@ -41,6 +41,7 @@ typedef struct _ATTR_LIST{
 		char *btype;
 		char *dchg;
 		char *fc;
+		char *type;
 		struct _DTYPE *pmydatatype;
 		int  mytype;
 	} attr;
@@ -99,6 +100,7 @@ typedef struct _IED_LIST{
 	struct _IED{
 		char *name;
 		char *inst;
+		char *options;
 		LNODE *fln;
 	} ied;
 } IED;

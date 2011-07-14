@@ -81,10 +81,11 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "name")) flastied->ied.name = par;
 			else
 			if (strstr((char*) key, "inst")) flastied->ied.inst = par;
+			else flastied->ied.options = par;
 		}
 	}while(p);
 
-	printf("IEC: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
+	printf("IEC: new IED: name=%s inst=%s options=%s\n", flastied->ied.name, flastied->ied.inst, flastied->ied.options);
 
 }
 
@@ -93,7 +94,7 @@ char *p;
 char *key=0, *par=0;
 	flastln = create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
 
-	// Parse parameters for ied
+	// Parse parameters for ln
 	p = (char*) pTag;
 	do{
 		p = get_next_parameter(p, &key, &par);
@@ -114,24 +115,87 @@ char *key=0, *par=0;
 }
 
 void ssd_create_lntype(const char *pTag){			// call parse ln
+char *p;
+char *key=0, *par=0;
 	flastlntype = create_next_struct_in_list(&(flastlntype->l), sizeof(LNTYPE));
-	printf("dfsd\n");
 
+	// Parse parameters for lntype
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastlntype->lntype.id = par;
+			else
+			if (strstr((char*) key, "lnclass")) flastlntype->lntype.lnclass = par;
+		}
+	}while(p);
+
+	printf("IEC: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
 
 void ssd_create_dobj(const char *pTag){			// call parse data
+char *p;
+char *key=0, *par=0;
 	flastdo = create_next_struct_in_list(&(flastdo->l), sizeof(DOBJ));
 
+	// Parse parameters for dobj
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flastdo->dobj.name = par;
+			else
+			if (strstr((char*) key, "type")) flastdo->dobj.type = par;
+			else flastdo->dobj.options = par;
+		}
+	}while(p);
+
+	printf("IEC: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
 void ssd_create_dobjtype(const char *pTag){		// call parse data_type
+char *p;
+char *key=0, *par=0;
 	flastdtype = create_next_struct_in_list(&(flastdtype->l), sizeof(DTYPE));
 
+	// Parse parameters for dobjtype
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastdtype->dtype.id = par;
+			else
+			if (strstr((char*) key, "cdc")) flastdtype->dtype.cdc = par;
+		}
+	}while(p);
+
+	printf("IEC: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
 void ssd_create_attr(const char *pTag){			// call parse attr
+char *p;
+char *key=0, *par=0;
 	flastattr = create_next_struct_in_list(&(flastattr->l), sizeof(ATTR));
 
+	// Parse parameters for attr
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flastattr->attr.name = par;
+			else
+			if (strstr((char*) key, "btype")) flastattr->attr.btype = par;
+			else
+			if (strstr((char*) key, "type")) flastattr->attr.type = par;
+			else
+			if (strstr((char*) key, "fc")) flastattr->attr.fc = par;
+			else
+			if (strstr((char*) key, "dchg")) flastattr->attr.dchg = par;
+		}
+	}while(p);
+
+	printf("IEC: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
+			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 
 void ssd_create_enum(const char *pTag){			// call parse enum
