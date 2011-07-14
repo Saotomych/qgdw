@@ -29,17 +29,71 @@ LIST *new;
 	new = plist->next;
 	new->prev = plist;
 	new->next = 0;
-	plist = new;
-
 	return new;
+}
+
+// In: p - pointer to string
+// Out: key - pointer to string with key of SCL file
+//      par - pointer to string par for this key without ""
+char* get_next_parameter(char *p, char **key, char **par){
+int mode;
+
+	printf("switch to key mode\n");
+	mode = 0;
+	*key = p;
+	while (*p != '>'){
+		if (!mode){
+			// Key mode
+			if (*p == '='){
+				mode = 1;	// switch to par mode
+				*p = 0;
+				printf("key found %s\n", *key);
+			}
+		}else{
+			// Par mode
+			if (*p == '"'){
+				if (mode == 2){
+					*p = 0;
+					printf("switch to key mode\n");
+					return p+1;
+				}
+				if (mode == 1){
+					mode = 2;
+					*par = p+1;
+					printf("switch to par end mode\n");
+				}
+			}
+		}
+		p++;
+	}
+
+	return 0;
 }
 
 // *** Tag structure working ***//
 
 void ssd_create_ied(const char *pTag){			// call parse ied
+char *p;
+char *key=0, *par=0;
+
 	flastied = create_next_struct_in_list(&(flastied->l), sizeof(IED));
-//	flastied->ied.name =
-//	flastied->ied.inst =
+
+	// Parse parameters for ied
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flastied->ied.name = par;
+			else
+			if (strstr((char*) key, "inst")) flastied->ied.inst = par;
+		}
+	}while(p);
+
+
+
+
+	printf("IEC: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
+
 }
 
 void ssd_create_ln(const char *pTag){			// call parse ln
