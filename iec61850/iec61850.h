@@ -27,8 +27,15 @@ struct _IED_LIST;
 #define UTF 3
 extern u08 Encoding;
 
+/* Just List */
+typedef struct _LIST{
+	void *next;
+	void *prev;
+} LIST;
+
 /* Attributes */
 typedef struct _ATTR_LIST{
+	LIST l;
 	struct _ATTR{
 		char *name;
 		char *btype;
@@ -37,23 +44,21 @@ typedef struct _ATTR_LIST{
 		struct _DTYPE *pmydatatype;
 		int  mytype;
 	} attr;
-	struct _ATTR_LIST	*next;
-	struct _ATTR_LIST	*prev;
 } ATTR;
 
 /* Data type */
 typedef struct _DTYPE_LIST{
+	LIST l;
 	struct _DTYPE{
 		char *id;
 		char *cdc;
 		ATTR *pfattr;
 	} dtype;
-	struct _DTYPE_LIST	*next;
-	struct _DTYPE_LIST	*prev;
 } DTYPE;
 
 /* Data object */
 typedef struct _DO_LIST{
+	LIST l;
 	struct _DOBJ{
 		char *name;
 		char *type;
@@ -61,24 +66,22 @@ typedef struct _DO_LIST{
 		struct _DTYPE *pmydatatype;
 		struct _LNODETYPE *pmynodetype;
 	} dobj;
-	struct _DO_LIST		*next;
-	struct _DO_LIST		*prev;
 } DOBJ;
 
 /* Logical Node Type */
 typedef struct _LNODETYPE_LIST{
+	LIST l;
 	struct _LNODETYPE{
 		char *id;
 		char *lnclass;
 		DOBJ *pfdobj;
 		int  maxdobj;
 	} lntype;
-	struct _LNODETYPE_LIST *next;
-	struct _LNODETYPE_LIST *prev;
 } LNTYPE;
 
 /* Logical Node */
 typedef struct _LNODE_LIST{
+	LIST l;
 	struct _LNODE{
 		char *lninst;
 		char *lnclass;
@@ -86,19 +89,16 @@ typedef struct _LNODE_LIST{
 		struct _IED *pmyied;
 		struct _LNODETYPE *pmytype;
 	} ln;
-	struct _LNODE_LIST	*next;
-	struct _LNODE_LIST	*prev;
 } LNODE;
 
 /* Intellectual Electronic Device */
 typedef struct _IED_LIST{
+	LIST l;
 	struct _IED{
 		char *name;
 		char *inst;
 		LNODE *fln;
 	} ied;
-	struct _IED_LIST *next;
-	struct _IED_LIST *prev;
 } IED;
 
 extern int virt_start();
