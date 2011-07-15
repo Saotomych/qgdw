@@ -45,15 +45,16 @@ pid_t chldpid;
 		exit(1);
 	}
 
-//	// Start of virtualize functions
-//	chldpid = virt_start();
-//	if (chldpid == -1){
-//		printf("IEC61850: Virtualization don't started\n");
-//		exit(2);
-//	}
+	// Start of virtualize functions
+	chldpid = virt_start();
+	if (chldpid == -1){
+		printf("IEC: Virtualization don't started\n");
+		exit(2);
+	}
 
 	// Cycle data routing in rcv_data
 
+	mf_exit();
 
 	return 0;
 }

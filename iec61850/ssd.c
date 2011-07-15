@@ -20,7 +20,7 @@ DOBJ *flastdo = (DOBJ*) &fdo;
 DTYPE *flastdtype = (DTYPE*) &fdtype;
 ATTR *flastattr = (ATTR*) &fattr;
 
-void* create_next_struct_in_list(LIST *plist, int size){
+static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *new;
 	plist->next = malloc(size);
 
