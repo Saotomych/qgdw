@@ -54,7 +54,7 @@ void asdu_cleanup_data(asdu *unit)
 uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit)
 {
 	// fast check input data
-	if(buff_len < sizeof(asdu) || !unit) return RES_ASDU_INCORRECT;
+	if(buff_len < sizeof(asdu) || !unit) return RES_INCORRECT;
 
 	*unit = asdu_create();
 
@@ -63,7 +63,7 @@ uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit)
 	if((*unit)->size == 0 || buff_len < sizeof(asdu) + (*unit)->size * sizeof(data_unit))
 	{
 		asdu_destroy(unit);
-		return RES_ASDU_INCORRECT;
+		return RES_INCORRECT;
 	}
 
 	(*unit)->data = NULL;
@@ -73,19 +73,19 @@ uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit)
 	if(!(*unit)->data)
 	{
 		asdu_destroy(unit);
-		return RES_ASDU_MEM_ALLOC;
+		return RES_MEM_ALLOC;
 	}
 
 	memcpy((void*)(*unit)->data, (void*)(buff + sizeof(asdu)), (*unit)->size * sizeof(data_unit));
 
-	return RES_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
 uint8_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit)
 {
 	// fast check input data
-	if(!buff || !unit || !unit->data ) return RES_ASDU_INCORRECT;
+	if(!buff || !unit || !unit->data ) return RES_INCORRECT;
 
 	// calculate buffer length
 	*buff_len = sizeof(asdu) + unit->size * sizeof(data_unit);
@@ -97,14 +97,14 @@ uint8_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit)
 	{
 		*buff_len = 0;
 
-		return RES_ASDU_MEM_ALLOC;
+		return RES_MEM_ALLOC;
 	}
 
 	memcpy((void*)(*buff), (void*)unit, sizeof(asdu));
 
 	memcpy((void*)(*buff + sizeof(asdu)), (void*)unit->data, unit->size * sizeof(data_unit));
 
-	return RES_ASDU_SUCCESS;
+	return RES_SUCCESS;
 }
 
 
