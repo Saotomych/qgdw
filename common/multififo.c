@@ -761,6 +761,8 @@ struct endpoint *ep;
 //			printf("MFI %s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
+
+		// TODO sleep exchange to one pipe
 		sleep(1);
 		printf("OK\n");
 	}else 		printf("RUNNING LOW LEVEL APPLICATION\n");

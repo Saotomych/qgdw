@@ -196,8 +196,7 @@ DOBJ *adobj;
 				printf("ASDU: SCADA_ASDU %s.%s.%s linked to TYPE %s\n",
 						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
 			}
-			else printf("ASDU: SCADA_ASDU %s.%s.%s linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
-
+			else printf("ASDU: SCADA_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
 		}
 
 		printf("ASDU: new SCADA_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
@@ -210,7 +209,6 @@ DOBJ *adobj;
 
 	return 0;
 }
-
 
 // TODO Test config
 char name[] 		= {"unitlink-iec104"};
