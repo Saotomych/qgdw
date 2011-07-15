@@ -3,7 +3,7 @@ CCFLAGS += -c -Os -Wall
 LDFLAGS += -Wl
 
 startiec: $(OBJS)
-	cc $(LDFLAGS) -o startiec $(OBJS)
+	cc $(LDFLAGS) -o ../bin/startiec $(OBJS)
 
 startiec.o: startiec.c
 	cc $(CCFLAGS) startiec.c -o startiec.o
@@ -16,7 +16,9 @@ xml.o: startiec.c
 multififo.o: ../common/multififo.c
 	cc $(CCFLAGS) ../common/multififo.c -o multififo.o
 
+all: startiec
+
 rebuild: clean all
 
 clean:
-	-rm startiec $(OBJS)
+	-rm ../bin/startiec $(OBJS)
