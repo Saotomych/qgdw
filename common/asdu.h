@@ -9,7 +9,7 @@
 
 
 #include <stdint.h>
-
+#include "resp_codes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,11 +21,6 @@ extern "C" {
  * Constants and byte flags/masks
  *
  */
-
-/* Response codes */
-#define RES_ASDU_SUCCESS		0x00	/* no error(s) */
-#define RES_ASDU_INCORRECT		0x01	/* ASDU or/and buffer are incorrect */
-#define RES_ASDU_MEM_ALLOC		0x02	/* memory allocation error */
 
 /* Protocols */
 #define PROTO_UNKNOWN			0
