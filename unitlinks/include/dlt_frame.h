@@ -31,6 +31,10 @@ extern "C" {
 #define FNC_CLEAR_DATA			0x1A	/* clear all accumulated data on the slave station */
 #define FNC_CLEAR_EVENT_LOG		0x1B	/* clear event log data */
 
+/* Direction */
+#define DIR_REQUEST				0		/* request from controlling station */
+#define DIR_RESPONSE			1		/* response from controlled station */
+
 
 /*
  *
@@ -68,10 +72,10 @@ dlt_frame *dlt_frame_create();
 void dlt_frame_destroy(dlt_frame **frame);
 
 /* parse input buffer to the frame structure */
-uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame);
+uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame);
 
 /* build buffer from given frame structure */
-uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame *frame);
+uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame *frame);
 
 
 #ifdef __cplusplus

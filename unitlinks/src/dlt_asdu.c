@@ -11,26 +11,474 @@
 #include "../include/p_num.h"
 
 
-uint8_t dlt_asdu_parse_header(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
+typedef void (*asdu_pb_funcp)(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu);
+
+
+struct dlt_asdu_parse_build_tab{
+	uint32_t		type_mask;
+	uint32_t		type_value;
+	uint8_t			type_size;
+	uint8_t			frc_size;
+}
+dlt_asdu_pb_tab[] = {
+	// D3 = 00 - energy
+	{ 0xFF000000,	0x00000000,	4,	2 },
+
+	// D3 = 02 - instantaneous values
+	{ 0xFFFF0000,	0x02010000,	2,	1 },
+	{ 0xFFFF0000,	0x02020000,	3,	3 },
+	{ 0xFFFF0000,	0x02030000,	3,	4 },
+	{ 0xFFFF0000,	0x02040000,	3,	4 },
+	{ 0xFFFF0000,	0x02050000,	3,	4 },
+	{ 0xFFFF0000,	0x02060000,	2,	3 },
+	{ 0xFFFF0000,	0x02070000,	2,	1 },
+	{ 0xFFFF0000,	0x02080000,	2,	2 },
+	{ 0xFFFF0000,	0x02090000,	2,	2 },
+	{ 0xFFFF0000,	0x020A0000,	2,	2 },
+	{ 0xFFFF0000,	0x020B0000,	2,	2 },
+	{ 0xFFFF00FF,	0x02080001,	3,	3 },
+	{ 0xFFFF00FF,	0x02080002,	2,	2 },
+	{ 0xFFFF00FF,	0x02080003,	3,	4 },
+	{ 0xFFFF00FF,	0x02080004,	3,	4 },
+	{ 0xFFFF00FF,	0x02080005,	3,	4 },
+	{ 0xFFFF00FF,	0x02080006,	3,	4 },
+	{ 0xFFFF00FF,	0x02080007,	2,	1 },
+	{ 0xFFFF00FF,	0x02080008,	2,	2 },
+	{ 0xFFFF00FF,	0x02080009,	2,	2 },
+	{ 0xFFFF00FF,	0x0208000A,	4,	0 },
+
+	// D3 = 03 - events log
+	{ 0xFFFFFFFF,	0x03300D00,	3,	0 },
+	{ 0xFFFFFFFF,	0x03300E00,	3,	0 },
+
+
+	// that's all folks
+	{ 0x00000000,	0x00000000,	0,	0 }
+};
+
+
+uint8_t dlt_asdu_find_type_params(uint32_t ib_id, uint8_t *type_size, uint8_t *frc_size)
 {
+	uint8_t res, i;
+
+	// presume that data type not found (by default)
+	res = RES_NOT_FOUND;
+
+	// look for specific data type
+	for(i=0; dlt_asdu_pb_tab[i].type_size != 0 ; i++)
+	{
+		if( (ib_id & dlt_asdu_pb_tab[i].type_mask) == dlt_asdu_pb_tab[i].type_value)
+		{
+			res = RES_SUCCESS;
+
+			if(type_size != NULL) *type_size = dlt_asdu_pb_tab[i].type_size;
+			if(frc_size != NULL) *frc_size  = dlt_asdu_pb_tab[i].frc_size;
+
+			return res;
+		}
+	}
+
+	return res;
+}
+
+
+int dlt_asdu_check_data_block(unsigned char *buff, uint32_t offset)
+{
+	int i;
+
+	for(i=0; i<3; i++)
+	{
+		if(buff_get_le_uint8(buff, offset+i) == 0xFF) return i;
+	}
+
+	return -1;
+}
+
+
+uint32_t dlt_asdu_build_data_unit_id(uint32_t block_id, uint8_t pos, uint8_t num)
+{
+	return (block_id & ~(0xFF << (pos*8))) | (num << pos*8);
+}
+
+
+time_t dlt_asdu_parse_time_tag(unsigned char *buff, uint32_t *offset)
+{
+	struct tm time_tm;
+
+	time_tm.tm_min   = buff_bcd_get_le_uint(buff, *offset, 1);
+	*offset += 1;
+
+	time_tm.tm_hour  = buff_bcd_get_le_uint(buff, *offset, 1);
+	*offset += 1;
+
+	time_tm.tm_mday  = buff_bcd_get_le_uint(buff, *offset, 1);
+	*offset += 1;
+
+	time_tm.tm_mon   = buff_bcd_get_le_uint(buff, *offset, 1);
+	*offset += 1;
+
+	time_tm.tm_year  = buff_bcd_get_le_uint(buff, *offset, 1) + 100;
+	*offset += 1;
+
+	return mktime(&time_tm);
+}
+
+
+void dlt_asdu_build_time_tag(unsigned char *buff, uint32_t *offset, time_t time_tag)
+{
+	struct tm time_tm;
+
+	time_tm = *localtime(&time_tag);
+
+	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_min, 1);
+	*offset += 1;
+
+	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_hour, 1);
+	*offset += 1;
+
+	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_mday, 1);
+	*offset += 1;
+
+	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_mon, 1);
+	*offset += 1;
+
+	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_year - 100, 1);
+	*offset += 1;
+}
+
+
+uint8_t dlt_asdu_parse_energy(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
+{
+	int i, pos;
+	uint32_t block_id;
+	uint8_t res, type_size, frc_size;
+
+	// check if it's data item or block
+	pos = dlt_asdu_check_data_block(buff, *offset);
+
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
+
+	if(frc_size > 0)
+		dlt_asdu->type = 36;
+	else
+		dlt_asdu->type = 35;
+
+	if(res != RES_SUCCESS) return res;
+
+	if(pos == -1)
+	{
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != type_size) return RES_INCORRECT;
+
+		dlt_asdu->size = 1;
+
+		//try to allocate memory for the data unit array
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		// check if memory was allocated if not - return error
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		dlt_asdu->data->id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		dlt_asdu->data->time_tag = time(NULL);
+
+		dlt_asdu->data->value_type = ASDU_VAL_FLT;
+
+		dlt_asdu->data->value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+		*offset += type_size;
+	}
+	else
+	{
+		// calculate number of items in block
+		dlt_asdu->size = (buff_len - *offset - 4) / type_size;
+
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != dlt_asdu->size*type_size) return RES_INCORRECT;
+
+		//try to allocate memory for the data unit array
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		// check if memory was allocated if not - return error
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		// read data block id
+		block_id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		for(i=0; i<dlt_asdu->size; i++)
+		{
+			// build id for each data item
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i);
+
+			dlt_asdu->data[i].time_tag = time(NULL);
+
+			dlt_asdu->data[i].value_type = ASDU_VAL_FLT;
+
+			dlt_asdu->data[i].value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+			*offset += type_size;
+		}
+	}
+
 	return RES_SUCCESS;
 }
 
 
-uint8_t dlt_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
+uint8_t dlt_asdu_build_energy(unsigned char **buff, uint32_t *buff_len, asdu *dlt_asdu)
 {
-	uint8_t bytex;
-
 	// start building header field by field
 
 	return RES_SUCCESS;
 }
 
 
+uint8_t dlt_asdu_parse_inst_value(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
+{
+	int i, pos;
+	uint32_t block_id;
+	uint8_t res, type_size, frc_size;
+
+	// check if it's data item or block
+	pos = dlt_asdu_check_data_block(buff, *offset);
+
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
+
+	if(frc_size > 0)
+		dlt_asdu->type = 36;
+	else
+		dlt_asdu->type = 35;
+
+	if(res != RES_SUCCESS) return res;
+
+	if(pos == -1)
+	{
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != type_size) return RES_INCORRECT;
+
+		dlt_asdu->size = 1;
+
+		//try to allocate memory for the data unit array
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		// check if memory was allocated if not - return error
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		dlt_asdu->data->id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		dlt_asdu->data->time_tag = time(NULL);
+
+		if(frc_size > 0)
+		{
+			dlt_asdu->data->value_type = ASDU_VAL_FLT;
+			dlt_asdu->data->value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+		}
+		else
+		{
+			dlt_asdu->data->value_type = ASDU_VAL_UINT;
+			dlt_asdu->data->value.ui = buff_bcd_get_le_uint(buff, *offset, type_size);
+		}
+		*offset += type_size;
+	}
+	else
+	{
+		// calculate number of items in block
+		dlt_asdu->size = (buff_len - *offset - 4) / type_size;
+
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != dlt_asdu->size*type_size) return RES_INCORRECT;
+
+		//try to allocate memory for the data unit array
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		// check if memory was allocated if not - return error
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		// read data block id
+		block_id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		for(i=0; i<dlt_asdu->size; i++)
+		{
+			// build id for each data item
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i);
+
+			dlt_asdu->data[i].time_tag = time(NULL);
+
+			if(frc_size > 0)
+			{
+				dlt_asdu->data[i].value_type = ASDU_VAL_FLT;
+				dlt_asdu->data[i].value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+			}
+			else
+			{
+				dlt_asdu->data->value_type = ASDU_VAL_UINT;
+				dlt_asdu->data->value.ui = buff_bcd_get_le_uint(buff, *offset, type_size);
+			}
+			*offset += type_size;
+		}
+	}
+
+	return RES_SUCCESS;
+}
+
+
+uint8_t dlt_asdu_parse_event_log(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
+{
+	int i, pos;
+	uint32_t block_id;
+	uint8_t res, type_size, frc_size;
+
+	// check if it's data item or block
+	pos = dlt_asdu_check_data_block(buff, *offset);
+
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
+
+	if(frc_size > 0)
+		dlt_asdu->type = 13;
+	else
+		dlt_asdu->type = 11;
+
+	if(res != RES_SUCCESS) return res;
+
+	if(pos == -1)
+	{
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != type_size) return RES_INCORRECT;
+
+		dlt_asdu->size = 1;
+
+		//try to allocate memory for the data unit array
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		// check if memory was allocated if not - return error
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		dlt_asdu->data->id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		if(frc_size > 0)
+		{
+			dlt_asdu->data->value_type = ASDU_VAL_FLT;
+			dlt_asdu->data->value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+		}
+		else
+		{
+			dlt_asdu->data->value_type = ASDU_VAL_UINT;
+			dlt_asdu->data->value.ui = buff_bcd_get_le_uint(buff, *offset, type_size);
+		}
+		*offset += type_size;
+	}
+	else
+	{
+		// calculate number of items in block
+		dlt_asdu->size = (buff_len - *offset - 4) / type_size;
+
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != dlt_asdu->size*type_size) return RES_INCORRECT;
+
+		//try to allocate memory for the data unit array
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		// check if memory was allocated if not - return error
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		// read data block id
+		block_id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		for(i=0; i<dlt_asdu->size; i++)
+		{
+			// build id for each data item
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i);
+
+			if(frc_size > 0)
+			{
+				dlt_asdu->data[i].value_type = ASDU_VAL_FLT;
+				dlt_asdu->data[i].value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+			}
+			else
+			{
+				dlt_asdu->data->value_type = ASDU_VAL_UINT;
+				dlt_asdu->data->value.ui = buff_bcd_get_le_uint(buff, *offset, type_size);
+			}
+			*offset += type_size;
+		}
+	}
+
+	return RES_SUCCESS;
+}
+
+
+
+
 uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_asdu)
 {
 	// fast check input data
 	if(!buff || buff_len < DLT_ASDU_LEN_MIN) return RES_INCORRECT;
+
+	// declare variables and function pointer to work with the buffer
+	uint8_t res, d3;
+	uint32_t offset = 0;
+
+	// set protocol type
+	dlt_asdu->proto = PROTO_DLT645;
+
+	// read D3 value
+	d3 = buff_get_le_uint8(buff, 3);
+
+	switch(d3)
+	{
+	case 0x00:
+		// parse energy data item/block
+		res = dlt_asdu_parse_energy(buff, buff_len, &offset, dlt_asdu);
+
+		break;
+
+	case 0x02:
+		// parse instantaneous value data item/block
+		res = dlt_asdu_parse_inst_value(buff, buff_len, &offset, dlt_asdu);
+
+		break;
+	case 0x03:
+		// parse event log data item/block
+		res = dlt_asdu_parse_event_log(buff, buff_len, &offset, dlt_asdu);
+
+		break;
+
+	default:
+		res = RES_UNKNOWN;
+
+		break;
+	}
+
+#ifdef _DEBUG
+	printf("%s: ASDU parsed OK. Type = %d, IO num = %d\n", "unitlink-dlt645", d3, dlt_asdu->size);
+#endif
 
 	return RES_SUCCESS;
 }
@@ -40,10 +488,48 @@ uint8_t dlt_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *dlt_
 {
 	// set buffer length to zero and start building it
 	*buff_len = 0;
-	uint32_t offset = 0;
 
 	// fast check input data
 	if(!buff || !dlt_asdu || !dlt_asdu->data) return RES_INCORRECT;
+
+	// declare variables and function pointer to work with the buffer
+	uint16_t res;
+	uint8_t d3;
+
+	d3 = dlt_asdu->data->id >> (3*8);
+
+	switch(d3)
+	{
+	case 0x00:
+		// build energy data item/block
+		res = dlt_asdu_build_energy(buff, buff_len, dlt_asdu);
+
+		break;
+
+	case 0x02:
+		// build instantaneous value data item/block
+//		res = dlt_asdu_parse_inst_value(buff, buff_len, &offset, dlt_asdu);
+
+		break;
+	case 0x03:
+		// build event log data item/block
+//		res = dlt_asdu_parse_event_log(buff, buff_len, &offset, dlt_asdu);
+
+		break;
+
+	default:
+		res = RES_UNKNOWN;
+
+		break;
+	}
+
+
+
+
+
+#ifdef _DEBUG
+	printf("%s: ASDU builded OK. Type = %d, IO num = %d\n", "unitlink-dlt645", d3, dlt_asdu->size);
+#endif
 
 	return RES_SUCCESS;
 }

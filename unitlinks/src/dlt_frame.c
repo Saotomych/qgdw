@@ -106,7 +106,7 @@ void dlt_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, dlt_
 }
 
 
-uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame)
+uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame)
 {
 	// fast check input data
 	if(!buff || !frame) return RES_INCORRECT;
@@ -208,7 +208,7 @@ uint8_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *o
 }
 
 
-uint8_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame *frame)
+uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame *frame)
 {
 	// set buffer length to zero and start building it
 	*buff_len = 0;
