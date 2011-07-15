@@ -58,12 +58,12 @@ void TagEndEnumVal(const char *pTag){
 }
 
 void TagSetSCL(const char *pTag){
-	printf("IEC: Start SCL file parse\n");
+	printf("IEC: Start SCL file to parse\n");
 }
 
 void TagEndSCL(const char *pTag){
 	EndScript=1;
-	printf("IEC: Stop SCL file parse\n");
+	printf("IEC: Stop SCL file to parse\n");
 }
 
 void TagSetXml(const char *pTag){

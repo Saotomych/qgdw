@@ -64,7 +64,6 @@ typedef struct _DO_LIST{
 		char *name;
 		char *type;
 		char *options;
-		struct _DTYPE *pmydatatype;
 		struct _LNODETYPE *pmynodetype;
 	} dobj;
 } DOBJ;

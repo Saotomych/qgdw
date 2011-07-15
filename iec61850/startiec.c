@@ -6,6 +6,7 @@
  */
 
 #include "../common/common.h"
+#include "../common/multififo.h"
 #include "iec61850.h"
 #include "xml.h"
 
@@ -15,25 +16,27 @@ char pathphy[] = {"phyints"};
 char pathmain[] = {"mainapp"};
 char mainlink[] = {"main"};
 
-char *SCLfile;
 
 // Create structures according to ieclevel.ssd
 int ssd_build(void){
+char *SCLfile;
 FILE *fssd;
-int ssdlen;
+int ssdlen, ret = 0;
 struct stat fst;
  	// Get size of main config file
 	if (stat("/rw/mx00/configs/ieclevel.ssd", &fst) == -1){
 		printf("IEC: SCL file not found\n");
 	}
+
 	SCLfile = malloc(fst.st_size);
+
 	// Loading main config file
 	fssd = fopen("/rw/mx00/configs/ieclevel.ssd", "r");
 	ssdlen = fread(SCLfile, 1, (size_t) (fst.st_size), fssd);
 	if (ssdlen == fst.st_size) XMLSelectSource(SCLfile);
-	else return -1;
+	else ret = -1;
 
-	return 0;
+	return ret;
 }
 
 int main(int argc, char * argv[]){
