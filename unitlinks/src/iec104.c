@@ -95,6 +95,8 @@ uint16_t iec104_read_config(const char *file_name)
 
 		while( f_line = fgets(r_buff, 255, cfg_file) )
 		{
+			if(strcspn(f_line, "#") == 0) continue;
+
 			prm = strstr(r_buff, "name");
 
 			if(strstr(prm+=5, APP_NAME))
@@ -1036,7 +1038,7 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	ep_ext = iec104_get_ep_ext(adr);
 
-	if(!ep_ext) return RES_ASDU_INCORRECT;
+	if(!ep_ext) return RES_INCORRECT;
 
 	res = asdu_from_byte(buff, buff_len, &iec_asdu);
 
