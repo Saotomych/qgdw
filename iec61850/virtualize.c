@@ -45,6 +45,9 @@ typedef struct _SCADA_ASDU{
 } SCADA_ASDU;
 
 
+// Pointer to full mapping config as text
+char *MCFGfile;
+
 // Variables for asdu actions
 static LIST fasdu, fasdutype;
 
@@ -63,11 +66,15 @@ LIST *new;
 	return new;
 }
 
+// Get mapping parameters from special config file 'mainmap.cfg' of real ASDU frames from meters
+int get_map_by_name(char *name, uint32_t *mid){
+char *p;
 
-int get_map_by_name(char *name, uint32_t *mid, uint32_t *sid){
-
-	*mid = 4117;
-	*sid = 517;
+	p = strstr(MCFGfile, name);
+	if (!p) return -1;
+	while((*p != 0xA) && (p != MCFGfile)) p--;
+	while(*p <= '0') p++;
+	*mid = atoi(p);
 
 	return 0;
 }
@@ -124,18 +131,18 @@ DOBJ *adobj;
 				 (adobj->dobj.pmynodetype == &alnt->lntype)){
 					// creating new DATAMAP and filling
 					actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
+					// Fill ASDU_DATAMAP
+					actasdudm->mydobj = adobj;
+					actasdudm->scadaid = atoi(adobj->dobj.options);
+					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
+						// find by DOType->DA.name = stVal => DOType->DA.btype
+						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.pmydatatype);
+						printf("ASDU: new SCADA_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
+								adobj->dobj.name, adobj->dobj.type, actasdudm->scadaid, actasdudm->meterid, actasdudm->value_type);
+					}else printf("ASDU: new SCADA_DO for DOBJ error: Tag not found into mainmap.cfg");
+			}else printf("ASDU: new SCADA_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
 
-						// Fill ASDU_DATAMAP
-						actasdudm->mydobj = adobj;
-						if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid, &actasdudm->scadaid)){
-							// find by DOType->DA.name = stVal => DOType->DA.btype
-							actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.pmydatatype);
-						}
-			}
 			// Next DOBJ
-
-			printf("ASDU: new SCADA_DO_TYPE for DTYPE name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
-
 			adobj = adobj->l.next;
 		}
 
@@ -160,7 +167,7 @@ DOBJ *adobj;
 		}
 
 		printf("ASDU: ready SCADA_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
-				actasdu->ASDUaddr, aln->ln.ldinst, aln->ln.lnclass, aln->ln.lninst, aln->ln.lntype, aln->ln.iedname);
+				actasdu->ASDUaddr, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
 
 		aln = aln->l.next;
 	}
@@ -171,13 +178,31 @@ DOBJ *adobj;
 }
 
 int virt_start(){
+FILE *fmcfg;
+int clen, ret;
+struct stat fst;
+
 pid_t chldpid;
 
-	// TODO Building mapping meter asdu to ssd asdu
-	if (asdu_parser()) exit(1);
+// Read mainmap.cfg into memory
+	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
+		printf("IEC: 'mainmap.cfg' file not found\n");
+	}
+	MCFGfile =  malloc(fst.st_size);
+	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
+	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
+	if (clen != fst.st_size) ret = -1;
+	else{
+		// Building mapping meter asdu to ssd asdu
+		if (asdu_parser()) ret = -1;
+		else{
+			// Run multififo
+			chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
+			ret = chldpid;
+		}
+	}
 
-	// Run multififo
-//	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
+	free(MCFGfile);
 
-	return chldpid;
+	return ret;
 }
