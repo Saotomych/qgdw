@@ -17,6 +17,14 @@ char pathmain[] = {"mainapp"};
 char mainlink[] = {"main"};
 
 
+struct config_device_list{
+	LIST l;
+	struct config_device cd;
+};
+
+static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
+static sigset_t sigmask;
+
 // Create structures according to ieclevel.ssd
 int ssd_build(void){
 char *SCLfile;
@@ -56,6 +64,9 @@ pid_t chldpid;
 	}
 
 	// Cycle data routing in rcv_data
+	do{
+		sigsuspend(&sigmask);
+	}while(!appexit);
 
 	mf_exit();
 

@@ -12,12 +12,6 @@
 #include "../common/multififo.h"
 #include "iec61850.h"
 
-struct config_device_list{
-	struct config_device cd;
-	struct config_device *prev;
-	struct config_device *next;
-};
-
 #define SCADA_ASDU_MAXSIZE 512
 
 // DATA
@@ -189,7 +183,20 @@ DOBJ *adobj;
 			actasdu->myln = aln;
 			actasdu->ASDUaddr = atoi(aln->ln.options);
 
-			// TODO Link to SCADA_ASDU_TYPE
+			// Link to SCADA_ASDU_TYPE
+			// Find LNTYPE.id = SCADA_ASDU_TYPE.LN.lntype
+			actasdutype =  (SCADA_ASDU_TYPE*) fasdutype.next;
+			while(actasdutype){
+				alnt = actasdutype->mylntype;
+				if (!strcmp(alnt->lntype.id, aln->ln.lntype)) break;
+				actasdutype = actasdutype->l.next;
+			}
+			if (actasdutype){
+				actasdu->myscadatype = actasdutype;
+				printf("ASDU: SCADA_ASDU %s.%s.%s linked to TYPE %s\n",
+						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
+			}
+			else printf("ASDU: SCADA_ASDU %s.%s.%s linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
 
 		}
 
@@ -203,6 +210,20 @@ DOBJ *adobj;
 
 	return 0;
 }
+
+
+// TODO Test config
+char name[] 		= {"unitlink-iec104"};
+char unitlink[] 	= {"startiec"};
+char physlink[] 	= {"phy_tcp"};
+
+struct config_device cd = {
+		name,
+		unitlink,
+		physlink,
+		967
+};
+
 
 int virt_start(){
 FILE *fmcfg;
@@ -224,12 +245,15 @@ pid_t chldpid;
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo
-			chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
+			chldpid = mf_init("/rw/mx00/mainapp","startiec", rcvdata, rcvinit);
 			ret = chldpid;
 		}
 	}
-
 	free(MCFGfile);
+
+// Start endpoint kipp2m
+	mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+
 
 	return ret;
 }
