@@ -95,6 +95,9 @@ void ssd_create_ln(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
 	flastln = create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
+	//DTYPE *adtype;
+	//ATTR *dattr;
+	//char *p;
 
 	// Parse parameters for ln
 	p = (char*) pTag;
@@ -177,6 +180,8 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
+	actdtype = &flastdtype->dtype;
+
 	printf("IEC: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
@@ -201,6 +206,8 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "dchg")) flastattr->attr.dchg = par;
 		}
 	}while(p);
+
+	flastattr->attr.pmydatatype = actdtype;
 
 	printf("IEC: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);

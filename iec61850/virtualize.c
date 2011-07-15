@@ -79,9 +79,39 @@ char *p;
 	return 0;
 }
 
-int get_type_by_name(char *name, struct _DTYPE *dt){
+// Find DA with name and ptr equals to name and ptr DTYPE
+// Return int equal string typedef
+int get_type_by_name(char *name, char *type){
+DTYPE *adtype;
+ATTR *dattr = (ATTR*) &fattr;
+char *p1;
+int ret = 0;
 
-	return 150;
+	// Find DTYPE by type
+	adtype = (DTYPE*) fdtype.next;
+	while(adtype){
+		if (!strcmp(adtype->dtype.id, type)) break;
+		adtype = adtype->l.next;
+	}
+
+	if (adtype){
+		// Find ATTR by name & ptr to type
+		dattr = (ATTR*) fattr.next;
+		while((dattr) && (!ret)){
+			if (&adtype->dtype == dattr->attr.pmydatatype){
+				// Own type
+				if (!strcmp(dattr->attr.name, name)){
+					// Name yes. Detect btype and convert to INT
+					p1 = dattr->attr.btype;
+					if (strstr(p1, "INT32")) ret = 1;
+					else ret = -1;
+				}
+			}
+			dattr = dattr->l.next;
+		}
+	}else ret = -1;
+
+	return ret;
 }
 
 int rcvdata(int len){
@@ -104,11 +134,8 @@ LIST fdm;
 LNODE *aln;
 LNTYPE *alnt;
 DOBJ *adobj;
-//DTYPE *adtype;
-//ATTR *dattr;
-//char *p;
 
-	printf("ASDU: Start ASDU mapping parse\n");
+	printf("ASDU: Start ASDU mapping to parse\n");
 
 	// Create SCADA_ASDU_TYPE list
 	actasdutype = (SCADA_ASDU_TYPE*) &fasdutype;
@@ -136,7 +163,7 @@ DOBJ *adobj;
 					actasdudm->scadaid = atoi(adobj->dobj.options);
 					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
 						// find by DOType->DA.name = stVal => DOType->DA.btype
-						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.pmydatatype);
+						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.type);
 						printf("ASDU: new SCADA_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
 								adobj->dobj.name, adobj->dobj.type, actasdudm->scadaid, actasdudm->meterid, actasdudm->value_type);
 					}else printf("ASDU: new SCADA_DO for DOBJ error: Tag not found into mainmap.cfg");
@@ -166,13 +193,13 @@ DOBJ *adobj;
 
 		}
 
-		printf("ASDU: ready SCADA_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
+		printf("ASDU: new SCADA_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
 				actasdu->ASDUaddr, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
 
 		aln = aln->l.next;
 	}
 
-	printf("ASDU: Stop ASDU mapping parse\n");
+	printf("ASDU: Stop ASDU mapping to parse\n");
 
 	return 0;
 }
