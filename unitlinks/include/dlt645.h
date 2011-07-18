@@ -11,9 +11,11 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <malloc.h>
+#include <time.h>
 #include <signal.h>
 #include "p_num.h"
 #include "dlt_frame.h"
+#include "../../common/resp_codes.h"
 #include "../../common/common.h"
 #include "../../common/asdu.h"
 #include "dlt_asdu.h"
@@ -26,14 +28,31 @@ extern "C" {
 
 
 /* Constants and byte flags/masks */
-#define APP_NAME	"unitlink-dlt645"
-#define APP_PATH 	"/rw/mx00/unitlinks"
+#define APP_NAME				"unitlink-dlt645"
+#define APP_PATH 				"/rw/mx00/unitlinks"
+#define CHILD_APP_PATH 			"/rw/mx00/phyints"
+#define ALARM_PER	1
+
+#define DLT645_T0				60		/* timeout */
+
+#define DLT645_HOST_MASTER		1		/* master (controlling) station */
+#define DLT645_HOST_SLAVE		2		/* slave (controlled) station */
+
 
 /*
  *
  * Structures
  *
  */
+/* Structure for extend end-point with protocol specific data */
+typedef struct dlt645_ep_ext {
+	uint16_t		adr;		/* link (ASDU) address */
+	uint8_t			host_type;	/* master/slave */
+
+	time_t			timer_t0;
+} dlt645_ep_ext;
+
+
 
 
 /*
@@ -42,10 +61,33 @@ extern "C" {
  *
  */
 
-int dlt645_rcvdata(int len);
+uint16_t dlt645_read_config(const char *file_name);
 
 
-int dlt645_rcvinit(char *buf, int len);
+void dlt645_catch_alarm(int sig);
+
+
+int dlt645_recv_data(int len);
+
+int dlt645_recv_init(ep_init_header *ih);
+
+
+dlt645_ep_ext* dlt645_get_ep_ext(uint16_t adr);
+
+uint16_t dlt645_add_ep_ext(uint16_t adr, uint8_t host_type);
+void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
+
+
+uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir);
+uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir);
+
+
+uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir);
+uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);
+
+
+uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir);
+uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr);
 
 
 void sighandler_sigchld(int arg);
