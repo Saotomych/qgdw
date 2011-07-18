@@ -153,7 +153,7 @@ int t;
 	if (t == 2400) td->speed = B2400;
 	if (t == 9600) td->speed = B9600;
 	if (t == 19200) td->speed = B19200;
-	while(*pars != ' ') pars++;
+	while(*pars != ',') pars++;
 	pars++;
 	if (*pars == 5) td->bits = CS5;
 	if (*pars == 6) td->bits = CS6;
@@ -169,6 +169,11 @@ int t;
 	pars+=2;
 	td->rts = 0;
 	if (*pars == 'Y') td->rts = 1;
+
+#ifdef _DEBUG
+	printf("parse port %s, %d, %d%d%d, rts:%d\n", td->devname, td->speed, td->bits, td->parity, td->stop, td->rts);
+#endif
+
 }
 
 int createroutetable(void){
@@ -393,7 +398,6 @@ char outbuf[300];
 
 	    	} // for i
 	    } // ret
-
 	}while(!appexit);
 
 
