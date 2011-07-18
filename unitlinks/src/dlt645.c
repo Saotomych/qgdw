@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 	dlt645_sys_msg_send(EP_MSG_CONNECT, ep_exts[0]->adr, DIRDN);
 
-	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
+	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, ep_exts[0]->adr);
 #endif
 
 	signal(SIGALRM, dlt645_catch_alarm);
@@ -139,7 +139,7 @@ void dlt645_catch_alarm(int sig)
 			// Check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
-//				dlt645_read_data_send(ep_exts[i]->adr, 0x0001FF00, 0, 0);
+//				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
 				dlt645_read_adr_send(ep_exts[i]->adr);
 
 				// reset t0 timer
@@ -468,7 +468,7 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr,  uint16_t adr, uint8_t dir)
 
 	if(res == RES_SUCCESS)
 	{
-		ep_buff = (char*) malloc(sizeof(ep_data_header) + d_len);
+		ep_buff = (char*) malloc(sizeof(ep_data_header) + 2 + d_len);
 
 		if(ep_buff)
 		{
