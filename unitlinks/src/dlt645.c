@@ -40,14 +40,14 @@ int main(int argc, char *argv[])
 			name,
 			unitlink,
 			physlink,
-			967
+			111
 	};
 
 	mf_newendpoint(&cd, CHILD_APP_PATH, 0);
 
-	dlt645_sys_msg_send(EP_MSG_CONNECT, 111, DIRDN);
+	dlt645_sys_msg_send(EP_MSG_CONNECT, ep_exts[0]->adr, DIRDN);
 
-	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
+	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, ep_exts[0]->adr);
 #endif
 
 	signal(SIGALRM, dlt645_catch_alarm);
@@ -72,6 +72,7 @@ uint16_t dlt645_read_config(const char *file_name)
 	char r_buff[256] = {0};
 	char *prm;
 	uint16_t adr, ep_num;
+	uint64_t link_adr;
 	uint8_t type;
 
 	cfg_file = fopen(file_name, "r");
@@ -90,14 +91,14 @@ uint16_t dlt645_read_config(const char *file_name)
 			{
 				adr = atoi(r_buff);
 
-				prm = strstr(r_buff, "type");
+				prm = strstr(r_buff, "host_type");
 
-				if(strstr(prm+=5, "DLT645_HOST_MASTER"))
+				if(strstr(prm+=10, "DLT645_HOST_MASTER"))
 					type = DLT645_HOST_MASTER;
 				else
 					type = DLT645_HOST_SLAVE;
 
-				dlt645_add_ep_ext(adr, type);
+				dlt645_add_ep_ext(adr, link_adr, type);
 
 				ep_num++;
 			}
@@ -138,6 +139,11 @@ void dlt645_catch_alarm(int sig)
 			// Check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
+//				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
+				dlt645_read_adr_send(ep_exts[i]->adr);
+
+				// reset t0 timer
+				ep_exts[i]->timer_t0 = time(NULL);
 			}
 		}
 	}
@@ -286,7 +292,7 @@ dlt645_ep_ext* dlt645_get_ep_ext(uint16_t adr)
 }
 
 
-uint16_t dlt645_add_ep_ext(uint16_t adr, uint8_t host_type)
+uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr, uint8_t host_type)
 {
 	int i;
 	dlt645_ep_ext *ep_ext = NULL;
@@ -298,6 +304,7 @@ uint16_t dlt645_add_ep_ext(uint16_t adr, uint8_t host_type)
 	ep_ext = (dlt645_ep_ext*) calloc(1, sizeof(dlt645_ep_ext));
 
 	ep_ext->adr       = adr;
+	ep_ext->link_adr  = link_adr;
 	ep_ext->host_type = host_type;
 
 	for(i=0; i<MAXEP; i++)
@@ -455,23 +462,33 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr,  uint16_t adr, uint8_t dir)
 	unsigned char *d_buff = NULL;
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
+	uint16_t awk_msg = DLT645_AWAKE_MSG;
 
 	res = dlt_frame_buff_build(&d_buff, &d_len, d_fr);
 
 	if(res == RES_SUCCESS)
 	{
-		ep_buff = (char*) malloc(sizeof(ep_data_header) + d_len);
+		ep_buff = (char*) malloc(sizeof(ep_data_header) + 2 + d_len);
 
 		if(ep_buff)
 		{
 			ep_header.adr = adr;
 			ep_header.sys_msg = EP_USER_DATA;
-			ep_header.len = d_len;
+			ep_header.len = 2 + d_len;
 
 			memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
-			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)d_buff, d_len);
+			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)&awk_msg, 2);
+			memcpy((void*)(ep_buff+sizeof(ep_data_header)+2), (void*)d_buff, d_len);
 
-			mf_toendpoint(ep_buff, sizeof(ep_data_header) + d_len, adr, dir);
+			mf_toendpoint(ep_buff, sizeof(ep_data_header) + 2 + d_len, adr, dir);
+
+#ifdef _DEBUG
+			printf("%s: User data in DIRDN sent. Address = %d, Length = %d\n", APP_NAME, ep_header.adr, ep_header.len);
+
+			char c_buff[512] = {0};
+			hex2ascii(d_buff, c_buff, d_len);
+			printf("%s: %04X%s\n", APP_NAME, awk_msg, c_buff);
+#endif
 
 			free(ep_buff);
 		}
@@ -489,6 +506,12 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr,  uint16_t adr, uint8_t dir)
 
 uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 {
+#ifdef _DEBUG
+	char c_buff[512] = {0};
+	hex2ascii(buff, c_buff, buff_len);
+	printf("%s: %s\n", APP_NAME, c_buff);
+#endif
+
 	uint16_t res;
 	uint32_t offset;
 	dlt_frame *d_fr = NULL;
@@ -604,6 +627,141 @@ uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 }
 
 
+uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t start_time)
+{
+	uint16_t res;
+	dlt_frame *d_fr = NULL;
+	uint32_t offset = 0;
+
+	d_fr = dlt_frame_create();
+
+	if(!d_fr)
+	{
+		res = RES_MEM_ALLOC;
+	}
+	else
+	{
+		d_fr->fnc  = FNC_READ_DATA;
+		d_fr->dir  = DIR_REQUEST;
+
+		d_fr->adr  = adr;
+
+		if(num > 0)
+		{
+			d_fr->data_len = 4 + 1;
+			d_fr->data = malloc(d_fr->data_len);
+
+			if(d_fr->data)
+			{
+				buff_put_le_uint32(d_fr->data, offset, data_id);
+				offset += 4;
+
+				buff_put_le_uint8(d_fr->data, offset, num);
+				offset += 1;
+			}
+		}
+		else if(start_time > 0)
+		{
+			d_fr->data_len = 4 + 6;
+			d_fr->data = malloc(d_fr->data_len);
+
+			if(d_fr->data)
+			{
+				buff_put_le_uint32(d_fr->data, offset, data_id);
+				offset += 4;
+
+				dlt_asdu_build_time_tag(d_fr->data, &offset, start_time);
+			}
+		}
+		else
+		{
+			d_fr->data_len = 4;
+			d_fr->data = malloc(d_fr->data_len);
+
+			if(d_fr->data)
+			{
+				buff_put_le_uint32(d_fr->data, 0, data_id);
+			}
+		}
+		if(d_fr->data)
+		{
+			res = dlt645_frame_send(d_fr, adr, DIRDN);
+
+		}
+		else
+		{
+			d_fr->data_len = 0;
+
+			res = RES_MEM_ALLOC;
+		}
+
+		dlt_frame_destroy(&d_fr);
+	}
+
+	return res;
+}
+
+
+uint16_t dlt645_read_data_recv(uint16_t adr, uint32_t data_id)
+{
+	return RES_SUCCESS;
+}
+
+
+uint16_t dlt645_read_adr_send(uint16_t adr)
+{
+	uint16_t res;
+	dlt_frame *d_fr = NULL;
+
+	d_fr = dlt_frame_create();
+
+	if(!d_fr)
+	{
+		res = RES_MEM_ALLOC;
+	}
+	else
+	{
+		d_fr->fnc = FNC_READ_ADDRESS;
+		d_fr->dir = DIR_REQUEST;
+
+		d_fr->adr_hex = 0xAAAAAAAAAAAA;
+
+		res = dlt645_frame_send(d_fr, adr, DIRDN);
+
+		dlt_frame_destroy(&d_fr);
+	}
+
+	return res;
+}
+
+
+uint16_t dlt645_read_adr_recv(uint16_t adr)
+{
+	return RES_SUCCESS;
+}
+
+
+
+
+
+
+
+
+int hex2ascii(unsigned char *h_buff, char *c_buff, int len)
+{
+	char tmp[4];
+	int i;
+
+	c_buff[0]=0;
+
+	for(i=0; i<len; i++)
+	{
+		sprintf(tmp, "%02X", h_buff[i]);
+		strcat(c_buff, tmp);
+	}
+
+	return len;
+}
 
 
 

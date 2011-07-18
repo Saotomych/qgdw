@@ -103,9 +103,9 @@ uint16_t iec104_read_config(const char *file_name)
 			{
 				adr = atoi(r_buff);
 
-				prm = strstr(r_buff, "type");
+				prm = strstr(r_buff, "host_type");
 
-				if(strstr(prm+=5, "IEC_HOST_MASTER"))
+				if(strstr(prm+=10, "IEC_HOST_MASTER"))
 					type = IEC_HOST_MASTER;
 				else
 					type = IEC_HOST_SLAVE;

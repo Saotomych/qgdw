@@ -269,7 +269,7 @@ uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_fram
 
 	// calculate frame checksum starting from the first start byte to the current position
 	// and put frame checksum in the buffer
-	buff_put_le_uint8(*buff, offset, dlt_frame_get_fcs(*buff, *buff_len - 2));
+	buff_put_le_uint8(*buff, offset, dlt_frame_get_fcs(*buff, offset));
 	offset += 1;
 
 	buff_put_le_uint8(*buff, offset, DLT_STOP_BYTE);
