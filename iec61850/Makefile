@@ -1,20 +1,22 @@
+-include ../common/common.mk
+
 OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o
 CCFLAGS += -c -Os -Wall
 LDFLAGS += -Wl
 
 startiec: $(OBJS)
-	cc $(LDFLAGS) -o ../bin/startiec $(OBJS)
+	$(CC) $(LDFLAGS) -o ../bin/startiec $(OBJS)
 
 startiec.o: startiec.c
-	cc $(CCFLAGS) startiec.c -o startiec.o
+	$(CC) $(CCFLAGS) startiec.c -o startiec.o
 virtualize.o: virtualize.c
-	cc $(CCFLAGS) virtualize.c -o virtualize.o
+	$(CC) $(CCFLAGS) virtualize.c -o virtualize.o
 ssd.o: ssd.c
-	cc $(CCFLAGS) ssd.c -o ssd.o
+	$(CC) $(CCFLAGS) ssd.c -o ssd.o
 xml.o: startiec.c
-	cc $(CCFLAGS) xml.c -o xml.o
+	$(CC) $(CCFLAGS) xml.c -o xml.o
 multififo.o: ../common/multififo.c
-	cc $(CCFLAGS) ../common/multififo.c -o multififo.o
+	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
 
 all: startiec
 

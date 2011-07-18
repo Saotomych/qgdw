@@ -211,12 +211,12 @@ DOBJ *adobj;
 }
 
 // TODO Test config
-char name[] 		= {"unitlink-iec104"};
-char unitlink[] 	= {"startiec"};
+char mainapp[] 		= {"startiec"};
+char unitlink[] 	= {"unitlink-iec104"};
 char physlink[] 	= {"phy_tcp"};
 
 struct config_device cd = {
-		name,
+		mainapp,
 		unitlink,
 		physlink,
 		967

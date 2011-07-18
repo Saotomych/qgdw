@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <iconv.h>
 #include <unistd.h>
 #include <poll.h>
 #include <pthread.h>
@@ -26,7 +25,6 @@
 #include <termios.h> /* Объявления управления POSIX-терминалом */
 #include <fcntl.h>   /* Управление файлами */
 
-//#include <iostream>
 #include <sys/select.h>
 #include <sys/inotify.h>
 #include <sys/types.h>
