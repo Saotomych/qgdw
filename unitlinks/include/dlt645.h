@@ -33,11 +33,12 @@ extern "C" {
 #define CHILD_APP_PATH 			"/rw/mx00/phyints"
 #define ALARM_PER	1
 
-#define DLT645_T0				60		/* timeout */
+#define DLT645_T0				5		/* timeout */
 
 #define DLT645_HOST_MASTER		1		/* master (controlling) station */
 #define DLT645_HOST_SLAVE		2		/* slave (controlled) station */
 
+#define DLT645_AWAKE_MSG		0xFEFE	/* device awake message */
 
 /*
  *
@@ -46,8 +47,9 @@ extern "C" {
  */
 /* Structure for extend end-point with protocol specific data */
 typedef struct dlt645_ep_ext {
-	uint16_t		adr;		/* link (ASDU) address */
-	uint8_t			host_type;	/* master/slave */
+	uint16_t		adr;			/* ASDU address */
+	uint64_t		link_adr;	/* link address */
+	uint8_t			host_type;		/* master/slave */
 
 	time_t			timer_t0;
 } dlt645_ep_ext;
@@ -74,13 +76,19 @@ int dlt645_recv_init(ep_init_header *ih);
 
 dlt645_ep_ext* dlt645_get_ep_ext(uint16_t adr);
 
-uint16_t dlt645_add_ep_ext(uint16_t adr, uint8_t host_type);
+uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr, uint8_t host_type);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
 
 
 uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir);
 uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir);
 
+
+uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t start_time);
+uint16_t dlt645_read_data_recv(uint16_t adr, uint32_t data_id);
+
+uint16_t dlt645_read_adr_send(uint16_t adr);
+uint16_t dlt645_read_adr_recv(uint16_t adr);
 
 uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir);
 uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);
@@ -95,6 +103,8 @@ void sighandler_sigchld(int arg);
 
 void sighandler_sigquit(int arg);
 
+
+int hex2ascii(unsigned char *h_buff, char *c_buff, int len);
 
 
 #ifdef __cplusplus
