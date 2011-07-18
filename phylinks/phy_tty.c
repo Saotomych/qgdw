@@ -263,7 +263,7 @@ int rdlen;
 		tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
 		switch(edh->sys_msg){
 		case EP_USER_DATA:	// Write data to socket
-				writeall(pr->socdesc, tai.buf, len - sizeof(struct ep_data_header));
+				writeall(tdev[pr->devindex].desc, tai.buf, len - sizeof(struct ep_data_header));
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
@@ -320,7 +320,7 @@ struct phy_route *pr;
 		if (myprs[i]->state) return 0;	// Route init already
 		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
-		if (tdev[pr->devindex].desc) start_ttydevice(&tdev[pr->devindex]);
+		if (tdev[pr->devindex].desc == 0) start_ttydevice(&tdev[pr->devindex]);
 
 	return 0;
 }
@@ -362,7 +362,7 @@ char outbuf[300];
 		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_desc, NULL, &ex_desc, &tv);
-	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    if (ret == -1) printf("Phylink TTY: select error:%d - %s\n",errno, strerror(errno));
 	    else
 	    if (ret){
 	    	for (i=0; i<maxtdev; i++){
@@ -377,7 +377,7 @@ char outbuf[300];
     						pr = myprs[j];
     						if ((pr->state) && (pr->devindex == i)){ 	// connected and live
     							// send buffer to endpoint
-    							printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
+    							printf("Phylink TTY: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", td->desc, i, ret, rdlen);
     							// Send data frame to endpoint
     							edh = (ep_data_header*) outbuf;
     							edh->adr = pr->asdu;
