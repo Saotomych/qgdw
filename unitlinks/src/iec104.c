@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-	res = iec104_config_read("/rw/mx00/configs/lowlevel.cfg");
+	res = iec104_config_read(APP_CFG);
 
 	if(res != RES_SUCCESS) exit(1);
 
