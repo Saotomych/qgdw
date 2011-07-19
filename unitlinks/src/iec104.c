@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-	res = iec104_read_config("/rw/mx00/configs/lowlevel.cfg");
+	res = iec104_config_read("/rw/mx00/configs/lowlevel.cfg");
 
 	if(res != RES_SUCCESS) exit(1);
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 }
 
 
-uint16_t iec104_read_config(const char *file_name)
+uint16_t iec104_config_read(const char *file_name)
 {
 	FILE *cfg_file = NULL;
 	char r_buff[256] = {0};
