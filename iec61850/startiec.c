@@ -16,7 +16,6 @@ char pathphy[] = {"phyints"};
 char pathmain[] = {"mainapp"};
 char mainlink[] = {"main"};
 
-
 struct config_device_list{
 	LIST l;
 	struct config_device cd;
@@ -49,6 +48,9 @@ struct stat fst;
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
+fd_set rddesc, exdesc;
+int ret;
+char buf[10];
 
 	// Parsing ssd, create virtualization structures from common iec61850 configuration
 	if (ssd_build()){
@@ -64,9 +66,29 @@ pid_t chldpid;
 	}
 
 	// Cycle data routing in rcv_data
+//	do{
+//		sigsuspend(&sigmask);
+//	}while(!appexit);
 	do{
-		sigsuspend(&sigmask);
+	    FD_ZERO(&rddesc);
+	    FD_ZERO(&exdesc);
+		FD_SET(hpp[0], &rddesc);
+		FD_SET(hpp[0], &exdesc);
+	    ret = select(hpp[0] + 1, &rddesc, NULL, &exdesc, NULL);
+
+	    if (FD_ISSET(hpp[0], &exdesc)) appexit = 0;
+
+	    if (FD_ISSET(hpp[0], &rddesc)){
+	    	// Read from pipe
+	    	ret = read(hpp[0], buf, 10);
+	    	// start forward endpoint
+	    	printf("IEC: forward endpoint\n");
+	    }
+
 	}while(!appexit);
+
+
+
 
 	mf_exit();
 

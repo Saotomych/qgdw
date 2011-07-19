@@ -1,22 +1,24 @@
+-include ../common/common.mk
+
 OBJS1 = multififo-test.o multififo.o
 OBJS2 = multififo-test-device.o multififo.o
 CCFLAGS += -c -Os -Wall
 LDFLAGS += -Wl
 
 multififo-test: $(OBJS1)
-	cc $(LDFLAGS) -o mainapptest $(OBJS1)
+	$(CC) $(LDFLAGS) -o mainapptest $(OBJS1)
 
 multififo-test-device: $(OBJS2)
-	cc $(LDFLAGS) -o devlinktest $(OBJS2)
+	$(CC) $(LDFLAGS) -o devlinktest $(OBJS2)
 
 multififo-test.o: multififo-test.c
-	cc $(CCFLAGS) multififo-test.c -o multififo-test.o
+	$(CC) $(CCFLAGS) multififo-test.c -o multififo-test.o
 
 multififo-test-device.o: multififo-test-device.c
-	cc $(CCFLAGS) multififo-test-device.c -o multififo-test-device.o
+	$(CC) $(CCFLAGS) multififo-test-device.c -o multififo-test-device.o
 
 multififo.o: ../common/multififo.c
-	cc $(CCFLAGS) ../common/multififo.c -o multififo.o
+	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
 
 rebuild: clean all
 

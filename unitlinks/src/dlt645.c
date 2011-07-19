@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-	res = dlt645_config_read("/rw/mx00/configs/lowlevel.cfg");
+	res = dlt645_config_read(APP_CFG);
 
 	if(res != RES_SUCCESS) exit(1);
 
@@ -169,8 +169,8 @@ void dlt645_catch_alarm(int sig)
 			// Check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
-				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
-//				dlt645_read_adr_send(ep_exts[i]->adr);
+//				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
+				dlt645_read_adr_send(ep_exts[i]->adr);
 
 				// reset t0 timer
 				ep_exts[i]->timer_t0 = time(NULL);

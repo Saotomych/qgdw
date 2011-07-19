@@ -1,3 +1,5 @@
+-include ../common/common.mk
+
 RELEASE = no
 
 TARGET = ../bin/unitlink-iec101
@@ -19,8 +21,6 @@ OBJS = obj/iec101.o \
        obj/asdu.o \
        obj/p_num.o \
        obj/multififo.o
-
-CC = gcc
 
 CCSYSTEM = $(shell $(CC) -dumpmachine)
 

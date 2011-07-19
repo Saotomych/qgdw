@@ -23,14 +23,14 @@ typedef struct _DATAMAP{
 	uint8_t		value_type; 	// for "on fly" converting, get from DOTYPE.ATTR.stVal <-> DOTYPE.ATTR.btype
 } ASDU_DATAMAP;
 
-typedef struct _SCADA_TYPE{
+typedef struct _SCADA_TYPE{		// Analog Logical Node Type
 	LIST l;
 	LNTYPE *mylntype;
 	ASDU_DATAMAP	*fdmap;
 } SCADA_ASDU_TYPE;
 
 // View dataset as ASDU for virtual IED
-typedef struct _SCADA_ASDU{
+typedef struct _SCADA_ASDU{		// Analog Logical Node
 	LIST l;
 	LNODE *myln;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
@@ -210,18 +210,17 @@ DOBJ *adobj;
 	return 0;
 }
 
-// TODO Test config
-char name[] 		= {"unitlink-iec104"};
-char unitlink[] 	= {"startiec"};
+// TODO Remove Test config after debugging
+char mainapp[] 		= {"startiec"};
+char unitlink[] 	= {"unitlink-iec104"};
 char physlink[] 	= {"phy_tcp"};
 
 struct config_device cd = {
-		name,
 		unitlink,
 		physlink,
+		mainapp,
 		967
 };
-
 
 int virt_start(){
 FILE *fmcfg;

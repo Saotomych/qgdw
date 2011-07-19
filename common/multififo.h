@@ -24,6 +24,8 @@ typedef struct _transactinfo{
 	int ep_index;
 } TRANSACTINFO;
 
+extern volatile int hpp[2];
+
 // Initialisation
 // in: pathinit - pointer to path to pipes
 // in: devicename - pointer to devicename from config
@@ -43,5 +45,7 @@ extern int mf_toendpoint(char *buf, int len, int addr, int direct);
 extern int mftai_readbuffer(TRANSACTINFO *tai);
 extern int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct);
 extern int mf_readbuffer(char *buf, int len, int *addr, int *direct);
+
+extern int mf_waitevent(char *buf, int len, int ms_delay);
 
 #endif /* MULTIFIFO_H_ */

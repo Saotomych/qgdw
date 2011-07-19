@@ -30,6 +30,7 @@ extern "C" {
 /* Constants and byte flags/masks */
 #define APP_NAME				"unitlink-dlt645"
 #define APP_PATH 				"/rw/mx00/unitlinks"
+#define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
 #define CHILD_APP_PATH 			"/rw/mx00/phyints"
 #define ALARM_PER	1
 

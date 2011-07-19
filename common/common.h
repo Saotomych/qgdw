@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <iconv.h>
 #include <unistd.h>
 #include <poll.h>
 #include <pthread.h>
@@ -26,7 +25,6 @@
 #include <termios.h> /* Объявления управления POSIX-терминалом */
 #include <fcntl.h>   /* Управление файлами */
 
-//#include <iostream>
 #include <sys/select.h>
 #include <sys/inotify.h>
 #include <sys/types.h>
@@ -61,22 +59,22 @@
  */
 
 typedef struct ep_data_header {
-	uint16_t 		adr;		/* link (ASDU) address */
+	uint32_t 		adr;		/* link (ASDU) address */
 	uint32_t		sys_msg;	/* user data (0)/system message(1..n) */
 	uint32_t		len;		/* length of the data following the header */
 } ep_data_header;
 
 typedef struct ep_init_header {
 	char *isstr[5];
-	u32 addr;
-	int numch;
+	uint32_t addr;					/* link (ASDU) address */
+	uint32_t numep;
 } ep_init_header;
 
 typedef struct config_device{
 	char   	*name;
 	char 	*protoname;			// ptr to protokol name
 	char 	*phyname;			// physlink number
-	u32		addr;
+	uint32_t		addr;
 } config_device;
 
 #endif /* COMMON_H_ */
