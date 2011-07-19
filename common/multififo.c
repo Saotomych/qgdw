@@ -452,6 +452,8 @@ struct endpoint *ep = myeps[maxep - 1];
 
 				ret = write(hpp[1], &(ep->my_ep),  sizeof(int));
 
+				printf("MFI %s: MULTIFIFO WRITE TO PARENT %d bytes !!!!\n", appname, sizeof(int));
+
 			}
 		}
 	}
@@ -551,12 +553,12 @@ ep_init_header *eih;
 		while(rdlen > 0){
 			// Building init pointpp
 			if (ch->rdstr < 5){
-//				printf("MFI %s: get string number %d\n", appname, ch->rdstr);
 				// get strings
 				len = getstringfromring(ch, nbuf);
 				if (len > 0){
 					ep->eih.isstr[ch->rdstr] = malloc(len + 1);
 					strcpy(ep->eih.isstr[ch->rdstr], nbuf);
+//					printf("MFI %s: get string number %d %s\n", appname, ch->rdstr, ep->eih.isstr[ch->rdstr]);
 					ch->rdstr++;
 					rdlen -= len;
 				}else rdlen = 0;
@@ -801,7 +803,7 @@ struct endpoint *ep;
 			exit(0);
 		}
 
-		// TODO sleep exchange to one pipe
+		// TODO sleep exchange to other variant to wait
 		sleep(1);
 		printf("OK\n");
 
@@ -818,17 +820,22 @@ struct endpoint *ep;
 		// Create new endpoint
 		ep = create_ep();
 		if (!ep) return -1;		// endpoint don't create
-		// Init new endpoint
-		ep->eih.isstr[0] = malloc(strlen(pathinit) + 1);
-		strcpy(ep->eih.isstr[0], pathinit);
-		ep->eih.isstr[1] = appname;
-		ep->eih.isstr[2] = cd->name;
-		ep->eih.isstr[3] = cd->protoname;
-		ep->eih.isstr[4] = cd->phyname;
 
 //		printf("%s: Create endpoint begin\n", appname);
 
 	}
+
+	// Init downlink endpoint
+	ep->eih.isstr[0] = malloc(strlen(pathinit) + 1);
+	strcpy(ep->eih.isstr[0], pathinit);
+	ep->eih.isstr[1] = malloc(strlen(appname) + 1);
+	strcpy(ep->eih.isstr[1], appname);
+	ep->eih.isstr[2] = malloc(strlen(cd->name) + 1);
+	strcpy(ep->eih.isstr[2], cd->name);
+	ep->eih.isstr[3] = malloc(strlen(cd->protoname) + 1);
+	strcpy(ep->eih.isstr[3], cd->protoname);
+	ep->eih.isstr[4] = malloc(strlen(cd->phyname) + 1);
+	strcpy(ep->eih.isstr[4], cd->phyname);
 
 	// Find channel for this low level application
 	ch = findch_by_name(cd->name);
@@ -841,14 +848,12 @@ struct endpoint *ep;
 	strcat(fname, ep->eih.isstr[2]);
 	strcat(fname, sufinit);
 	dninit = open(fname, O_RDWR);
-
-//	printf("MFI %s: init open %s\n", appname, fname);
-
 	if (!dninit) return -1;
 
 	ep->eih.addr = cd->addr;
 	ep->eih.numep = maxep-1;
 	// Write config to init channel
+
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
 	wrlen += write(dninit, ep->eih.isstr[1], strlen(appname)+1);
 	wrlen += write(dninit, ep->eih.isstr[2], strlen(cd->name)+1);
@@ -981,6 +986,7 @@ void mf_set_cb_rcvclose(void *func_rcvclose){
 int mf_waitevent(char *buf, int len, int ms_delay){
 fd_set rddesc, exdesc;
 int ret;
+char b[20];
 
 	FD_ZERO(&rddesc);
     FD_ZERO(&exdesc);
@@ -992,7 +998,9 @@ int ret;
     if (FD_ISSET(hpp[0], &exdesc)) return 0;
 
 	if (FD_ISSET(hpp[0], &rddesc)){
-		ret = read(hpp[0], buf, len);
+		ret = read(hpp[0], b, 20);
+		printf("MFI %s: fork error:%d - %s\n",appname, errno, strerror(errno));
+		printf("MFI %s: MULTIFIFO READ FROM CHILD %d bytes !!!!\n", appname, ret);
 		return 1;
 	}
 
