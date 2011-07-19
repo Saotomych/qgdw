@@ -66,12 +66,8 @@ int main(int argc, char *argv[])
 //	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
 #endif
 
-//	signal(SIGALRM, iec104_catch_alarm);
-//	alarm(alarm_t);
-
-//	do{
-//		sigsuspend(&sigmask);
-//	}while(!appexit);
+	signal(SIGALRM, iec104_catch_alarm);
+	alarm(alarm_t);
 
 	printf("Unit-IEC104- waiting.....\n");
 	do{
