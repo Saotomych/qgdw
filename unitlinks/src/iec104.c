@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-	res = iec104_read_config("/rw/mx00/configs/unitlinks.cfg");
+	res = iec104_read_config("/rw/mx00/configs/lowlevel.cfg");
 
 	if(res != RES_SUCCESS) exit(1);
 
@@ -81,7 +81,6 @@ int main(int argc, char *argv[])
 uint16_t iec104_read_config(const char *file_name)
 {
 	FILE *cfg_file = NULL;
-	char *f_line = NULL;
 	char r_buff[256] = {0};
 	char *prm;
 	uint16_t adr, ep_num;
@@ -93,19 +92,19 @@ uint16_t iec104_read_config(const char *file_name)
 	{
 		ep_num = 0;
 
-		while( f_line = fgets(r_buff, 255, cfg_file) )
+		while(fgets(r_buff, 255, cfg_file))
 		{
-			if(strcspn(f_line, "#") == 0) continue;
+			if(*r_buff == '#') continue;
 
 			prm = strstr(r_buff, "name");
 
-			if(strstr(prm+=5, APP_NAME))
+			if(prm && strstr(prm, APP_NAME))
 			{
 				adr = atoi(r_buff);
 
-				prm = strstr(r_buff, "host_type");
+				prm = strstr(r_buff, "mode");
 
-				if(strstr(prm+=10, "IEC_HOST_MASTER"))
+				if(prm && strstr(prm, "CONNECT"))
 					type = IEC_HOST_MASTER;
 				else
 					type = IEC_HOST_SLAVE;
