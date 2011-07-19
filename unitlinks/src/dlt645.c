@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-	res = dlt645_read_config("/rw/mx00/configs/unitlinks.cfg");
+	res = dlt645_config_read("/rw/mx00/configs/lowlevel.cfg");
 
 	if(res != RES_SUCCESS) exit(1);
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 	dlt645_sys_msg_send(EP_MSG_CONNECT, ep_exts[0]->adr, DIRDN);
 
-	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, ep_exts[0]->adr);
+	printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_exts[0]->adr, ep_exts[0]->adr_hex);
 #endif
 
 	signal(SIGALRM, dlt645_catch_alarm);
@@ -64,16 +64,14 @@ int main(int argc, char *argv[])
 }
 
 
-
-uint16_t dlt645_read_config(const char *file_name)
+uint16_t dlt645_config_read(const char *file_name)
 {
 	FILE *cfg_file = NULL;
-	char *f_line = NULL;
 	char r_buff[256] = {0};
 	char *prm;
 	uint16_t adr, ep_num;
 	uint64_t link_adr;
-	uint8_t type;
+
 
 	cfg_file = fopen(file_name, "r");
 
@@ -81,24 +79,28 @@ uint16_t dlt645_read_config(const char *file_name)
 	{
 		ep_num = 0;
 
-		while( f_line = fgets(r_buff, 255, cfg_file) )
+		while( fgets(r_buff, 255, cfg_file) )
 		{
-			if(strcspn(f_line, "#") == 0) continue;
+			if(*r_buff == '#') continue;
 
 			prm = strstr(r_buff, "name");
 
-			if(strstr(prm+=5, APP_NAME))
+			if(prm && strstr(prm, APP_NAME))
 			{
 				adr = atoi(r_buff);
 
-				prm = strstr(r_buff, "host_type");
+				prm = strstr(r_buff, "addr");
 
-				if(strstr(prm+=10, "DLT645_HOST_MASTER"))
-					type = DLT645_HOST_MASTER;
+				if(prm)
+				{
+					link_adr = dlt645_config_read_bcd_link_adr(prm+5);
+				}
 				else
-					type = DLT645_HOST_SLAVE;
+				{
+					buff_bcd_put_le_uint((unsigned char*)&link_adr, 0, adr, 6);
+				}
 
-				dlt645_add_ep_ext(adr, link_adr, type);
+				dlt645_add_ep_ext(adr, link_adr);
 
 				ep_num++;
 			}
@@ -113,6 +115,34 @@ uint16_t dlt645_read_config(const char *file_name)
 		return RES_SUCCESS;
 	else
 		return RES_NOT_FOUND;
+}
+
+
+uint64_t dlt645_config_read_bcd_link_adr(char *buff)
+{
+	uint64_t link_adr;
+	uint8_t len, bytex;
+
+	len = 0;
+
+	while(*(buff+len) != ' ') len++;
+
+	if(len%2)
+	{
+		buff -= 1;
+
+		*buff = '0';
+	}
+
+	link_adr = 0;
+
+	while(sscanf(buff, "%2x", (unsigned int*)&bytex))
+	{
+		link_adr = (link_adr << 8) | bytex;
+		buff += 2;
+	}
+
+	return link_adr;
 }
 
 
@@ -139,8 +169,8 @@ void dlt645_catch_alarm(int sig)
 			// Check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
-//				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
-				dlt645_read_adr_send(ep_exts[i]->adr);
+				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
+//				dlt645_read_adr_send(ep_exts[i]->adr);
 
 				// reset t0 timer
 				ep_exts[i]->timer_t0 = time(NULL);
@@ -232,7 +262,7 @@ int dlt645_recv_data(int len)
 				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
 #endif
 
-				// apdu frame received
+				// dlt frame received
 				dlt645_frame_recv((unsigned char*)(buff + offset), ep_header_in.len, ep_header_in.adr);
 			}
 			else
@@ -272,7 +302,7 @@ int dlt645_recv_init(ep_init_header *ih)
 	cd.protoname = ih->isstr[3];
 	cd.phyname = ih->isstr[4];
 
-	mf_newendpoint(&cd, CHILD_APP_PATH, 0);
+	mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 
 	dlt645_sys_msg_send(EP_MSG_CONNECT, ih->addr, DIRDN);
 
@@ -280,32 +310,41 @@ int dlt645_recv_init(ep_init_header *ih)
 }
 
 
-dlt645_ep_ext* dlt645_get_ep_ext(uint16_t adr)
+dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by)
 {
 	int i;
 	for(i=0; i<MAXEP; i++)
 	{
-		if(ep_exts[i] && ep_exts[i]->adr == adr) return ep_exts[i];
+		if(ep_exts[i])
+		{
+			if(get_by == DLT645_ASDU_ADR)
+			{
+				if(ep_exts[i]->adr == adr) return ep_exts[i];
+			}
+			else
+			{
+				if(ep_exts[i]->adr_hex == adr) return ep_exts[i];
+			}
+		}
 	}
 
 	return NULL;
 }
 
 
-uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr, uint8_t host_type)
+uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr)
 {
 	int i;
 	dlt645_ep_ext *ep_ext = NULL;
 
-	ep_ext = dlt645_get_ep_ext(adr);
+	ep_ext = dlt645_get_ep_ext(adr, 0);
 
 	if(ep_ext) return RES_SUCCESS;
 
 	ep_ext = (dlt645_ep_ext*) calloc(1, sizeof(dlt645_ep_ext));
 
-	ep_ext->adr       = adr;
-	ep_ext->link_adr  = link_adr;
-	ep_ext->host_type = host_type;
+	ep_ext->adr     = adr;
+	ep_ext->adr_hex = link_adr;
 
 	for(i=0; i<MAXEP; i++)
 	{
@@ -313,7 +352,7 @@ uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr, uint8_t host_type)
 		{
 			ep_exts[i] = ep_ext;
 #ifdef _DEBUG
-			printf("%s: New ep_ext added. Address = %d, Host type = %s\n", APP_NAME, ep_ext->adr, ep_ext->host_type == DLT645_HOST_MASTER?"DLT645_HOST_MASTER":"DLT645_HOST_SLAVE");
+			printf("%s: New ep_ext added. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
 			return RES_SUCCESS;
 		}
@@ -327,6 +366,12 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext)
 {
 	if(!ep_ext) return;
 
+	// stop all timers
+	ep_ext->timer_t0 = 0;
+
+#ifdef _DEBUG
+	printf("%s: All timers stopped.\n", APP_NAME);
+#endif
 }
 
 
@@ -354,7 +399,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 	dlt645_ep_ext* ep_ext = NULL;
 
-	ep_ext = dlt645_get_ep_ext(adr);
+	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
 
 	if(!ep_ext) return RES_UNKNOWN;
 
@@ -383,15 +428,12 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 			dlt645_init_ep_ext(ep_ext);
 
-			if(ep_ext->host_type == DLT645_HOST_MASTER)
-			{
-				// start t0 timer
-				ep_ext->timer_t0 = time(NULL);
+			// start t0 timer
+			ep_ext->timer_t0 = time(NULL);
 
 #ifdef _DEBUG
-				printf("%s: Timer t0 started.\n", APP_NAME);
+			printf("%s: Timer t0 started.\n", APP_NAME);
 #endif
-			}
 
 			break;
 
@@ -402,14 +444,11 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 			dlt645_init_ep_ext(ep_ext);
 
-			if(ep_ext->host_type == DLT645_HOST_MASTER)
-			{
-				dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
+			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_CONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+			printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
-			}
 
 			break;
 
@@ -420,14 +459,11 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 			dlt645_init_ep_ext(ep_ext);
 
-			if(ep_ext->host_type == DLT645_HOST_MASTER)
-			{
-				dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
+			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_CONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+			printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
-			}
 
 			break;
 
@@ -455,7 +491,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 }
 
 
-uint16_t dlt645_frame_send(dlt_frame *d_fr,  uint16_t adr, uint8_t dir)
+uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir)
 {
 	uint16_t res;
 	uint32_t d_len = 0;
@@ -463,6 +499,17 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr,  uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 	uint16_t awk_msg = DLT645_AWAKE_MSG;
+
+	dlt645_ep_ext *ep_ext = NULL;
+
+	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
+
+	if(!ep_ext) return RES_INCORRECT;
+
+	if(d_fr->adr_hex == 0 && ep_ext->adr_hex > 0)
+	{
+		d_fr->adr_hex = ep_ext->adr_hex;
+	}
 
 	res = dlt_frame_buff_build(&d_buff, &d_len, d_fr);
 
@@ -483,7 +530,7 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr,  uint16_t adr, uint8_t dir)
 			mf_toendpoint(ep_buff, sizeof(ep_data_header) + 2 + d_len, adr, dir);
 
 #ifdef _DEBUG
-			printf("%s: User data in DIRDN sent. Address = %d, Length = %d\n", APP_NAME, ep_header.adr, ep_header.len);
+			printf("%s: User data in DIRDN sent. Address = %d, Link address (BCD) = %llx, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, ep_header.len);
 
 			char c_buff[512] = {0};
 			hex2ascii(d_buff, c_buff, d_len);
@@ -517,10 +564,6 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	dlt_frame *d_fr = NULL;
 	dlt645_ep_ext *ep_ext = NULL;
 
-	ep_ext = dlt645_get_ep_ext(adr);
-
-	if(!ep_ext) return RES_INCORRECT;
-
 	offset = 0;
 
 	while(offset < buff_len)
@@ -533,7 +576,16 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 		if(res == RES_SUCCESS)
 		{
+			ep_ext = dlt645_get_ep_ext(d_fr->adr_hex, DLT645_LINK_ADR);
 
+			if(ep_ext)
+			{
+
+			}
+			else
+			{
+				res = RES_INCORRECT;
+			}
 		}
 
 		dlt_frame_destroy(&d_fr);
@@ -589,13 +641,10 @@ uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 {
 	uint16_t res;
 	asdu *dlt_asdu = NULL;
-	dlt_frame *d_fr = NULL;
-	uint32_t d_len = 0;
-	unsigned char *d_buff = NULL;
 
 	dlt645_ep_ext *ep_ext = NULL;
 
-	ep_ext = dlt645_get_ep_ext(adr);
+	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
 
 	if(!ep_ext) return RES_INCORRECT;
 
@@ -603,18 +652,7 @@ uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	if(res == RES_SUCCESS && dlt_asdu->adr == ep_ext->adr)
 	{
-		d_fr = dlt_frame_create();
-
-		if(!d_fr) return RES_MEM_ALLOC;
-
-		res = dlt_asdu_buff_build(&d_buff, &d_len, dlt_asdu);
-
-		if(res == RES_SUCCESS)
-		{
-			res = dlt645_frame_send(d_fr, ep_ext->adr, DIRDN);
-		}
-
-		dlt_frame_destroy(&d_fr);
+		res = dlt645_read_data_send(ep_ext->adr, 0x02010100, 0, 0);
 	}
 	else
 	{
@@ -646,7 +684,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 
 		d_fr->adr  = adr;
 
-		if(num > 0)
+		if(num > 0 && start_time == 0)
 		{
 			d_fr->data_len = 4 + 1;
 			d_fr->data = malloc(d_fr->data_len);
@@ -660,7 +698,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 				offset += 1;
 			}
 		}
-		else if(start_time > 0)
+		else if(num > 0 && start_time > 0)
 		{
 			d_fr->data_len = 4 + 6;
 			d_fr->data = malloc(d_fr->data_len);
@@ -669,6 +707,9 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 			{
 				buff_put_le_uint32(d_fr->data, offset, data_id);
 				offset += 4;
+
+				buff_put_le_uint8(d_fr->data, offset, num);
+				offset += 1;
 
 				dlt_asdu_build_time_tag(d_fr->data, &offset, start_time);
 			}
@@ -686,7 +727,6 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 		if(d_fr->data)
 		{
 			res = dlt645_frame_send(d_fr, adr, DIRDN);
-
 		}
 		else
 		{
