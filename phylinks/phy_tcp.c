@@ -236,7 +236,7 @@ struct phy_route *pr;
 	}
 	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", ih->addr, i);
 	pr = myprs[i];
-	pr->ep_index = ih->numch;
+	pr->ep_index = ih->numep;
 
 	return 0;
 }

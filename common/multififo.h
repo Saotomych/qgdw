@@ -24,6 +24,8 @@ typedef struct _transactinfo{
 	int ep_index;
 } TRANSACTINFO;
 
+extern volatile int hpp[2];
+
 // Initialisation
 // in: pathinit - pointer to path to pipes
 // in: devicename - pointer to devicename from config

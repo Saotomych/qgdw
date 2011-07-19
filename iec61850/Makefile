@@ -1,7 +1,7 @@
 -include ../common/common.mk
 
 OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o
-CCFLAGS += -c -Os -Wall
+CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 
 startiec: $(OBJS)
