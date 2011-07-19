@@ -36,6 +36,7 @@ extern "C" {
 
 #define APP_NAME		"unitlink-iec104"
 #define APP_PATH 		"/rw/mx00/unitlinks"
+#define APP_CFG			"/rw/mx00/configs/lowlevel.cfg"
 #define CHILD_APP_PATH 	"/rw/mx00/phyints"
 #define ALARM_PER	1
 
