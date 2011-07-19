@@ -38,14 +38,10 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-<<<<<<< HEAD
-	res = iec104_config_read(APP_CFG);
-=======
 	int ret;
 	struct ep_init_header *eih = 0;
 
-	res = iec104_config_read("/rw/mx00/configs/lowlevel.cfg");
->>>>>>> ade5d2010a854face2a5e0fa12cf662b23c98435
+	res = iec104_config_read(APP_CFG);
 
 	if(res != RES_SUCCESS) exit(1);
 
