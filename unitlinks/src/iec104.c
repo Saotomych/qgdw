@@ -29,8 +29,6 @@ static uint8_t t3 = IEC104_T3;
 //static uint8_t k = IEC104_K;
 static uint8_t w = IEC104_W;
 
-static sigset_t sigmask;
-
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
 struct config_device cd;
@@ -40,9 +38,8 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 
-	fd_set rddesc, exdesc;
 	int ret;
-	char buf[10];
+	struct ep_init_header *eih = 0;
 
 	res = iec104_read_config("/rw/mx00/configs/unitlinks.cfg");
 
@@ -78,23 +75,19 @@ int main(int argc, char *argv[])
 
 	printf("Unit-IEC104- waiting.....\n");
 	do{
-	    FD_ZERO(&rddesc);
-	    FD_ZERO(&exdesc);
-		FD_SET(hpp[0], &rddesc);
-		FD_SET(hpp[0], &exdesc);
 
-	    ret = select(hpp[1] + 1, &rddesc, NULL, &exdesc, NULL);
+			ret = mf_waitevent((char*) eih, sizeof(eih), 0);
+			if (!ret){
+				mf_exit();
+				exit(0);
+			}
 
-	    if (FD_ISSET(hpp[0], &exdesc)) appexit = 0;
-
-	    if (FD_ISSET(hpp[0], &rddesc)){
-	    	// Read from pipe
-	    	ret = read(hpp[0], buf, 10);
+			if (ret == 1){
 	    	// start forward endpoint
-	    	printf("Unit-IEC104: forward endpoint\n");
-		    mf_newendpoint(&cd, "/rw/mx00/phyints", 1);
-		    iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
-	    }
+				printf("Unit-IEC104: forward endpoint\n");
+				mf_newendpoint(&cd, "/rw/mx00/phyints", 1);
+				iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
+			}
 
 	}while(!appexit);
 

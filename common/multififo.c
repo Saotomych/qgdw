@@ -977,4 +977,26 @@ struct endpoint *ep;
 void mf_set_cb_rcvclose(void *func_rcvclose){
 	cb_rcvclose = func_rcvclose;
 }
+
+int mf_waitevent(char *buf, int len, int ms_delay){
+fd_set rddesc, exdesc;
+int ret;
+
+	FD_ZERO(&rddesc);
+    FD_ZERO(&exdesc);
+	FD_SET(hpp[0], &rddesc);
+	FD_SET(hpp[0], &exdesc);
+
+    ret = select(hpp[1] + 1, &rddesc, NULL, &exdesc, NULL);
+
+    if (FD_ISSET(hpp[0], &exdesc)) return 0;
+
+	if (FD_ISSET(hpp[0], &rddesc)){
+		ret = read(hpp[0], buf, len);
+		return 1;
+	}
+
+	return 2;
+
+}
 // ================= End External API ============================================== //
