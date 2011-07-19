@@ -18,7 +18,7 @@ char *appname, *pathapp;
 
 // Control child
 volatile static int inotifystop = 0;
-volatile int hpp[2];
+int hpp[2];
 
 // Control inotify
 static int d_inoty = 0;

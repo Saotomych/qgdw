@@ -212,13 +212,13 @@ int rcvinit(ep_init_header *ih){
 int i;
 struct phy_route *pr;
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[2]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[3]);
 	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
-#endif
+//#endif
 
 	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
 
@@ -227,7 +227,7 @@ struct phy_route *pr;
 		if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
 	}
 	if (i == maxpr){
-		printf("This connect not found\n");
+		printf("Phylink TCP/IP: This connect not found\n");
 		return 0;	// Route not found
 	}
 	if (myprs[i]->state){
