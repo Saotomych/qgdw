@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 //	char name[] 		= {"phy_tcp"};
 //	char unitlink[] 	= {APP_NAME};
+//	char unitlink[] 	= {APP_NAME};
 //	char physlink[] 	= {"phy_tcp"};
 //
 //	struct config_device cd = {
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
 	    	// start forward endpoint
 				printf("Unit-IEC104: forward endpoint\n");
 				mf_newendpoint(&cd, "/rw/mx00/phyints", 1);
+				printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
 				iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
 			}
 

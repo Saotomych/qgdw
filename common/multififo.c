@@ -682,9 +682,9 @@ fd_set readset;
 		printf("MFI %s: inotify not init\n", appname);
 		return -1;
 	}
-	printf("MFI %s: init inotify ready, desc=0x%X\n", appname, d_inoty);
+//	printf("MFI %s: init inotify ready, desc=0x%X\n", appname, d_inoty);
 	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
-	printf("MFI %s: init channel %s in watch %d\n", appname, mychs[0]->f_namein, mychs[0]->watch);
+//	printf("MFI %s: init channel %s in watch %d\n", appname, mychs[0]->f_namein, mychs[0]->watch);
 
 	do{
 		// Waiting for inotify events
@@ -826,7 +826,7 @@ struct endpoint *ep;
 		ep->eih.isstr[3] = cd->protoname;
 		ep->eih.isstr[4] = cd->phyname;
 
-		printf("%s: Create endpoint begin\n", appname);
+//		printf("%s: Create endpoint begin\n", appname);
 
 	}
 
@@ -842,7 +842,7 @@ struct endpoint *ep;
 	strcat(fname, sufinit);
 	dninit = open(fname, O_RDWR);
 
-	printf("MFI %s: init open %s\n", appname, fname);
+//	printf("MFI %s: init open %s\n", appname, fname);
 
 	if (!dninit) return -1;
 
@@ -856,8 +856,8 @@ struct endpoint *ep;
 	wrlen += write(dninit, ep->eih.isstr[4], strlen(cd->phyname)+1);
 	wrlen += write(dninit, &(ep->eih), sizeof(ep_init_header));
 
-	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
-	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
+//	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+//	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
 	while(ch->ready < 2);
 	close(dninit);
