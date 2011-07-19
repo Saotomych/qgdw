@@ -23,7 +23,7 @@
 /* Control field masks */
 #define DLT_FNC					0x1F	/* function */
 #define DLT_SSEQ				0x20	/* subsequent data */
-#define DLT_ASYN				0x40	/* asynchronous/synchronous */
+#define DLT_ERR					0x40	/* error */
 #define DLT_DIR					0x80	/* direction bit */
 
 
@@ -87,7 +87,7 @@ void dlt_frame_buff_parse_ctrl_field(unsigned char *buff, uint32_t *offset, dlt_
 
 	frame->sseq = (buff_get_le_uint8(buff, *offset) & DLT_SSEQ) >> 5;
 
-	frame->asyn = (buff_get_le_uint8(buff, *offset) & DLT_ASYN) >> 6;
+	frame->err = (buff_get_le_uint8(buff, *offset) & DLT_ERR) >> 6;
 
 	frame->dir = (buff_get_le_uint8(buff, *offset) & DLT_DIR) >> 7;
 
@@ -99,7 +99,7 @@ void dlt_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, dlt_
 {
 	uint8_t bytex;
 
-	bytex = frame->fnc | (frame->sseq << 5) | (frame->asyn << 6) | (frame->dir << 7);
+	bytex = frame->fnc | (frame->sseq << 5) | (frame->err << 6) | (frame->dir << 7);
 
 	buff_put_le_uint8(buff, *offset, bytex);
 	*offset += 1;
@@ -238,10 +238,10 @@ uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_fram
 	buff_put_le_uint8(*buff, offset, DLT_START_BYTE);
 	offset += 1;
 
-	if(frame->adr > 0)
-		buff_bcd_put_le_uint(*buff, offset, frame->adr, 6);
-	else
+	if(frame->adr_hex > 0)
 		buff_put_le_uint48(*buff, offset, frame->adr_hex);
+	else
+		buff_bcd_put_le_uint(*buff, offset, frame->adr, 6);
 	offset += 6;
 
 	// put second start byte

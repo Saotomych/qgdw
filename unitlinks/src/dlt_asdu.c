@@ -51,7 +51,6 @@ dlt_asdu_pb_tab[] = {
 	{ 0xFFFFFFFF,	0x03300D00,	3,	0 },
 	{ 0xFFFFFFFF,	0x03300E00,	3,	0 },
 
-
 	// that's all folks
 	{ 0x00000000,	0x00000000,	0,	0 }
 };
@@ -227,14 +226,6 @@ uint8_t dlt_asdu_parse_energy(unsigned char *buff, uint32_t buff_len, uint32_t *
 			*offset += type_size;
 		}
 	}
-
-	return RES_SUCCESS;
-}
-
-
-uint8_t dlt_asdu_build_energy(unsigned char **buff, uint32_t *buff_len, asdu *dlt_asdu)
-{
-	// start building header field by field
 
 	return RES_SUCCESS;
 }
@@ -434,8 +425,6 @@ uint8_t dlt_asdu_parse_event_log(unsigned char *buff, uint32_t buff_len, uint32_
 }
 
 
-
-
 uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_asdu)
 {
 	// fast check input data
@@ -478,57 +467,6 @@ uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_as
 
 #ifdef _DEBUG
 	printf("%s: ASDU parsed OK. Type = %d, IO num = %d\n", "unitlink-dlt645", d3, dlt_asdu->size);
-#endif
-
-	return RES_SUCCESS;
-}
-
-
-uint8_t dlt_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *dlt_asdu)
-{
-	// set buffer length to zero and start building it
-	*buff_len = 0;
-
-	// fast check input data
-	if(!buff || !dlt_asdu || !dlt_asdu->data) return RES_INCORRECT;
-
-	// declare variables and function pointer to work with the buffer
-	uint16_t res;
-	uint8_t d3;
-
-	d3 = dlt_asdu->data->id >> (3*8);
-
-	switch(d3)
-	{
-	case 0x00:
-		// build energy data item/block
-		res = dlt_asdu_build_energy(buff, buff_len, dlt_asdu);
-
-		break;
-
-	case 0x02:
-		// build instantaneous value data item/block
-//		res = dlt_asdu_parse_inst_value(buff, buff_len, &offset, dlt_asdu);
-
-		break;
-	case 0x03:
-		// build event log data item/block
-//		res = dlt_asdu_parse_event_log(buff, buff_len, &offset, dlt_asdu);
-
-		break;
-
-	default:
-		res = RES_UNKNOWN;
-
-		break;
-	}
-
-
-
-
-
-#ifdef _DEBUG
-	printf("%s: ASDU builded OK. Type = %d, IO num = %d\n", "unitlink-dlt645", d3, dlt_asdu->size);
 #endif
 
 	return RES_SUCCESS;

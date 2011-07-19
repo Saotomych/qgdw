@@ -31,6 +31,7 @@ extern "C" {
 #define FNC_CLEAR_DATA			0x1A	/* clear all accumulated data on the slave station */
 #define FNC_CLEAR_EVENT_LOG		0x1B	/* clear event log data */
 
+
 /* Direction */
 #define DIR_REQUEST				0		/* request from controlling station */
 #define DIR_RESPONSE			1		/* response from controlled station */
@@ -47,7 +48,7 @@ typedef struct dlt_frame {
 	/* Header */
 	uint8_t			fnc;		/* function */
 	uint8_t			sseq;		/* subsequent data frame(1)/no subsequent data frame(0) */
-	uint8_t			asyn;		/* asynchronous slave response(1)/synchronous slave response(0) */
+	uint8_t			err;		/* error(1)/no error(0) */
 	uint8_t			dir;		/* from controlled station(1)/from controlling station(0) */
 
 	uint16_t 		adr;		/* link address */

@@ -73,7 +73,7 @@ typedef struct iec104_ep_ext {
  *
  */
 
-uint16_t iec104_read_config(const char *file_name);
+uint16_t iec104_config_read(const char *file_name);
 
 void iec104_catch_alarm(int sig);
 
