@@ -150,10 +150,6 @@ uint16_t iec104_config_read(const char *file_name)
 
 void iec104_catch_alarm(int sig)
 {
-#ifdef _DEBUG
-//	printf("%s: Timers check went off.\n", APP_NAME);
-#endif
-
 	time_t cur_time = time(NULL);
 
 	int i;
@@ -161,16 +157,6 @@ void iec104_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
-#ifdef _DEBUG
-//			printf("%s: ep_ext found. Address = %d, t0 = %2.0f, t1 = %2.0f, t2 = %2.0f, t3 = %2.0f.\n",
-//					APP_NAME,
-//					ep_exts[i]->adr,
-//					ep_exts[i]->timer_t0 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t0),
-//					ep_exts[i]->timer_t1 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t1),
-//					ep_exts[i]->timer_t2 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t2),
-//					ep_exts[i]->timer_t3 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t3));
-#endif
-
 			// Check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
