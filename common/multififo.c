@@ -192,21 +192,24 @@ int getframefalse(struct channel *ch){
 }
 
 int testrunningapp(char *name){
-int ret, wait_st;
+int ret, pid, wait_st;
 char pidof[] = {"/bin/pidof"};
-char *par[] = {NULL, name};
-char *env[] = {NULL};
+char *par[2];
+char *env[1];
 int opipe[2];
 struct timeval tv;
 fd_set readset;
-char buf[16];
+char buf[160];
+
+		par[0] = pidof;
+		par[1] = name;
+		env[0] = NULL;
 
 		if (pipe(opipe) == -1)
 		{
 			printf("Error: creating pipe");
 			return -1;
 		}
-		par[0] = pidof;
 		ret = fork();
 		if (!ret){
 	        close(1);
@@ -215,8 +218,10 @@ char buf[16];
 	        close(opipe[1]);
 			execve(pidof, par, env);
 			printf("MFI %s: fork error:%d - %s\n",appname, errno, strerror(errno));
+			exit(0);
 		}
-		waitpid(ret, &wait_st, 0);
+		pid = ret;
+		waitpid(pid, &wait_st, 0);
 		FD_ZERO(&readset);
 	    FD_SET(opipe[0], &readset);
 	    close(opipe[1]);
@@ -224,9 +229,13 @@ char buf[16];
 	    tv.tv_usec = 0;
 	    ret = select(opipe[0] + 1, &readset, 0, 0, &tv);
 	    if (ret > 0){
-	    	return read(opipe[0], buf, 16);
+	    	ret = read(opipe[0], buf, 160);
+
+	    	printf("MFI testrunapp: %s len =%d\n", buf, ret);
+
+	    	return ret;
 	    }
-		waitpid(ret, &wait_st, 0);
+		waitpid(pid, &wait_st, 0);
 	    return -1;
 }
 
@@ -788,7 +797,7 @@ int dninit;
 struct channel *ch;
 struct endpoint *ep;
 
-	if (!testrunningapp(cd->name)){
+	if (testrunningapp(cd->name) >= 0){
 		// lowlevel application not running
 		// running it
 
@@ -814,7 +823,6 @@ struct endpoint *ep;
 		ep = myeps[maxep-1];	// Forwarding last endpoint
 		if (!ep) return -1;		// if ep_num don't have, ep = 0
 		if (ep->cdcdn) return -1;	// if down channel created already
-
 	}else{
 		// Create new endpoint
 		ep = create_ep();
@@ -853,12 +861,15 @@ struct endpoint *ep;
 	ep->eih.numep = maxep-1;
 	// Write config to init channel
 
+	printf("\nNew Endpoint: 0x%X, 0x%X, %d, %d, %d\n", (int) ep->cdcdn, (int) ep->cdcup, ep->ep_dn, ep->ep_up, ep->my_ep);
+	printf("Endpoint EIH: %d, %d\n", ep->eih.addr, ep->eih.numep);
+
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
 	wrlen += write(dninit, ep->eih.isstr[1], strlen(appname)+1);
 	wrlen += write(dninit, ep->eih.isstr[2], strlen(cd->name)+1);
 	wrlen += write(dninit, ep->eih.isstr[3], strlen(cd->protoname)+1);
 	wrlen += write(dninit, ep->eih.isstr[4], strlen(cd->phyname)+1);
-	wrlen += write(dninit, &(ep->eih), sizeof(ep_init_header));
+	wrlen += write(dninit, (char*) &(ep->eih), sizeof(ep_init_header));
 
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
@@ -985,6 +996,10 @@ void mf_set_cb_rcvclose(void *func_rcvclose){
 int mf_waitevent(char *buf, int len, int ms_delay){
 fd_set rddesc;
 int ret;
+//struct timeval tm;
+
+//	tm.tv_sec = ms_delay / 1000;
+//	tm.tv_usec = (ms_delay % 1000) * 1000;
 
 	FD_ZERO(&rddesc);
 	FD_SET(hpp[0], &rddesc);

@@ -87,6 +87,8 @@ int main(int argc, char *argv[])
 				iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
 			}
 
+			if (ret == 2) printf("IEC104: Timeout\n");
+
 	}while(!appexit);
 
 	mf_exit();
