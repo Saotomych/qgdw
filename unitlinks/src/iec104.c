@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	    	// start forward endpoint
 				printf("IEC104: forward endpoint\n");
 				mf_newendpoint(&cd, CHILD_APP_PATH, 1);
-				printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
+				printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
 				iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
 			}
 
