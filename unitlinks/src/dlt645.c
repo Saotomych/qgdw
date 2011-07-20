@@ -20,10 +20,24 @@ static sigset_t sigmask;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
+char forname[100];
+char forprotoname[100];
+char forphyname[100];
+struct config_device cd ={
+		forname,
+		forprotoname,
+		forphyname,
+		0
+};
+
+
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
 	uint16_t res;
+
+	int ret;
+	struct ep_init_header *eih = 0;
 
 	res = dlt645_config_read(APP_CFG);
 
@@ -31,31 +45,42 @@ int main(int argc, char *argv[])
 
 	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data, dlt645_recv_init);
 
-#ifdef _DEBUG
-	char name[] 		= {"phy_tty"};
-	char unitlink[] 	= {APP_NAME};
-	char physlink[] 	= {"phy_tty"};
-
-	struct config_device cd = {
-			name,
-			unitlink,
-			physlink,
-			111
-	};
-
-	mf_newendpoint(&cd, CHILD_APP_PATH, 0);
-
-	dlt645_sys_msg_send(EP_MSG_CONNECT, ep_exts[0]->adr, DIRDN);
-
-	printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_exts[0]->adr, ep_exts[0]->adr_hex);
-#endif
-
 	signal(SIGALRM, dlt645_catch_alarm);
 
 	alarm(alarm_t);
 
-	do{
-		sigsuspend(&sigmask);
+#ifdef _DEBUG
+	printf("%s: Waiting for end-point initialization end event...\n", APP_NAME);
+#endif
+
+	do
+	{
+		ret = mf_waitevent((char*) &eih, sizeof(eih), 0);
+
+		if(!ret)
+		{
+			mf_exit();
+			exit(0);
+		}
+
+		if(ret == 1)
+		{
+			// start forward endpoint
+#ifdef _DEBUG
+			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
+#endif
+
+			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
+
+			dlt645_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
+
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
+#endif
+		}
+
+		if(ret == 2) printf("%s: mf_waitevent timeout\n", APP_NAME);
+
 	}while(!appexit);
 
 	mf_exit();
@@ -287,8 +312,6 @@ int dlt645_recv_data(int len)
 
 int dlt645_recv_init(ep_init_header *ih)
 {
-	struct config_device cd;
-
 #ifdef _DEBUG
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
@@ -298,13 +321,9 @@ int dlt645_recv_init(ep_init_header *ih)
 #endif
 
 	cd.addr = ih->addr;
-	cd.name = ih->isstr[2];
-	cd.protoname = ih->isstr[3];
-	cd.phyname = ih->isstr[4];
-
-	mf_newendpoint(&cd, CHILD_APP_PATH, 1);
-
-	dlt645_sys_msg_send(EP_MSG_CONNECT, ih->addr, DIRDN);
+	strncpy(cd.name, ih->isstr[2], 100);
+	strncpy(cd.protoname, ih->isstr[3], 100);
+	strncpy(cd.phyname, ih->isstr[4], 100);
 
 	return 0;
 }

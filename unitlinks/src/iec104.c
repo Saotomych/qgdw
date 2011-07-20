@@ -41,6 +41,7 @@ struct config_device cd ={
 		0
 };
 
+
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
@@ -55,47 +56,40 @@ int main(int argc, char *argv[])
 
 	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, iec104_recv_init);
 
-#ifdef _DEBUG
-//	char name[] 		= {"phy_tcp"};
-//	char unitlink[] 	= {APP_NAME};
-//	char unitlink[] 	= {APP_NAME};
-//	char physlink[] 	= {"phy_tcp"};
-//
-//	struct config_device cd = {
-//			name,
-//			unitlink,
-//			physlink,
-//			967
-//	};
-//
-//	mf_newendpoint(&cd, CHILD_APP_PATH, 0);
-//
-//	iec104_sys_msg_send(EP_MSG_CONNECT, 967, DIRDN);
-//
-//	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
-#endif
-
 	signal(SIGALRM, iec104_catch_alarm);
 	alarm(alarm_t);
 
-	printf("IEC104- waiting...\n");
-	do{
+#ifdef _DEBUG
+		printf("%s: Waiting for end-point initialization end event...\n", APP_NAME);
+#endif
 
-			ret = mf_waitevent((char*) &eih, sizeof(eih), 0);
-			if (!ret){
-				mf_exit();
-				exit(0);
-			}
+	do
+	{
+		ret = mf_waitevent((char*) &eih, sizeof(eih), 0);
 
-			if (ret == 1){
-	    	// start forward endpoint
-				printf("IEC104: forward endpoint\n");
-				mf_newendpoint(&cd, CHILD_APP_PATH, 1);
-				printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
-				iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
-			}
+		if(!ret)
+		{
+			mf_exit();
+			exit(0);
+		}
 
-			if (ret == 2) printf("IEC104: Timeout\n");
+		if(ret == 1)
+		{
+			// start forward endpoint
+#ifdef _DEBUG
+			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
+#endif
+
+			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
+
+			iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
+
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
+#endif
+		}
+
+		if(ret == 2) printf("%s: mf_waitevent timeout\n", APP_NAME);
 
 	}while(!appexit);
 
@@ -389,7 +383,6 @@ int iec104_recv_data(int len)
 
 int iec104_recv_init(ep_init_header *ih)
 {
-
 #ifdef _DEBUG
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
