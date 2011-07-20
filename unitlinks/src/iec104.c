@@ -31,7 +31,19 @@ static uint8_t w = IEC104_W;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
-struct config_device cd;
+char forname[100];
+char forprotoname[100];
+char forphyname[100];
+struct config_device cd ={
+		forname,
+		forprotoname,
+		forphyname,
+		0
+};
+
+int iec104_rd(int len){
+
+}
 
 int main(int argc, char *argv[])
 {
@@ -41,11 +53,11 @@ int main(int argc, char *argv[])
 	int ret;
 	struct ep_init_header *eih = 0;
 
-	res = iec104_config_read(APP_CFG);
+//	res = iec104_config_read(APP_CFG);
 
-	if(res != RES_SUCCESS) exit(1);
+//	if(res != RES_SUCCESS) exit(1);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, iec104_recv_init);
+	chldpid = mf_init(APP_PATH, APP_NAME, iec104_rd, iec104_recv_init);
 
 #ifdef _DEBUG
 //	char name[] 		= {"phy_tcp"};
@@ -67,8 +79,8 @@ int main(int argc, char *argv[])
 //	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
 #endif
 
-	signal(SIGALRM, iec104_catch_alarm);
-	alarm(alarm_t);
+//	signal(SIGALRM, iec104_catch_alarm);
+//	alarm(alarm_t);
 
 	printf("IEC104- waiting...\n");
 	do{
@@ -381,7 +393,6 @@ int iec104_recv_data(int len)
 
 int iec104_recv_init(ep_init_header *ih)
 {
-//	struct config_device cd;
 
 #ifdef _DEBUG
 	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
@@ -392,13 +403,9 @@ int iec104_recv_init(ep_init_header *ih)
 #endif
 
 	cd.addr = ih->addr;
-	cd.name = ih->isstr[2];
-	cd.protoname = ih->isstr[3];
-	cd.phyname = ih->isstr[4];
-
-//	mf_newendpoint(&cd, CHILD_APP_PATH, 1);
-
-//	iec104_sys_msg_send(EP_MSG_CONNECT, ih->addr, DIRDN);
+	strncpy(cd.name, ih->isstr[2], 100);
+	strncpy(cd.protoname, ih->isstr[3], 100);
+	strncpy(cd.phyname, ih->isstr[4], 100);
 
 	return 0;
 }

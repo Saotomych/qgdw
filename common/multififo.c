@@ -191,15 +191,15 @@ int getframefalse(struct channel *ch){
 	return 0;
 }
 
-int testrunningapp(char *name){
-int ret, pid, wait_st;
-char pidof[] = {"/bin/pidof"};
 char *par[2];
 char *env[1];
+int testrunningapp(char *name){
+char pidof[] = {"/bin/pidof"};
+char buf[160] = {0};
+int ret, pid, wait_st;
 int opipe[2];
 struct timeval tv;
 fd_set readset;
-char buf[160];
 
 		par[0] = pidof;
 		par[1] = name;
@@ -375,8 +375,8 @@ int len;
 
 	maxch++;
 
-//	printf("MFI %s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
-	printf("MFI %s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
+	printf("MFI %s: connect to up channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
+//	printf("MFI %s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
 	return 0;
 }
@@ -797,7 +797,7 @@ int dninit;
 struct channel *ch;
 struct endpoint *ep;
 
-	if (testrunningapp(cd->name) >= 0){
+	if (!testrunningapp(cd->name)){
 		// lowlevel application not running
 		// running it
 
@@ -813,9 +813,8 @@ struct endpoint *ep;
 
 		// TODO sleep exchange to other variant to wait
 		sleep(1);
-		printf("OK\n");
 
-	}else 		printf("RUNNING LOW LEVEL APPLICATION\n");
+	}else 		printf("%s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 
 	if (ep_num){
 		// Forward existing endpoint
@@ -992,14 +991,13 @@ struct endpoint *ep;
 void mf_set_cb_rcvclose(void *func_rcvclose){
 	cb_rcvclose = func_rcvclose;
 }
-
 int mf_waitevent(char *buf, int len, int ms_delay){
 fd_set rddesc;
 int ret;
-//struct timeval tm;
+struct timeval tm;
 
-//	tm.tv_sec = ms_delay / 1000;
-//	tm.tv_usec = (ms_delay % 1000) * 1000;
+	tm.tv_sec = ms_delay / 1000;
+	tm.tv_usec = (ms_delay % 1000) * 1000;
 
 	FD_ZERO(&rddesc);
 	FD_SET(hpp[0], &rddesc);
