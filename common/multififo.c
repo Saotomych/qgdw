@@ -1014,8 +1014,6 @@ struct timeval tm;
     		return 1;
     	}
     }
-
-	return 2;
-
+    return (ms_delay ? 2 : 3);
 }
 // ================= End External API ============================================== //
