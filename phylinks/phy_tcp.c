@@ -137,7 +137,7 @@ int ret;
 
 void set_connect(struct phy_route *pr){
 int ret;
-	printf("Connect to 0x%s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
+	printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
 		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
@@ -165,14 +165,14 @@ int rdlen, i;
 
 	tai.buf = inoti_buf;
 	tai.len = len;
-	tai.addr = 0;
+	tai.addr = 1;
 
 	rdlen = mftai_readbuffer(&tai);
-	// Get phy_route by index
-	if (tai.ep_index){
-		pr = myprs[tai.ep_index];
-	}else return 0;
-
+	// Get phy_route by addr
+	for(i=0; i < maxpr; i++){
+		if (myprs[i]->asdu == tai.addr){ pr = myprs[i]; break;}
+	}
+	if (i==maxpr) return 0;
 	edh = (struct ep_data_header *) inoti_buf;				// set start structure
 	tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
 	switch(edh->sys_msg){
@@ -214,14 +214,14 @@ int i;
 struct phy_route *pr;
 
 //#ifdef _DEBUG
-	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
-	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
-	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[2]);
-	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[3]);
-	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
+//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
+//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
+//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[2]);
+//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[3]);
+//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
 //#endif
 
-	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
+	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n\n", ih->addr, ih->numep);
 
 	// For connect route struct to socket find equal address ASDU in route struct set
 	for (i = 0 ; i < maxpr; i++){
@@ -231,14 +231,13 @@ struct phy_route *pr;
 		printf("Phylink TCP/IP: This connect not found\n");
 		return 0;	// Route not found
 	}
-	if (myprs[i]->state){
+	if (pr->state){
 		printf("This connect setting already\n");
 		return 0;	// Route init already
 	}
-	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", ih->addr, i);
-	pr = myprs[i];
 	pr->ep_index = ih->numep;
 
+	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", ih->addr, i);
 	return 0;
 }
 
