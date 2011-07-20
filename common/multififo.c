@@ -431,6 +431,7 @@ struct endpoint *ep = 0;
 int sys_open(struct channel *ch){
 int ret;
 struct endpoint *ep = myeps[maxep - 1];
+struct ep_init_header *eih;
 
 	// Открываем канал на чтение
 	if (!ch->descin){
@@ -450,10 +451,8 @@ struct endpoint *ep = myeps[maxep - 1];
 				printf("MFI %s: READY ENDPOINT in low level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 				printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-				ret = write(hpp[1], &(ep->my_ep),  sizeof(int));
-
-				printf("MFI %s: MULTIFIFO WRITE TO PARENT %d bytes !!!!\n", appname, sizeof(int));
-
+				eih = &(ep->eih);
+				ret = write(hpp[1], (char*) &eih,  sizeof(int));
 			}
 		}
 	}
@@ -984,22 +983,17 @@ void mf_set_cb_rcvclose(void *func_rcvclose){
 }
 
 int mf_waitevent(char *buf, int len, int ms_delay){
-fd_set rddesc, exdesc;
+fd_set rddesc;
 int ret;
-char b[20];
 
 	FD_ZERO(&rddesc);
-    FD_ZERO(&exdesc);
 	FD_SET(hpp[0], &rddesc);
-	FD_SET(hpp[0], &exdesc);
 
-    ret = select(hpp[1] + 1, &rddesc, NULL, &exdesc, NULL);
+    ret = select(hpp[1] + 1, &rddesc, NULL, NULL, NULL);
 
-    if (FD_ISSET(hpp[0], &exdesc)) return 0;
-
-	if (FD_ISSET(hpp[0], &rddesc)){
-		ret = read(hpp[0], b, 20);
-		printf("MFI %s: fork error:%d - %s\n",appname, errno, strerror(errno));
+    if (FD_ISSET(hpp[0], &rddesc)){
+		ret = read(hpp[0], buf, 4);
+		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
 		printf("MFI %s: MULTIFIFO READ FROM CHILD %d bytes !!!!\n", appname, ret);
 		return 1;
 	}

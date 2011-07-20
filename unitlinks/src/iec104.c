@@ -70,10 +70,10 @@ int main(int argc, char *argv[])
 	signal(SIGALRM, iec104_catch_alarm);
 	alarm(alarm_t);
 
-	printf("Unit-IEC104- waiting.....\n");
+	printf("IEC104- waiting...\n");
 	do{
 
-			ret = mf_waitevent((char*) eih, sizeof(eih), 0);
+			ret = mf_waitevent((char*) &eih, sizeof(eih), 0);
 			if (!ret){
 				mf_exit();
 				exit(0);
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 
 			if (ret == 1){
 	    	// start forward endpoint
-				printf("Unit-IEC104: forward endpoint\n");
+				printf("IEC104: forward endpoint\n");
 				mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 				printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
 				iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
@@ -147,7 +147,7 @@ uint16_t iec104_config_read(const char *file_name)
 void iec104_catch_alarm(int sig)
 {
 #ifdef _DEBUG
-	printf("%s: Timers check went off.\n", APP_NAME);
+//	printf("%s: Timers check went off.\n", APP_NAME);
 #endif
 
 	time_t cur_time = time(NULL);
@@ -158,13 +158,13 @@ void iec104_catch_alarm(int sig)
 		if(ep_exts[i])
 		{
 #ifdef _DEBUG
-			printf("%s: ep_ext found. Address = %d, t0 = %2.0f, t1 = %2.0f, t2 = %2.0f, t3 = %2.0f.\n",
-					APP_NAME,
-					ep_exts[i]->adr,
-					ep_exts[i]->timer_t0 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t0),
-					ep_exts[i]->timer_t1 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t1),
-					ep_exts[i]->timer_t2 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t2),
-					ep_exts[i]->timer_t3 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t3));
+//			printf("%s: ep_ext found. Address = %d, t0 = %2.0f, t1 = %2.0f, t2 = %2.0f, t3 = %2.0f.\n",
+//					APP_NAME,
+//					ep_exts[i]->adr,
+//					ep_exts[i]->timer_t0 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t0),
+//					ep_exts[i]->timer_t1 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t1),
+//					ep_exts[i]->timer_t2 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t2),
+//					ep_exts[i]->timer_t3 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t3));
 #endif
 
 			// Check timer t0
