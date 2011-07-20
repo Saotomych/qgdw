@@ -109,6 +109,21 @@ int ret = 0;
 }
 
 int rcvdata(int len){
+char *buff;
+int adr, dir;
+
+	buff = malloc(len);
+
+	if(!buff) return -1;
+
+	mf_readbuffer(buff, len, &adr, &dir);
+
+//#ifdef _DEBUG
+	printf("IEC: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
+//#endif
+
+
+	free(buff);
 
 	return 0;
 }
