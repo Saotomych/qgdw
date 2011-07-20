@@ -173,10 +173,6 @@ uint64_t dlt645_config_read_bcd_link_adr(char *buff)
 
 void dlt645_catch_alarm(int sig)
 {
-#ifdef _DEBUG
-	printf("%s: Timers check went off.\n", APP_NAME);
-#endif
-
 	time_t cur_time = time(NULL);
 
 	int i;
@@ -184,13 +180,6 @@ void dlt645_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
-#ifdef _DEBUG
-			printf("%s: ep_ext found. Address = %d, t0 = %2.0f.\n",
-					APP_NAME,
-					ep_exts[i]->adr,
-					ep_exts[i]->timer_t0 == 0 ? -1 : difftime(cur_time, ep_exts[i]->timer_t0));
-#endif
-
 			// Check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
