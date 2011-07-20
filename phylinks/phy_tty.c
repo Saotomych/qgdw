@@ -245,19 +245,21 @@ int start_ttydevice(TTYDEV *td){
 
 int rcvdata(int len){
 TRANSACTINFO tai;
-char inoti_buf[256];
+char *inoti_buf;
 struct phy_route *pr;
 ep_data_header *edh;
-int rdlen;
+int rdlen, i;
 
-		tai.buf = inoti_buf;
 		tai.len = len;
 		tai.addr = 0;
+		inoti_buf = malloc(len);
 
-		rdlen = mftai_readbuffer(&tai);
-		// Get phy_route by index
-		if (tai.ep_index) pr = myprs[tai.ep_index-1];
-		else return 0;
+		rdlen = mf_readbuffer(inoti_buf, len, &tai.addr, &tai.direct);
+//		// Get phy_route by addr
+		for(i=0; i < maxpr; i++){
+			if (myprs[i]->asdu == tai.addr){ pr = myprs[i]; break;}
+		}
+		if (i==maxpr){ free(inoti_buf); return 0;}
 
 		edh = (struct ep_data_header *) inoti_buf;				// set start structure
 		tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
@@ -291,6 +293,7 @@ int rdlen;
 				break;
 		}
 
+		free(inoti_buf);
 		return 0;
 }
 
