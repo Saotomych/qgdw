@@ -961,31 +961,41 @@ int mftai_readbuffer(TRANSACTINFO *tai){
 }
 
 int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct){
-	int i;
-	struct endpoint *ep;
+int i, ret;
+struct endpoint *ep;
+struct ep_data_header *edh;
 		if (!actchannel) return -1;
+		ret = getframefromring(actchannel, buf, len);
+		edh = (struct ep_data_header*) buf;
 		// Find endpoint
 	//	printf("MFI %s: readbuffer len=%d\n", appname, len);
 		for(i = 1; i < maxep; i++){
 			ep = myeps[i];
-			if (ep->cdcdn == actchannel) {*index = i; *direct = DIRDN; break;}
-			if (ep->cdcup == actchannel) {*index = i; *direct = DIRUP; break;}
+			if (edh->adr == ep->eih.addr){
+				if (ep->cdcdn == actchannel) {*index = i; *direct = DIRDN; break;}
+				if (ep->cdcup == actchannel) {*index = i; *direct = DIRUP; break;}
+			}
 		}
-		return getframefromring(actchannel, buf, len);
+		return (i==maxep ? 0 : ret);
 }
 
 int mf_readbuffer(char *buf, int len, int *addr, int *direct){
-int i;
+int i, ret;
 struct endpoint *ep;
+struct ep_data_header *edh;
 	if (!actchannel) return -1;
+	ret = getframefromring(actchannel, buf, len);
+	edh = (struct ep_data_header*) buf;
 	// Find endpoint
 //	printf("MFI %s: readbuffer len=%d\n", appname, len);
 	for(i = 1; i < maxep; i++){
 		ep = myeps[i];
-		if (ep->cdcdn == actchannel) {*addr = ep->eih.addr; *direct = DIRDN; break;}
-		if (ep->cdcup == actchannel) {*addr = ep->eih.addr; *direct = DIRUP; break;}
+		if (edh->adr == ep->eih.addr){
+			if (ep->cdcdn == actchannel) {*addr = ep->eih.addr; *direct = DIRDN; break;}
+			if (ep->cdcup == actchannel) {*addr = ep->eih.addr; *direct = DIRUP; break;}
+		}
 	}
-	return getframefromring(actchannel, buf, len);
+	return (i==maxep ? 0 : ret);
 }
 
 void mf_set_cb_rcvclose(void *func_rcvclose){
