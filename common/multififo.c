@@ -996,20 +996,24 @@ fd_set rddesc;
 int ret;
 struct timeval tm;
 
-	tm.tv_sec = ms_delay / 1000;
-	tm.tv_usec = (ms_delay % 1000) * 1000;
-
 	FD_ZERO(&rddesc);
 	FD_SET(hpp[0], &rddesc);
 
-    ret = select(hpp[1] + 1, &rddesc, NULL, NULL, NULL);
+    if (!ms_delay) ret = select(hpp[1] + 1, &rddesc, NULL, NULL, NULL);
+    else{
+    	tm.tv_sec = ms_delay / 1000;
+    	tm.tv_usec = (ms_delay % 1000) * 1000;
+    	ret = select(hpp[1] + 1, &rddesc, NULL, NULL, &tm);
+    }
 
-    if (FD_ISSET(hpp[0], &rddesc)){
-		ret = read(hpp[0], buf, 4);
-		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
-		printf("MFI %s: MULTIFIFO READ FROM CHILD %d bytes !!!!\n", appname, ret);
-		return 1;
-	}
+    if (ret > 0){
+        if (FD_ISSET(hpp[0], &rddesc)){
+    		ret = read(hpp[0], buf, 4);
+    		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
+    		printf("MFI %s: MULTIFIFO READ FROM CHILD %d bytes !!!!\n", appname, ret);
+    		return 1;
+    	}
+    }
 
 	return 2;
 

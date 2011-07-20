@@ -41,10 +41,6 @@ struct config_device cd ={
 		0
 };
 
-int iec104_rd(int len){
-
-}
-
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
@@ -53,11 +49,11 @@ int main(int argc, char *argv[])
 	int ret;
 	struct ep_init_header *eih = 0;
 
-//	res = iec104_config_read(APP_CFG);
+	res = iec104_config_read(APP_CFG);
 
-//	if(res != RES_SUCCESS) exit(1);
+	if(res != RES_SUCCESS) exit(1);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, iec104_rd, iec104_recv_init);
+	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, iec104_recv_init);
 
 #ifdef _DEBUG
 //	char name[] 		= {"phy_tcp"};
@@ -79,8 +75,8 @@ int main(int argc, char *argv[])
 //	printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, 967);
 #endif
 
-//	signal(SIGALRM, iec104_catch_alarm);
-//	alarm(alarm_t);
+	signal(SIGALRM, iec104_catch_alarm);
+	alarm(alarm_t);
 
 	printf("IEC104- waiting...\n");
 	do{
