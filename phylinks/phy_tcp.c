@@ -161,7 +161,7 @@ TRANSACTINFO tai;
 char inoti_buf[256];
 struct phy_route *pr;
 ep_data_header *edh;
-int rdlen;
+int rdlen, i;
 
 	tai.buf = inoti_buf;
 	tai.len = len;
@@ -169,8 +169,9 @@ int rdlen;
 
 	rdlen = mftai_readbuffer(&tai);
 	// Get phy_route by index
-	if (tai.ep_index) pr = myprs[tai.ep_index-1];
-	else return 0;
+	if (tai.ep_index){
+		pr = myprs[tai.ep_index];
+	}else return 0;
 
 	edh = (struct ep_data_header *) inoti_buf;				// set start structure
 	tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
