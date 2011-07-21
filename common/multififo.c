@@ -192,8 +192,8 @@ int getframefalse(struct channel *ch){
 
 char *par[2];
 char *env[1];
-int testrunningapp(char *name){
 char pidof[] = {"/bin/pidof"};
+int testrunningapp(char *name){
 char buf[160] = {0};
 int ret, pid, wait_st;
 int opipe[2];
@@ -1022,8 +1022,8 @@ struct timeval tm;
     if (ret > 0){
         if (FD_ISSET(hpp[0], &rddesc)){
     		ret = read(hpp[0], buf, 4);
-    		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
-    		printf("MFI %s: MULTIFIFO READ FROM CHILD %d bytes !!!!\n", appname, ret);
+//    		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
+//    		printf("MFI %s: MULTIFIFO READ FROM CHILD %d bytes !!!!\n", appname, ret);
     		return 1;
     	}
     }

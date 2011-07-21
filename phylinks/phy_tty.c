@@ -427,6 +427,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
     							edh->adr = pr->asdu;
     							edh->sys_msg = EP_USER_DATA;
     							edh->len = rdlen;
+    							printf("Phylink TTY: Send to ASDU num = %d\n", pr->asdu);
     							mf_toendpoint(outbuf, rdlen + sizeof(ep_data_header), pr->asdu, DIRUP);
     						}
 		    			}
