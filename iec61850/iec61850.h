@@ -106,7 +106,7 @@ typedef struct _IED_LIST{
 
 extern LIST fied, fln, flntype, fdo, fdtype, fattr;
 
-extern int virt_start();
+extern int virt_start(char *appname);
 
 extern void ssd_create_ied(const char *pTag);			// call parse ied
 extern void ssd_create_ln(const char *pTag);			// call parse ln
