@@ -628,10 +628,9 @@ struct channel *wch;
 				eih = &(ep->eih);
 				printf("MFI %s: READY ENDPOINT in low level:\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
 				printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
-				printf("- up channel descin = 0x%X\n- up channel descout = 0x%X\n\n", (int) wch->descin, (int) wch->descout);
+				printf("- up channel descin = 0x%X\n- up channel descout = 0x%X\n- ready = %d\n\n\n", (int) wch->descin, (int) wch->descout, wch->ready);
 
-//				ret = write(hpp[1], (char*) &eih,  sizeof(int));
-//				wch->ready = 3;
+				ret = write(hpp[1], (char*) &eih,  sizeof(int));
 			}
 
 		} // rdstr == 5 .....
@@ -857,6 +856,12 @@ struct endpoint *ep;
 		printf("MFI %s: Create channel to %s\n", appname, cd->name);
 		if (newchannel(pathinit, cd->name)) return -1;
 		ch = mychs[maxch - 1];
+		ch->ready = 0;
+		printf("MFI %s: Created channel to %s %d 0x%X 0x%X\n", appname, ch->appname, ep->eih.addr, ch->descout, ch->descin);
+	}else{
+		// Start connect new endpoint with exist channel
+		ch->ready = 2;
+		printf("MFI %s: Find exist channel to %s %d 0x%X 0x%X\n", appname, ch->appname, ep->eih.addr, ch->descout, ch->descin);
 	}
 	ep->cdcdn = ch;
 
@@ -871,11 +876,6 @@ struct endpoint *ep;
 
 	ep->eih.addr = cd->addr;
 	ep->eih.numep = maxep-1;
-
-	printf("MFI %s: Created channel to %s %d 0x%X 0x%X\n", appname, ch->appname, ep->eih.addr, ch->descout, ch->descin);
-
-	// Start connect new endpoint
-	ch->ready = 0;
 
 	// Write config to init channel
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
