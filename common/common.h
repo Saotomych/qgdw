@@ -25,6 +25,7 @@
 #include <termios.h> /* Объявления управления POSIX-терминалом */
 #include <fcntl.h>   /* Управление файлами */
 
+#include <sys/queue.h>
 #include <sys/select.h>
 #include <sys/inotify.h>
 #include <sys/types.h>

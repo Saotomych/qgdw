@@ -48,6 +48,7 @@ struct stat fst;
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
+char buf[5];
 
 	// Parsing ssd, create virtualization structures from common iec61850 configuration
 	if (ssd_build()){
@@ -62,9 +63,12 @@ pid_t chldpid;
 		exit(2);
 	}
 
+	printf("\n--- Low level applications ready --- \n\n");
+
 	// Cycle data routing in rcv_data
 	do{
-		sigsuspend(&sigmask);
+		//sigsuspend(&sigmask);
+		mf_waitevent(buf, sizeof(buf), 0);
 	}while(!appexit);
 
 	mf_exit();

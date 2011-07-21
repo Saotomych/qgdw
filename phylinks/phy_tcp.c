@@ -140,7 +140,8 @@ int ret;
 	printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
-		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+//		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+		send_sys_msg(pr, EP_MSG_CONNECT_ACK);
 		printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
 	}else{
 		fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock

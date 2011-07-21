@@ -266,9 +266,8 @@ pid_t chldpid;
 		}
 	}
 	free(MCFGfile);
+	printf("\n--- Configuration ready --- \n\n");
 
-// Start endpoint kipp2m
-//	mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
 //	Execute all low level application for devices by LNodes
 	sasdu = sasdu->l.next;
 	while(sasdu){
@@ -287,6 +286,8 @@ pid_t chldpid;
 		// New endpoint
 		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
 //		printf("CD: %d %s %s %s\n", cd.addr, cd.name, cd.protoname, cd.phyname);
+
+		sleep(5);
 
 		sasdu = sasdu->l.next;
 	};

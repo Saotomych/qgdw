@@ -697,23 +697,26 @@ fd_set readset;
 	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
 //	printf("MFI %s: init channel %s in watch %d\n", appname, mychs[0]->f_namein, mychs[0]->watch);
 
-	do{
+    fcntl(d_inoty, F_SETFL, FNDELAY);
+
+    do{
 		// Waiting for inotify events
 		FD_ZERO(&readset);
 		FD_SET(d_inoty, &readset);
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		ret = select(d_inoty + 1, &readset, 0, 0, &tv);
-		if (ret > 0){
+		if (FD_ISSET(d_inoty, &readset)){
+//			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event) * 16);
 			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
 			if (rdlen){
-				if (einoty.len){
-					rdlen = read(d_inoty, namebuf, einoty.len);
-					if (rdlen > 0){
-						namebuf[rdlen] = 0;
-//						printf("MFI %s: name read: %s\n", appname, namebuf);
-					}
-				}
+//				if (einoty.len){
+//					rdlen = read(d_inoty, namebuf, einoty.len);
+//					if (rdlen > 0){
+//						namebuf[rdlen] = 0;
+////						printf("MFI %s: name read: %s\n", appname, namebuf);
+//					}
+//				}
 				evcnt++;
 //				printf("MFI %s: detect file event: 0x%X in watch %d num %d\n", appname, einoty.mask, einoty.wd, evcnt);
 				// Find channel by watch
@@ -862,6 +865,9 @@ struct endpoint *ep;
 	ep->eih.numep = maxep-1;
 
 	printf("MFI %s: Created channel to %s %d 0x%X 0x%X\n", appname, ch->appname, ep->eih.addr, ch->descout, ch->descin);
+
+	// Start connect new endpoint
+	ch->ready = 0;
 
 	// Write config to init channel
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
