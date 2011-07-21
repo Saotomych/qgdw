@@ -150,7 +150,7 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	else
 	{
 		// check if buffer length is correct
-		if(buff_len - *offset >= frame->data_len)
+		if(buff_len - *offset >= frame->data_len + 2)
 		{
 			// allocate memory for the data
 			frame->data = (unsigned char*) malloc(frame->data_len);
