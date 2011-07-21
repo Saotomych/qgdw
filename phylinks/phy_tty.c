@@ -32,6 +32,18 @@ struct phy_route *myprs[MAXEP];	// One phy_route for one endpoint
 struct phy_route *firstpr;
 int maxpr = 0;
 
+int Hex2ASCII(char *hexbuf, char *cbuf, int len){
+char TmpString[4];
+int i;
+	cbuf[0]=0;
+	for (i=0; i<len; i++){
+		sprintf(TmpString,"%02X ", (u08) hexbuf[i]);
+		strcat(cbuf, TmpString);
+	}
+	return len;
+}
+
+
 void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int AddStopBit, int RTS){
     struct termios CommOptions;
     tcgetattr(hPort, &CommOptions);//берем атрибуты в структуру для изменения
@@ -97,7 +109,7 @@ ep_data_header edh;
 	edh.adr = pr->asdu;
 	edh.sys_msg = msg;
 	edh.len = 0;
-	mf_toendpoint_by_index((char*) &edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
+	mf_toendpoint((char*) &edh, sizeof(ep_data_header), edh.adr, DIRUP);
 }
 
 int cfgparse(char *key, char *buf){
@@ -204,7 +216,9 @@ int i = 1;
 						pr->ep_index = maxpr;
 						pr->state = 0;
 						maxpr++;
-						printf("Phylink TTY: added device connect to %s, asdu = %d, realadr = %d\n", tdev[pr->devindex].devname, pr->asdu, pr->realaddr);
+						printf("Phylink TTY: added device connect to %s, asdu = %d, realadr = %d, %d%d%d - %d\n",
+								tdev[pr->devindex].devname, pr->asdu, pr->realaddr, tdev[pr->devindex].bits, tdev[pr->devindex].parity,
+								tdev[pr->devindex].stop, tdev[pr->devindex].rts);
 					}
 				}
 			}
@@ -232,7 +246,7 @@ int start_ttydevice(TTYDEV *td){
     td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
 
     if (td->desc == -1) {
-    	fprintf(stderr, "Phylink TTY:  Can't open tty device %s\n", td->devname);
+    	printf("Phylink TTY:  Can't open tty device %s\n", td->devname);
     	return -1;
     }
     CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
@@ -250,9 +264,13 @@ struct phy_route *pr;
 ep_data_header *edh;
 int rdlen, i;
 
+char ascibuf[100];
+
 		tai.len = len;
 		tai.addr = 0;
 		inoti_buf = malloc(len);
+
+		printf("....................................\n");
 
 		rdlen = mf_readbuffer(inoti_buf, len, &tai.addr, &tai.direct);
 //		// Get phy_route by addr
@@ -261,11 +279,22 @@ int rdlen, i;
 		}
 		if (i==maxpr){ free(inoti_buf); return 0;}
 
+
 		edh = (struct ep_data_header *) inoti_buf;				// set start structure
 		tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
+
+		printf("Phy TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
+		printf("Phy TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
+
 		switch(edh->sys_msg){
 		case EP_USER_DATA:	// Write data to socket
-				writeall(tdev[pr->devindex].desc, tai.buf, len - sizeof(struct ep_data_header));
+				Hex2ASCII(tai.buf, ascibuf, edh->len);
+				printf("Buffer: %s\n", ascibuf);
+
+//				ty = &tdev[pr->devindex];
+//				printf("Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
+
+				writeall(tdev[pr->devindex].desc, tai.buf, edh->len);
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
@@ -306,14 +335,14 @@ int rcvinit(ep_init_header *ih){
 int i;
 struct phy_route *pr;
 
-#ifdef _DEBUG
-		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
-		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[1]);
-		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[2]);
-		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[3]);
-		printf("Phylink TTY: HAS READ INIT DATA: %s\n", ih->isstr[4]);
-		printf("Phylink TTY: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
-#endif
+//#ifdef _DEBUG
+		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
+		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[1]);
+		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[2]);
+		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[3]);
+		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[4]);
+		printf("Phy TTY: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
+//#endif
 
 		// For route struct connect to socket find equal address ASDU in route struct set
 		for (i = 0 ; i < maxpr; i++){
@@ -321,7 +350,7 @@ struct phy_route *pr;
 		}
 		if (i == maxpr) return 0;	// Route not found
 		if (myprs[i]->state) return 0;	// Route init already
-		printf("Phylink TTY: route found: addr = %d, num = %d\n", ih->addr, i);
+		printf("Phy TTY: route found: addr = %d, num = %d\n", ih->addr, i);
 		pr = myprs[i];
 		if (tdev[pr->devindex].desc == 0) start_ttydevice(&tdev[pr->devindex]);
 
@@ -338,7 +367,7 @@ struct phy_route *pr;
 ep_data_header *edh;
 
 struct timeval tv;	// for sockets select
-char outbuf[300];
+char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 0x13, 0x00, 0xDF, 0x16};
 
 	if (createroutetable() == -1){
 		printf("Phylink TTY: config file not found\n");
@@ -346,8 +375,22 @@ char outbuf[300];
 	}
 	printf("Phylink TTY: config table ready, %d records\n", maxpr);
 
-	// Init multififo
+// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata, rcvinit);
+//
+//
+//	td = &tdev[0];
+//	printf("Device: %s %d%d%d - %d\n", td->devname, td->bits, td->parity, td->stop, td->rts);
+//
+////	start_ttydevice(td);
+//
+//	td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
+////	CommRawSetup(td->desc, td->speed, td->bits, 1, 0, 1, 0);
+//	CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
+//
+//	write(td->desc, outbuf, 14);
+//
+//	return 0;
 
 	do{
 	    FD_ZERO(&rd_desc);
@@ -386,7 +429,7 @@ char outbuf[300];
     							edh->adr = pr->asdu;
     							edh->sys_msg = EP_USER_DATA;
     							edh->len = rdlen;
-    							mf_toendpoint_by_index(outbuf, rdlen + sizeof(ep_data_header), pr->ep_index, DIRUP);
+    							mf_toendpoint(outbuf, rdlen + sizeof(ep_data_header), pr->asdu, DIRUP);
     						}
 		    			}
 		    		}
@@ -397,7 +440,6 @@ char outbuf[300];
 					close(td->desc);
 					td->desc = 0;
 		    	}
-
 	    	} // for i
 	    } // ret
 	}while(!appexit);

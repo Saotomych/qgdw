@@ -227,14 +227,14 @@ DOBJ *adobj;
 
 // TODO Remove Test config after debugging
 char mainapp[] 		= {"startiec"};
-char unitlink[] 	= {"unitlink-iec104"};
-char physlink[] 	= {"phy_tcp"};
+char unitlink[] 	= {"unitlink-dlt645"};
+char physlink[] 	= {"phy_tty"};
 
 struct config_device cd = {
 		unitlink,
 		physlink,
 		mainapp,
-		967
+		11111
 };
 
 int virt_start(){
