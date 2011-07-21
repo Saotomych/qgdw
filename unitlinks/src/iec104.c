@@ -271,18 +271,19 @@ int iec104_recv_data(int len)
 	char *buff;
 	int adr, dir;
 	uint32_t offset;
-	ep_data_header ep_header_in;
+	ep_data_header *ep_header_in;
 
 	buff = malloc(len);
 
 	if(!buff) return -1;
 
-	mf_readbuffer(buff, len, &adr, &dir);
+	len = mf_readbuffer(buff, len, &adr, &dir);
 
 #ifdef _DEBUG
 	printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 #endif
 
+	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < len)
@@ -297,17 +298,17 @@ int iec104_recv_data(int len)
 			return -1;
 		}
 
-		memcpy((void*)&ep_header_in, (void*)buff, sizeof(ep_data_header));
+		ep_header_in = (ep_data_header*)(buff + offset);
 		offset += sizeof(ep_data_header);
 
 #ifdef _DEBUG
-		printf("%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in.adr, ep_header_in.sys_msg, ep_header_in.len);
+		printf("%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
 #endif
 
-		if(len - offset < ep_header_in.len)
+		if(len - offset < ep_header_in->len)
 		{
 #ifdef _DEBUG
-			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, sizeof(ep_data_header) + ep_header_in.len, len);
+			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, sizeof(ep_data_header) + ep_header_in->len, len - offset);
 #endif
 
 			free(buff);
@@ -317,48 +318,48 @@ int iec104_recv_data(int len)
 		if(dir == DIRUP)
 		{
 			// direction is from DIRUP to DIRDN
-			if(ep_header_in.sys_msg == EP_USER_DATA)
+			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-			printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 				// asdu received
-				iec104_asdu_recv((unsigned char*)(buff + offset), ep_header_in.len, ep_header_in.adr);
+				iec104_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
 			else
 			{
 #ifdef _DEBUG
-				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				// system message received
-				iec104_sys_msg_recv(ep_header_in.sys_msg, ep_header_in.adr, dir);
+				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir);
 			}
 		}
 		else
 		{
 			// direction is from DIRDN to DIRUP
-			if(ep_header_in.sys_msg == EP_USER_DATA)
+			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				// apdu frame received
-				iec104_frame_recv((unsigned char*)(buff + offset), ep_header_in.len, ep_header_in.adr);
+				iec104_frame_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
 			else
 			{
 #ifdef _DEBUG
-				printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in.adr, ep_header_in.len);
+				printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				// system message received
-				iec104_sys_msg_recv(ep_header_in.sys_msg, ep_header_in.adr, dir);
+				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir);
 			}
 		}
 
-		offset += ep_header_in.len;
+		offset += ep_header_in->len;
 	}
 
 	free(buff);
