@@ -71,7 +71,6 @@ static struct channel *actchannel;	// Actual channel for data reading
 // List of endpoints
 static int maxep = 1;
 static struct endpoint *myeps[MAXEP];
-//static struct endpoint *actep;		// Actual endpoint for work in all functions
 
 // ================= Callbacks PROTOTYPES ================================== //
 int init_open(struct channel *ch);
@@ -230,9 +229,6 @@ fd_set readset;
 	    ret = select(opipe[0] + 1, &readset, 0, 0, &tv);
 	    if (ret > 0){
 	    	ret = read(opipe[0], buf, 160);
-
-	    	printf("MFI testrunapp: %s len =%d\n", buf, ret);
-
 	    	return ret;
 	    }
 		waitpid(pid, &wait_st, 0);
@@ -250,6 +246,9 @@ int i;
 struct channel *findch_by_name(char *nm){
 int i;
 	for(i=0; i < maxch; i++){
+
+		printf("MFI find channel by name %s: %s =?= %s\n", appname, nm, mychs[i]->appname);
+
 		if (!strcmp(nm, mychs[i]->appname)) break;
 	}
 	return (i == maxch ? 0 : mychs[i]);
@@ -316,14 +315,15 @@ int len;
 	if (!mychs[maxch]) return -1;
 	initchannelstruct(maxch);
 
-	mychs[maxch]->appname = malloc(strlen(a_name));
+	mychs[maxch]->appname = malloc(strlen(a_name) + 1);
+
 	strcpy(mychs[maxch]->appname, a_name);
 
-	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 3;
 	mychs[maxch]->f_namein = malloc(len);
 	sprintf(mychs[maxch]->f_namein, "%s/%s%s", a_path, a_name, sufup);
 
-	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 3;
 	mychs[maxch]->f_nameout = malloc(len);
 	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", a_path, a_name, sufdn);
 
@@ -358,14 +358,14 @@ int len;
 	if (!mychs[maxch]) return -1;
 	initchannelstruct(maxch);
 
-	mychs[maxch]->appname = malloc(strlen(a_name));
+	mychs[maxch]->appname = malloc(strlen(a_name) + 1);
 	strcpy(mychs[maxch]->appname, a_name);
 
-	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 3;
 	mychs[maxch]->f_namein = malloc(len);
 	sprintf(mychs[maxch]->f_namein, "%s/%s%s", a_path, a_name, sufdn);
 
-	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 8;
+	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 3;
 	mychs[maxch]->f_nameout = malloc(len);
 	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", a_path, a_name, sufup);
 
@@ -537,7 +537,7 @@ int sys_close(struct channel *ch){
 //			- endpoint registers
 //			- send endpoint to application
 int init_read(struct channel *ch){
-char nbuf[100];
+char nbuf[160];
 int i;
 int len, rdlen;
 struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
@@ -565,6 +565,7 @@ ep_init_header *eih;
 				len = getstringfromring(ch, nbuf);
 				if (len > 0){
 					ep->eih.isstr[ch->rdstr] = malloc(len + 1);
+
 					strcpy(ep->eih.isstr[ch->rdstr], nbuf);
 //					printf("MFI %s: get string number %d %s\n", appname, ch->rdstr, ep->eih.isstr[ch->rdstr]);
 					ch->rdstr++;
@@ -594,6 +595,9 @@ ep_init_header *eih;
 			// find channel in list
 			//			- test open channel to mychs[]->name IF NOT:
 			//			- connect to channel
+
+			// findchbyname
+
 			for (i = 1; i < maxch; i++){
 				if (mychs[i]){
 					if (strstr(ep->eih.isstr[1], mychs[i]->appname)){
@@ -762,9 +766,9 @@ int ret;
 	signal(SIGPWR, SIG_IGN);
 	signal(SIGCHLD, SIG_IGN);
 
-	appname = malloc(strlen(a_name));
+	appname = malloc(strlen(a_name) + 1);
 	strcpy(appname, a_name);
-	pathapp = malloc(strlen(pathinit));
+	pathapp = malloc(strlen(pathinit) + 1);
 	strcpy(pathapp, pathinit);
 	cb_rcvdata = func_rcvdata;
 	cb_rcvinit = func_rcvinit;
@@ -800,17 +804,12 @@ struct endpoint *ep;
 	if (!testrunningapp(cd->name)){
 		// lowlevel application not running
 		// running it
-
-		if (newchannel(pathinit, cd->name)) return -1;
-
-//		printf("MFI %s: RUN LOW LEVEL APPLICATION. WAITING INITIALIZATION... ", appname);
 		ret = fork();
 		if (!ret){
-			ret = execve(cd->name, NULL, NULL);
+			execve(cd->name, NULL, NULL);
 //			printf("MFI %s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
-
 		// TODO sleep exchange to other variant to wait
 		sleep(1);
 
@@ -845,6 +844,13 @@ struct endpoint *ep;
 
 	// Find channel for this low level application
 	ch = findch_by_name(cd->name);
+	if (!ch){
+		// Create new channel
+		printf("MFI %s: Create channel to %s\n", appname, cd->name);
+		if (newchannel(pathinit, cd->name)) return -1;
+		ch = mychs[maxch - 1];
+	}
+	ch = findch_by_name(cd->name);
 	ep->cdcdn = ch;
 
 	// Open init channel for having endpoint
@@ -860,9 +866,6 @@ struct endpoint *ep;
 	ep->eih.numep = maxep-1;
 	// Write config to init channel
 
-	printf("\nNew Endpoint: 0x%X, 0x%X, %d, %d, %d\n", (int) ep->cdcdn, (int) ep->cdcup, ep->ep_dn, ep->ep_up, ep->my_ep);
-	printf("Endpoint EIH: %d, %d\n", ep->eih.addr, ep->eih.numep);
-
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
 	wrlen += write(dninit, ep->eih.isstr[1], strlen(appname)+1);
 	wrlen += write(dninit, ep->eih.isstr[2], strlen(cd->name)+1);
@@ -873,8 +876,11 @@ struct endpoint *ep;
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
+
 	while(ch->ready < 2);
 	close(dninit);
+
+	return 0;
 
 	while(ch->ready < 3);
 	printf("MFI %s: new endpoint completed\n", appname);
@@ -1007,6 +1013,7 @@ int ret;
 struct timeval tm;
 
 	FD_ZERO(&rddesc);
+
 	FD_SET(hpp[0], &rddesc);
 
     if (!ms_delay) ret = select(hpp[1] + 1, &rddesc, NULL, NULL, NULL);
