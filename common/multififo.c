@@ -245,7 +245,7 @@ int i;
 
 struct channel *findch_by_name(char *nm){
 int i;
-	for(i=0; i < maxch; i++){
+	for(i=1; i < maxch; i++){
 		if (!strcmp(nm, mychs[i]->appname)) break;
 	}
 	return (i == maxch ? 0 : mychs[i]);
@@ -454,8 +454,9 @@ struct ep_init_header *eih;
 				ret=write(ch->descout, &(ep->my_ep), sizeof(int));
 				ch->ready = 3;
 
-				printf("MFI %s: READY ENDPOINT in low level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+				printf("MFI %s: READY ENDPOINT in low level:\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
 				printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
+				printf("- up channel descin = 0x%X\n- up channel descout = 0x%X\n\n", (int) ch->descin, (int) ch->descout);
 
 				eih = &(ep->eih);
 				ret = write(hpp[1], (char*) &eih,  sizeof(int));
@@ -535,10 +536,11 @@ int sys_close(struct channel *ch){
 //			- send endpoint to application
 int init_read(struct channel *ch){
 char nbuf[160];
-int i;
+int i, ret;
 int len, rdlen;
 struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 ep_init_header *eih;
+struct channel *wch;
 	// 0 - init already
 
 	if (!ch->ready) return 0;		// Init file dont open
@@ -593,18 +595,9 @@ ep_init_header *eih;
 			//			- test open channel to mychs[]->name IF NOT:
 			//			- connect to channel
 
-			// findchbyname
+			wch = findch_by_name(ch->appname);
 
-			for (i = 1; i < maxch; i++){
-				if (mychs[i]){
-					if (strstr(ep->eih.isstr[1], mychs[i]->appname)){
-//						printf("MFI %s: found channel %d\n", appname, i);
-						break;
-					}
-				}
-			}
-
-			if (i == maxch){
+			if (!wch){
 				// Channel not found, start new channel
 				sprintf(nbuf,"%s/%s",ep->eih.isstr[0], ep->eih.isstr[2]);
 //				printf("MFI %s: not found channel for %s\n", appname, ep->eih.isstr[1]);
@@ -621,11 +614,25 @@ ep_init_header *eih;
 					ep->cdcup = mychs[i];
 				}else return -1;
 			}
-//			// Call callback function for working config_device
+			// Call callback function for working config_device
 			ep->eih.isstr[2] = ep->eih.isstr[3];
 			ep->eih.isstr[3] = ep->eih.isstr[4];
 			if (cb_rcvinit) cb_rcvinit(&(ep->eih));
 			getframefalse(ch);
+
+			if (wch){
+				// Channel found, exist already
+				ep->cdcup = wch;
+				ret=write(wch->descout, &(ep->my_ep), sizeof(int));
+
+				eih = &(ep->eih);
+				printf("MFI %s: READY ENDPOINT in low level:\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
+				printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
+				printf("- up channel descin = 0x%X\n- up channel descout = 0x%X\n\n", (int) wch->descin, (int) wch->descout);
+
+//				ret = write(hpp[1], (char*) &eih,  sizeof(int));
+//				wch->ready = 3;
+			}
 
 		} // rdstr == 5 .....
 	}	// rdlen != 0
@@ -639,7 +646,8 @@ struct endpoint *ep = myeps[maxep-1];
 
 	if (!ch->ready) return 0;
 	rdlen = readchannel(ch);
-//	printf("MFI %s: system has read data with rdlen = %d\n", appname, rdlen);
+
+	printf("MFI %s: system has read data with rdlen = %d\n", appname, rdlen);
 
 	if (rdlen == -1){
 		printf("MFI %s: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
@@ -655,7 +663,7 @@ struct endpoint *ep = myeps[maxep-1];
 		// Get ep->ep_dn - downlink endpoint's number
 		len = getdatafromring(ch, (char*) &numep, sizeof(int));
 		if (len == sizeof(int)) memcpy(&(ep->ep_dn), &numep, sizeof(int));
-		printf("MFI %s: READY ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+		printf("MFI %s: READY ENDPOINT in high level:\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
 		printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 		// Channel ready to send data
 		getframefalse(ch);

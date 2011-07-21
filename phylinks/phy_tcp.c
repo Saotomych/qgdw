@@ -179,7 +179,7 @@ int rdlen, i;
 	tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
 	switch(edh->sys_msg){
 	case EP_USER_DATA:	// Write data to socket
-			sendall(pr->socdesc, tai.buf, len - sizeof(struct ep_data_header), 0);
+//			sendall(pr->socdesc, tai.buf, len - sizeof(struct ep_data_header), 0);
 			break;
 
 	case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
