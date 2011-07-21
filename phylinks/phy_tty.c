@@ -270,8 +270,6 @@ char ascibuf[100];
 		tai.addr = 0;
 		inoti_buf = malloc(len);
 
-		printf("....................................\n");
-
 		rdlen = mf_readbuffer(inoti_buf, len, &tai.addr, &tai.direct);
 //		// Get phy_route by addr
 		for(i=0; i < maxpr; i++){

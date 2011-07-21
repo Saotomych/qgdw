@@ -246,9 +246,6 @@ int i;
 struct channel *findch_by_name(char *nm){
 int i;
 	for(i=0; i < maxch; i++){
-
-		printf("MFI find channel by name %s: %s =?= %s\n", appname, nm, mychs[i]->appname);
-
 		if (!strcmp(nm, mychs[i]->appname)) break;
 	}
 	return (i == maxch ? 0 : mychs[i]);
@@ -850,7 +847,6 @@ struct endpoint *ep;
 		if (newchannel(pathinit, cd->name)) return -1;
 		ch = mychs[maxch - 1];
 	}
-	ch = findch_by_name(cd->name);
 	ep->cdcdn = ch;
 
 	// Open init channel for having endpoint
@@ -864,8 +860,10 @@ struct endpoint *ep;
 
 	ep->eih.addr = cd->addr;
 	ep->eih.numep = maxep-1;
-	// Write config to init channel
 
+	printf("MFI %s: Created channel to %s %d 0x%X 0x%X\n", appname, ch->appname, ep->eih.addr, ch->descout, ch->descin);
+
+	// Write config to init channel
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
 	wrlen += write(dninit, ep->eih.isstr[1], strlen(appname)+1);
 	wrlen += write(dninit, ep->eih.isstr[2], strlen(cd->name)+1);
@@ -879,8 +877,6 @@ struct endpoint *ep;
 
 	while(ch->ready < 2);
 	close(dninit);
-
-	return 0;
 
 	while(ch->ready < 3);
 	printf("MFI %s: new endpoint completed\n", appname);
