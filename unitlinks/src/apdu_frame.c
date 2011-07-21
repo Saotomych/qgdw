@@ -134,20 +134,17 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	{
 		start_byte = buff_get_le_uint8(buff, *offset);
 
-		if(start_byte == APDU_START_BYTE) break;
-
 		// move to the next byte
 		*offset += 1;
+
+		if(start_byte == APDU_START_BYTE) break;
 	}
 
 	// check if rest of the buffer long enough to contain the frame
-	if(buff_len - *offset < APDU_LEN_MIN) return RES_LEN_INVALID;
+	if(buff_len - *offset <= APDU_LEN_MIN) return RES_LEN_INVALID;
 
 	// check if start byte found, otherwise return error
 	if(start_byte != APDU_START_BYTE) return RES_INCORRECT;
-
-	// skip start byte
-	*offset += 1;
 
 	// get data length
 	frame->data_len = buff_get_le_uint8(buff, *offset) - 4;
