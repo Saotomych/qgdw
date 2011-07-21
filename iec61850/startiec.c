@@ -56,7 +56,7 @@ pid_t chldpid;
 	}
 
 	// Start of virtualize functions
-	chldpid = virt_start();
+	chldpid = virt_start(argv[0]);
 	if (chldpid == -1){
 		printf("IEC: Virtualization don't started\n");
 		exit(2);

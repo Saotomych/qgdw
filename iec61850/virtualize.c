@@ -38,7 +38,6 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 	SCADA_ASDU_TYPE *myscadatype;
 } SCADA_ASDU;
 
-
 // Pointer to full mapping config as text
 char *MCFGfile;
 
@@ -46,18 +45,17 @@ char *MCFGfile;
 static LIST fasdu, fasdutype;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
-LIST *new;
+LIST *newlist;
 	plist->next = malloc(size);
-
 	if (!plist->next){
 		printf("IEC: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 
-	new = plist->next;
-	new->prev = plist;
-	new->next = 0;
-	return new;
+	newlist = plist->next;
+	newlist->prev = plist;
+	newlist->next = 0;
+	return newlist;
 }
 
 // Get mapping parameters from special config file 'mainmap.cfg' of real ASDU frames from meters
@@ -119,7 +117,7 @@ int adr, dir;
 	mf_readbuffer(buff, len, &adr, &dir);
 
 //#ifdef _DEBUG
-	printf("IEC: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
+	printf("ASDU: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 //#endif
 
 
@@ -194,6 +192,7 @@ DOBJ *adobj;
 	while(aln){
 		if (aln->ln.options){
 			actasdu = create_next_struct_in_list((LIST*) actasdu, sizeof(SCADA_ASDU));
+
 			// Fill SCADA_ASDU
 			actasdu->myln = aln;
 			actasdu->ASDUaddr = atoi(aln->ln.options);
@@ -220,33 +219,38 @@ DOBJ *adobj;
 		aln = aln->l.next;
 	}
 
-	printf("ASDU: Stop ASDU mapping to parse\n");
+	printf("ASDU: End ASDU mapping\n");
 
 	return 0;
 }
 
 // TODO Remove Test config after debugging
-char mainapp[] 		= {"startiec"};
-char unitlink[] 	= {"unitlink-dlt645"};
-char physlink[] 	= {"phy_tty"};
+//char mainapp[] 		= {"startiec"};
+//char unitlink[] 	= {"unitlink-dlt645"};
+//char physlink[] 	= {"phy_tty"};
+//
+//struct config_device cd = {
+//		unitlink,
+//		physlink,
+//		mainapp,
+//		11111
+//};
 
-struct config_device cd = {
-		unitlink,
-		physlink,
-		mainapp,
-		11111
-};
-
-int virt_start(){
+int virt_start(char *appname){
 FILE *fmcfg;
 int clen, ret;
 struct stat fst;
+struct config_device cd;
+
+char *p;
+
+SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 
 pid_t chldpid;
 
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
-		printf("IEC: 'mainmap.cfg' file not found\n");
+		printf("IEC Virt: 'mainmap.cfg' file not found\n");
 	}
 	MCFGfile =  malloc(fst.st_size);
 	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
@@ -257,14 +261,35 @@ pid_t chldpid;
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo
-			chldpid = mf_init("/rw/mx00/mainapp","startiec", rcvdata, rcvinit);
+			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
 			ret = chldpid;
 		}
 	}
 	free(MCFGfile);
 
 // Start endpoint kipp2m
-	mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+//	mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+//	Execute all low level application for devices by LNodes
+	sasdu = sasdu->l.next;
+	while(sasdu){
+		printf("IEC Virt: execute for LNode %s\n", sasdu->myln->ln.lninst);
+
+		// Create config_device
+		cd.name = malloc(strlen(sasdu->myln->ln.lninst) + 1);
+		strcpy(cd.name, sasdu->myln->ln.lninst);
+		p = cd.name;
+		while((*p != '.') && (*p)) p++;
+		*p = 0;
+		cd.protoname = p + 1;
+		cd.phyname = appname;
+		cd.addr = sasdu->ASDUaddr;
+
+		// New endpoint
+		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+//		printf("CD: %d %s %s %s\n", cd.addr, cd.name, cd.protoname, cd.phyname);
+
+		sasdu = sasdu->l.next;
+	};
 
 
 	return ret;
