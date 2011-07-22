@@ -450,9 +450,8 @@ struct endpoint *ep = 0;
 //      - open channel for reading
 //      - open channel for writing passed
 int sys_open(struct channel *ch){
-int ret;
-//struct endpoint *ep = myeps[maxep - 1];
-struct endpoint *ep;
+int ret, i;
+struct endpoint *ep; // This endpoint is first for opening up channel in concrete situation
 struct ep_init_header *eih;
 
 	printf("\n-----\nMFI %s: SYSTEM OPEN\nActions:\n", appname);
@@ -469,6 +468,17 @@ struct ep_init_header *eih;
 			ch->events |= IN_CLOSE;
 			ch->ready += 1;
 			if (ch->descout){
+				// This endpoint is first for opening up channel in concrete situation
+				// Find ep by pointer to up channel
+				for(i=0; i < maxep; i++){
+					ep = myeps[i];
+					if (ep->cdcup == ch) break;
+				}
+				if (i == maxep){
+					printf("MFI %s error: Endpoint for up channel to %s not found\n", ch->appname);
+					return -1;
+				}
+
 				ret=write(ch->descout, &(ep->my_ep), sizeof(int));
 				ch->ready = 3;
 
