@@ -271,7 +271,8 @@ pid_t chldpid;
 //	Execute all low level application for devices by LNodes
 	sasdu = sasdu->l.next;
 	while(sasdu){
-		printf("IEC Virt: execute for LNode %s\n", sasdu->myln->ln.lninst);
+
+		printf("IEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
 
 		// Create config_device
 		cd.name = malloc(strlen(sasdu->myln->ln.lninst) + 1);

@@ -221,7 +221,7 @@ struct phy_route *pr;
 //	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
 //#endif
 
-	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n\n", ih->addr, ih->numep);
+	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", ih->addr, ih->numep);
 
 	// For connect route struct to socket find equal address ASDU in route struct set
 	for (i = 0 ; i < maxpr; i++){
