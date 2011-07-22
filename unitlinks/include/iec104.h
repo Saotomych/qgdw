@@ -40,7 +40,7 @@ extern "C" {
 #define CHILD_APP_PATH 	"/rw/mx00/phyints"
 #define ALARM_PER		1
 
-#define RC_TIMEOUT		10 /* default tcp re-connect timeout */
+#define IEC104_T_RC		10 /* default tcp re-connect timeout */
 
 /*
  *
