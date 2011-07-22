@@ -466,7 +466,7 @@ uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_as
 	}
 
 #ifdef _DEBUG
-	printf("%s: ASDU parsed OK. Type = %d, IO num = %d\n", "unitlink-dlt645", d3, dlt_asdu->size);
+	printf("%s: ASDU parsed OK. Type = %d, IO num = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size);
 #endif
 
 	return RES_SUCCESS;
