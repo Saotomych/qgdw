@@ -38,7 +38,9 @@ extern "C" {
 #define APP_PATH 		"/rw/mx00/unitlinks"
 #define APP_CFG			"/rw/mx00/configs/lowlevel.cfg"
 #define CHILD_APP_PATH 	"/rw/mx00/phyints"
-#define ALARM_PER	1
+#define ALARM_PER		1
+
+#define RC_TIMEOUT		10 /* default tcp re-connect timeout */
 
 /*
  *
@@ -65,6 +67,8 @@ typedef struct iec104_ep_ext {
 	time_t			timer_t1;
 	time_t			timer_t2;
 	time_t			timer_t3;
+
+	time_t			timer_rc;	/* re-connect timer */
 } iec104_ep_ext;
 
 

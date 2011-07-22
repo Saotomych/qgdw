@@ -157,7 +157,7 @@ void iec104_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
-			// Check timer t0
+			// check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
@@ -170,7 +170,7 @@ void iec104_catch_alarm(int sig)
 			}
 
 
-			// Check timer t1
+			// check timer t1
 			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t1)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
@@ -182,19 +182,32 @@ void iec104_catch_alarm(int sig)
 #endif
 			}
 
-			// Check timer t2
+			// check timer t2
 			if(ep_exts[i]->timer_t2 > 0 && difftime(cur_time, ep_exts[i]->timer_t2) >= t2)
 			{
 				iec104_frame_s_send(ep_exts[i], DIRDN);
 			}
 
-			// Check timer t3
+			// check timer t3
 			if(ep_exts[i]->timer_t3 > 0 && difftime(cur_time, ep_exts[i]->timer_t3) >= t3)
 			{
 				iec104_frame_u_send(APCI_U_TESTFR_ACT, ep_exts[i], DIRDN);
 
 				ep_exts[i]->u_cmd = APCI_U_TESTFR_ACT;
 			}
+
+			// check timer rc
+			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= RC_TIMEOUT)
+			{
+				iec104_init_ep_ext(ep_exts[i]);
+
+				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN);
+
+#ifdef _DEBUG
+				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+#endif
+			}
+
 		}
 	}
 
@@ -257,7 +270,7 @@ void iec104_init_ep_ext(iec104_ep_ext* ep_ext)
 	ep_ext->vs = ep_ext->vr = ep_ext->as = ep_ext->ar = 0;
 
 	// stop all timers
-	ep_ext->timer_t0 = ep_ext->timer_t1 = ep_ext->timer_t2 = ep_ext->timer_t3 = 0;
+	ep_ext->timer_t0 = ep_ext->timer_t1 = ep_ext->timer_t2 = ep_ext->timer_t3 = ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
 	printf("%s: All counters set to zero.\n", APP_NAME);
@@ -423,7 +436,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 		{
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_CLOSE received.\n", APP_NAME);
+			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			iec104_frame_u_send(APCI_U_STOPDT_ACT, ep_ext, DIRDN);
@@ -437,7 +450,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 		{
 		case EP_MSG_CONNECT_ACK:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_ACK received.\n", APP_NAME);
+			printf("%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			iec104_init_ep_ext(ep_ext);
@@ -447,6 +460,9 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 				// set re-connect counter to zero
 				ep_ext->rc_cnt = 0;
 
+				// stop timer rc
+				ep_ext->timer_rc = 0;
+
 				iec104_frame_u_send(APCI_U_STARTDT_ACT, ep_ext, DIRDN);
 
 				ep_ext->u_cmd = APCI_U_STARTDT_ACT;
@@ -455,7 +471,8 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 				ep_ext->timer_t0 = time(NULL);
 
 #ifdef _DEBUG
-				printf("%s: Timer t0 started.\n", APP_NAME);
+				printf("%s: Timer rc stopped. Address = %d\n", APP_NAME, ep_ext->adr);
+				printf("%s: Timer t0 started. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 
@@ -463,7 +480,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 		case EP_MSG_CONNECT_NACK:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_NACK received.\n", APP_NAME);
+			printf("%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			iec104_init_ep_ext(ep_ext);
@@ -473,10 +490,11 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 				// increase re-connect counter
 				ep_ext->rc_cnt++;
 
-				iec104_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
+				// start rc timer
+				ep_ext->timer_rc = time(NULL);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_CONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+				printf("%s: Timer rc started. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 
@@ -484,7 +502,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 		case EP_MSG_CONNECT_LOST:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_LOST received.\n", APP_NAME);
+			printf("%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			iec104_init_ep_ext(ep_ext);
@@ -494,10 +512,11 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 				// increase re-connect counter
 				ep_ext->rc_cnt++;
 
-				iec104_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
+				// start rc timer
+				ep_ext->timer_rc = time(NULL);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_CONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+				printf("%s: Timer rc started. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 
@@ -505,7 +524,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 		case EP_MSG_QUIT:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
+			printf("%s: System message EP_MSG_QUIT received. Address = all.\n", APP_NAME);
 #endif
 
 			// initiate data transfer stop from all connected devices
@@ -606,7 +625,7 @@ uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 				ep_ext->timer_t3 = time(NULL);
 
 #ifdef _DEBUG
-				printf("%s: Timer t3 reset.\n", APP_NAME);
+				printf("%s: Timer t3 reset. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 
@@ -670,23 +689,23 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 		switch(u_cmd)
 		{
 		case APCI_U_STARTDT_ACT:
-			printf("%s: U-Format frame sent STARTDT (act).\n", APP_NAME);
+			printf("%s: U-Format frame sent STARTDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_STARTDT_CON:
-			printf("%s: U-Format frame sent STARTDT (con).\n", APP_NAME);
+			printf("%s: U-Format frame sent STARTDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_STOPDT_ACT:
-			printf("%s: U-Format frame sent STOPDT (act).\n", APP_NAME);
+			printf("%s: U-Format frame sent STOPDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_STOPDT_CON:
-			printf("%s: U-Format frame sent STOPDT (con).\n", APP_NAME);
+			printf("%s: U-Format frame sent STOPDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_TESTFR_ACT:
-			printf("%s: U-Format frame sent TESTFR (act).\n", APP_NAME);
-			printf("%s: Timers t1, t3 started/reset.\n", APP_NAME);
+			printf("%s: U-Format frame sent TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
+			printf("%s: Timers t1, t3 started/reset. Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_TESTFR_CON:
-			printf("%s: U-Format frame sent TESTFR (con).\n", APP_NAME);
+			printf("%s: U-Format frame sent TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		}
 #endif
@@ -705,7 +724,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	{
 	case APCI_U_STARTDT_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STARTDT (act).\n", APP_NAME);
+		printf("%s: U-Format frame received. STARTDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
@@ -723,7 +742,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 			ep_ext->timer_t3 = time(NULL);
 
 #ifdef _DEBUG
-			printf("%s: Timers t2-t3 started.\n", APP_NAME);
+			printf("%s: Timers t2-t3 started. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 		}
 
@@ -731,7 +750,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STARTDT_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STARTDT (con).\n", APP_NAME);
+		printf("%s: U-Format frame received. STARTDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
@@ -746,14 +765,14 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		ep_ext->timer_t3 = time(NULL);
 
 #ifdef _DEBUG
-		printf("%s: Timer t0 stopped.\n", APP_NAME);
-		printf("%s: Timers t2-t3 started.\n", APP_NAME);
+		printf("%s: Timer t0 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
+		printf("%s: Timers t2-t3 started. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 		break;
 
 	case APCI_U_STOPDT_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STOPDT (act).\n", APP_NAME);
+		printf("%s: U-Format frame received. STOPDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
@@ -768,7 +787,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STOPDT_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STOPDT (con).\n", APP_NAME);
+		printf("%s: U-Format frame received. STOPDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
@@ -778,7 +797,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_TESTFR_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. TESTFR (act).\n", APP_NAME);
+		printf("%s: U-Format frame received. TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		iec104_frame_u_send(APCI_U_TESTFR_CON, ep_ext, DIRDN);
@@ -791,15 +810,15 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		ep_ext->timer_t1 = 0;
 
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. TESTFR (con).\n", APP_NAME);
-		printf("%s: Timer t1 stopped.\n", APP_NAME);
+		printf("%s: U-Format frame received. TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
+		printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		break;
 
 	default:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. ERROR - Unknown command.\n", APP_NAME);
+		printf("%s: U-Format frame received. ERROR - Unknown command. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		return RES_INCORRECT;
@@ -834,7 +853,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 		ep_ext->timer_t2 = time(NULL);
 
 #ifdef _DEBUG
-		printf("%s: S-Format frame sent (N(R) = %d).\n", APP_NAME, ep_ext->vr);
+		printf("%s: S-Format frame sent (N(R) = %d). Address = %d\n", APP_NAME, ep_ext->vr, ep_ext->adr);
 		printf("%s: Timer t2 reset.\n", APP_NAME);
 #endif
 	}
@@ -848,7 +867,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: S-Format frame received (N(R) = %d).\n", APP_NAME, a_fr->recv_num);
+		printf("%s: S-Format frame received (N(R) = %d). Address = %d\n", APP_NAME, a_fr->recv_num, ep_ext->adr);
 #endif
 
 	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) == RES_SUCCESS)
@@ -861,7 +880,7 @@ uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 			ep_ext->timer_t1 = 0;
 
 #ifdef _DEBUG
-			printf("%s: Timer t1 stopped.\n", APP_NAME);
+			printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 		}
 
@@ -910,9 +929,9 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 			ep_ext->timer_t2 = time(NULL);
 
 #ifdef _DEBUG
-			printf("%s: I-Format frame sent (N(S) = %d, N(R) = %d).\n", APP_NAME, a_fr->send_num, a_fr->recv_num);
-			printf("%s: Timer t1 started/reset.\n", APP_NAME);
-			printf("%s: Timer t2 reset.\n", APP_NAME);
+			printf("%s: I-Format frame sent (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
+			printf("%s: Timer t1 started/reset. Address = %d\n", APP_NAME, ep_ext->adr);
+			printf("%s: Timer t2 reset. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 		}
 	}
@@ -930,7 +949,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: I-Format frame received (N(S) = %d, N(R) = %d).\n", APP_NAME, a_fr->send_num, a_fr->recv_num);
+		printf("%s: I-Format frame received (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
 #endif
 
 	uint8_t res;
@@ -949,7 +968,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		ep_ext->timer_t1 = 0;
 
 #ifdef _DEBUG
-		printf("%s: Timer t1 stopped.\n", APP_NAME);
+		printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 	}
 
@@ -1065,7 +1084,7 @@ uint16_t iec104_frame_check_send_num(iec104_ep_ext *ep_ext, uint16_t send_num)
 	if(send_num == ep_ext->vr) return RES_SUCCESS;
 
 #ifdef _DEBUG
-	printf("%s: ERROR - expected N(S) = %d, but received N(S) = %d. Frame lost or reordered.\n", APP_NAME, ep_ext->vr, send_num);
+	printf("%s: ERROR - expected N(S) = %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->vr, send_num, ep_ext->adr);
 #endif
 
 	return RES_INCORRECT;
@@ -1077,7 +1096,7 @@ uint16_t iec104_frame_check_recv_num(iec104_ep_ext *ep_ext, uint16_t recv_num)
 	if( (recv_num - ep_ext->as + 32767) % 32767 <= (ep_ext->vs - ep_ext->as + 32767) % 32767 ) return RES_SUCCESS;
 
 #ifdef _DEBUG
-	printf("%s: ERROR - expected %d <= N(S) <= %d, but received N(S) = %d. Frame lost or reordered.\n", APP_NAME, ep_ext->as, ep_ext->vs, recv_num);
+	printf("%s: ERROR - expected %d <= N(S) <= %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->as, ep_ext->vs, recv_num, ep_ext->adr);
 #endif
 
 	return RES_INCORRECT;
