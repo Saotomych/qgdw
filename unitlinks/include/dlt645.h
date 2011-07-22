@@ -32,14 +32,20 @@ extern "C" {
 #define APP_PATH 				"/rw/mx00/unitlinks"
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
 #define CHILD_APP_PATH 			"/rw/mx00/phyints"
-#define ALARM_PER	1
+
+#define ALARM_PER				1		/* timers check period */
+
+#define RESP_TIMEOUT			10		/* waiting for full response from device timeout */
+#define RECV_BUFF_SIZE			512		/* frame receive buffer size */
+
+#define DCALL_PER				60		/* data collection period */
 
 #define DLT645_ASDU_ADR			0
 #define DLT645_LINK_ADR			1
 
 #define DLT645_AWAKE_MSG		0xFEFE	/* device awake message */
 
-#define DLT645_T0				5		/* timeout */
+#define DLT645_T_T0				1		/* timer_t0 timeout */
 
 
 /*
@@ -87,10 +93,10 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir);
 
 
 uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t start_time);
-uint16_t dlt645_read_data_recv(uint16_t adr, uint32_t data_id);
+uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 
 uint16_t dlt645_read_adr_send(uint16_t adr);
-uint16_t dlt645_read_adr_recv(uint16_t adr);
+uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 
 uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir);
 uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);
