@@ -140,8 +140,7 @@ int ret;
 	printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
-//		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
-		send_sys_msg(pr, EP_MSG_CONNECT_ACK);
+		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
 		printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
 	}else{
 		fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
@@ -186,21 +185,19 @@ int rdlen, i;
 			close(pr->socdesc);
 			pr->socdesc = 0;
 			pr->state = 0;
-			connect_by_config(pr);
-			break;
-
-	case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
-			close(pr->socdesc);
-			break;
 
 	case EP_MSG_CONNECT:
-		// Create & bind new socket
+			// Create & bind new socket
 			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 			if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
 			else{
 				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
 				connect_by_config(pr);
 			}
+			break;
+
+	case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
+			close(pr->socdesc);
 			break;
 
 	case EP_MSG_QUIT:
