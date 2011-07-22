@@ -582,6 +582,7 @@ int len = 0, rdlen;
 //struct endpoint *ep = myeps[maxep-1];	// new endpoint created in init_open()
 struct endpoint *ep = 0;
 struct channel *wch;
+ep_init_header *peih;
 ep_init_header eih;
 ep_data_header edh;
 
@@ -710,7 +711,8 @@ ep_data_header edh;
 				printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
 				printf("MFI %s: Descriptors of up channel:\n- up channel descin = 0x%X\n- up channel descout = 0x%X\n- ready = %d\n\n\n", appname, (int) wch->descin, (int) wch->descout, wch->ready);
 
-				ret = write(hpp[1], (char*) &(ep->eih),  sizeof(int));
+				peih = &(ep->eih);
+				ret = write(hpp[1], (char*) &peih,  sizeof(int));
 			}
 
 
@@ -897,19 +899,25 @@ void mf_exit(){
 // Form new endpoint
 // Return 0: OK
 // Return -1: Error. Endpoint not created or cnahhel not created
-int mf_newendpoint (struct config_device *cd, char *pathinit, u32 ep_num){
+int mf_newendpoint (struct config_device *origdev, char *pathinit, u32 ep_num){
 int ret, wrlen;
 char fname[160];
 int dninit;
 struct channel *ch;
 struct endpoint *ep;
+struct config_device cd;
 
-	if (!testrunningapp(cd->name)){
+	cd.name = origdev->protoname;
+	cd.protoname = origdev->phyname;
+	cd.phyname = origdev->name;
+	cd.addr = origdev->addr;
+
+	if (!testrunningapp(cd.name)){
 		// lowlevel application not running
 		// running it
 		ret = fork();
 		if (!ret){
-			execve(cd->name, NULL, NULL);
+			execve(cd.name, NULL, NULL);
 //			printf("MFI %s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
@@ -920,7 +928,7 @@ struct endpoint *ep;
 
 	if (ep_num){
 		// Forward existing endpoint
-		ep = find_ep_by_addr(cd->addr);
+		ep = find_ep_by_addr(cd.addr);
 		if (!ep) return -1;		// if ep_num don't have, ep = 0
 		if (ep->cdcdn) return -1;	// if down channel created already
 	}else{
@@ -937,19 +945,19 @@ struct endpoint *ep;
 	strcpy(ep->eih.isstr[0], pathinit);
 	ep->eih.isstr[1] = malloc(strlen(appname) + 1);
 	strcpy(ep->eih.isstr[1], appname);
-	ep->eih.isstr[2] = malloc(strlen(cd->name) + 1);
-	strcpy(ep->eih.isstr[2], cd->name);
-	ep->eih.isstr[3] = malloc(strlen(cd->protoname) + 1);
-	strcpy(ep->eih.isstr[3], cd->protoname);
-	ep->eih.isstr[4] = malloc(strlen(cd->phyname) + 1);
-	strcpy(ep->eih.isstr[4], cd->phyname);
+	ep->eih.isstr[2] = malloc(strlen(cd.name) + 1);
+	strcpy(ep->eih.isstr[2], cd.name);
+	ep->eih.isstr[3] = malloc(strlen(cd.protoname) + 1);
+	strcpy(ep->eih.isstr[3], cd.protoname);
+	ep->eih.isstr[4] = malloc(strlen(cd.phyname) + 1);
+	strcpy(ep->eih.isstr[4], cd.phyname);
 
 	// Find channel for this low level application
-	ch = findch_by_name(cd->name);
+	ch = findch_by_name(cd.name);
 	if (!ch){
 		// Create new channel
-//		printf("MFI %s: Create channel to %s\n", appname, cd->name);
-		ch = newchanneldn(pathinit, cd->name);
+//		printf("MFI %s: Create channel to %s\n", appname, cd.name);
+		ch = newchanneldn(pathinit, cd.name);
 		if (!ch) return -1;
 		ch->ready = 0;
 		printf("MFI %s: Created channel for %s\n", appname, ch->appname);
@@ -969,7 +977,7 @@ struct endpoint *ep;
 	dninit = open(fname, O_RDWR);
 	if (!dninit) return -1;
 
-	ep->eih.addr = cd->addr;
+	ep->eih.addr = cd.addr;
 	ep->eih.numep = maxep-1;
 
 	printf("MFI %s: Created struct endpoint for asdu id = %d\n", appname, ep->eih.addr);
@@ -977,9 +985,9 @@ struct endpoint *ep;
 	// Write config to init channel
 	wrlen  = write(dninit, ep->eih.isstr[0], strlen(pathinit)+1);
 	wrlen += write(dninit, ep->eih.isstr[1], strlen(appname)+1);
-	wrlen += write(dninit, ep->eih.isstr[2], strlen(cd->name)+1);
-	wrlen += write(dninit, ep->eih.isstr[3], strlen(cd->protoname)+1);
-	wrlen += write(dninit, ep->eih.isstr[4], strlen(cd->phyname)+1);
+	wrlen += write(dninit, ep->eih.isstr[2], strlen(cd.name)+1);
+	wrlen += write(dninit, ep->eih.isstr[3], strlen(cd.protoname)+1);
+	wrlen += write(dninit, ep->eih.isstr[4], strlen(cd.phyname)+1);
 	wrlen += write(dninit, (char*) &(ep->eih), sizeof(ep_init_header));
 
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);

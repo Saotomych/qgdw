@@ -275,13 +275,13 @@ pid_t chldpid;
 		printf("IEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
 
 		// Create config_device
-		cd.name = malloc(strlen(sasdu->myln->ln.lninst) + 1);
-		strcpy(cd.name, sasdu->myln->ln.lninst);
-		p = cd.name;
+		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
+		strcpy(cd.protoname, sasdu->myln->ln.lninst);
+		p = cd.protoname;
 		while((*p != '.') && (*p)) p++;
 		*p = 0;
-		cd.protoname = p + 1;
-		cd.phyname = appname;
+		cd.phyname = p + 1;
+		cd.name = appname;
 		cd.addr = sasdu->ASDUaddr;
 
 		// New endpoint
