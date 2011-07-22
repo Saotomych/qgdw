@@ -19,10 +19,12 @@ static uint8_t ioa_len = IEC104_IOA_LEN;
 /* Timer parameters */
 static uint8_t alarm_t = ALARM_PER;
 
-static uint8_t t0 = IEC104_T0;
-static uint8_t t1 = IEC104_T1;
-static uint8_t t2 = IEC104_T2;
-static uint8_t t3 = IEC104_T3;
+static uint8_t t_t0 = IEC104_T_T0;
+static uint8_t t_t1 = IEC104_T_T1;
+static uint8_t t_t2 = IEC104_T_T2;
+static uint8_t t_t3 = IEC104_T_T3;
+
+static uint8_t t_rc = IEC104_T_RC;
 
 
 /* Maximum numbers of outstanding frames */
@@ -153,12 +155,14 @@ void iec104_catch_alarm(int sig)
 	time_t cur_time = time(NULL);
 
 	int i;
+
+	// check devices timers
 	for(i=0;i<MAXEP; i++)
 	{
 		if(ep_exts[i])
 		{
 			// check timer t0
-			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t0)
+			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t_t0)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
 
@@ -171,7 +175,7 @@ void iec104_catch_alarm(int sig)
 
 
 			// check timer t1
-			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t1)
+			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t_t1)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
 
@@ -183,13 +187,13 @@ void iec104_catch_alarm(int sig)
 			}
 
 			// check timer t2
-			if(ep_exts[i]->timer_t2 > 0 && difftime(cur_time, ep_exts[i]->timer_t2) >= t2)
+			if(ep_exts[i]->timer_t2 > 0 && difftime(cur_time, ep_exts[i]->timer_t2) >= t_t2)
 			{
 				iec104_frame_s_send(ep_exts[i], DIRDN);
 			}
 
 			// check timer t3
-			if(ep_exts[i]->timer_t3 > 0 && difftime(cur_time, ep_exts[i]->timer_t3) >= t3)
+			if(ep_exts[i]->timer_t3 > 0 && difftime(cur_time, ep_exts[i]->timer_t3) >= t_t3)
 			{
 				iec104_frame_u_send(APCI_U_TESTFR_ACT, ep_exts[i], DIRDN);
 
@@ -197,7 +201,7 @@ void iec104_catch_alarm(int sig)
 			}
 
 			// check timer rc
-			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= RC_TIMEOUT)
+			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
 
