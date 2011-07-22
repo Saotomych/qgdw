@@ -34,7 +34,7 @@ ep_data_header edh;
 	edh.adr = pr->asdu;
 	edh.sys_msg = msg;
 	edh.len = 0;
-	mf_toendpoint_by_index((char*) &edh, sizeof(ep_data_header), pr->ep_index, DIRUP);
+	mf_toendpoint((char*) &edh, sizeof(ep_data_header), pr->asdu, DIRUP);
 }
 
 int cfgparse(char *key, char *buf){
@@ -327,7 +327,7 @@ int maxdesc;
 				    				edh->adr = pr->asdu;
 						    		edh->sys_msg = EP_USER_DATA;
 			    					edh->len = rdlen;
-			    					mf_toendpoint_by_index(outbuf, rdlen + sizeof(ep_data_header), pr->ep_index, DIRUP);
+			    					mf_toendpoint(outbuf, rdlen + sizeof(ep_data_header), pr->asdu, DIRUP);
 			    				}
 			    			}
 			    		}

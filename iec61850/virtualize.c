@@ -288,7 +288,7 @@ pid_t chldpid;
 		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
 //		printf("CD: %d %s %s %s\n", cd.addr, cd.name, cd.protoname, cd.phyname);
 
-		sleep(5);
+//		sleep(5);
 
 		sasdu = sasdu->l.next;
 	};

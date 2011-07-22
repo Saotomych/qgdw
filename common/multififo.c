@@ -12,7 +12,7 @@
 #include "multififo.h"
 
 #define LENRINGBUF	1024
-#define INOTIFYTHR_STACKSIZE	32768
+#define INOTIFYTHR_STACKSIZE	65536
 
 char *appname, *pathapp;
 
@@ -438,7 +438,7 @@ int len, ret;
 	len = getdatafromring(ch, (char*) &eih, sizeof(ep_init_header));
 	ep->eih.addr = eih.addr;
 	ep->ep_up = eih.numep;
-	printf("MFI %s: Created endpoint for asdu id = %d\n", appname, ep->eih.addr);
+	printf("MFI %s: Endpoint for asdu id = %d was created\n", appname, ep->eih.addr);
 
 	// Call callback function for working config_device
 	getframefalse(ch);
@@ -461,7 +461,7 @@ int len, ret;
 			wch->descout = open(wch->f_nameout, O_RDWR | O_NDELAY);
 			//	- two fifos opens! bingo!
 			ep->cdcup = wch;
-			printf("MFI %s: Created channel for %s\n", appname, wch->appname);
+			printf("MFI %s: Channel for %s was created\n", appname, wch->appname);
 		}else return -1;
 	}else{
 		// Channel found, he exists already
@@ -473,8 +473,8 @@ int len, ret;
 		ret=write(wch->descout, &(edh), sizeof(ep_data_header));
 
 		printf("MFI %s: READY ENDPOINT in low level (case 'channel exists'):\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
-		printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
-		printf("MFI %s: Descriptors of up channel:\n- up channel descin = 0x%X\n- up channel descout = 0x%X\n- ready = %d\n\n\n", appname, (int) wch->descin, (int) wch->descout, wch->ready);
+//		printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
+//		printf("MFI %s: Descriptors of up channel:\n- up channel descin = 0x%X\n- up channel descout = 0x%X\n- ready = %d\n\n\n", appname, (int) wch->descin, (int) wch->descout, wch->ready);
 
 		peih = &(ep->eih);
 		ret = write(hpp[1], (char*) &peih,  sizeof(int));
@@ -560,8 +560,8 @@ ep_data_header edh;
 				ch->ready = 3;
 
 				printf("MFI %s: READY ENDPOINT in low level (case 'channel open'):\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
-				printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
-				printf("MFI %s: Descriptors of files:\n- up channel descin = 0x%X\n- up channel descout = 0x%X\n", appname, (int) ch->descin, (int) ch->descout);
+//				printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
+//				printf("MFI %s: Descriptors of files:\n- up channel descin = 0x%X\n- up channel descout = 0x%X\n", appname, (int) ch->descin, (int) ch->descout);
 
 				eih = &(ep->eih);
 				ret = write(hpp[1], (char*) &eih,  sizeof(int));
@@ -650,7 +650,6 @@ int sys_close(struct channel *ch){
 //			- send endpoint to application
 int init_read(struct channel *ch){
 char nbuf[160];
-int ret;
 int len = 0, rdlen;
 
 	printf("\n-----\nMFI %s: INIT READ %s\nActions:\n", appname, ch->appname);
@@ -729,6 +728,7 @@ struct ep_data_header edh;
 	if (!ch->ready) return 0;
 	rdlen = readchannel(ch);
 	len = getdatafromring(ch, (char*) &edh, sizeof(ep_data_header));
+
 	if (len == sizeof(ep_data_header)){
 
 		// Init ep by recv index
@@ -737,10 +737,12 @@ struct ep_data_header edh;
 			printf("MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
 		}
 
+
 		if (edh.sys_msg == EP_MSG_NEWEP){
 			// Get ep->ep_dn - downlink endpoint's number
+			ep->ep_dn = edh.numep;
+
 			printf("MFI %s: READY ENDPOINT in high level (case 'channel new or forward'):\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
-			printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
 			// Channel ready to send data
 			getframefalse(ch);
 			ch->ready = 3;
@@ -955,7 +957,7 @@ struct config_device cd;
 		ch = newchanneldn(pathinit, cd.name);
 		if (!ch) return -1;
 		ch->ready = 0;
-		printf("MFI %s: Created channel for %s\n", appname, ch->appname);
+		printf("MFI %s: Channel for %s was created\n", appname, ch->appname);
 	}else{
 		// Start connect new endpoint with exist channel
 		ch->ready = 2;
@@ -988,9 +990,12 @@ struct config_device cd;
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
+	printf("MFI %s:connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
 
 	while(ch->ready < 2);
 	close(dninit);
+
+	printf("MFI %s:connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
 
 	while(ch->ready < 3);
 	printf("MFI %s:connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
@@ -1040,7 +1045,6 @@ int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
 struct channel *ch = 0;
 struct endpoint *ep = 0;
-//	printf("MFI %s: mf2endpoint start, maxch = %d, maxep = %d\n", appname, maxch, maxep);
 
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
@@ -1062,8 +1066,10 @@ struct endpoint *ep = 0;
 	if (!ch) return -1;
 	if (ch->ready < 3) return -1;
 
-//	printf("MFI %s: find channel for writing %d of %d\n", appname, i, maxch-1);
 	// Write data to channel
+
+	printf("%s: SEND TO EP %d to direct %s\n", appname, ((struct ep_data_header *)buf)->numep, (direct==DIRDN ? "DIRDN" : "DIRUP"));
+
 	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1) {
 		printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));
