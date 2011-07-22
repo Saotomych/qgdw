@@ -1067,9 +1067,6 @@ struct endpoint *ep = 0;
 	if (ch->ready < 3) return -1;
 
 	// Write data to channel
-
-	printf("%s: SEND TO EP %d to direct %s\n", appname, ((struct ep_data_header *)buf)->numep, (direct==DIRDN ? "DIRDN" : "DIRUP"));
-
 	wrlen = write(ch->descout, buf, len);
 	if (wrlen == -1) {
 		printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));

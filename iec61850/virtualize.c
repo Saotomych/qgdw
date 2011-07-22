@@ -119,8 +119,6 @@ int adr, dir;
 //#ifdef _DEBUG
 	printf("ASDU: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 //#endif
-
-
 	free(buff);
 
 	return 0;
