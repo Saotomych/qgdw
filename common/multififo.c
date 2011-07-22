@@ -277,41 +277,43 @@ void initchannelstruct(struct channel *ch){
 
 // Create init channel, it have index = 0 always
 // High level application opens init channel for sending struct config_device => register new endpoint
-int initchannel(char *a_path, char *a_name){
+struct channel *initchannel(char *a_path, char *a_name){
 int len;
+struct channel *ch;
 
-	if (maxch) return -1;
+	if (maxch) return 0;
 	mychs[0] = malloc(sizeof(struct channel));
-	if (!mychs[maxch]) return -1;
-	initchannelstruct(0);
+	ch = mychs[0];
+	if (!ch) return 0;
+	initchannelstruct(ch);
 
-	mychs[maxch]->appname = malloc(strlen(a_name));
-	strcpy(mychs[maxch]->appname, a_name);
+	ch->appname = malloc(strlen(a_name));
+	strcpy(ch->appname, a_name);
 
 	len = strlen(a_path) + strlen(a_name) + strlen(sufinit) + 8;
-	mychs[maxch]->f_namein = malloc(len);
-	sprintf(mychs[0]->f_namein, "%s/%s%s", a_path,a_name,sufinit);
+	ch->f_namein = malloc(len);
+	sprintf(ch->f_namein, "%s/%s%s", a_path,a_name,sufinit);
 
-	mychs[0]->f_nameout = 0;
+	ch->f_nameout = 0;
 
-	unlink(mychs[0]->f_namein);
-	if (mknod(mychs[0]->f_namein, mychs[0]->mode, 0)) return -1;
+	unlink(ch->f_namein);
+	if (mknod(ch->f_namein, mychs[0]->mode, 0)) return 0;
 
-	mychs[maxch]->in_open = init_open;
-	mychs[maxch]->in_close = init_close;
-	mychs[maxch]->in_read = init_read;
+	ch->in_open = init_open;
+	ch->in_close = init_close;
+	ch->in_read = init_read;
 
 	maxch++;
 
 //	printf("MFI %s: INIT CHANNEL %d READY, MAXCH = %d\n", appname, maxch-1, maxch);
 //	printf("MFI %s: init channel file ready: %s\n", appname, mychs[maxch-1]->f_namein);
 
-	return 0;
+	return ch;
 }
 
 // Create new two-direction channel to downlink
 // Channel work for data exchange with lower application
-struct channel *newchannel(char *a_path, char *a_name){
+struct channel *newchanneldn(char *a_path, char *a_name){
 int len;
 struct channel *ch;
 	// Create downdirection FIFO
@@ -355,36 +357,37 @@ struct channel *ch;
 // Create new two-direction channel to uplink
 // Connect to fifos from high level application
 // Channel work for data exchange with higher application
-int connect2channel(char *a_path, char *a_name){
+struct channel *newchannelup(char *a_path, char *a_name){
 int len;
+struct channel *ch;
 	// Create updirection FIFO
 
 	mychs[maxch] = malloc(sizeof(struct channel));
+	ch = mychs[maxch];
+	if (!ch) return 0;
+	initchannelstruct(ch);
 
-	if (!mychs[maxch]) return -1;
-	initchannelstruct(maxch);
-
-	mychs[maxch]->appname = malloc(strlen(a_name) + 1);
-	strcpy(mychs[maxch]->appname, a_name);
+	ch->appname = malloc(strlen(a_name) + 1);
+	strcpy(ch->appname, a_name);
 
 	len = strlen(a_path) + strlen(a_name) + strlen(sufdn) + 3;
-	mychs[maxch]->f_namein = malloc(len);
-	sprintf(mychs[maxch]->f_namein, "%s/%s%s", a_path, a_name, sufdn);
+	ch->f_namein = malloc(len);
+	sprintf(ch->f_namein, "%s/%s%s", a_path, a_name, sufdn);
 
 	len = strlen(a_path) + strlen(a_name) + strlen(sufup) + 3;
-	mychs[maxch]->f_nameout = malloc(len);
-	sprintf(mychs[maxch]->f_nameout, "%s/%s%s", a_path, a_name, sufup);
+	ch->f_nameout = malloc(len);
+	sprintf(ch->f_nameout, "%s/%s%s", a_path, a_name, sufup);
 
-	mychs[maxch]->in_open = sys_open;
-	mychs[maxch]->in_close = sys_close;
-	mychs[maxch]->in_read = sys_read;
+	ch->in_open = sys_open;
+	ch->in_close = sys_close;
+	ch->in_read = sys_read;
 
 	maxch++;
 
 	printf("MFI %s: connect2channel %d ready, MAXCH = %d\n", appname, maxch-1, maxch);
 //	printf("MFI %s: CHANNEL FILES READY: in - %s & out - %s\n", appname, mychs[maxch-1]->f_namein, mychs[maxch-1]->f_nameout);
 
-	return 0;
+	return ch;
 }
 
 struct endpoint *create_ep(void){
@@ -638,7 +641,8 @@ struct channel *wch;
 				// Channel not found, start new channel
 				sprintf(nbuf,"%s/%s",ep->eih.isstr[0], ep->eih.isstr[2]);
 //				printf("MFI %s: not found channel for %s\n", appname, ep->eih.isstr[1]);
-				if (!connect2channel(ep->eih.isstr[0], ep->eih.isstr[2])){
+				wch = newchannelup(ep->eih.isstr[0], ep->eih.isstr[2]);
+				if (wch){
 					// Add new channel to up
 					i = maxch-1;
 					//	- add fifo to inotify for read
@@ -826,7 +830,7 @@ int ret;
 	cb_rcvinit = func_rcvinit;
 
 	d_inoty = inotify_init();
-	if (initchannel(pathinit, a_name)) return -1;
+	if (!initchannel(pathinit, a_name)) return -1;
 	if (pipe(hpp)) return -1;
 
 	inotifystop = 1;
@@ -899,7 +903,7 @@ struct endpoint *ep;
 	if (!ch){
 		// Create new channel
 //		printf("MFI %s: Create channel to %s\n", appname, cd->name);
-		ch = newchannel(pathinit, cd->name);
+		ch = newchanneldn(pathinit, cd->name);
 		if (!ch) return -1;
 		ch->ready = 0;
 		printf("MFI %s: Created channel for %s\n", appname, ch->appname);
