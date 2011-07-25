@@ -443,7 +443,7 @@ int len, ret;
 	// Call callback function for working config_device
 	getframefalse(ch);
 	ch->ready = 2;
-//	if (cb_rcvinit) cb_rcvinit(&(ep->eih));
+	if (cb_rcvinit) cb_rcvinit(&(ep->eih));
 
 	// Channel connect to endpoint
 	wch = findch_by_name(ch->appname);
@@ -743,6 +743,7 @@ struct ep_data_header edh;
 		ep = myeps[edh.numep];
 		if (!ep){
 			printf("MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
+			return 0;
 		}
 
 		if (edh.sys_msg == EP_MSG_NEWEP){
@@ -773,12 +774,12 @@ struct ep_data_header edh;
 		return -1;
 	}
 
-////	if (rdlen){
-////		printf("MFI %s: system has read data with rdlen = %d\n", appname, rdlen);
-////		actchannel = ch;
-////		if (cb_rcvdata) cb_rcvdata(rdlen);
-////		actchannel = 0;
-////	}
+	if (rdlen){
+		printf("MFI %s: system has read data with rdlen = %d\n", appname, rdlen);
+		actchannel = ch;
+		if (cb_rcvdata) cb_rcvdata(rdlen);
+		actchannel = 0;
+	}
 
 	getframefalse(ch);
 
@@ -915,11 +916,6 @@ int dninit;
 struct channel *ch;
 struct endpoint *ep;
 
-//	cd.name = origdev->protoname;
-//	cd.protoname = origdev->phyname;
-//	cd.phyname = origdev->name;
-//	cd.addr = origdev->addr;
-
 	if (!testrunningapp(origdev->protoname)){
 		// lowlevel application not running
 		// running it
@@ -952,18 +948,6 @@ struct endpoint *ep;
 //		printf("%s: Create endpoint begin\n", appname);
 
 	}
-
-	// Init downlink endpoint
-//	ep->eih.isstr[0] = malloc(strlen(pathinit) + 1);
-//	strcpy(ep->eih.isstr[0], pathinit);
-//	ep->eih.isstr[1] = malloc(strlen(appname) + 1);
-//	strcpy(ep->eih.isstr[1], appname);
-//	ep->eih.isstr[2] = malloc(strlen(cd.name) + 1);
-//	strcpy(ep->eih.isstr[2], cd.name);
-//	ep->eih.isstr[3] = malloc(strlen(cd.protoname) + 1);
-//	strcpy(ep->eih.isstr[3], cd.protoname);
-//	ep->eih.isstr[4] = malloc(strlen(cd.phyname) + 1);
-//	strcpy(ep->eih.isstr[4], cd.phyname);
 
 // offset for next run level
 
