@@ -480,7 +480,7 @@ int len, ret;
 		 printf("MFI %s: Descriptors of down channel:\n- dn channel descin = 0x%X\n- dn channel descout = 0x%X\n- ready = %d\n", appname, (int) ep->cdcdn->descin, (int) ep->cdcdn->descout, ep->cdcup->ready);
 
 		peih = &(ep->eih);
-//		ret = write(hpp[1], (char*) &peih,  sizeof(int));
+		ret = write(hpp[1], (char*) &peih,  sizeof(int));
 	}
 
 	return 0;
@@ -574,7 +574,7 @@ ep_data_header edh;
 				 printf("MFI %s: Descriptors of down channel:\n- dn channel descin = 0x%X\n- dn channel descout = 0x%X\n- ready = %d\n", appname, (int) ep->cdcdn->descin, (int) ep->cdcdn->descout, ep->cdcup->ready);
 
 				eih = &(ep->eih);
-//				ret = write(hpp[1], (char*) &eih,  sizeof(int));
+				ret = write(hpp[1], (char*) &eih,  sizeof(int));
 			}
 		}
 	}
@@ -936,8 +936,14 @@ struct endpoint *ep;
 	if (ep_num){
 		// Forward existing endpoint
 		ep = find_ep_by_addr(origdev->addr);
-		if (!ep) return -1;		// if ep_num don't have, ep = 0
-		if (ep->cdcdn) return -1;	// if down channel created already
+		if (!ep){
+			printf("MFI %s error: Endpoint with address = %d not found\n", appname, origdev->addr);
+			return -1;		// if ep_num don't have, ep = 0
+		}
+		if (ep->cdcdn){
+			printf("MFI %s error: Endpoint with address = %d has down-channel already\n", appname, origdev->addr);
+			return -1;	// if down channel created already
+		}
 	}else{
 		// Create new endpoint
 		ep = create_ep();

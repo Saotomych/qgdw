@@ -81,6 +81,10 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
+			strcpy(forname, eih->isstr[2]);
+			strcpy(forprotoname, eih->isstr[3]);
+			strcpy(forphyname, eih->isstr[4]);
+			cd.addr = eih->addr;
 
 			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 
