@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, iec104_recv_init);
+	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, NULL);
 
 	signal(SIGALRM, iec104_catch_alarm);
 	alarm(alarm_t);
@@ -81,6 +81,10 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
+			cd.addr = eih->addr;
+			strncpy(cd.name, eih->isstr[2], 100);
+			strncpy(cd.protoname, eih->isstr[3], 100);
+			strncpy(cd.phyname, eih->isstr[4], 100);
 
 			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 
@@ -385,23 +389,18 @@ int iec104_recv_data(int len)
 }
 
 
-int iec104_recv_init(ep_init_header *ih)
-{
-#ifdef _DEBUG
-//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
-//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
-//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[2]);
-//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[3]);
-//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
-#endif
-
-	cd.addr = ih->addr;
-	strncpy(cd.name, ih->isstr[2], 100);
-	strncpy(cd.protoname, ih->isstr[3], 100);
-	strncpy(cd.phyname, ih->isstr[4], 100);
-
-	return 0;
-}
+//int iec104_recv_init(ep_init_header *ih)
+//{
+//#ifdef _DEBUG
+////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
+////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
+////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[2]);
+////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[3]);
+////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
+//#endif
+//
+//	return 0;
+//}
 
 
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir)

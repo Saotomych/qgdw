@@ -29,7 +29,7 @@ typedef struct _transactinfo{
 // in: devicename - pointer to devicename from config
 extern pid_t mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit);
 //
-extern void mf_set_cb_rcvclose(void *func_rcvclose);
+//extern void mf_set_cb_rcvclose(void *func_rcvclose);
 // Exit from inotify waiting
 extern void mf_exit(void);
 // Create new endpoint in downlink application only
