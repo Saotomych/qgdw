@@ -81,10 +81,6 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
-			strcpy(forname, eih->isstr[2]);
-			strcpy(forprotoname, eih->isstr[3]);
-			strcpy(forphyname, eih->isstr[4]);
-			cd.addr = eih->addr;
 
 			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 
@@ -392,11 +388,11 @@ int iec104_recv_data(int len)
 int iec104_recv_init(ep_init_header *ih)
 {
 #ifdef _DEBUG
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[2]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[3]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
+//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
+//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
+//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[2]);
+//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[3]);
+//	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
 #endif
 
 	cd.addr = ih->addr;
