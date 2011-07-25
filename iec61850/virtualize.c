@@ -287,7 +287,7 @@ pid_t chldpid;
 		sasdu = sasdu->l.next;
 		free(cd.protoname);
 
-		sleep(5);
+		sleep(3);
 
 	};
 
