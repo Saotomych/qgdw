@@ -223,22 +223,21 @@ DOBJ *adobj;
 }
 
 // TODO Remove Test config after debugging
-//char mainapp[] 		= {"startiec"};
-//char unitlink[] 	= {"unitlink-dlt645"};
-//char physlink[] 	= {"phy_tty"};
-//
-//struct config_device cd = {
-//		unitlink,
-//		physlink,
-//		mainapp,
-//		11111
-//};
+char mainapp[] 		= {"startiec"};
+char unitlink[] 	= {"unitlink-iec104"};
+char physlink[] 	= {"phy_tcp"};
+
+struct config_device cd = {
+		mainapp,
+		unitlink,
+		physlink,
+		55555
+};
 
 int virt_start(char *appname){
 FILE *fmcfg;
 int clen, ret;
 struct stat fst;
-struct config_device cd;
 
 char *p;
 
@@ -247,49 +246,48 @@ SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 pid_t chldpid;
 
 // Read mainmap.cfg into memory
-	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
-		printf("IEC Virt: 'mainmap.cfg' file not found\n");
-	}
-	MCFGfile =  malloc(fst.st_size);
-	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
-	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
-	if (clen != fst.st_size) ret = -1;
-	else{
-		// Building mapping meter asdu to ssd asdu
-		if (asdu_parser()) ret = -1;
-		else{
-			// Run multififo
+//	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
+//		printf("IEC Virt: 'mainmap.cfg' file not found\n");
+//	}
+//	MCFGfile =  malloc(fst.st_size);
+//	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
+//	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
+//	if (clen != fst.st_size) ret = -1;
+//	else{
+//		// Building mapping meter asdu to ssd asdu
+//		if (asdu_parser()) ret = -1;
+//		else{
+//			// Run multififo
 			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
 			ret = chldpid;
-		}
-	}
-	free(MCFGfile);
-	printf("\n--- Configuration ready --- \n\n");
+//		}
+//	}
+//	free(MCFGfile);
+//	printf("\n--- Configuration ready --- \n\n");
 
 //	Execute all low level application for devices by LNodes
-	sasdu = sasdu->l.next;
-	while(sasdu){
+//	sasdu = sasdu->l.next;
+//	while(sasdu){
 
-		printf("IEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
+//		printf("IEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
 
 		// Create config_device
-		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
-		strcpy(cd.protoname, sasdu->myln->ln.lninst);
-		p = cd.protoname;
-		while((*p != '.') && (*p)) p++;
-		*p = 0;
-		cd.phyname = p + 1;
-		cd.name = appname;
-		cd.addr = sasdu->ASDUaddr;
+//		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
+//		strcpy(cd.protoname, sasdu->myln->ln.lninst);
+//		p = cd.protoname;
+//		while((*p != '.') && (*p)) p++;
+//		*p = 0;
+//		cd.phyname = p + 1;
+//		cd.name = appname;
+//		cd.addr = sasdu->ASDUaddr;
 
 		// New endpoint
 		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
 //		printf("CD: %d %s %s %s\n", cd.addr, cd.name, cd.protoname, cd.phyname);
 
-//		sleep(5);
-
-		sasdu = sasdu->l.next;
-	};
+//		sasdu = sasdu->l.next;
+//		free(cd.protoname);
+//	};
 
 
 	return ret;

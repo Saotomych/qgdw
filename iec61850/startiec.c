@@ -67,7 +67,7 @@ char buf[5];
 
 	// Cycle data routing in rcv_data
 	do{
-		//sigsuspend(&sigmask);
+//		sigsuspend(&sigmask);
 		mf_waitevent(buf, sizeof(buf), 0);
 	}while(!appexit);
 
