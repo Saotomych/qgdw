@@ -739,6 +739,9 @@ struct ep_data_header edh;
 
 	if (len == sizeof(ep_data_header)){
 
+		printf("MFI %s: ep_data_header_recv:\n- adr=%d\n- numep=%d\n- sysmsg=%d\n- len=%d\n", appname, edh.adr, edh.numep, edh.sys_msg, edh.len);
+
+
 		// Init ep by recv index
 		ep = myeps[edh.numep];
 		if (!ep){
@@ -760,8 +763,6 @@ struct ep_data_header edh;
  			ch->ready = 3;
 			rdlen -= len;
 		}
-
-		while(1);
 	}
 
 	if (rdlen == -1){

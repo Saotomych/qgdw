@@ -269,7 +269,7 @@ pid_t chldpid;
 	sasdu = sasdu->l.next;
 	while(sasdu){
 
-		printf("IEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
+		printf("\n--------------\nIEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
 
 		// Create config_device
 		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
@@ -286,6 +286,9 @@ pid_t chldpid;
 
 		sasdu = sasdu->l.next;
 		free(cd.protoname);
+
+		sleep(2);
+
 	};
 
 
