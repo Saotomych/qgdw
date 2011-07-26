@@ -123,32 +123,30 @@ int n;
 
 void set_listen(struct phy_route *pr){
 int ret;
-	//printf("Phylink TCP/IP: Listen for connect 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
+	printf("Phylink TCP/IP: Listen for connect 0x%X:%d\n", pr->sai.sin_addr.s_addr, htons(pr->sai.sin_port));
 // Bind привязывает к локальному адресу
 	pr->sailist.sin_addr.s_addr = INADDR_ANY;
 	ret = bind(pr->socdesc, (struct sockaddr *) &pr->sailist, sizeof(struct sockaddr_in));
 	if (ret){
-		//printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
+		printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
 		return;
-	}else{
-		//printf("Phylink TCP/IP: bind established, listen waiting...\n");
-	}
+	}else printf("Phylink TCP/IP: bind established, listen waiting...\n");
 	listen(pr->socdesc, 1);
 	pr->state = 1;
 }
 
 void set_connect(struct phy_route *pr){
 int ret;
-	//printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
+	printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
 		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
-		//printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
+		printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
 	}else{
 		fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
 		send_sys_msg(pr, EP_MSG_CONNECT_ACK);
 		pr->state = 1;
-		//printf("Phylink TCP/IP: connect established.\n");
+		printf("Phylink TCP/IP: connect established.\n");
 	}
 }
 
@@ -194,24 +192,23 @@ int rdlen, i;
 				if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
 			}
 			if (i == maxpr){
-				//printf("Phylink TCP/IP: This connect not found\n");
+				printf("Phylink TCP/IP: This connect not found\n");
 				return 0;	// Route not found
 			}
 			if (pr->state){
-				//printf("This connect setting already\n");
+				printf("This connect setting already\n");
 				return 0;	// Route init already
 			}
 			pr->ep_index = edh->numep;
-			//printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", edh->adr, edh->numep);
-			//printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
+			printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", edh->adr, edh->numep);
+			printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
 
 			// Create & bind new socket
 			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
-			if (pr->socdesc != -1){
-				//printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
+			if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
+			else{
+				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
 				connect_by_config(pr);
-			}else{
-				//printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
 			}
 			break;
 
@@ -245,10 +242,10 @@ fd_set ex_socks;
 int maxdesc;
 
 	if (createroutetable() == -1){
-		//printf("Phylink TCP/IP: config file not found\n");
+		printf("Phylink TCP/IP: config file not found\n");
 		return 0;
 	}
-	//printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
+	printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
 
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, NULL);
@@ -270,7 +267,8 @@ int maxdesc;
 		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
-//	    if (ret != -1) //printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    else
 	    if (ret){
 	    	for (i=0; i<maxpr; i++){
 	    		if (myprs[i]->state){
@@ -278,11 +276,11 @@ int maxdesc;
 			    	if (FD_ISSET(pr->socdesc, &rd_socks)){
 			    		if (pr->mode == LISTEN){
 			    			// Accept connection
-			    			//printf("Phylink TCP/IP: accept\n");
+			    			printf("Phylink TCP/IP: accept\n");
 			    			sinlen = sizeof(sin);
 			    			rdlen = accept(pr->socdesc, (struct sockaddr *) &sin, &sinlen);
 			    			if (rdlen == -1){
-			    				//printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
+			    				printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
 			    				send_sys_msg(pr, EP_MSG_CONNECT_NACK);
 			    				pr->state = 0;
 			    			}else{
@@ -291,23 +289,23 @@ int maxdesc;
 			    					pr->socdesc = rdlen;
 			    					pr->mode = LISTEN + CONNECT;
 			    					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
-			    					//printf("Phylink TCP/IP: accept OK\n");
+			    					printf("Phylink TCP/IP: accept OK\n");
 			    				}else{
 			    					close(pr->socdesc);
 			    					set_listen(pr);
-			    					//printf("Phylink TCP/IP: client address incorrect\n");
+			    					printf("Phylink TCP/IP: client address incorrect\n");
 			    				}
 			    			}
 			    		}else{
 			    			// Receive frame
 			    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024  - sizeof(ep_data_header), 0);
 			    			if (rdlen == -1){
-			    				//printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
+			    				printf("Phylink TCP/IP: socket read error:%d - %s\n",errno, strerror(errno));
 			    				close(pr->socdesc);
 			    				pr->state = 0;
 			    			}else{
 			    				if (rdlen){
-						    		//printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
+						    		printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
 			    					// Send data frame to endpoint
 				    				edh = (ep_data_header*) outbuf;
 				    				edh->adr = pr->asdu;
@@ -327,9 +325,8 @@ int maxdesc;
 			    	}
 	    		}
 	    	}
-	    }else{
-	    	//printf("Phylink TCP/IP: Timeout\n");
 	    }
+//	    else printf("Phylink TCP/IP: Timeout\n");
 
 	}while(!appexit);
 
