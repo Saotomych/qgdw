@@ -655,7 +655,7 @@ struct ep_init_header *eih=0;
 		eih = &(ep->eih);
 		ret = write(hpp[1], (char*) &eih,  sizeof(int));
 
-		ep->ready = 3;
+//		ep->ready = 3;
 
 		// Send info about endpoint to up
 		edh.adr = ep->eih.addr;
@@ -817,7 +817,7 @@ struct ep_data_header edh;
 		}
 
 		if (edh.sys_msg == EP_MSG_EPRDY){
- 			ep->ready = 3;
+// 			ep->ready = 3;
  			rdlen -= len;
 		}
 
@@ -1038,7 +1038,6 @@ char fname[160];
 
 	ep->eih.addr = origdev->addr;
 	ep->eih.numep = maxep-1;
-
 
 //	printf("MFI %s: Created struct endpoint for asdu id = %d\n", appname, ep->eih.addr);
 	// Open init channel for having endpoint
