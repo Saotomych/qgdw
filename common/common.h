@@ -53,7 +53,7 @@
 #define EP_MSG_CONNECT			9		/* connection request - up2down */
 #define EP_MSG_QUIT				10		/* quit application - up2down */
 #define EP_MSG_NEWEP			11		/* !internal multififo message! - down2up */
-
+#define EP_MSG_EPRDY			12      /* !internal multififo message! - down2up */
 /*
  *
  * Structures

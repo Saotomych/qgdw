@@ -187,11 +187,27 @@ int rdlen, i;
 			pr->state = 0;
 
 	case EP_MSG_CONNECT:
+			// Find phy_route
+			for (i = 0 ; i < maxpr; i++){
+				if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
+			}
+			if (i == maxpr){
+				printf("Phylink TCP/IP: This connect not found\n");
+				return 0;	// Route not found
+			}
+			if (pr->state){
+				printf("This connect setting already\n");
+				return 0;	// Route init already
+			}
+			pr->ep_index = edh->numep;
+			printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", edh->adr, edh->numep);
+			printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
+
 			// Create & bind new socket
 			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 			if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
 			else{
-				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X\n", pr->socdesc, pr->asdu, pr->mode);
+				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
 				connect_by_config(pr);
 			}
 			break;
@@ -206,38 +222,6 @@ int rdlen, i;
 	}
 
 	free(inoti_buf);
-	return 0;
-}
-
-int rcvinit(ep_init_header *ih){
-int i;
-struct phy_route *pr;
-
-//#ifdef _DEBUG
-//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[0]);
-//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[1]);
-//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[2]);
-//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[3]);
-//	printf("Phylink TCP/IP: HAS READ INIT DATA: %s\n", ih->isstr[4]);
-//#endif
-
-	printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", ih->addr, ih->numep);
-
-	// For connect route struct to socket find equal address ASDU in route struct set
-	for (i = 0 ; i < maxpr; i++){
-		if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
-	}
-	if (i == maxpr){
-		printf("Phylink TCP/IP: This connect not found\n");
-		return 0;	// Route not found
-	}
-	if (pr->state){
-		printf("This connect setting already\n");
-		return 0;	// Route init already
-	}
-	pr->ep_index = ih->numep;
-
-	printf("Phylink TCP/IP: route found: addr = %d, num = %d\n", ih->addr, i);
 	return 0;
 }
 
@@ -264,7 +248,7 @@ int maxdesc;
 	printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
 
 	// Init multififo
-	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, rcvinit);
+	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, NULL);
 
 	// Cycle select for sockets descriptors
 	do{
