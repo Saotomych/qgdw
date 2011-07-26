@@ -477,6 +477,7 @@ int len, ret;
 
 	// Channel connect to endpoint
 	wch = findch_by_name(ep->eih.isstr[4]);
+	printf("Channel found this 0x%X\n", wch);
 	if (!wch){
 		// Channel not found, start new channel
 		wch = newchannelup(ep->eih.isstr[0], ep->eih.isstr[2], ep->eih.isstr[4]);
@@ -499,8 +500,8 @@ int len, ret;
 		edh.sys_msg = EP_MSG_NEWEP;
 		ret=write(wch->descout, &(edh), sizeof(ep_data_header));
 //
-//		chanstat();
-//		epstat();
+		chanstat();
+		epstat();
 //		printf("MFI %s: READY ENDPOINT in low level (case 'channel exists'):\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
 //		printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
 //		if (ep->cdcup)
@@ -508,8 +509,9 @@ int len, ret;
 //		if (ep->cdcdn)
 //		 printf("MFI %s: Descriptors of down channel:\n- dn channel descin = 0x%X\n- dn channel descout = 0x%X\n- ready = %d\n", appname, (int) ep->cdcdn->descin, (int) ep->cdcdn->descout, ep->cdcup->ready);
 
-//		peih = &(ep->eih);
-//		ret = write(hpp[1], (char*) &peih,  sizeof(int));
+		peih = &(ep->eih);
+		ret = write(hpp[1], (char*) &peih,  sizeof(int));
+		ch->events = IN_CLOSE;
 //		if (mychs[0]->descout) close(mychs[0]->descout);
 		ch->ready = 3;
 	}
@@ -538,8 +540,10 @@ int init_open(struct channel *ch){
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 			ch->ready = 1;
+			write(ch->descin, "init open", 10);
+		}else{
+			printf("MFI %s error: Init channel don't open\n", appname);
 		}
-		write(ch->descin, "init open", 10);
 	}else{
 		printf("MFI %s error: Init channel opens already\n", appname);
 	}
@@ -596,8 +600,8 @@ struct ep_init_header *eih=0;
 				ret=write(ch->descout, &edh, sizeof(ep_data_header));
 				ch->ready = 3;
 
-//				chanstat();
-//				epstat();
+				chanstat();
+				epstat();
 ////				printf("MFI %s: READY ENDPOINT in low level (case 'new up-channel'):\n- addr = %d\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->eih.addr, ep->my_ep, ep->ep_up, ep->ep_dn);
 ////				printf("MFI %s: Descriptors of channel:\n- up channel desc = 0x%X\n- down channel desc = 0x%X\n", appname, (int) ep->cdcup, (int) ep->cdcdn);
 ////				if (ep->cdcup)
@@ -669,6 +673,8 @@ struct ep_init_header *eih=0;
 
 	}
 
+	ch->events |= IN_OPEN | IN_MODIFY;
+
 //	printf("\nMFI %s: END INIT CLOSE\n-----\n", appname);
 
 	return 0;
@@ -698,7 +704,7 @@ int sys_close(struct channel *ch){
 	if (ch->ready > 0) ch->ready = 0;
 	return 0;
 
-	ch->events |= IN_OPEN;
+	ch->events |= IN_OPEN | IN_MODIFY;
 
 //	printf("MFI %s: ENDPOINT after SYS_CLOSE:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
@@ -906,10 +912,9 @@ fd_set readset;
 				if (i < maxch){
 					// Set some events in one
 					mask = einoty[note].mask & ch->events;
-//					printf("MFI event %s: mask: 0x%X[%d], len=%d, coc=%d\n", appname, mask, i, einoty[note].len, einoty[note].cookie);
+					printf("MFI event %s: mask: 0x%X[%d], len=%d, coc=%d\n", appname, mask, i, einoty[note].len, einoty[note].cookie);
 
 					// Calling callback functions
-//					printf("MFI %s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
 					if (mask & IN_OPEN)	ch->in_open(ch);
 					if (mask & IN_MODIFY) ch->in_read(ch);
 					if (mask & IN_CLOSE) ch->in_close(ch);
@@ -1058,9 +1063,13 @@ char fname[160];
 	strcat(fname, origdev->protoname);
 	strcat(fname, sufinit);
 	mychs[0]->descout = open(fname, O_RDWR);
-	if (!mychs[0]->descout) return -1;
+	if (!mychs[0]->descout){
+		printf("MFI %s error: Init file don't open\n", appname);
+		return -1;
+	}
 
 	ret = read(mychs[0]->descout, fname, 10);
+	printf("!!! %s\n", fname);
 
 	// Write config to init channel
 	wrlen  = write(mychs[0]->descout, ep->eih.isstr[0], strlen(pathinit)+1);
@@ -1074,8 +1083,7 @@ char fname[160];
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
 	while(ch->ready < 3);
-//	close(mychs[0]->descout);
-//	mychs[0]->descout = 0;
+	mychs[0]->descout = 0;
 
 //	printf("MFI %s: connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
 
