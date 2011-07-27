@@ -308,7 +308,7 @@ char ascibuf[100];
 				break;
 
 		case EP_MSG_CONNECT:
-				if (tdev[pr->devindex].desc == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+				if (start_ttydevice(&tdev[pr->devindex]) == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
 				else{
 					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
 					pr->state = 1;
