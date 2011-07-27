@@ -308,7 +308,7 @@ char ascibuf[100];
 				break;
 
 		case EP_MSG_CONNECT:
-				if (tdev[pr->devindex].desc == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+				if (start_ttydevice(&tdev[pr->devindex]) == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
 				else{
 					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
 					pr->state = 1;
@@ -383,6 +383,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 	    		td = &tdev[i];
 
 				if (FD_ISSET(td->desc, &rd_desc)){
+					usleep(500000);
 		    		// Read device
 		    		rdlen = read(td->desc, outbuf + sizeof(ep_data_header), 300 - sizeof(ep_data_header));
     				if (rdlen){
