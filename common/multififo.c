@@ -858,7 +858,7 @@ fd_set readset;
 				if (i < maxch){
 					// Set some events in one
 					mask = einoty[note].mask & ch->events;
-					printf("MFI event %s: mask: 0x%X[%d]\n", appname, mask, i);
+//					printf("MFI event %s: mask: 0x%X[%d]\n", appname, mask, i);
 
 					// Calling callback functions
 //					printf("MFI %s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
