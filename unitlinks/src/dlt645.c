@@ -60,10 +60,9 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data, dlt645_recv_init);
+	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data, NULL);
 
 	signal(SIGALRM, dlt645_catch_alarm);
-
 	alarm(alarm_t);
 
 	// start data collecting timer
@@ -90,6 +89,11 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
+
+			cd.addr = eih->addr;
+			strncpy(cd.name, eih->isstr[2], 100);
+			strncpy(cd.protoname, eih->isstr[3], 100);
+			strncpy(cd.phyname, eih->isstr[4], 100);
 
 			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 

@@ -281,8 +281,7 @@ void iec104_init_ep_ext(iec104_ep_ext* ep_ext)
 	ep_ext->timer_t0 = ep_ext->timer_t1 = ep_ext->timer_t2 = ep_ext->timer_t3 = ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
-	printf("%s: All counters set to zero.\n", APP_NAME);
-	printf("%s: All timers stopped.\n", APP_NAME);
+	printf("%s: ep_ext (re)initialized. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
 }
 
