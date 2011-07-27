@@ -74,7 +74,7 @@ int main(int argc, char * argv[]){
 pid_t chldpid;
 int exit = 0;
 
-	chldpid = mf_init("/rw/mx00/devlinks","devlinktest", rcvdata, rcvinit);
+	chldpid = mf_init("/rw/mx00/devlinks","devlinktest", rcvdata);
 
 	do{
 		sigsuspend(&sigmask);

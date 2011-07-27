@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data, NULL);
+	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data);
 
 	signal(SIGALRM, iec104_catch_alarm);
 	alarm(alarm_t);

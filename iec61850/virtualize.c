@@ -115,16 +115,10 @@ int adr, dir;
 	if(!buff) return -1;
 
 	mf_readbuffer(buff, len, &adr, &dir);
-
 //#ifdef _DEBUG
 	printf("ASDU: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 //#endif
 	free(buff);
-
-	return 0;
-}
-
-int rcvinit(ep_init_header *ih){
 
 	return 0;
 }
@@ -258,7 +252,7 @@ pid_t chldpid;
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo
-			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
+			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata);
 			ret = chldpid;
 		}
 	}

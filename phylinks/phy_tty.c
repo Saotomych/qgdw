@@ -324,36 +324,6 @@ char ascibuf[100];
 		return 0;
 }
 
-// Actions by Receiving of init data:
-// Find config of tty device
-// open tty device
-// setup tty device
-// exchange ready to go
-int rcvinit(ep_init_header *ih){
-int i;
-struct phy_route *pr;
-
-//#ifdef _DEBUG
-		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[0]);
-		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[1]);
-		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[2]);
-		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[3]);
-		printf("Phy TTY: HAS READ INIT DATA: %s\n", ih->isstr[4]);
-		printf("Phy TTY: HAS READ CONFIG_DEVICE: %d\n\n", ih->addr);
-//#endif
-
-		// For route struct connect to socket find equal address ASDU in route struct set
-		for (i = 0 ; i < maxpr; i++){
-			if (myprs[i]->asdu == ih->addr){ pr = myprs[i]; break;}
-		}
-		if (i == maxpr) return 0;	// Route not found
-		if (myprs[i]->state) return 0;	// Route init already
-		printf("Phy TTY: route found: addr = %d, num = %d\n", ih->addr, i);
-		pr = myprs[i];
-		if (tdev[pr->devindex].desc == 0) start_ttydevice(&tdev[pr->devindex]);
-
-	return 0;
-}
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
@@ -374,7 +344,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 	printf("Phylink TTY: config table ready, %d records\n", maxpr);
 
 // Init multififo
-	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata, rcvinit);
+	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata);
 //
 //
 //	td = &tdev[0];
