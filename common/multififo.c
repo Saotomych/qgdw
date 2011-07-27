@@ -742,6 +742,17 @@ struct ep_init_header *eih=0;
 //	printf("\n-----\nMFI %s: SYSTEM READ\nActions:\n", appname);
 
 	rdlen = readchannel(ch);
+
+	if (rdlen == -1){
+		printf("MFI %s error: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
+		return -1;
+	}
+
+	if (rdlen == -2){
+		printf("MFI %s error: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		return -1;
+	}
+
 	len = getdatafromring(ch, (char*) &edh, sizeof(ep_data_header));
 
 	if (len == sizeof(ep_data_header)){
@@ -768,12 +779,18 @@ struct ep_init_header *eih=0;
 	 			if (ret == -1){
 					printf("MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
 	 			}
+	 			usleep(100);
+	 			ret = close(mychs[0]->descout);
+	 			if (ret == -1){
+					printf("MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
+	 			}
+	 			usleep(100);
 			}else{
 				printf("MFI %s error: Handler for init file damaged = 0x%X\n", appname, mychs[0]->descout);
 			}
- 			mychs[0]->descout = 0;
- 			getframefalse(ch);
- 			return 0;
+// 			mychs[0]->descout = 0;
+// 			getframefalse(ch);
+// 			return 0;
 //			rdlen -= len;
 		}
 
@@ -782,20 +799,10 @@ struct ep_init_header *eih=0;
  			ret = write(hpp[1], (char*) &eih,  sizeof(int));
 // 			rdlen -= len;
 // 			ep->ready = 3;
- 			getframefalse(ch);
- 			return 0;
+// 			getframefalse(ch);
+// 			return 0;
 		}
 
-	}
-
-	if (rdlen == -1){
-		printf("MFI %s error: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
-		return -1;
-	}
-
-	if (rdlen == -2){
-		printf("MFI %s error: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
-		return -1;
 	}
 
 	if (rdlen){
@@ -1181,7 +1188,7 @@ struct timeval tm;
 
     if (ret > 0){
         if (FD_ISSET(hpp[0], &rddesc)){
-    		ret = read(hpp[0], buf, 4);
+    		ret = read(hpp[0], buf, len);
 //    		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
     		return 1;
     	}
