@@ -29,8 +29,6 @@ char *sufdn = {"-dn"};
 char *sufup = {"-up"};
 
 int (*cb_rcvdata)(int len);
-//int (*cb_rcvinit)(ep_init_header *ih);
-//int (*cb_rcvclose)(char* fn);
 
 struct channel{
 	char *appname;
@@ -51,7 +49,6 @@ struct channel{
 	int rdlen;		// bytes read since channel opens
 	int rdstr;		// strings reads since channel opens
 	u08 lens[5];
-//	volatile u08 ready;		// channel ready to work (sync variable)
 };
 
 // connect device to channel
@@ -83,30 +80,6 @@ int init_read(struct channel *ch);
 int sys_read(struct channel *ch);
 
 // =================== Private functions =================================== //
-//void epstat(void){
-//int i;
-//struct endpoint *ep;
-//
-//	printf("MFI %s:=== Endpoints statistic ===\n", appname);
-//	for(i=1; i < maxep; i++){
-//		ep = myeps[i];
-//		printf("MFI %s:--- endpoint %d (%d) ---\n- up = %d (0x%X)\n- down = %d (0x%X)\n- addr = %d\n----------------\n",
-//				appname, i, ep->my_ep, ep->ep_up, ep->cdcup, ep->ep_dn, (int) ep->cdcdn, (int) ep->eih.addr);
-//	}
-//}
-//
-//void chanstat(void){
-//int i;
-//struct channel *ch;
-//
-//	printf("MFI %s:=== Channels statistic ===\n", appname);
-//	for(i=0; i < maxch; i++){
-//		ch = mychs[i];
-//		printf("MFI %s:--- channel %d to app %s ---\n- fin=%s (0x%X)\n- fout=%s (0x%X)\n- watch = %d\n----------------\n",
-//				appname, i, ch->appname, ch->f_namein, ch->descin, ch->f_nameout, ch->descout, ch->watch);
-//	}
-//}
-
 
 // Read from fifo to ring buffer
 // Return not read lenght from ch->bgnring to ch->endring
@@ -217,10 +190,10 @@ int getframefalse(struct channel *ch){
 	return 0;
 }
 
+int testrunningapp(char *name){
 char *par[2];
 char *env[1];
 char pidof[] = {"/bin/pidof"};
-int testrunningapp(char *name){
 char buf[160] = {0};
 int ret, pid, wait_st;
 int opipe[2];
@@ -262,14 +235,6 @@ fd_set readset;
 	    return -1;
 }
 
-//struct endpoint *find_ep_by_num(u32 num){
-//int i;
-//	for(i = 0; i < maxep; i++){
-//		if (myeps[i]->my_ep == num) return myeps[i];
-//	}
-//	return NULL;
-//}
-
 struct endpoint *find_ep_by_addr(u32 addr){
 int i;
 	for(i = 1; i < maxep; i++){
@@ -282,8 +247,6 @@ struct channel *findch_by_name(char *nm){
 int i;
 	if (maxch < 2) return 0;
 	for(i=1; i < maxch; i++){
-
-//		printf("%d: %s ===== ????? ===== %s\n", i, nm, mychs[i]->appname);
 
 		if (!strcmp(nm, mychs[i]->appname)) break;
 	}
@@ -476,8 +439,6 @@ int len, ret;
 
 	// Call callback function for working config_device
 	getframefalse(ch);
-//	ch->ready = 2;
-//	if (cb_rcvinit) cb_rcvinit(&(ep->eih));
 
 	// Channel connect to endpoint
 	wch = findch_by_name(ep->eih.isstr[4]);
@@ -502,8 +463,6 @@ int len, ret;
 		edh.sys_msg = EP_MSG_NEWEP;
 		ret=write(wch->descout, &(edh), sizeof(ep_data_header));
 
-//		chanstat();
-//		epstat();
 	}
 
 	return 0;
@@ -583,8 +542,6 @@ ep_data_header edh;
 				edh.sys_msg = EP_MSG_NEWEP;
 				ret=write(ch->descout, &edh, sizeof(ep_data_header));
 
-//				chanstat();
-//				epstat();
 			}
 		}
 	}
@@ -620,7 +577,6 @@ struct ep_init_header *eih=0;
 //		printf("MFI %s: system has closed init file %s\n", appname, ch->f_namein);
 		ch->descin = 0;
 		ch->events |= IN_OPEN | IN_MODIFY;
-//		ch->events &= ~IN_CLOSE;
 		ch->descin = 0;
 
 		ep->ready = 3;
@@ -816,7 +772,7 @@ int inotify_thr(void *arg){
 int i, mask, ret, note;
 ssize_t rdlen=0;
 struct channel *ch = mychs[0];
-struct inotify_event einoty[16];
+struct inotify_event einoty;
 static int evcnt=0;
 struct timeval tv;
 fd_set readset;
@@ -837,19 +793,17 @@ fd_set readset;
 		tv.tv_usec = 0;
 		ret = select(d_inoty + 1, &readset, 0, 0, &tv);
 		if (FD_ISSET(d_inoty, &readset)){
-			rdlen = read(d_inoty, (char*) &einoty[0], sizeof(struct inotify_event));
+			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
 
-//			note = (rdlen >> 4) - 1;
-//			while (rdlen){
 			note = 0;
 			if (rdlen){
-				if (einoty[note].mask){
+				if (einoty.mask){
 				evcnt++;
 //				printf("MFI %s: detect file event: 0x%X in watch %d num %d\n", appname, einoty[note].mask, einoty.wd, evcnt);
 				// Find channel by watch
 				for (i = 0; i < maxch; i++){
 					ch = mychs[i];
-					if (einoty[note].wd == ch->watch){
+					if (einoty.wd == ch->watch){
 //						printf("MFI %s: found channel %d of %d\n", appname, i, maxch);
 						break;
 					}
@@ -857,7 +811,7 @@ fd_set readset;
 
 				if (i < maxch){
 					// Set some events in one
-					mask = einoty[note].mask & ch->events;
+					mask = einoty.mask & ch->events;
 //					printf("MFI event %s: mask: 0x%X[%d]\n", appname, mask, i);
 
 					// Calling callback functions
@@ -1034,43 +988,6 @@ char fname[160];
 	return 0;
 }
 
-// Send data to Endpoint by addr and to direction (DIRUP || DIRDN - priority)
-// Return writing length: OK
-// Return -1: Error. Endpoint not created or not exist or Cnahhel not exist
-//int mftai_toendpoint(TRANSACTINFO *tai){
-//	if (tai->addr) return mf_toendpoint(tai->buf, tai->len, tai->addr, tai->direct);
-//	else return mf_toendpoint_by_index(tai->buf, tai->len, tai->ep_index, tai->direct);
-//}
-//
-//int mf_toendpoint_by_index(char *buf, int len, int index, int direct){
-//int wrlen;
-//struct channel *ch = 0;
-//struct endpoint *ep = myeps[index];
-//fd_set rd, ex;
-//
-//	if (!ep) return -1;
-//
-//	if (direct == DIRDN) ch = ep->cdcdn;
-//	if (direct == DIRUP) ch = ep->cdcup;
-//	if (!ch) return -1;
-//	if (ch->ready < 3) return -1;
-//
-//	wrlen = write(ch->descout, buf, len);
-//	if (wrlen == -1){
-//		printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));
-//		if (errno == 11){	// Resource temporarily unavailable
-//			FD_ZERO(&rd); FD_ZERO(&ex);
-//			FD_SET(ch->descout, &rd);
-//			FD_SET(ch->descout, &ex);
-//			if (select(ch->descout, &rd, NULL, &ex, NULL) > 0)
-//				if (write(ch->descout, buf, len) == -1){
-//					printf("MFI %s: write error:%d - %s\n",appname, errno, strerror(errno));
-//					return -1;
-//				}
-//		}
-//	}
-//	return wrlen;
-//}
 
 int mf_toendpoint(char *buf, int len, int addr, int direct){
 int i, wrlen;
@@ -1105,34 +1022,6 @@ struct endpoint *ep = 0;
 	return wrlen;
 }
 
-// Read data from actual channel, set functions
-// Return:
-// int real reading length
-// unit unique addr by pointer
-// direction of received data by pointer
-//int mftai_readbuffer(TRANSACTINFO *tai){
-//	if (tai->addr) return mf_readbuffer(tai->buf, tai->len, &(tai->addr), &(tai->direct));
-//	else return mf_readbuffer_by_index(tai->buf, tai->len, &(tai->ep_index), &(tai->direct));
-//}
-
-//int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct){
-//int i, ret;
-//struct endpoint *ep;
-//struct ep_data_header *edh;
-//		if (!actchannel) return -1;
-//		ret = getframefromring(actchannel, buf, len);
-//		edh = (struct ep_data_header*) buf;
-//		// Find endpoint
-//	//	printf("MFI %s: readbuffer len=%d\n", appname, len);
-//		for(i = 1; i < maxep; i++){
-//			ep = myeps[i];
-//			if (edh->adr == ep->eih.addr){
-//				if (ep->cdcdn == actchannel) {*index = i; *direct = DIRDN; break;}
-//				if (ep->cdcup == actchannel) {*index = i; *direct = DIRUP; break;}
-//			}
-//		}
-//		return (i==maxep ? 0 : ret);
-//}
 
 int mf_readbuffer(char *buf, int len, int *addr, int *direct){
 int i, ret;
