@@ -1027,8 +1027,7 @@ char fname[160];
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-//	sleep(1);
-	mf_waitevent(fname, 160, 0);
+	while(mf_waitevent(fname, 160, 0) != 1);
 
 	ep->ready = 3;
 
