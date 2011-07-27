@@ -35,17 +35,21 @@ extern "C" {
 
 #define ALARM_PER				1		/* timers check period */
 
-#define RESP_TIMEOUT			10		/* waiting for full response from device timeout */
+#define DLT645_T_T0				10		/* default timer_t0 timeout */
+
+
+#define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
 #define RECV_BUFF_SIZE			512		/* frame receive buffer size */
 
-#define DCALL_PER				60		/* data collection period */
+
+#define DCOLL_PER				15		/* default data collection period */
+
 
 #define DLT645_ASDU_ADR			0
 #define DLT645_LINK_ADR			1
 
 #define DLT645_AWAKE_MSG		0xFEFE	/* device awake message */
 
-#define DLT645_T_T0				1		/* timer_t0 timeout */
 
 
 /*
@@ -57,6 +61,8 @@ extern "C" {
 typedef struct dlt645_ep_ext {
 	uint16_t		adr;			/* ASDU address */
 	uint64_t		adr_hex;		/* link address in BCD format */
+
+	uint8_t			tx_ready;		/* data transfer state */
 
 	time_t			timer_t0;
 } dlt645_ep_ext;
@@ -74,12 +80,10 @@ uint16_t dlt645_config_read(const char *file_name);
 uint64_t dlt645_config_read_bcd_link_adr(char *buff);
 
 
-
 void dlt645_catch_alarm(int sig);
 
 
 int dlt645_recv_data(int len);
-
 int dlt645_recv_init(ep_init_header *ih);
 
 
@@ -87,6 +91,8 @@ dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by);
 
 uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
+
+uint16_t dlt645_collect_data();
 
 uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir);
 uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir);
