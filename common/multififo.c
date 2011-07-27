@@ -619,7 +619,7 @@ struct ep_init_header *eih=0;
 //		printf("MFI %s: system has closed init file %s\n", appname, ch->f_namein);
 		ch->descin = 0;
 		ch->events |= IN_OPEN | IN_MODIFY;
-		ch->events &= ~IN_CLOSE;
+//		ch->events &= ~IN_CLOSE;
 		ch->descin = 0;
 
 		ep->ready = 3;
@@ -779,28 +779,14 @@ struct ep_init_header *eih=0;
 	 			if (ret == -1){
 					printf("MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
 	 			}
-	 			usleep(100);
-	 			ret = close(mychs[0]->descout);
-	 			if (ret == -1){
-					printf("MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
-	 			}
-	 			usleep(100);
 			}else{
 				printf("MFI %s error: Handler for init file damaged = 0x%X\n", appname, mychs[0]->descout);
 			}
-// 			mychs[0]->descout = 0;
-// 			getframefalse(ch);
-// 			return 0;
-//			rdlen -= len;
 		}
 
 		if (edh.sys_msg == EP_MSG_EPRDY){
  			eih = &(ep->eih);
  			ret = write(hpp[1], (char*) &eih,  sizeof(int));
-// 			rdlen -= len;
-// 			ep->ready = 3;
-// 			getframefalse(ch);
-// 			return 0;
 		}
 
 	}
@@ -1034,8 +1020,13 @@ char fname[160];
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-	while(mf_waitevent(fname, 160, 0) != 1);
-
+	ret = 0;
+	while((mf_waitevent(fname, 160, 5000) != 1) && (ret < 3)){
+		printf("MFI %s: repeat close init file 0x%X\n", appname, mychs[0]->descout);
+		close(mychs[0]->descout);
+		ret++;
+	}
+	mychs[0]->descout = 0;
 	ep->ready = 3;
 
 //	while(ep->ready < 3);
