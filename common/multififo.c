@@ -457,6 +457,8 @@ int len, ret;
 		return -1;
 	}
 
+	ch->events = IN_CLOSE;
+
 	// Endpoint init
 	ch->bgnring = ch->bgnframe;
 	ch->rdstr = 0;
@@ -489,7 +491,6 @@ int len, ret;
 			ep->cdcup = wch;
 //			printf("MFI %s: Channel for %s was created\n", appname, ep->eih.isstr[4]);
 			wch->descout = open(wch->f_nameout, O_RDWR);
-			ch->events = IN_CLOSE;
 			//	- two fifos opens! bingo!
 		}else return -1;
 	}else{
@@ -686,6 +687,7 @@ int len = 0, rdlen;
 	}
 
 	rdlen = readchannel(ch);
+
 	if (rdlen == -1){
 		ch->events = 0;
 		printf("MFI %s error: readchannel init error:%d - %s\n", appname, errno, strerror(errno));
@@ -797,6 +799,7 @@ struct ep_init_header *eih=0;
 		if (cb_rcvdata) cb_rcvdata(rdlen);
 		actchannel = 0;
 	}
+	getframefalse(ch);
 
 	getframefalse(ch);
 
@@ -855,7 +858,7 @@ fd_set readset;
 				if (i < maxch){
 					// Set some events in one
 					mask = einoty[note].mask & ch->events;
-//					printf("MFI event %s: mask: 0x%X[%d], len=%d, coc=%d\n", appname, mask, i, einoty[note].len, einoty[note].cookie);
+					printf("MFI event %s: mask: 0x%X[%d]\n", appname, mask, i);
 
 					// Calling callback functions
 //					printf("MFI %s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
@@ -973,7 +976,6 @@ char fname[160];
 	}
 
 // offset for next run level
-
 	ep->eih.isstr[0] = pathinit;
 	ep->eih.isstr[1] = appname;
 	ep->eih.isstr[2] = origdev->protoname;
@@ -996,6 +998,8 @@ char fname[160];
 
 	ep->eih.addr = origdev->addr;
 	ep->eih.numep = maxep-1;
+
+	mychs[0]->descout = 0;
 
 //	printf("MFI %s: Created struct endpoint for asdu id = %d\n", appname, ep->eih.addr);
 	// Open init channel for having endpoint
@@ -1020,18 +1024,10 @@ char fname[160];
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-	ret = 0;
-	while((mf_waitevent(fname, 160, 5000) != 1) && (ret < 3)){
-		printf("MFI %s: repeat close init file 0x%X\n", appname, mychs[0]->descout);
-		close(mychs[0]->descout);
-		ret++;
-	}
+	while (mf_waitevent(fname, 160, 5000) != 1);
+
 	mychs[0]->descout = 0;
 	ep->ready = 3;
-
-//	while(ep->ready < 3);
-//	close(mychs[0]->descout);
-//	mychs[0]->descout = 0;
 
 //	printf("MFI %s: connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
 
