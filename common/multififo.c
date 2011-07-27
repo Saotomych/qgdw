@@ -781,8 +781,7 @@ struct ep_init_header *eih=0;
  			eih = &(ep->eih);
  			ret = write(hpp[1], (char*) &eih,  sizeof(int));
 // 			rdlen -= len;
-
- 			ep->ready = 3;
+// 			ep->ready = 3;
  			getframefalse(ch);
  			return 0;
 		}
@@ -1031,7 +1030,9 @@ char fname[160];
 //	sleep(1);
 	mf_waitevent(fname, 160, 0);
 
-	while(ep->ready < 3);
+	ep->ready = 3;
+
+//	while(ep->ready < 3);
 //	close(mychs[0]->descout);
 //	mychs[0]->descout = 0;
 
