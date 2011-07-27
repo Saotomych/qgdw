@@ -27,7 +27,7 @@ typedef struct _transactinfo{
 // Initialisation
 // in: pathinit - pointer to path to pipes
 // in: devicename - pointer to devicename from config
-extern pid_t mf_init(char *pathinit, char *a_name, void *func_rcvdata, void *func_rcvinit);
+extern pid_t mf_init(char *pathinit, char *a_name, void *func_rcvdata);
 //
 //extern void mf_set_cb_rcvclose(void *func_rcvclose);
 // Exit from inotify waiting

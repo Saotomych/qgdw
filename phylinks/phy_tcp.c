@@ -248,7 +248,7 @@ int maxdesc;
 	printf("Phylink TCP/IP: config table ready, %d records\n", maxpr);
 
 	// Init multififo
-	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata, NULL);
+	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata);
 
 	// Cycle select for sockets descriptors
 	do{

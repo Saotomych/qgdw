@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data, dlt645_recv_init);
+	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data);
 
 	signal(SIGALRM, dlt645_catch_alarm);
 
