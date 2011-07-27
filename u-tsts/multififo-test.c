@@ -85,7 +85,7 @@ int i;
 	appname = malloc(strlen(argv[0]));
 	strcpy(appname, argv[0]);
 
-	chldpid = mf_init("/rw/mx00/devlinks", appname, rcvdata, rcvinit);
+	chldpid = mf_init("/rw/mx00/devlinks", appname, rcvdata);
 
 
 	for(i=0; i<64;i++){

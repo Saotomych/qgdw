@@ -124,11 +124,6 @@ int adr, dir;
 	return 0;
 }
 
-int rcvinit(ep_init_header *ih){
-
-	return 0;
-}
-
 int asdu_parser(void){
 SCADA_ASDU *actasdu;
 SCADA_ASDU_TYPE *actasdutype;
@@ -258,7 +253,7 @@ pid_t chldpid;
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo
-			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata, rcvinit);
+			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata);
 			ret = chldpid;
 		}
 	}
