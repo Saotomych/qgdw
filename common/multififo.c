@@ -540,7 +540,7 @@ int init_open(struct channel *ch){
 			ch->rdlen = 0;
 			ch->rdstr = 0;
 		}
-		write(ch->descin, "init open", 10);
+//		write(ch->descin, "init open", 10);
 	}else{
 		printf("MFI %s error: Init channel opens already\n", appname);
 	}
@@ -1052,8 +1052,8 @@ char fname[160];
 		return -1;
 	}
 
-	ret = read(mychs[0]->descout, fname, 10);
-	printf("MFI %s: %s\n", appname, fname);
+//	ret = read(mychs[0]->descout, fname, 10);
+//	printf("MFI %s: %s\n", appname, fname);
 
 	// Write config to init channel
 	wrlen  = write(mychs[0]->descout, ep->eih.isstr[0], strlen(pathinit)+1);
