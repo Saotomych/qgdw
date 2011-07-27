@@ -86,7 +86,7 @@ char outbuf[256];
 			p = fgets(outbuf, 250, addrcfg);
 			if (p){
 				// Parse string
-				myprs[maxpr] = (struct phy_route*) (firstpr + sizeof(struct phy_route) * maxpr);
+				myprs[maxpr] = (struct phy_route*) (firstpr + maxpr);
 				pr = myprs[maxpr];
 				pr->asdu = atoi(outbuf);
 				if (pr->asdu){
