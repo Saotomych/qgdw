@@ -447,7 +447,6 @@ int newep2channelup(void){
 struct channel *ch = mychs[0];
 struct endpoint *ep = 0;
 struct channel *wch=0;
-ep_init_header *peih=0;
 ep_init_header eih;
 ep_data_header edh;
 int len, ret;
@@ -466,7 +465,9 @@ int len, ret;
 		len = getstringfromring(ch, ep->eih.isstr[ch->rdstr]);
 		ch->rdstr++;
 	}
-	len = getdatafromring(ch, (char*) &eih, sizeof(ep_init_header));
+	printf("\n");
+
+	len = getdatafromring(ch, (char *) &eih, sizeof(ep_init_header) );
 	ep->eih.addr = eih.addr;
 	ep->ep_up = eih.numep;
 //	printf("MFI %s: Endpoint for asdu id = %d was created\n", appname, ep->eih.addr);
@@ -651,11 +652,7 @@ struct ep_init_header *eih=0;
 		ch->events &= ~IN_CLOSE;
 		ch->descin = 0;
 
-		// Send info about eih to parent thread for continue
-		eih = &(ep->eih);
-		ret = write(hpp[1], (char*) &eih,  sizeof(int));
-
-//		ep->ready = 3;
+		ep->ready = 3;
 
 		// Send info about endpoint to up
 		edh.adr = ep->eih.addr;
@@ -664,6 +661,9 @@ struct ep_init_header *eih=0;
 		edh.sys_msg = EP_MSG_EPRDY;
 		ret=write(ep->cdcup->descout, &edh, sizeof(ep_data_header));
 
+		// Send info about eih to parent thread for continue
+		eih = &(ep->eih);
+		ret = write(hpp[1], (char*) &eih,  sizeof(int));
 
 	}
 
@@ -817,7 +817,7 @@ struct ep_data_header edh;
 		}
 
 		if (edh.sys_msg == EP_MSG_EPRDY){
-// 			ep->ready = 3;
+ 			ep->ready = 3;
  			rdlen -= len;
 		}
 
@@ -1005,6 +1005,7 @@ char fname[160];
 			printf("MFI %s error: Endpoint with address = %d has down-channel already\n", appname, origdev->addr);
 			return -1;	// if down channel created already
 		}
+		ep->ready = 0;
 	}else{
 		// Create new endpoint
 		ep = create_ep();
