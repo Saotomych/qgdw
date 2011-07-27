@@ -115,7 +115,6 @@ int adr, dir;
 	if(!buff) return -1;
 
 	mf_readbuffer(buff, len, &adr, &dir);
-
 //#ifdef _DEBUG
 	printf("ASDU: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 //#endif

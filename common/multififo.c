@@ -83,29 +83,29 @@ int init_read(struct channel *ch);
 int sys_read(struct channel *ch);
 
 // =================== Private functions =================================== //
-void epstat(void){
-int i;
-struct endpoint *ep;
-
-	printf("MFI %s:=== Endpoints statistic ===\n", appname);
-	for(i=1; i < maxep; i++){
-		ep = myeps[i];
-		printf("MFI %s:--- endpoint %d (%d) ---\n- up = %d (0x%X)\n- down = %d (0x%X)\n- addr = %d\n----------------\n",
-				appname, i, ep->my_ep, ep->ep_up, ep->cdcup, ep->ep_dn, (int) ep->cdcdn, (int) ep->eih.addr);
-	}
-}
-
-void chanstat(void){
-int i;
-struct channel *ch;
-
-	printf("MFI %s:=== Channels statistic ===\n", appname);
-	for(i=0; i < maxch; i++){
-		ch = mychs[i];
-		printf("MFI %s:--- channel %d to app %s ---\n- fin=%s (0x%X)\n- fout=%s (0x%X)\n- watch = %d\n----------------\n",
-				appname, i, ch->appname, ch->f_namein, ch->descin, ch->f_nameout, ch->descout, ch->watch);
-	}
-}
+//void epstat(void){
+//int i;
+//struct endpoint *ep;
+//
+//	printf("MFI %s:=== Endpoints statistic ===\n", appname);
+//	for(i=1; i < maxep; i++){
+//		ep = myeps[i];
+//		printf("MFI %s:--- endpoint %d (%d) ---\n- up = %d (0x%X)\n- down = %d (0x%X)\n- addr = %d\n----------------\n",
+//				appname, i, ep->my_ep, ep->ep_up, ep->cdcup, ep->ep_dn, (int) ep->cdcdn, (int) ep->eih.addr);
+//	}
+//}
+//
+//void chanstat(void){
+//int i;
+//struct channel *ch;
+//
+//	printf("MFI %s:=== Channels statistic ===\n", appname);
+//	for(i=0; i < maxch; i++){
+//		ch = mychs[i];
+//		printf("MFI %s:--- channel %d to app %s ---\n- fin=%s (0x%X)\n- fout=%s (0x%X)\n- watch = %d\n----------------\n",
+//				appname, i, ch->appname, ch->f_namein, ch->descin, ch->f_nameout, ch->descout, ch->watch);
+//	}
+//}
 
 
 // Read from fifo to ring buffer
@@ -734,7 +734,7 @@ int len = 0, rdlen;
 }
 
 int sys_read(struct channel *ch){
-int rdlen, len;
+int rdlen, len, ret;
 struct endpoint *ep = 0;
 struct ep_data_header edh;
 
@@ -762,7 +762,14 @@ struct ep_data_header edh;
 //			epstat();
 
 			// Channel ready to send data
- 			close(mychs[0]->descout);
+			if (mychs[0]->descout){
+	 			ret = close(mychs[0]->descout);
+	 			if (ret == -1){
+					printf("MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
+	 			}
+			}else{
+				printf("MFI %s error: Handler for init file damaged = 0x%X\n", appname, mychs[0]->descout);
+			}
  			mychs[0]->descout = 0;
 			rdlen -= len;
 		}
