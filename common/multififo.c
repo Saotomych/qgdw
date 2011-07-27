@@ -737,6 +737,7 @@ int sys_read(struct channel *ch){
 int rdlen, len, ret;
 struct endpoint *ep = 0;
 struct ep_data_header edh;
+struct ep_init_header *eih=0;
 
 //	printf("\n-----\nMFI %s: SYSTEM READ\nActions:\n", appname);
 
@@ -771,12 +772,19 @@ struct ep_data_header edh;
 				printf("MFI %s error: Handler for init file damaged = 0x%X\n", appname, mychs[0]->descout);
 			}
  			mychs[0]->descout = 0;
-			rdlen -= len;
+ 			getframefalse(ch);
+ 			return 0;
+//			rdlen -= len;
 		}
 
 		if (edh.sys_msg == EP_MSG_EPRDY){
+ 			eih = &(ep->eih);
+ 			ret = write(hpp[1], (char*) &eih,  sizeof(int));
+// 			rdlen -= len;
+
  			ep->ready = 3;
- 			rdlen -= len;
+ 			getframefalse(ch);
+ 			return 0;
 		}
 
 	}
@@ -1020,7 +1028,8 @@ char fname[160];
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-	sleep(1);
+//	sleep(1);
+	mf_waitevent(fname, 160, 0);
 
 	while(ep->ready < 3);
 //	close(mychs[0]->descout);
