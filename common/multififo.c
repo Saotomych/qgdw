@@ -46,9 +46,6 @@ struct channel{
 	char *bgnframe;	// start receiving frame
 	char *bgnring;	// start data not readed since frame start
 	char *endring;	// end frame
-	int rdlen;		// bytes read since channel opens
-	int rdstr;		// strings reads since channel opens
-	u08 lens[5];
 };
 
 // connect device to channel
@@ -61,6 +58,11 @@ struct endpoint{
 	int ep_dn;			// downlevel endpoint's number
 	volatile u08 ready;
 };
+
+// Variables for initialize endpoint
+int rdleninit;		// bytes read since channel opens
+int rdstrinit;		// strings reads since channel opens
+u08 lensinit[5];
 
 // List of channels
 static int maxch = 0;
@@ -424,11 +426,11 @@ int len, ret;
 
 	// Endpoint init
 	ch->bgnring = ch->bgnframe;
-	ch->rdstr = 0;
-	while(ch->rdstr < 5){
-		ep->eih.isstr[ch->rdstr] = malloc(ch->lens[ch->rdstr] + 1);
-		len = getstringfromring(ch, ep->eih.isstr[ch->rdstr]);
-		ch->rdstr++;
+	rdstrinit = 0;
+	while(rdstrinit < 5){
+		ep->eih.isstr[rdstrinit] = malloc(lensinit[rdstrinit] + 1);
+		len = getstringfromring(ch, ep->eih.isstr[rdstrinit]);
+		rdstrinit++;
 	}
 	printf("\n");
 
@@ -486,8 +488,8 @@ int init_open(struct channel *ch){
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
 //			printf("MFI %s: system has open init file %s, desc = %d\n", appname, ch->f_namein, ch->descin);
-			ch->rdlen = 0;
-			ch->rdstr = 0;
+			rdleninit = 0;
+			rdstrinit = 0;
 		}
 	}else{
 		printf("MFI %s error: Init channel opens already\n", appname);
@@ -522,8 +524,6 @@ ep_data_header edh;
 		if (ch->descin == -1) ch->descin = 0;
 		if (ch->descin){
 //			printf("MFI %s: system has open working in file %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
-			ch->rdlen = 0;
-			ch->rdstr = 0;
 
 			if (ch->descout){
 //				// This endpoint is last for opening up channel in concrete situation =>
@@ -551,8 +551,6 @@ ep_data_header edh;
 		if (ch->descout == -1) ch->descout = 0;
 		if (ch->descout){
 //			printf("MFI %s: system has open working out file %s, desc = 0x%X\n", appname, ch->f_nameout, ch->descout);
-			ch->rdlen = 0;
-			ch->rdstr = 0;
 		}
 	}
 
@@ -660,19 +658,19 @@ int len = 0, rdlen;
 		// Receive data, multientering enable in this block
 		while(rdlen > 0){
 			// Building init pointpp
-			if (ch->rdstr < 5){
+			if (rdstrinit < 5){
 				// get strings
 				len = getstringfromring(ch, nbuf);
 				if (len > 0){
 					// Store lenghts for next mallocs
-					ch->lens[ch->rdstr] = len;
-					ch->rdstr++;
+					lensinit[rdstrinit] = len;
+					rdstrinit++;
 					rdlen -= len;
 				}else rdlen = 0;
 			}else{
 				// get config_device
 				len = getdatafromring(ch, nbuf, sizeof(ep_init_header));
-				if (len == sizeof(ep_init_header)) ch->rdlen += len;
+				if (len == sizeof(ep_init_header)) rdleninit += len;
 				rdlen = 0;
 			}
 			if (len == -1) rdlen = 0;
@@ -681,7 +679,7 @@ int len = 0, rdlen;
 //		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
 //		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
 
-		if ((ch->rdstr == 5) && (ch->rdlen == sizeof(ep_init_header))){
+		if ((rdstrinit == 5) && (rdleninit == sizeof(ep_init_header))){
 			if (newep2channelup()) return -1;
 		} // rdstr == 5 .....
 	}	// rdlen != 0
