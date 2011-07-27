@@ -648,7 +648,7 @@ struct ep_init_header *eih=0;
 		}
 //		printf("MFI %s: system has closed init file %s\n", appname, ch->f_namein);
 		ch->descin = 0;
-		ch->events |= IN_OPEN;
+		ch->events |= IN_OPEN | IN_MODIFY;
 		ch->events &= ~IN_CLOSE;
 		ch->descin = 0;
 
@@ -1027,13 +1027,13 @@ char fname[160];
 	ch = findch_by_name(ep->eih.isstr[2]);
 	if (!ch){
 		// Create new channel
-//		printf("MFI %s: Create channel to %s\n", appname, cd.name);
+		printf("MFI %s: Create channel to %s\n", appname, origdev->name);
 		ch = newchanneldn(pathinit, ep->eih.isstr[2]);
 		if (!ch) return -1;
 //		printf("MFI %s: Channel for %s was created\n", appname, ch->appname);
 	}else{
 		// Start connect new endpoint with exist channel
-//		printf("MFI %s: Find channel for %s\n", appname, ch->appname);
+		printf("MFI %s: Find channel for %s\n", appname, ch->appname);
 	}
 	ep->cdcdn = ch;
 
@@ -1047,9 +1047,13 @@ char fname[160];
 	strcat(fname, origdev->protoname);
 	strcat(fname, sufinit);
 	mychs[0]->descout = open(fname, O_RDWR);
-	if (!mychs[0]->descout) return -1;
+	if (!mychs[0]->descout){
+		printf("MFI %s: Don't open init file\n", appname);
+		return -1;
+	}
 
 	ret = read(mychs[0]->descout, fname, 10);
+	printf("MFI %s: %s\n", appname, fname);
 
 	// Write config to init channel
 	wrlen  = write(mychs[0]->descout, ep->eih.isstr[0], strlen(pathinit)+1);
