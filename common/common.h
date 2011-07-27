@@ -52,8 +52,12 @@
 #define EP_MSG_CONNECT_LOST		8		/* connection lost/closed by remote peer - down2up after exception */
 #define EP_MSG_CONNECT			9		/* connection request - up2down */
 #define EP_MSG_QUIT				10		/* quit application - up2down */
-#define EP_MSG_NEWEP			11		/* !internal multififo message! - down2up */
-#define EP_MSG_EPRDY			12      /* !internal multififo message! - down2up */
+#define EP_MSG_NEWDOBJ			11
+
+// Messages for initialize endpoints
+#define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
+#define EP_MSG_EPRDY			0xF2	/* !internal multififo message! - down2up */
+
 /*
  *
  * Structures

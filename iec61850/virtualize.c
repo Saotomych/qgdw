@@ -237,6 +237,9 @@ char *p;
 
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 
+struct _LNODETYPE 	*plntype;
+DOBJ	*pdobj;
+
 pid_t chldpid;
 
 // Read mainmap.cfg into memory
@@ -278,13 +281,32 @@ pid_t chldpid;
 		// New endpoint
 		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
 
-		sasdu = sasdu->l.next;
 		free(cd.protoname);
+		sleep(1);	// Delay for
 
-		sleep(1);
-
+		sasdu = sasdu->l.next;
 	};
 
+// Setup of unitlinks for getting DATA OBJECTS
+	// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
+//	sasdu = ((SCADA_ASDU *) &fasdu)->l.next;
+//	while(sasdu){
+//		// find logical node type
+//		plntype = sasdu->myln->ln.pmytype;
+//
+//		// find data_object list
+//		pdobj = plntype->pfdobj;
+//
+//		// enumerate data objects
+//
+//		// get pointer to data_object list
+//
+//		// create buffer of datatypes
+//
+//		// write to endpoint
+//
+//		sasdu = sasdu->l.next;
+//	}
 
 	return ret;
 }
