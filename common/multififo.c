@@ -945,7 +945,7 @@ char fname[160];
 			exit(0);
 		}
 		// TODO sleep exchange to other variant to wait
-		sleep(1);
+		usleep(100000);
 	}else{
 		printf("MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 	}
