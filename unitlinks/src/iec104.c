@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
 			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 
-			iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
+			iec104_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
@@ -170,7 +170,7 @@ void iec104_catch_alarm(int sig)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
 
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN);
+				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
@@ -183,7 +183,7 @@ void iec104_catch_alarm(int sig)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
 
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN);
+				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
@@ -209,7 +209,7 @@ void iec104_catch_alarm(int sig)
 			{
 				iec104_init_ep_ext(ep_exts[i]);
 
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN);
+				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
@@ -353,7 +353,7 @@ int iec104_recv_data(int len)
 #endif
 
 				// system message received
-				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir);
+				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
 		else
@@ -375,7 +375,7 @@ int iec104_recv_data(int len)
 #endif
 
 				// system message received
-				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir);
+				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
 
@@ -402,7 +402,7 @@ int iec104_recv_data(int len)
 //}
 
 
-uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir)
+uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	int res;
 	ep_data_header ep_header;
@@ -420,7 +420,7 @@ uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 }
 
 
-uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
+uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	// system message received
 
@@ -436,12 +436,27 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 		// direction is from DIRUP to DIRDN
 		switch(sys_msg)
 		{
+		case EP_MSG_NEWDOBJ:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_NEWDOBJ received. Address = %d.\n", APP_NAME, ep_ext->adr);
+#endif
+
+			break;
+
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			iec104_frame_u_send(APCI_U_STOPDT_ACT, ep_ext, DIRDN);
+
+			break;
+
+		case EP_MSG_QUIT:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
+#endif
+			appexit = 1;
 
 			break;
 		}
@@ -540,7 +555,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 				}
 			}
 
-			iec104_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN);
+			iec104_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
@@ -978,7 +993,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	{
 		iec104_frame_s_send(ep_ext, DIRDN);
 
-		iec104_sys_msg_send(EP_MSG_RECONNECT, ep_ext->adr, DIRDN);
+		iec104_sys_msg_send(EP_MSG_RECONNECT, ep_ext->adr, DIRDN, NULL, 0);
 
 		return RES_INCORRECT;
 	}
