@@ -42,7 +42,7 @@ typedef struct _ATTR_LIST{
 		char *dchg;
 		char *fc;
 		char *type;
-		struct _DTYPE *pmydatatype;
+		struct _DTYPE *pmydatatype;		// xml-parser set up this value
 		int  mytype;
 	} attr;
 } ATTR;
@@ -53,7 +53,8 @@ typedef struct _DTYPE_LIST{
 	struct _DTYPE{
 		char *id;
 		char *cdc;
-		ATTR *pfattr;
+		ATTR *pfattr;						// crossconnector set up this value
+		int maxattr;						// xml-parser set up this value
 	} dtype;
 } DTYPE;
 
@@ -64,7 +65,8 @@ typedef struct _DO_LIST{
 		char *name;
 		char *type;
 		char *options;
-		struct _LNODETYPE *pmynodetype;
+		struct _DTYPE	*pmytype;			// crossconnector set up this value
+		struct _LNODETYPE *pmynodetype;		// xml-parser set up this value
 	} dobj;
 } DOBJ;
 
@@ -74,8 +76,8 @@ typedef struct _LNODETYPE_LIST{
 	struct _LNODETYPE{
 		char *id;
 		char *lnclass;
-		DOBJ *pfdobj;
-		int  maxdobj;
+		DOBJ *pfdobj;		// crossconnector set up this value
+		int  maxdobj;		// xml-parser set up this value
 	} lntype;
 } LNTYPE;
 
@@ -89,8 +91,8 @@ typedef struct _LNODE_LIST{
 		char *iedname;
 		char *ldinst;
 		char *options;
-		struct _IED *pmyied;
-		struct _LNODETYPE *pmytype;
+		struct _IED *pmyied;			// crossconnector set up this value
+		struct _LNODETYPE *pmytype;		// crossconnector set up this value
 	} ln;
 } LNODE;
 
@@ -100,13 +102,13 @@ typedef struct _IED_LIST{
 	struct _IED{
 		char *name;
 		char *inst;
-		LNODE *fln;
 	} ied;
 } IED;
 
 extern LIST fied, fln, flntype, fdo, fdtype, fattr;
 
 extern int virt_start(char *appname);
+extern void crossconnection(void);
 
 extern void ssd_create_ied(const char *pTag);			// call parse ied
 extern void ssd_create_ln(const char *pTag);			// call parse ln

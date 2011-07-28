@@ -32,7 +32,7 @@ int ssdlen, ret = 0;
 struct stat fst;
  	// Get size of main config file
 	if (stat("/rw/mx00/configs/ieclevel.ssd", &fst) == -1){
-		printf("IEC: SCL file not found\n");
+		printf("IEC61850: SCL file not found\n");
 	}
 
 	SCLfile = malloc(fst.st_size);
@@ -55,11 +55,13 @@ char buf[5];
 		printf("IEC61850: SSD not found\n");
 		exit(1);
 	}
+	// Cross connection of IEC structures
+	crossconnection();
 
 	// Start of virtualize functions
 	chldpid = virt_start(argv[0]);
 	if (chldpid == -1){
-		printf("IEC: Virtualization don't started\n");
+		printf("IEC61850: Virtualization don't started\n");
 		exit(2);
 	}
 

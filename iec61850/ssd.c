@@ -25,7 +25,7 @@ LIST *new;
 	plist->next = malloc(size);
 
 	if (!plist->next){
-		printf("IEC: malloc error:%d - %s\n",errno, strerror(errno));
+		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 
@@ -87,7 +87,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("IEC: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
+	printf("IEC61850: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
 
 }
 
@@ -104,20 +104,21 @@ char *key=0, *par=0;
 	do{
 		p = get_next_parameter(p, &key, &par);
 		if (p){
-			if (strstr((char*) key, "lnclass")) flastln->ln.lnclass = par;
+			if (strstr((char*) key, "lnClass")) flastln->ln.lnclass = par;
 			else
-			if (strstr((char*) key, "lninst")) flastln->ln.lninst = par;
+			if (strstr((char*) key, "lnInst")) flastln->ln.lninst = par;
 			else
-			if (strstr((char*) key, "iedname")) flastln->ln.iedname = par;
+			if (strstr((char*) key, "iedName")) flastln->ln.iedname = par;
 			else
-			if (strstr((char*) key, "lntype")) flastln->ln.lntype = par;
+			if (strstr((char*) key, "lnType")) flastln->ln.lntype = par;
 			else
-			if (strstr((char*) key, "ldinst")) flastln->ln.ldinst = par;
-			else flastln->ln.options = par;
+			if (strstr((char*) key, "ldInst")) flastln->ln.ldinst = par;
+			else
+			if (strstr((char*) key, "asdu")) flastln->ln.options = par;
 		}
 	}while(p);
 
-	printf("IEC: new LN: class=%s inst=%s iedname=%s ldclass=%s options=%s\n",
+	printf("IEC61850: new LN: class=%s inst=%s iedname=%s ldclass=%s options=%s\n",
 			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst, flastln->ln.options);
 }
 
@@ -133,13 +134,15 @@ char *key=0, *par=0;
 		if (p){
 			if (strstr((char*) key, "id")) flastlntype->lntype.id = par;
 			else
-			if (strstr((char*) key, "lnclass")) flastlntype->lntype.lnclass = par;
+			if (strstr((char*) key, "lnClass")) flastlntype->lntype.lnclass = par;
 		}
 	}while(p);
 
-	actlnodetype = &flastlntype->lntype;
+	actlnodetype = &(flastlntype->lntype);
 
-	printf("IEC: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
+	flastlntype->lntype.maxdobj = 0;
+
+	printf("IEC61850: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
 
 void ssd_create_dobj(const char *pTag){			// call parse data
@@ -155,13 +158,16 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "name")) flastdo->dobj.name = par;
 			else
 			if (strstr((char*) key, "type")) flastdo->dobj.type = par;
-			else flastdo->dobj.options = par;
+			else
+			if (strstr((char*) key, "asdupos"))	flastdo->dobj.options = par;
 		}
 	}while(p);
 
 	flastdo->dobj.pmynodetype = actlnodetype;
 
-	printf("IEC: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
+	actlnodetype->maxdobj++;
+
+	printf("IEC61850: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
 void ssd_create_dobjtype(const char *pTag){		// call parse data_type
@@ -180,9 +186,11 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	actdtype = &flastdtype->dtype;
+	actdtype = &(flastdtype->dtype);
 
-	printf("IEC: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
+	flastdtype->dtype.maxattr = 0;
+
+	printf("IEC61850: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
 void ssd_create_attr(const char *pTag){			// call parse attr
@@ -197,7 +205,7 @@ char *key=0, *par=0;
 		if (p){
 			if (strstr((char*) key, "name")) flastattr->attr.name = par;
 			else
-			if (strstr((char*) key, "btype")) flastattr->attr.btype = par;
+			if (strstr((char*) key, "bType")) flastattr->attr.btype = par;
 			else
 			if (strstr((char*) key, "type")) flastattr->attr.type = par;
 			else
@@ -209,7 +217,9 @@ char *key=0, *par=0;
 
 	flastattr->attr.pmydatatype = actdtype;
 
-	printf("IEC: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
+	actdtype->maxattr++;
+
+	printf("IEC61850: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 
@@ -226,3 +236,130 @@ void ssd_create_subst(const char *pTag){			// call parse substation
 }
 
 // *** End Tag structure working ***//
+
+
+// Structures connecting function
+void lnode2ied2types(void){
+// find ied and type for every lnode
+// ied by name-iedname
+// type by id-lntype
+LNODE *pln = (LNODE*) fln.next;
+IED *pied;
+LNTYPE *ptype;
+
+	while(pln){
+		// find ied
+		pied = (IED*) fied.next;
+		while(pied){
+			if (!strcmp(pied->ied.name, pln->ln.iedname)) break;
+			pied = pied->l.next;
+		}
+		if (pied){
+			pln->ln.pmyied = &(pied->ied);
+			printf("IEC61850: IED %s for LNODE %s.%s.%s.%s found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}else{
+			printf("IEC61850 error: IED %s for LNODE %s.%s.%s.%s not found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}
+
+		// find lntype
+		ptype = (LNTYPE*) flntype.next;
+		while(ptype){
+			if (!strcmp(ptype->lntype.id, pln->ln.lntype)) break;
+			ptype = ptype->l.next;
+		}
+		if (ptype){
+			pln->ln.pmytype = &(ptype->lntype);
+			printf("IEC61850: LNTYPE %s for LNODE %s.%s.%s.%s found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}else{
+			printf("IEC61850 error: LNTYPE %s for LNODE %s.%s.%s.%s not found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}
+
+		// Next LN
+		pln = pln->l.next;
+	}
+}
+
+void lnodetype2dobj(void){
+// find 1th DOBJ for every LNTYPE
+// dobj by pmynodetype - &(ptype->lntype)
+LNTYPE *ptype = (LNTYPE*) flntype.next;
+DOBJ *pdo;
+
+	while(ptype){
+		// find first DOBJ
+		pdo = (DOBJ*) fdo.next;
+		while(pdo){
+			if (pdo->dobj.pmynodetype == &(ptype->lntype)) break;
+			pdo = pdo->l.next;
+		}
+
+		if (pdo){
+			ptype->lntype.pfdobj = pdo;
+			printf("IEC61850: First DOBJ for LNTYPE %s.%s found\n", ptype->lntype.lnclass, ptype->lntype.id);
+		}else{
+			printf("IEC61850 error: First DOBJ for LNTYPE %s.%s not found\n", ptype->lntype.lnclass, ptype->lntype.id);
+		}
+
+		// next LNTYPE
+		ptype = ptype->l.next;
+	}
+}
+
+void dobj2dtype(void){
+// find DTYPE for every DOBJ
+// dtype by id - type
+DOBJ *pdo = (DOBJ*) fdo.next;
+DTYPE *pdt;
+
+	while(pdo){
+		// find dtype
+		pdt = fdtype.next;
+		while(pdt){
+			if (!strcmp(pdt->dtype.id, pdo->dobj.type)) break;
+			pdt = pdt->l.next;
+		}
+		if (pdt){
+			pdo->dobj.pmytype = &(pdt->dtype);
+			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pdt->dtype.id, pdo->dobj.name);
+		}else{
+			printf("IEC61850 error: DTYPE %s for DOBJ %s not found\n", pdt->dtype.id, pdo->dobj.name);
+		}
+
+		pdo = pdo->l.next;
+	}
+}
+
+void dtype2attr(void){
+// find 1th DA for DOType
+// da by pmydatatype - &(pdo->dtype)
+DTYPE *pdt = (DTYPE*) fdtype.next;
+ATTR *pa;
+
+	while(pdt){
+		// find 1th attr
+		pa = (ATTR*) fattr.next;
+		while(pa){
+			if (pa->attr.pmydatatype == &(pdt->dtype)) break;
+			pa = pa->l.next;
+		}
+		if (pa){
+			printf("IEC61850: First ATTR for DTYPE %s found\n", pdt->dtype.id);
+		}else{
+			printf("IEC61850 error: First ATTR for DTYPE %s not found\n", pdt->dtype.id);
+		}
+
+		pdt = pdt->l.next;
+	}
+}
+
+void crossconnection(){
+	// LNODE -> _IED & _LNODETYPE
+	lnode2ied2types();
+	// LNODETYPE -> DOBJ
+	lnodetype2dobj();
+	// _DOBJ -> _DTYPE &  _LNODETYPE
+	dobj2dtype();
+	// DTYPE -> ATTR
+	dtype2attr();
+
+}

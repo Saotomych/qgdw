@@ -48,7 +48,7 @@ static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
 	plist->next = malloc(size);
 	if (!plist->next){
-		printf("IEC: malloc error:%d - %s\n",errno, strerror(errno));
+		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 
@@ -228,19 +228,60 @@ struct config_device cd = {
 		55555
 };
 
+
+void create_alldo(void){
+SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
+struct _LNODETYPE 	*plntype;
+DOBJ	*pdo;
+
+struct {
+	struct ep_data_header edh;
+	char name[10];
+} fr_do;
+
+	// Setup of unitlinks for getting DATA OBJECTS
+		// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
+		sasdu = ((SCADA_ASDU *) &fasdu)->l.next;
+		while(sasdu){
+			// find logical node type
+			plntype = sasdu->myln->ln.pmytype;
+			if (plntype){
+				// find and get pointer to data_object list
+				pdo = plntype->pfdobj;
+				if (pdo){
+					// write datatypes by sys msg EP_MSG_NEWDOBJ
+					while((pdo) && (pdo->dobj.pmynodetype == plntype)){
+						fr_do.edh.adr = atoi(sasdu->myln->ln.options);
+						fr_do.edh.len = sizeof(fr_do);
+						fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
+						strcpy(fr_do.name, pdo->dobj.name);
+
+						// write to endpoint
+						mf_toendpoint((char*) &fr_do, sizeof(fr_do), fr_do.edh.adr, DIRDN);
+
+						pdo = pdo->l.next;
+					}
+
+
+				}else{
+					printf("IEC61850 error: pointer to list of DOBJs = 0\n");
+				}
+			}else{
+				printf("IEC61850 error: pointer to LNTYPE = 0\n");
+			}
+
+			sasdu = sasdu->l.next;
+		}
+}
+
 int virt_start(char *appname){
 FILE *fmcfg;
 int clen, ret;
 struct stat fst;
-
-char *p;
+pid_t chldpid;
 
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
-
-struct _LNODETYPE 	*plntype;
-DOBJ	*pdobj;
-
-pid_t chldpid;
+char *p;
 
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
@@ -262,15 +303,15 @@ pid_t chldpid;
 	free(MCFGfile);
 	printf("\n--- Configuration ready --- \n\n");
 
-//	Execute all low level application for devices by LNodes
+	//	Execute all low level application for devices by LNodes
 	sasdu = sasdu->l.next;
 	while(sasdu){
 
 		printf("\n--------------\nIEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
 
 		// Create config_device
-		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
-		strcpy(cd.protoname, sasdu->myln->ln.lninst);
+		cd.protoname = malloc(strlen(sasdu->myln->ln.ldinst) + 1);
+		strcpy(cd.protoname, sasdu->myln->ln.ldinst);
 		p = cd.protoname;
 		while((*p != '.') && (*p)) p++;
 		*p = 0;
@@ -287,26 +328,7 @@ pid_t chldpid;
 		sasdu = sasdu->l.next;
 	};
 
-// Setup of unitlinks for getting DATA OBJECTS
-	// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
-//	sasdu = ((SCADA_ASDU *) &fasdu)->l.next;
-//	while(sasdu){
-//		// find logical node type
-//		plntype = sasdu->myln->ln.pmytype;
-//
-//		// find data_object list
-//		pdobj = plntype->pfdobj;
-//
-//		// enumerate data objects
-//
-//		// get pointer to data_object list
-//
-//		// create buffer of datatypes
-//
-//		// write to endpoint
-//
-//		sasdu = sasdu->l.next;
-//	}
+	create_alldo();
 
 	return ret;
 }
