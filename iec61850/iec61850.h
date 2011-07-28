@@ -54,7 +54,7 @@ typedef struct _DTYPE_LIST{
 		char *id;
 		char *cdc;
 		ATTR *pfattr;
-		int maxattr;
+		int maxattr;						// xml-parser set up this value
 	} dtype;
 } DTYPE;
 

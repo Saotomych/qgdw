@@ -310,6 +310,7 @@ DOBJ *pdo = (DOBJ*) fdo.next;
 DTYPE *pdt;
 
 	while(pdo){
+		// find dtype
 		pdt = fdtype.next;
 		while(pdt){
 			if (!strcmp(pdt->dtype.id, pdo->dobj.type)) break;
@@ -328,8 +329,25 @@ DTYPE *pdt;
 
 void dtype2attr(void){
 // find 1th DA for DOType
-// da by
+// da by pmydatatype - &(pdo->dtype)
+DTYPE *pdt = (DTYPE*) fdtype.next;
+ATTR *pa;
 
+	while(pdt){
+		// find 1th attr
+		pa = (ATTR*) fattr.next;
+		while(pa){
+			if (pa->attr.pmydatatype == &(pdt->dtype)) break;
+			pa = pa->l.next;
+		}
+		if (pa){
+			printf("IEC61850: First ATTR for DTYPE %s found\n", pdt->dtype.id);
+		}else{
+			printf("IEC61850 error: First ATTR for DTYPE %s not found\n", pdt->dtype.id);
+		}
+
+		pdt = pdt->l.next;
+	}
 }
 
 void crossconnection(){
