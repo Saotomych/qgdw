@@ -54,6 +54,7 @@ typedef struct _DTYPE_LIST{
 		char *id;
 		char *cdc;
 		ATTR *pfattr;
+		int maxattr;
 	} dtype;
 } DTYPE;
 
@@ -64,7 +65,7 @@ typedef struct _DO_LIST{
 		char *name;
 		char *type;
 		char *options;
-		struct _DTYPE	*pmytype;
+		struct _DTYPE	*pmytype;			// crossconnector set up this value
 		struct _LNODETYPE *pmynodetype;		// xml-parser set up this value
 	} dobj;
 } DOBJ;

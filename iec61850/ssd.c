@@ -186,6 +186,8 @@ char *key=0, *par=0;
 
 	actdtype = &(flastdtype->dtype);
 
+	flastdtype->dtype.maxattr = 0;
+
 	printf("IEC: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
@@ -212,6 +214,8 @@ char *key=0, *par=0;
 	}while(p);
 
 	flastattr->attr.pmydatatype = actdtype;
+
+	actdtype->maxattr++;
 
 	printf("IEC: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
@@ -312,6 +316,7 @@ DTYPE *pdt;
 			pdt = pdt->l.next;
 		}
 		if (pdt){
+			pdo->dobj.pmytype = &(pdt->dtype);
 			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pdt->dtype.id, pdo->dobj.name);
 		}else{
 			printf("IEC61850 error: DTYPE %s for DOBJ %s not found\n", pdt->dtype.id, pdo->dobj.name);
@@ -322,7 +327,9 @@ DTYPE *pdt;
 }
 
 void dtype2attr(void){
-// find 1th DA for
+// find 1th DA for DOType
+// da by
+
 }
 
 void crossconnection(){
