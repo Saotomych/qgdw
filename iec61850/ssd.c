@@ -275,7 +275,7 @@ LNTYPE *ptype;
 
 void lnodetype2dobj(void){
 // find 1th DOBJ for every LNTYPE
-// dobj by pmynodetype - ptype->lntype
+// dobj by pmynodetype - &(ptype->lntype)
 LNTYPE *ptype = (LNTYPE*) flntype.next;
 DOBJ *pdo;
 
@@ -289,9 +289,9 @@ DOBJ *pdo;
 
 		if (pdo){
 			ptype->lntype.pfdobj = pdo;
-			printf("IEC61850: First DOBJ for LNTYPE %s.%s found", ptype->lntype.lnclass, ptype->lntype.id);
+			printf("IEC61850: First DOBJ for LNTYPE %s.%s found\n", ptype->lntype.lnclass, ptype->lntype.id);
 		}else{
-			printf("IEC61850 error: First DOBJ for LNTYPE %s.%s not found", ptype->lntype.lnclass, ptype->lntype.id);
+			printf("IEC61850 error: First DOBJ for LNTYPE %s.%s not found\n", ptype->lntype.lnclass, ptype->lntype.id);
 		}
 
 		// next LNTYPE
@@ -300,11 +300,29 @@ DOBJ *pdo;
 }
 
 void dobj2dtype(void){
+// find DTYPE for every DOBJ
+// dtype by id - type
+DOBJ *pdo = (DOBJ*) fdo.next;
+DTYPE *pdt;
 
+	while(pdo){
+		pdt = fdtype.next;
+		while(pdt){
+			if (!strcmp(pdt->dtype.id, pdo->dobj.type)) break;
+			pdt = pdt->l.next;
+		}
+		if (pdt){
+			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pdt->dtype.id, pdo->dobj.name);
+		}else{
+			printf("IEC61850 error: DTYPE %s for DOBJ %s not found\n", pdt->dtype.id, pdo->dobj.name);
+		}
+
+		pdo = pdo->l.next;
+	}
 }
 
 void dtype2attr(void){
-
+// find 1th DA for
 }
 
 void crossconnection(){

@@ -75,7 +75,7 @@ typedef struct _LNODETYPE_LIST{
 	struct _LNODETYPE{
 		char *id;
 		char *lnclass;
-		DOBJ *pfdobj;
+		DOBJ *pfdobj;		// crossconnector set up this value
 		int  maxdobj;		// xml-parser set up this value
 	} lntype;
 } LNTYPE;
