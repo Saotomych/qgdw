@@ -250,7 +250,7 @@ struct {
 				pdo = plntype->pfdobj;
 				if (pdo){
 					// write datatypes by sys msg EP_MSG_NEWDOBJ
-					while(pdo->dobj.pmynodetype == plntype){
+					while((pdo) && (pdo->dobj.pmynodetype == plntype)){
 						fr_do.edh.adr = atoi(sasdu->myln->ln.options);
 						fr_do.edh.len = sizeof(fr_do);
 						fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
@@ -304,29 +304,29 @@ char *p;
 	printf("\n--- Configuration ready --- \n\n");
 
 	//	Execute all low level application for devices by LNodes
-//	sasdu = sasdu->l.next;
-//	while(sasdu){
-//
-//		printf("\n--------------\nIEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
-//
-//		// Create config_device
-//		cd.protoname = malloc(strlen(sasdu->myln->ln.ldinst) + 1);
-//		strcpy(cd.protoname, sasdu->myln->ln.ldinst);
-//		p = cd.protoname;
-//		while((*p != '.') && (*p)) p++;
-//		*p = 0;
-//		cd.phyname = p + 1;
-//		cd.name = appname;
-//		cd.addr = sasdu->ASDUaddr;
-//
-//		// New endpoint
-//		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
-//
-//		free(cd.protoname);
-//		sleep(1);	// Delay for
-//
-//		sasdu = sasdu->l.next;
-//	};
+	sasdu = sasdu->l.next;
+	while(sasdu){
+
+		printf("\n--------------\nIEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
+
+		// Create config_device
+		cd.protoname = malloc(strlen(sasdu->myln->ln.ldinst) + 1);
+		strcpy(cd.protoname, sasdu->myln->ln.ldinst);
+		p = cd.protoname;
+		while((*p != '.') && (*p)) p++;
+		*p = 0;
+		cd.phyname = p + 1;
+		cd.name = appname;
+		cd.addr = sasdu->ASDUaddr;
+
+		// New endpoint
+		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+
+		free(cd.protoname);
+		sleep(1);	// Delay for
+
+		sasdu = sasdu->l.next;
+	};
 
 	create_alldo();
 
