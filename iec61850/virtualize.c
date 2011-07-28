@@ -263,50 +263,50 @@ pid_t chldpid;
 	printf("\n--- Configuration ready --- \n\n");
 
 //	Execute all low level application for devices by LNodes
-	sasdu = sasdu->l.next;
-	while(sasdu){
-
-		printf("\n--------------\nIEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
-
-		// Create config_device
-		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
-		strcpy(cd.protoname, sasdu->myln->ln.lninst);
-		p = cd.protoname;
-		while((*p != '.') && (*p)) p++;
-		*p = 0;
-		cd.phyname = p + 1;
-		cd.name = appname;
-		cd.addr = sasdu->ASDUaddr;
-
-		// New endpoint
-		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
-
-		free(cd.protoname);
-		sleep(1);	// Delay for
-
-		sasdu = sasdu->l.next;
-	};
+//	sasdu = sasdu->l.next;
+//	while(sasdu){
+//
+//		printf("\n--------------\nIEC Virt: execute for LNode %s, id asdu = %s\n", sasdu->myln->ln.lninst, sasdu->myln->ln.options);
+//
+//		// Create config_device
+//		cd.protoname = malloc(strlen(sasdu->myln->ln.lninst) + 1);
+//		strcpy(cd.protoname, sasdu->myln->ln.lninst);
+//		p = cd.protoname;
+//		while((*p != '.') && (*p)) p++;
+//		*p = 0;
+//		cd.phyname = p + 1;
+//		cd.name = appname;
+//		cd.addr = sasdu->ASDUaddr;
+//
+//		// New endpoint
+//		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+//
+//		free(cd.protoname);
+//		sleep(1);	// Delay for
+//
+//		sasdu = sasdu->l.next;
+//	};
 
 // Setup of unitlinks for getting DATA OBJECTS
 	// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
-//	sasdu = ((SCADA_ASDU *) &fasdu)->l.next;
-//	while(sasdu){
-//		// find logical node type
-//		plntype = sasdu->myln->ln.pmytype;
-//
-//		// find data_object list
+	sasdu = ((SCADA_ASDU *) &fasdu)->l.next;
+	while(sasdu){
+		// find logical node type
+		plntype = sasdu->myln->ln.pmytype;
+
+		// find data_object list
 //		pdobj = plntype->pfdobj;
-//
-//		// enumerate data objects
-//
-//		// get pointer to data_object list
-//
-//		// create buffer of datatypes
-//
-//		// write to endpoint
-//
-//		sasdu = sasdu->l.next;
-//	}
+
+		// enumerate data objects
+
+		// get pointer to data_object list
+
+		// create buffer of datatypes
+
+		// write to endpoint
+
+		sasdu = sasdu->l.next;
+	}
 
 	return ret;
 }

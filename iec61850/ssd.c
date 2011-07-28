@@ -226,3 +226,68 @@ void ssd_create_subst(const char *pTag){			// call parse substation
 }
 
 // *** End Tag structure working ***//
+
+
+// Structures connecting function
+void lnode2ied2types(void){
+// find ied and type for every lnode
+// ied by name - iedname
+// type by id - lntype
+LNODE *pln = (LNODE*) fln.next;
+IED *pied;
+LNTYPE *ptype;
+
+	while(pln){
+		// find ied
+		pied = (IED*) fied.next;
+		while(pied){
+			if (!strcmp(pied->ied.name, pln->ln.iedname)) break;
+			pied = pied->l.next;
+		}
+		if (pied){
+			pln->ln.pmyied = &(pied->ied);
+			printf("IEC61850: IED %s for LNODE %s.%s.%s found\n", pln->ln.iedname, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}else{
+			printf("IEC61850 error: IED %s for LNODE %s.%s.%s not found\n", pln->ln.iedname, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}
+
+		// find lntype
+		ptype = (LNTYPE*) flntype.next;
+		while(ptype){
+			if (!strcmp(ptype->lntype.id, pln->ln.lntype)) break;
+			ptype = ptype->l.next;
+		}
+		if (ptype){
+			pln->ln.pmytype = &(ptype->lntype);
+			printf("IEC61850: LNTYPE %s for LNODE %s.%s.%s found\n", pln->ln.lntype, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}else{
+			printf("IEC61850 error: LNTYPE %s for LNODE %s.%s.%s not found\n", pln->ln.lntype, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+		}
+
+		pln = pln->l.next;
+	}
+}
+
+void lnodetype2dobj(void){
+
+}
+
+void dobj2dtype(void){
+
+}
+
+void dtype2attr(void){
+
+}
+
+void crossconnection(){
+	// LNODE -> _IED & _LNODETYPE
+	lnode2ied2types();
+	// LNODETYPE -> DOBJ
+	lnodetype2dobj();
+	// _DOBJ -> _DTYPE &  _LNODETYPE
+	dobj2dtype();
+	// DTYPE -> ATTR
+	dtype2attr();
+
+}

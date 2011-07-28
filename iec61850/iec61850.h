@@ -64,6 +64,7 @@ typedef struct _DO_LIST{
 		char *name;
 		char *type;
 		char *options;
+		struct _DTYPE	*pmytype;
 		struct _LNODETYPE *pmynodetype;
 	} dobj;
 } DOBJ;
@@ -100,13 +101,13 @@ typedef struct _IED_LIST{
 	struct _IED{
 		char *name;
 		char *inst;
-		LNODE *fln;
 	} ied;
 } IED;
 
 extern LIST fied, fln, flntype, fdo, fdtype, fattr;
 
 extern int virt_start(char *appname);
+extern void crossconnection(void);
 
 extern void ssd_create_ied(const char *pTag);			// call parse ied
 extern void ssd_create_ln(const char *pTag);			// call parse ln

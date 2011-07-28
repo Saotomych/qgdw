@@ -55,6 +55,8 @@ char buf[5];
 		printf("IEC61850: SSD not found\n");
 		exit(1);
 	}
+	// Cross connection of IEC structures
+	crossconnection();
 
 	// Start of virtualize functions
 	chldpid = virt_start(argv[0]);
