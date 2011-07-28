@@ -104,16 +104,17 @@ char *key=0, *par=0;
 	do{
 		p = get_next_parameter(p, &key, &par);
 		if (p){
-			if (strstr((char*) key, "lnclass")) flastln->ln.lnclass = par;
+			if (strstr((char*) key, "lnClass")) flastln->ln.lnclass = par;
 			else
-			if (strstr((char*) key, "lninst")) flastln->ln.lninst = par;
+			if (strstr((char*) key, "lnInst")) flastln->ln.lninst = par;
 			else
-			if (strstr((char*) key, "iedname")) flastln->ln.iedname = par;
+			if (strstr((char*) key, "iedName")) flastln->ln.iedname = par;
 			else
-			if (strstr((char*) key, "lntype")) flastln->ln.lntype = par;
+			if (strstr((char*) key, "lnType")) flastln->ln.lntype = par;
 			else
-			if (strstr((char*) key, "ldinst")) flastln->ln.ldinst = par;
-			else flastln->ln.options = par;
+			if (strstr((char*) key, "ldInst")) flastln->ln.ldinst = par;
+			else
+			if (strstr((char*) key, "asdu")) flastln->ln.options = par;
 		}
 	}while(p);
 
@@ -133,7 +134,7 @@ char *key=0, *par=0;
 		if (p){
 			if (strstr((char*) key, "id")) flastlntype->lntype.id = par;
 			else
-			if (strstr((char*) key, "lnclass")) flastlntype->lntype.lnclass = par;
+			if (strstr((char*) key, "lnClass")) flastlntype->lntype.lnclass = par;
 		}
 	}while(p);
 
@@ -157,7 +158,8 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "name")) flastdo->dobj.name = par;
 			else
 			if (strstr((char*) key, "type")) flastdo->dobj.type = par;
-			else flastdo->dobj.options = par;
+			else
+			if (strstr((char*) key, "asdupos"))	flastdo->dobj.options = par;
 		}
 	}while(p);
 
@@ -203,7 +205,7 @@ char *key=0, *par=0;
 		if (p){
 			if (strstr((char*) key, "name")) flastattr->attr.name = par;
 			else
-			if (strstr((char*) key, "btype")) flastattr->attr.btype = par;
+			if (strstr((char*) key, "bType")) flastattr->attr.btype = par;
 			else
 			if (strstr((char*) key, "type")) flastattr->attr.type = par;
 			else
