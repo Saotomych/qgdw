@@ -48,7 +48,7 @@ static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
 	plist->next = malloc(size);
 	if (!plist->next){
-		printf("IEC: malloc error:%d - %s\n",errno, strerror(errno));
+		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 

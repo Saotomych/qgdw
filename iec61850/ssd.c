@@ -25,7 +25,7 @@ LIST *new;
 	plist->next = malloc(size);
 
 	if (!plist->next){
-		printf("IEC: malloc error:%d - %s\n",errno, strerror(errno));
+		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 
@@ -87,7 +87,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("IEC: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
+	printf("IEC61850: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
 
 }
 
@@ -117,7 +117,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("IEC: new LN: class=%s inst=%s iedname=%s ldclass=%s options=%s\n",
+	printf("IEC61850: new LN: class=%s inst=%s iedname=%s ldclass=%s options=%s\n",
 			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst, flastln->ln.options);
 }
 
@@ -141,7 +141,7 @@ char *key=0, *par=0;
 
 	flastlntype->lntype.maxdobj = 0;
 
-	printf("IEC: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
+	printf("IEC61850: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
 
 void ssd_create_dobj(const char *pTag){			// call parse data
@@ -165,7 +165,7 @@ char *key=0, *par=0;
 
 	actlnodetype->maxdobj++;
 
-	printf("IEC: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
+	printf("IEC61850: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
 void ssd_create_dobjtype(const char *pTag){		// call parse data_type
@@ -188,7 +188,7 @@ char *key=0, *par=0;
 
 	flastdtype->dtype.maxattr = 0;
 
-	printf("IEC: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
+	printf("IEC61850: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
 void ssd_create_attr(const char *pTag){			// call parse attr
@@ -217,7 +217,7 @@ char *key=0, *par=0;
 
 	actdtype->maxattr++;
 
-	printf("IEC: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
+	printf("IEC61850: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 

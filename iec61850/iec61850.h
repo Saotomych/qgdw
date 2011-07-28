@@ -53,7 +53,7 @@ typedef struct _DTYPE_LIST{
 	struct _DTYPE{
 		char *id;
 		char *cdc;
-		ATTR *pfattr;
+		ATTR *pfattr;						// crossconnector set up this value
 		int maxattr;						// xml-parser set up this value
 	} dtype;
 } DTYPE;
