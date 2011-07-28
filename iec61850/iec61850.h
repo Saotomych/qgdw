@@ -42,7 +42,7 @@ typedef struct _ATTR_LIST{
 		char *dchg;
 		char *fc;
 		char *type;
-		struct _DTYPE *pmydatatype;
+		struct _DTYPE *pmydatatype;		// xml-parser set up this value
 		int  mytype;
 	} attr;
 } ATTR;
@@ -65,7 +65,7 @@ typedef struct _DO_LIST{
 		char *type;
 		char *options;
 		struct _DTYPE	*pmytype;
-		struct _LNODETYPE *pmynodetype;
+		struct _LNODETYPE *pmynodetype;		// xml-parser set up this value
 	} dobj;
 } DOBJ;
 
@@ -76,7 +76,7 @@ typedef struct _LNODETYPE_LIST{
 		char *id;
 		char *lnclass;
 		DOBJ *pfdobj;
-		int  maxdobj;
+		int  maxdobj;		// xml-parser set up this value
 	} lntype;
 } LNTYPE;
 
@@ -90,8 +90,8 @@ typedef struct _LNODE_LIST{
 		char *iedname;
 		char *ldinst;
 		char *options;
-		struct _IED *pmyied;
-		struct _LNODETYPE *pmytype;
+		struct _IED *pmyied;			// crossconnector set up this value
+		struct _LNODETYPE *pmytype;		// crossconnector set up this value
 	} ln;
 } LNODE;
 

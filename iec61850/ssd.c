@@ -137,7 +137,9 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	actlnodetype = &flastlntype->lntype;
+	actlnodetype = &(flastlntype->lntype);
+
+	flastlntype->lntype.maxdobj = 0;
 
 	printf("IEC: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
@@ -161,6 +163,8 @@ char *key=0, *par=0;
 
 	flastdo->dobj.pmynodetype = actlnodetype;
 
+	actlnodetype->maxdobj++;
+
 	printf("IEC: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
@@ -180,7 +184,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	actdtype = &flastdtype->dtype;
+	actdtype = &(flastdtype->dtype);
 
 	printf("IEC: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
@@ -231,8 +235,8 @@ void ssd_create_subst(const char *pTag){			// call parse substation
 // Structures connecting function
 void lnode2ied2types(void){
 // find ied and type for every lnode
-// ied by name - iedname
-// type by id - lntype
+// ied by name-iedname
+// type by id-lntype
 LNODE *pln = (LNODE*) fln.next;
 IED *pied;
 LNTYPE *ptype;
@@ -246,9 +250,9 @@ LNTYPE *ptype;
 		}
 		if (pied){
 			pln->ln.pmyied = &(pied->ied);
-			printf("IEC61850: IED %s for LNODE %s.%s.%s found\n", pln->ln.iedname, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+			printf("IEC61850: IED %s for LNODE %s.%s.%s.%s found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
 		}else{
-			printf("IEC61850 error: IED %s for LNODE %s.%s.%s not found\n", pln->ln.iedname, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+			printf("IEC61850 error: IED %s for LNODE %s.%s.%s.%s not found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
 		}
 
 		// find lntype
@@ -259,17 +263,40 @@ LNTYPE *ptype;
 		}
 		if (ptype){
 			pln->ln.pmytype = &(ptype->lntype);
-			printf("IEC61850: LNTYPE %s for LNODE %s.%s.%s found\n", pln->ln.lntype, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+			printf("IEC61850: LNTYPE %s for LNODE %s.%s.%s.%s found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
 		}else{
-			printf("IEC61850 error: LNTYPE %s for LNODE %s.%s.%s not found\n", pln->ln.lntype, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
+			printf("IEC61850 error: LNTYPE %s for LNODE %s.%s.%s.%s not found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
 		}
 
+		// Next LN
 		pln = pln->l.next;
 	}
 }
 
 void lnodetype2dobj(void){
+// find 1th DOBJ for every LNTYPE
+// dobj by pmynodetype - ptype->lntype
+LNTYPE *ptype = (LNTYPE*) flntype.next;
+DOBJ *pdo;
 
+	while(ptype){
+		// find first DOBJ
+		pdo = (DOBJ*) fdo.next;
+		while(pdo){
+			if (pdo->dobj.pmynodetype == &(ptype->lntype)) break;
+			pdo = pdo->l.next;
+		}
+
+		if (pdo){
+			ptype->lntype.pfdobj = pdo;
+			printf("IEC61850: First DOBJ for LNTYPE %s.%s found", ptype->lntype.lnclass, ptype->lntype.id);
+		}else{
+			printf("IEC61850 error: First DOBJ for LNTYPE %s.%s not found", ptype->lntype.lnclass, ptype->lntype.id);
+		}
+
+		// next LNTYPE
+		ptype = ptype->l.next;
+	}
 }
 
 void dobj2dtype(void){
