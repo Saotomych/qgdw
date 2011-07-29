@@ -100,49 +100,103 @@ uint32_t dlt_asdu_build_data_unit_id(uint32_t block_id, uint8_t pos, uint8_t num
 }
 
 
-time_t dlt_asdu_parse_time_tag(unsigned char *buff, uint32_t *offset)
+time_t dlt_asdu_parse_time_tag(unsigned char *buff, uint32_t *offset, uint8_t flags)
 {
 	struct tm time_tm;
 
-	time_tm.tm_min   = buff_bcd_get_le_uint(buff, *offset, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_SEC)
+	{
+		time_tm.tm_sec  = buff_bcd_get_le_uint(buff, *offset, 1);
+		*offset += 1;
+	}
 
-	time_tm.tm_hour  = buff_bcd_get_le_uint(buff, *offset, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_MIN)
+	{
+		time_tm.tm_min   = buff_bcd_get_le_uint(buff, *offset, 1);
+		*offset += 1;
+	}
 
-	time_tm.tm_mday  = buff_bcd_get_le_uint(buff, *offset, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_HOUR)
+	{
+		time_tm.tm_hour  = buff_bcd_get_le_uint(buff, *offset, 1);
+		*offset += 1;
+	}
 
-	time_tm.tm_mon   = buff_bcd_get_le_uint(buff, *offset, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_WDAY)
+	{
+		time_tm.tm_wday  = buff_bcd_get_le_uint(buff, *offset, 1);
+		*offset += 1;
+	}
 
-	time_tm.tm_year  = buff_bcd_get_le_uint(buff, *offset, 1) + 100;
-	*offset += 1;
+	if(flags & DLT_ASDU_MDAY)
+	{
+		time_tm.tm_mday  = buff_bcd_get_le_uint(buff, *offset, 1);
+		*offset += 1;
+	}
+
+	if(flags & DLT_ASDU_MONTH)
+	{
+		time_tm.tm_mon   = buff_bcd_get_le_uint(buff, *offset, 1) - 1;
+		*offset += 1;
+	}
+
+	if(flags & DLT_ASDU_YEAR)
+	{
+		time_tm.tm_year  = buff_bcd_get_le_uint(buff, *offset, 1) + 100;
+		*offset += 1;
+	}
 
 	return mktime(&time_tm);
 }
 
 
-void dlt_asdu_build_time_tag(unsigned char *buff, uint32_t *offset, time_t time_tag)
+void dlt_asdu_build_time_tag(unsigned char *buff, uint32_t *offset, time_t time_tag, uint8_t flags)
 {
 	struct tm time_tm;
 
 	time_tm = *localtime(&time_tag);
 
-	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_min, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_SEC)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_sec, 1);
+		*offset += 1;
+	}
 
-	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_hour, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_MIN)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_min, 1);
+		*offset += 1;
+	}
 
-	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_mday, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_HOUR)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_hour, 1);
+		*offset += 1;
+	}
 
-	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_mon, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_WDAY)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_wday, 1);
+		*offset += 1;
+	}
 
-	buff_bcd_put_le_uint(buff, *offset, time_tm.tm_year - 100, 1);
-	*offset += 1;
+	if(flags & DLT_ASDU_MDAY)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_mday, 1);
+		*offset += 1;
+	}
+
+	if(flags & DLT_ASDU_MONTH)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_mon + 1, 1);
+		*offset += 1;
+	}
+
+	if(flags & DLT_ASDU_YEAR)
+	{
+		buff_bcd_put_le_uint(buff, *offset, time_tm.tm_year - 100, 1);
+		*offset += 1;
+	}
 }
 
 
