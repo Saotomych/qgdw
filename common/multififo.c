@@ -726,8 +726,6 @@ struct ep_init_header *eih=0;
 		if (edh.sys_msg == EP_MSG_NEWEP){
 			// Get ep->ep_dn - downlink endpoint's number
 			ep->ep_dn = edh.numep;
-//			chanstat();
-//			epstat();
 
 			// Channel ready to send data
 			if (mychs[0]->descout){
@@ -1012,7 +1010,10 @@ struct endpoint *ep = 0;
 	if (!ch) return -1;
 
 	// Write data to channel
-	wrlen = write(ch->descout, buf, len);
+	if (ch->descout) wrlen = write(ch->descout, buf, len);
+	else{
+		printf("MFI %s error: Outfile descriptor = 0\n", appname);
+	}
 	if (wrlen == -1) {
 		printf("MFI %s error: write error:%d - %s\n",appname, errno, strerror(errno));
 		return -1;

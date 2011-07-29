@@ -228,7 +228,7 @@ void iec104_catch_alarm(int sig)
 iec104_ep_ext* iec104_get_ep_ext(uint16_t adr)
 {
 	int i;
-	for(i=0; i<MAXEP; i++)
+	for(i=0; i < MAXEP; i++)
 	{
 		if(ep_exts[i] && ep_exts[i]->adr == adr) return ep_exts[i];
 	}

@@ -10,9 +10,11 @@
 
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/asdu.h"
 #include "iec61850.h"
 
-#define SCADA_ASDU_MAXSIZE 512
+#define NAMESIZE			10
+#define SCADA_ASDU_MAXSIZE 	512
 
 // DATA
 typedef struct _DATAMAP{
@@ -107,8 +109,13 @@ int ret = 0;
 }
 
 int rcvdata(int len){
-char *buff;
-int adr, dir;
+char *buff, *data;
+int adr, dir, rdlen, *pdat;
+ep_data_header *edh;
+asdu *pasdu;
+data_unit *pdu;
+u08 *frame;
+SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 
 	buff = malloc(len);
 
@@ -116,7 +123,48 @@ int adr, dir;
 
 	mf_readbuffer(buff, len, &adr, &dir);
 //#ifdef _DEBUG
-	printf("ASDU: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
+//	printf("IEC61850: Data received. Address = %d, Length = %d  %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+
+	edh = (ep_data_header *) buff;
+	data = buff + sizeof(ep_data_header);
+
+	switch(edh->sys_msg){
+	case EP_USER_DATA:
+		rdlen = edh->len;
+		pasdu = (asdu*) data;
+		rdlen -= sizeof(asdu);
+
+		// find scada_asdu
+		while ((sasdu) && (sasdu->ASDUaddr != edh->adr)) sasdu = sasdu->l.next;
+		if (!sasdu){
+			printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
+			free(buff);
+			return 0;
+		}
+
+		printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
+
+		frame = sasdu->ASDUframe;
+		pdu = (void*) pasdu + sizeof(asdu);
+		while(rdlen >= 0){
+			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
+				pdat = (void*) &frame[pdu->id];
+				*pdat = pdu->value.i;
+
+				printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
+
+			}else{
+				printf("IEC61850 error: id %d very big\n", pdu->id);
+
+			}
+			// Next pdu
+			pdu += sizeof(data_unit);
+			rdlen -= sizeof(data_unit);
+		}
+
+		break;
+	}
+
 //#endif
 	free(buff);
 
@@ -236,7 +284,7 @@ DOBJ	*pdo;
 
 struct {
 	struct ep_data_header edh;
-	char name[10];
+	char name[NAMESIZE];
 } fr_do;
 
 	// Setup of unitlinks for getting DATA OBJECTS
@@ -251,10 +299,12 @@ struct {
 				if (pdo){
 					// write datatypes by sys msg EP_MSG_NEWDOBJ
 					while((pdo) && (pdo->dobj.pmynodetype == plntype)){
+						printf("in:  %s, %s\n", sasdu->myln->ln.options, pdo->dobj.name);
 						fr_do.edh.adr = atoi(sasdu->myln->ln.options);
-						fr_do.edh.len = sizeof(fr_do);
+						fr_do.edh.len = sizeof(NAMESIZE);
 						fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
 						strcpy(fr_do.name, pdo->dobj.name);
+						printf("out: %d, %s, %d\n", (&fr_do)->edh.adr, (&fr_do)->name, sizeof(fr_do));
 
 						// write to endpoint
 						mf_toendpoint((char*) &fr_do, sizeof(fr_do), fr_do.edh.adr, DIRDN);
