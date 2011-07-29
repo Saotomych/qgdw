@@ -11,24 +11,19 @@
 /* End-point extensions array */
 static dlt645_ep_ext *ep_exts[MAXEP] = {0};
 
-/* End-point extensions array */
-static uint32_t			data_ids[12] = {0x0001FF00, 0x0002FF00, 0x0003FF00, 0x0004FF00,
-										0x0201FF00, 0x02020100, 0x0203FF00, 0x0204FF00, 0x0205FF00, 0x0206FF00,
-										0x03300D00, 0x03300E00};
-static uint32_t			data_ids_size = 12;
 
 /* Request-Response frame buffer variables */
-static time_t			timer_recv = 0;			/* timer for full response from device */
-static unsigned char	recv_buff[RECV_BUFF_SIZE];
-static uint32_t		 	recv_buff_len = 0;		/* used length of receive frame buffer */
-static uint16_t			t_recv = RECV_TIMEOUT;	/* timeout for full response from device */
+static time_t			timer_recv = 0;				/* timer for full response from device */
+static uint16_t			t_recv = RECV_TIMEOUT;		/* timeout for full response from device */
+static unsigned char	recv_buff[RECV_BUFF_SIZE];	/* buffer for receiving frame chunks */
+static uint32_t		 	recv_buff_len = 0;			/* used length of receive frame buffer */
 
 /* Data collection variables */
-static time_t			timer_dcoll = 0;		/* data collection timer */
-static uint32_t			dcoll_stopped = 1;		/* data collection state sign */
-static int32_t			dcoll_ep_idx = -1;		/* current ep_ext index collector working with */
-static int32_t			dcoll_data_idx = -1;	/* current data identifier array's index collector working with */
-static uint16_t			t_dcoll = DCOLL_PER;	/* period for data collection */
+static time_t			timer_dcoll = 0;			/* data collection timer */
+static uint16_t			t_dcoll = DCOLL_PER;		/* period for data collection */
+static uint32_t			dcoll_stopped = 1;			/* data collection state sign */
+static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working with */
+static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
 
 /* Timer parameters */
 static uint8_t alarm_t = ALARM_PER;
@@ -97,7 +92,7 @@ int main(int argc, char *argv[])
 
 			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
 
-			dlt645_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN);
+			dlt645_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
@@ -119,7 +114,7 @@ uint16_t dlt645_config_read(const char *file_name)
 	FILE *cfg_file = NULL;
 	char r_buff[256] = {0};
 	char *prm;
-	uint16_t adr, ep_num;
+	uint16_t adr, ep_num = 0;
 	uint64_t link_adr;
 
 
@@ -127,8 +122,6 @@ uint16_t dlt645_config_read(const char *file_name)
 
 	if(cfg_file)
 	{
-		ep_num = 0;
-
 		while( fgets(r_buff, 255, cfg_file) )
 		{
 			if(*r_buff == '#') continue;
@@ -211,12 +204,12 @@ void dlt645_catch_alarm(int sig)
 		recv_buff_len = 0;
 
 #ifdef _DEBUG
-		printf("%s: Timer req - timeout.\n", APP_NAME);
+		printf("%s: Timer req timeout.\n", APP_NAME);
 		printf("%s: Timer req stopped.\n", APP_NAME);
 #endif
 
-		// force to collect data from the next device if collection is in progress
-		if(!dcoll_stopped)
+		// if collection is in progress force to collect data from the next device
+		if(!dcoll_stopped && timer_dcoll == 0)
 		{
 			dcoll_data_idx = -1;
 
@@ -329,7 +322,7 @@ int dlt645_recv_data(int len)
 #endif
 
 				// system message received
-				dlt645_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir);
+				dlt645_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
 		else
@@ -352,7 +345,7 @@ int dlt645_recv_data(int len)
 #endif
 
 				// system message received
-				dlt645_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir);
+				dlt645_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
 
@@ -425,6 +418,24 @@ uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr)
 		if(!ep_exts[i])
 		{
 			ep_exts[i] = ep_ext;
+			// FIXME add initialization of data identifiers array
+			ep_exts[i]->data_ids[0]  = 0x0001FF00;
+			ep_exts[i]->data_ids[1]  = 0x0002FF00;
+			ep_exts[i]->data_ids[2]  = 0x0003FF00;
+			ep_exts[i]->data_ids[3]  = 0x0004FF00;
+
+			ep_exts[i]->data_ids[4]  = 0x0201FF00;
+			ep_exts[i]->data_ids[5]  = 0x02020100;//0100;
+			ep_exts[i]->data_ids[6]  = 0x0203FF00;
+			ep_exts[i]->data_ids[7]  = 0x0204FF00;
+			ep_exts[i]->data_ids[8]  = 0x0205FF00;
+			ep_exts[i]->data_ids[9]  = 0x0206FF00;
+
+			ep_exts[i]->data_ids[10] = 0x03300D00;
+			ep_exts[i]->data_ids[11] = 0x03300E00;
+
+			ep_exts[i]->data_ids_size = 12;
+
 #ifdef _DEBUG
 			printf("%s: New ep_ext added. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
@@ -477,6 +488,8 @@ uint16_t dlt645_collect_data()
 				// reached end of array, time to wait for next data collection
 				dcoll_ep_idx = -1;
 
+				ep_ext = NULL;
+
 				// start data collection timer
 				timer_dcoll = time(NULL);
 
@@ -487,7 +500,10 @@ uint16_t dlt645_collect_data()
 		}
 
 #ifdef _DEBUG
-		if(ep_ext) printf("%s: Collecting data from - Address = %d, Link address (BCD) = %llx, ep_idx = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, dcoll_ep_idx);
+		if(ep_ext && ep_ext->tx_ready)
+		{
+			printf("%s: Collecting data from - Address = %d, Link address (BCD) = %llx, ep_idx = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, dcoll_ep_idx);
+		}
 #endif
 	}
 	else
@@ -498,16 +514,12 @@ uint16_t dlt645_collect_data()
 
 	if(!ep_ext) return RES_INCORRECT;
 
-
 	// move to the next data identifier
 	dcoll_data_idx++;
 
-#ifdef _DEBUG
-	printf("%s: dlt645_collect_data - data_idx = %d\n", APP_NAME, dcoll_data_idx);
-#endif
-
-	if(dcoll_data_idx >= data_ids_size)
+	if(!ep_ext->tx_ready || dcoll_data_idx >= ep_ext->data_ids_size)
 	{
+		// data transfer is not ready or reached end of array - collect data from the next device
 		dcoll_data_idx = -1;
 
 		// forced to use recursion, is it bad?
@@ -515,16 +527,19 @@ uint16_t dlt645_collect_data()
 	}
 	else
 	{
-		// device and data identifier were found! let's get the data from it!
-		res = dlt645_read_data_send(ep_exts[dcoll_ep_idx]->adr, data_ids[dcoll_data_idx], 0, 0);
-	}
+#ifdef _DEBUG
+		printf("%s: dlt645_collect_data - data_idx = %d. Address = %d, Link address (BCD) = %llx\n", APP_NAME, dcoll_data_idx, ep_ext->adr, ep_ext->adr_hex);
+#endif
 
+		// device and data identifier were found! device is ready for data transfer! let's get the data from it!
+		res = dlt645_read_data_send(ep_ext->adr, ep_ext->data_ids[dcoll_data_idx], 0, 0);
+	}
 
 	return res;
 }
 
 
-uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir)
+uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	int res;
 	ep_data_header ep_header;
@@ -542,7 +557,7 @@ uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 }
 
 
-uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
+uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	// system message received
 
@@ -557,12 +572,27 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 		// direction is from DIRUP to DIRDN
 		switch(sys_msg)
 		{
+		case EP_MSG_NEWDOBJ:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_NEWDOBJ received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
+#endif
+
+			break;
+
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
 			dlt645_init_ep_ext(ep_ext);
+
+			break;
+
+		case EP_MSG_QUIT:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
+#endif
+			appexit = 1;
 
 			break;
 		}
@@ -590,6 +620,9 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 			printf("%s: Timer t0 started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
+			// synchronize time
+			dlt645_time_sync_send(ep_ext->adr);
+
 			break;
 
 		case EP_MSG_CONNECT_NACK:
@@ -599,7 +632,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 			dlt645_init_ep_ext(ep_ext);
 
-			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
+			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
@@ -614,7 +647,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 
 			dlt645_init_ep_ext(ep_ext);
 
-			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN);
+			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
@@ -627,7 +660,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir)
 			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
 #endif
 
-			dlt645_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN);
+			dlt645_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
@@ -707,7 +740,7 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir)
 			hex2ascii(d_buff, c_buff, d_len);
 			printf("%s: %04X%s\n", APP_NAME, awk_msg, c_buff);
 
-			printf("%s: Timer req started.\n", APP_NAME);
+			printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
 #endif
 
 			free(ep_buff);
@@ -739,7 +772,7 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 		recv_buff_len = 0;
 
 #ifdef _DEBUG
-		printf("%s: Timer req stopped.\n", APP_NAME);
+		printf("%s: Timer req stopped. Address = %d.\n", APP_NAME, adr);
 #endif
 
 		return RES_INCORRECT;
@@ -748,6 +781,14 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	// copy next received chunk to the end of the recv_buffer
 	memcpy((void*)(recv_buff+recv_buff_len), (void*)buff, buff_len);
 	recv_buff_len += buff_len;
+
+#ifdef _DEBUG
+//	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
+//
+//	char c_buff[512] = {0};
+//	hex2ascii(recv_buff, c_buff, recv_buff_len);
+//	printf("%s: %s\n", APP_NAME, c_buff);
+#endif
 
 	offset = 0;
 
@@ -774,7 +815,7 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 			recv_buff_len = 0;
 
 #ifdef _DEBUG
-			printf("%s: Timer req stopped.\n", APP_NAME);
+			printf("%s: Timer req stopped. Address = %d.\n", APP_NAME, adr);
 #endif
 
 			ep_ext = dlt645_get_ep_ext(d_fr->adr_hex, DLT645_LINK_ADR);
@@ -866,7 +907,7 @@ uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 	if(res == RES_SUCCESS && dlt_asdu->adr == ep_ext->adr)
 	{
 		// FIXME finish dlt645_asdu_recv function
-		res = dlt645_read_data_send(ep_ext->adr, 0x02010100, 0, 0);
+		//res = dlt645_read_data_send(ep_ext->adr, 0x02010100, 0, 0);
 	}
 	else
 	{
@@ -925,7 +966,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 				buff_put_le_uint8(d_fr->data, offset, num);
 				offset += 1;
 
-				dlt_asdu_build_time_tag(d_fr->data, &offset, start_time);
+				dlt_asdu_build_time_tag(d_fr->data, &offset, start_time, 0xFF & ~DLT_ASDU_WDAY & ~DLT_ASDU_SEC);
 			}
 		}
 		else
@@ -1023,6 +1064,48 @@ uint16_t dlt645_read_adr_send(uint16_t adr)
 uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 {
 	return RES_SUCCESS;
+}
+
+
+uint16_t dlt645_time_sync_send(uint16_t adr)
+{
+	uint16_t res;
+	dlt_frame *d_fr = NULL;
+	uint32_t offset = 0;
+	time_t cur_time = time(NULL);
+
+	d_fr = dlt_frame_create();
+
+	if(!d_fr)
+	{
+		res = RES_MEM_ALLOC;
+	}
+	else
+	{
+		d_fr->fnc = FNC_TIME_SYNC;
+		d_fr->dir = DIR_REQUEST;
+
+		d_fr->adr = adr;
+
+		d_fr->data_len = 6;
+		d_fr->data = malloc(d_fr->data_len);
+
+		if(d_fr->data)
+		{
+			dlt_asdu_build_time_tag(d_fr->data, &offset, cur_time, 0xFF & ~DLT_ASDU_WDAY);
+
+			res = dlt645_frame_send(d_fr, adr, DIRDN);
+
+#ifdef _DEBUG
+			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, adr);
+#endif
+
+		}
+
+		dlt_frame_destroy(&d_fr);
+	}
+
+	return res;
 }
 
 

@@ -64,6 +64,9 @@ typedef struct dlt645_ep_ext {
 
 	uint8_t			tx_ready;		/* data transfer state */
 
+	uint32_t		data_ids[12];	/* data idetifiers array */
+	uint32_t		data_ids_size;	/* size of data idetifiers array */
+
 	time_t			timer_t0;
 } dlt645_ep_ext;
 
@@ -94,8 +97,8 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
 
 uint16_t dlt645_collect_data();
 
-uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir);
-uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir);
+uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
+uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
 
 
 uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t start_time);
@@ -103,6 +106,8 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 
 uint16_t dlt645_read_adr_send(uint16_t adr);
 uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
+
+uint16_t dlt645_time_sync_send(uint16_t adr);
 
 uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir);
 uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);
