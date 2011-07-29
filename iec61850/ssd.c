@@ -288,9 +288,9 @@ DOBJ *pdo;
 		// pdo found ?
 		if (pdo){
 			ptype->lntype.pfdobj = pdo;
-			printf("IEC61850: First DOBJ for LNTYPE %s.%s found\n", ptype->lntype.lnclass, ptype->lntype.id);
+			printf("IEC61850: First DOBJ %s for LNTYPE %s.%s found\n", pdo->dobj.name, ptype->lntype.lnclass, ptype->lntype.id);
 		}else{
-			printf("IEC61850 error: First DOBJ for LNTYPE %s.%s not found\n", ptype->lntype.lnclass, ptype->lntype.id);
+			printf("IEC61850 error: First DOBJ %s for LNTYPE %s.%s not found\n", pdo->dobj.name, ptype->lntype.lnclass, ptype->lntype.id);
 		}
 
 		// next LNTYPE
@@ -332,9 +332,9 @@ ATTR *pa;
 		while((pa) && (pa->attr.pmydatatype != &(pdt->dtype))) pa = pa->l.next;
 		// pa found ?
 		if (pa){
-			printf("IEC61850: First ATTR for DTYPE %s found\n", pdt->dtype.id);
+			printf("IEC61850: First ATTR %s(%s) for DTYPE %s found\n", pa->attr.name, pa->attr.btype, pdt->dtype.id);
 		}else{
-			printf("IEC61850 error: First ATTR for DTYPE %s not found\n", pdt->dtype.id);
+			printf("IEC61850 error: First ATTR %s(%s) for DTYPE %s not found\n", pa->attr.name, pa->attr.btype, pdt->dtype.id);
 		}
 
 		pdt = pdt->l.next;
