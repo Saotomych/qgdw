@@ -35,7 +35,7 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 	LIST l;
 	LNODE *myln;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
-	u08  ASDUframe[SCADA_ASDU_MAXSIZE * sizeof(uint32_t)];
+	data_unit  ASDUframe[SCADA_ASDU_MAXSIZE];
 	SCADA_ASDU_TYPE *myscadatype;
 } SCADA_ASDU;
 
@@ -146,26 +146,27 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 
 		printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
 
-		frame = sasdu->ASDUframe;
+//		frame = sasdu->ASDUframe;
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen >= 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
-				// TODO find, test and convert type on-fly
 				if (pasdu->type == ASDU_VAL_NONE){
 					// TODO time synchronization, broadcast request, etc.
 
 				}else{
 					// Remap variable pdu->id -> id (for SCADA)
 					id = RemapTable[pdu->id];
+					// TODO Find type of variable
+
+					// TODO Convert type on fly
 
 					// Copy variable
-					pdat = (void*) &frame[id];
-					*pdat = pdu->value.i;
-					printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
+//					pdat = (void*) &frame[id];
+//					*pdat = pdu->value.i;
+//					printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
 				}
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
-
 			}
 			// Next pdu
 			pdu++;

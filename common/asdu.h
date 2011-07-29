@@ -52,10 +52,10 @@ typedef struct data_unit {
 		float		f;			/* float representation */
 	} value;					/* transferring value (e.g. measured value, counter readings, etc.) */
 
+	int32_t			time_tag;	/* time tag in time_t representation */
 	uint8_t			value_type; /* e.g. integer, unsigned integer, float, boolean, etc. (need this for "on fly" protocol converting) */
 	uint8_t			attr;		/* value's additional attributes (e.g. quality descriptor, command qualifier, etc.) */
 
-	int32_t			time_tag;	/* time tag in time_t representation */
 	uint8_t			time_iv;	/* invalid(1)/valid(0) */
 } data_unit;
 
@@ -64,8 +64,8 @@ typedef struct data_unit {
 typedef struct asdu {
 	/* Header */
 	uint16_t		proto;		/* protocol identifier */
-	uint8_t			type;		/* protocol specific ASDU type */
 	uint16_t		adr;		/* ASDU address */
+	uint8_t			type;		/* protocol specific ASDU type */
 	uint8_t			fnc;		/* protocol specific command/function/cause/etc. */
 	uint8_t			attr;		/* additional protocol specific ASDU attributes */
 
