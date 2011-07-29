@@ -168,7 +168,7 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 
 			}
 			// Next pdu
-			pdu += sizeof(data_unit);
+			pdu++;
 			rdlen -= sizeof(data_unit);
 		}
 
