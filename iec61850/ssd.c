@@ -250,10 +250,8 @@ LNTYPE *ptype;
 	while(pln){
 		// find ied
 		pied = (IED*) fied.next;
-		while(pied){
-			if (!strcmp(pied->ied.name, pln->ln.iedname)) break;
-			pied = pied->l.next;
-		}
+		while((pied) && (!strcmp(pied->ied.name, pln->ln.iedname))) pied = pied->l.next;
+		// ied found ?
 		if (pied){
 			pln->ln.pmyied = &(pied->ied);
 			printf("IEC61850: IED %s for LNODE %s.%s.%s.%s found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
@@ -263,10 +261,8 @@ LNTYPE *ptype;
 
 		// find lntype
 		ptype = (LNTYPE*) flntype.next;
-		while(ptype){
-			if (!strcmp(ptype->lntype.id, pln->ln.lntype)) break;
-			ptype = ptype->l.next;
-		}
+		while((ptype) && (!strcmp(ptype->lntype.id, pln->ln.lntype))) ptype = ptype->l.next;
+		// lntype found ?
 		if (ptype){
 			pln->ln.pmytype = &(ptype->lntype);
 			printf("IEC61850: LNTYPE %s for LNODE %s.%s.%s.%s found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst, pln->ln.options);
@@ -288,11 +284,8 @@ DOBJ *pdo;
 	while(ptype){
 		// find first DOBJ
 		pdo = (DOBJ*) fdo.next;
-		while(pdo){
-			if (pdo->dobj.pmynodetype == &(ptype->lntype)) break;
-			pdo = pdo->l.next;
-		}
-
+		while((pdo) && (pdo->dobj.pmynodetype == &(ptype->lntype)))	pdo = pdo->l.next;
+		// pdo found ?
 		if (pdo){
 			ptype->lntype.pfdobj = pdo;
 			printf("IEC61850: First DOBJ for LNTYPE %s.%s found\n", ptype->lntype.lnclass, ptype->lntype.id);
@@ -314,10 +307,8 @@ DTYPE *pdt;
 	while(pdo){
 		// find dtype
 		pdt = fdtype.next;
-		while(pdt){
-			if (!strcmp(pdt->dtype.id, pdo->dobj.type)) break;
-			pdt = pdt->l.next;
-		}
+		while((pdt) && (!strcmp(pdt->dtype.id, pdo->dobj.type))) pdt = pdt->l.next;
+		// pdt found ?
 		if (pdt){
 			pdo->dobj.pmytype = &(pdt->dtype);
 			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pdt->dtype.id, pdo->dobj.name);
@@ -338,10 +329,8 @@ ATTR *pa;
 	while(pdt){
 		// find 1th attr
 		pa = (ATTR*) fattr.next;
-		while(pa){
-			if (pa->attr.pmydatatype == &(pdt->dtype)) break;
-			pa = pa->l.next;
-		}
+		while((pa) && (pa->attr.pmydatatype == &(pdt->dtype))) pa = pa->l.next;
+		// pa found ?
 		if (pa){
 			printf("IEC61850: First ATTR for DTYPE %s found\n", pdt->dtype.id);
 		}else{

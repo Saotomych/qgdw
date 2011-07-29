@@ -149,6 +149,8 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 		while(rdlen >= 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
 				pdat = (void*) &frame[pdu->id];
+				// TODO find, test and convert type on-fly
+
 				*pdat = pdu->value.i;
 
 				printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);

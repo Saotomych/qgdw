@@ -22,7 +22,6 @@ struct config_device_list{
 };
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
-static sigset_t sigmask;
 
 // Create structures according to ieclevel.ssd
 int ssd_build(void){
@@ -69,7 +68,6 @@ char buf[5];
 
 	// Cycle data routing in rcv_data
 	do{
-//		sigsuspend(&sigmask);
 		mf_waitevent(buf, sizeof(buf), 0);
 	}while(!appexit);
 
