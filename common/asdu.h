@@ -55,8 +55,8 @@ typedef struct data_unit {
 	int32_t			time_tag;	/* time tag in time_t representation */
 	uint8_t			value_type; /* e.g. integer, unsigned integer, float, boolean, etc. (need this for "on fly" protocol converting) */
 	uint8_t			attr;		/* value's additional attributes (e.g. quality descriptor, command qualifier, etc.) */
-
 	uint8_t			time_iv;	/* invalid(1)/valid(0) */
+	uint8_t			reserved;
 } data_unit;
 
 
