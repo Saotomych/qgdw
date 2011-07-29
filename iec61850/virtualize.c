@@ -35,7 +35,7 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 	LIST l;
 	LNODE *myln;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
-	u08  ASDUframe[SCADA_ASDU_MAXSIZE];
+	u08  ASDUframe[SCADA_ASDU_MAXSIZE * sizeof(uint32_t)];
 	SCADA_ASDU_TYPE *myscadatype;
 } SCADA_ASDU;
 
@@ -44,6 +44,9 @@ char *MCFGfile;
 
 // Variables for asdu actions
 static LIST fasdu, fasdutype;
+
+// Tables for Remap to SCADA ASDU
+uint16_t *RemapTable;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
@@ -109,7 +112,7 @@ int ret = 0;
 
 int rcvdata(int len){
 char *buff, *data;
-int adr, dir, rdlen, *pdat;
+int adr, dir, rdlen, *pdat, id;
 ep_data_header *edh;
 asdu *pasdu;
 data_unit *pdu;
@@ -147,15 +150,19 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen >= 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
-				pdat = (void*) &frame[pdu->id];
 				// TODO find, test and convert type on-fly
+				if (pasdu->type == ASDU_VAL_NONE){
+					// TODO time synchronization, broadcast request, etc.
 
-				// TODO remap variable
+				}else{
+					// Remap variable pdu->id -> id (for SCADA)
+					id = RemapTable[pdu->id];
 
-				*pdat = pdu->value.i;
-
-				printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
-
+					// Copy variable
+					pdat = (void*) &frame[id];
+					*pdat = pdu->value.i;
+					printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
+				}
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
 
@@ -328,12 +335,16 @@ struct {
 
 int virt_start(char *appname){
 FILE *fmcfg;
-int clen, ret;
+int clen, ret, i;
 struct stat fst;
 pid_t chldpid;
 
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 char *p;
+
+	RemapTable = malloc(SCADA_ASDU_MAXSIZE * sizeof(uint16_t));
+	// Clean Table (temporary)
+	for (i = 0; i < SCADA_ASDU_MAXSIZE; i++) RemapTable[i] = 0;
 
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
