@@ -13,7 +13,6 @@
 #include "../common/asdu.h"
 #include "iec61850.h"
 
-#define NAMESIZE			10
 #define SCADA_ASDU_MAXSIZE 	512
 
 // DATA
@@ -287,7 +286,7 @@ DOBJ	*pdo;
 
 struct {
 	struct ep_data_header edh;
-	char name[NAMESIZE];
+	char name[DOBJ_NAMESIZE];
 } fr_do;
 
 	// Setup of unitlinks for getting DATA OBJECTS
@@ -304,7 +303,7 @@ struct {
 					while((pdo) && (pdo->dobj.pmynodetype == plntype)){
 						printf("in:  %s, %s\n", sasdu->myln->ln.options, pdo->dobj.name);
 						fr_do.edh.adr = atoi(sasdu->myln->ln.options);
-						fr_do.edh.len = sizeof(NAMESIZE);
+						fr_do.edh.len = DOBJ_NAMESIZE;
 						fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
 						strcpy(fr_do.name, pdo->dobj.name);
 						printf("out: %d, %s, %d\n", (&fr_do)->edh.adr, (&fr_do)->name, sizeof(fr_do));

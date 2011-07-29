@@ -58,6 +58,8 @@
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
 #define EP_MSG_EPRDY			0xF2	/* !internal multififo message! - down2up */
 
+#define DOBJ_NAMESIZE			sizeof(int) * 4
+
 /*
  *
  * Structures
