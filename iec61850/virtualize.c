@@ -151,6 +151,8 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 				pdat = (void*) &frame[pdu->id];
 				// TODO find, test and convert type on-fly
 
+				// TODO remap variable
+
 				*pdat = pdu->value.i;
 
 				printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
@@ -266,7 +268,6 @@ DOBJ *adobj;
 	return 0;
 }
 
-// TODO Remove Test config after debugging
 char mainapp[] 		= {"startiec"};
 char unitlink[] 	= {"unitlink-iec104"};
 char physlink[] 	= {"phy_tcp"};

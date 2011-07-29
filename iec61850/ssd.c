@@ -293,6 +293,8 @@ DOBJ *pdo;
 			printf("IEC61850 error: First DOBJ %s for LNTYPE %s.%s not found\n", pdo->dobj.name, ptype->lntype.lnclass, ptype->lntype.id);
 		}
 
+		// TODO Create iec61850 set of dataobjects for each LN
+
 		// next LNTYPE
 		ptype = ptype->l.next;
 	}
