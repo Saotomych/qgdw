@@ -26,9 +26,11 @@ static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working 
 static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
 
 /* Timer parameters */
-static uint8_t alarm_t = ALARM_PER;
+static uint8_t alarm_t	= ALARM_PER;
 
-static uint8_t t_t0    = DLT645_T_T0;
+static uint8_t t_t0		= DLT645_T_T0;
+
+static uint8_t t_rc		= DLT645_T_RC;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
@@ -238,15 +240,22 @@ void dlt645_catch_alarm(int sig)
 			// check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t_t0)
 			{
-//				dlt645_read_data_send(ep_exts[i]->adr, 0x0202FF00, 0, 0);
-//				dlt645_read_data_send(ep_exts[i]->adr, 0x02010100, 0, 0);
-//				dlt645_read_data_send(ep_exts[i]->adr, 0x000001FF, 0, 0);
-//				dlt645_read_adr_send(ep_exts[i]->adr);
-
 				// reset t0 timer
 				ep_exts[i]->timer_t0 = time(NULL);
 			}
+			// check timer rc
+			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
+			{
+				dlt645_init_ep_ext(ep_exts[i]);
+
+				dlt645_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
+
+	#ifdef _DEBUG
+				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+	#endif
+			}
 		}
+
 	}
 
 	signal(sig, dlt645_catch_alarm);
@@ -455,7 +464,7 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext)
 	ep_ext->tx_ready = 0;
 
 	// stop all timers
-	ep_ext->timer_t0 = 0;
+	ep_ext->timer_t0 = ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
 	printf("%s: ep_ext (re)initialized. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
@@ -609,6 +618,9 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			dlt645_init_ep_ext(ep_ext);
 
+			// stop timer rc
+			ep_ext->timer_rc = 0;
+
 			// set data transfer state
 			ep_ext->tx_ready = 1;
 
@@ -616,6 +628,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			ep_ext->timer_t0 = time(NULL);
 
 #ifdef _DEBUG
+			printf("%s: Timer rc stopped. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 			printf("%s: Data transfer state set to ready. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 			printf("%s: Timer t0 started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
@@ -632,10 +645,11 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			dlt645_init_ep_ext(ep_ext);
 
-			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN, NULL, 0);
+			// start rc timer
+			ep_ext->timer_rc = time(NULL);
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
+			printf("%s: Timer rc started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
 			break;
@@ -647,10 +661,11 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			dlt645_init_ep_ext(ep_ext);
 
-			dlt645_sys_msg_send(EP_MSG_CONNECT, ep_ext->adr, DIRDN, NULL, 0);
+			// start rc timer
+			ep_ext->timer_rc = time(NULL);
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT sent. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
+			printf("%s: Timer rc started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
 			break;
@@ -849,7 +864,7 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 }
 
 
-uint16_t dlt645_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
+uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir)
 {
 	uint16_t res;
 	uint32_t a_len = 0;
@@ -857,7 +872,7 @@ uint16_t dlt645_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
-	res = asdu_to_byte(&a_buff, &a_len, iec_asdu);
+	res = asdu_to_byte(&a_buff, &a_len, dlt_asdu);
 
 	if(res == RES_SUCCESS)
 	{
