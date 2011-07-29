@@ -36,6 +36,7 @@ extern "C" {
 #define ALARM_PER				1		/* timers check period */
 
 #define DLT645_T_T0				10		/* default timer_t0 timeout */
+#define DLT645_T_RC		10 /* default tcp re-connect timeout */
 
 
 #define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
@@ -68,6 +69,8 @@ typedef struct dlt645_ep_ext {
 	uint32_t		data_ids_size;	/* size of data idetifiers array */
 
 	time_t			timer_t0;
+
+	time_t			timer_rc;	/* re-connect timer */
 } dlt645_ep_ext;
 
 
