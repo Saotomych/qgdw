@@ -159,7 +159,7 @@ ASDU_DATAMAP *pdm;
 					pdu->id = pdm->scadaid;
 					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 				}else{
-					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+//					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 				}
 
 			}else{
