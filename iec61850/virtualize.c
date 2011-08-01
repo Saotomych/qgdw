@@ -45,9 +45,6 @@ char *MCFGfile;
 // Variables for asdu actions
 static LIST fasdu, fasdutype;
 
-// Tables for Remap to SCADA ASDU
-uint16_t *RemapTable;
-
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
 	plist->next = malloc(size);
@@ -111,13 +108,13 @@ int ret = 0;
 }
 
 int rcvdata(int len){
-char *buff, *data;
-int adr, dir, rdlen, *pdat, id;
+char *buff;
+int adr, dir, rdlen;
 ep_data_header *edh;
-asdu *pasdu;
 data_unit *pdu;
-u08 *frame;
 SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
+asdu *pasdu;
+ASDU_DATAMAP *pdm;
 
 	buff = malloc(len);
 
@@ -128,12 +125,11 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 //	printf("IEC61850: Data received. Address = %d, Length = %d  %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
 
 	edh = (ep_data_header *) buff;
-	data = buff + sizeof(ep_data_header);
 
 	switch(edh->sys_msg){
 	case EP_USER_DATA:
 		rdlen = edh->len;
-		pasdu = (asdu*) data;
+		pasdu = (asdu*) (buff + sizeof(ep_data_header));
 		rdlen -= sizeof(asdu);
 
 		// find scada_asdu
@@ -154,15 +150,11 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 					// TODO time synchronization, broadcast request, etc.
 
 				}else{
-					// Remap variable pdu->id -> id (for SCADA)
-					id = RemapTable[pdu->id];
 					// TODO Find type of variable
 
 					// TODO Convert type on fly
 
 					// Copy variable
-//					pdat = (void*) &frame[id];
-//					*pdat = pdu->value.i;
 //					printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
 				}
 			}else{
@@ -204,7 +196,7 @@ DOBJ *adobj;
 
 		printf("ASDU: new SCADA_ASDU_TYPE\n");
 
-				// Fill SCADA_ASDU_TYPE
+		// Fill SCADA_ASDU_TYPE
 		actasdutype->mylntype = alnt;
 
 		// create ASDU_DATAMAP list
@@ -336,16 +328,12 @@ struct {
 
 int virt_start(char *appname){
 FILE *fmcfg;
-int clen, ret, i;
+int clen, ret;
 struct stat fst;
 pid_t chldpid;
 
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 char *p;
-
-	RemapTable = malloc(SCADA_ASDU_MAXSIZE * sizeof(uint16_t));
-	// Clean Table (temporary)
-	for (i = 0; i < SCADA_ASDU_MAXSIZE; i++) RemapTable[i] = 0;
 
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){

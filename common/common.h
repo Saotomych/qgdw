@@ -41,6 +41,7 @@
  * Constants and byte flags/masks
  *
  */
+
 #define EP_USER_DATA			0		/* user data */
 #define EP_MSG_INIT_CFG			1		/* initialization configuration */
 #define EP_MSG_INIT_ACK			2		/* initialization acknowledgment */
