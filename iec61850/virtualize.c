@@ -154,11 +154,14 @@ ASDU_DATAMAP *pdm;
 				pdm = sasdu->myscadatype->fdmap;
 				while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
 				if (pdm){
+					// TODO Find type of variable & Convert type on fly
+					// Remap variable pdu->id -> id (for SCADA)
 					pdu->id = pdm->scadaid;
 					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 				}else{
 					printf("IEC61850 error: Datamap for id %d not found\n", pdu->id);
 				}
+
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
 			}
