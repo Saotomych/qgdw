@@ -716,6 +716,11 @@ struct ep_init_header *eih=0;
 		printf("MFI %s: ep_data_header_recv:\n- adr=%d\n- numep=%d\n- sysmsg=%d\n- len=%d\n", appname, edh.adr, edh.numep, edh.sys_msg, edh.len);
 
 
+		if (edh.numep >= maxep){
+			printf("MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
+			return -1;
+		}
+
 		// Init ep by recv index
 		ep = myeps[edh.numep];
 		if (!ep){
