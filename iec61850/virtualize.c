@@ -145,7 +145,7 @@ ASDU_DATAMAP *pdm;
 		// TODO time synchronization, broadcast request, etc.
 
 		pdu = (void*) pasdu + sizeof(asdu);
-		while(rdlen >= 0){
+		while(rdlen > 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
 				// TODO Find type of variable
 				// TODO Convert type on fly
