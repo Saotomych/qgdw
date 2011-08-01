@@ -990,7 +990,7 @@ char fname[160];
 
 
 int mf_toendpoint(char *buf, int len, int addr, int direct){
-int i, wrlen;
+int i, wrlen = 0;
 struct channel *ch = 0;
 struct endpoint *ep = 0;
 

@@ -142,20 +142,22 @@ ASDU_DATAMAP *pdm;
 
 		printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
 
-//		frame = sasdu->ASDUframe;
+		// TODO time synchronization, broadcast request, etc.
+
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen >= 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
-				if (pasdu->type == ASDU_VAL_NONE){
-					// TODO time synchronization, broadcast request, etc.
+				// TODO Find type of variable
+				// TODO Convert type on fly
 
+				// Mapping id
+				pdm = sasdu->myscadatype->fdmap;
+				while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
+				if (pdm){
+					pdu->id = pdm->scadaid;
+					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 				}else{
-					// TODO Find type of variable
-
-					// TODO Convert type on fly
-
-					// Copy variable
-//					printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
+					printf("IEC61850 error: Datamap for id %d not found\n", pdu->id);
 				}
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
@@ -164,6 +166,7 @@ ASDU_DATAMAP *pdm;
 			pdu++;
 			rdlen -= sizeof(data_unit);
 		}
+		// TODO Send data to all SCADA
 
 		break;
 	}
