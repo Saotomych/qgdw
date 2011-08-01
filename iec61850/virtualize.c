@@ -45,9 +45,6 @@ char *MCFGfile;
 // Variables for asdu actions
 static LIST fasdu, fasdutype;
 
-// Tables for Remap to SCADA ASDU
-uint16_t *RemapTable;
-
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
 	plist->next = malloc(size);
@@ -148,14 +145,13 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 
 //		frame = sasdu->ASDUframe;
 		pdu = (void*) pasdu + sizeof(asdu);
-		while(rdlen >= 0){
+		while(rdlen > 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
 				if (pasdu->type == ASDU_VAL_NONE){
 					// TODO time synchronization, broadcast request, etc.
 
 				}else{
 					// Remap variable pdu->id -> id (for SCADA)
-					id = RemapTable[pdu->id];
 					// TODO Find type of variable
 
 					// TODO Convert type on fly
@@ -342,10 +338,6 @@ pid_t chldpid;
 
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 char *p;
-
-	RemapTable = malloc(SCADA_ASDU_MAXSIZE * sizeof(uint16_t));
-	// Clean Table (temporary)
-	for (i = 0; i < SCADA_ASDU_MAXSIZE; i++) RemapTable[i] = 0;
 
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
