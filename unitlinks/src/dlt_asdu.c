@@ -211,12 +211,15 @@ uint8_t dlt_asdu_parse_energy(unsigned char *buff, uint32_t buff_len, uint32_t *
 
 	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
 
+	if(res != RES_SUCCESS) return res;
+
 	if(frc_size > 0)
 		dlt_asdu->type = 36;
 	else
 		dlt_asdu->type = 35;
 
-	if(res != RES_SUCCESS) return res;
+	// set to field fnc value cause of transmission - COT_Per_Cyc = 1 (cyclic transmission by IEC101/104 specifications)
+	dlt_asdu->fnc = 1;
 
 	if(pos == -1)
 	{
@@ -296,12 +299,15 @@ uint8_t dlt_asdu_parse_inst_value(unsigned char *buff, uint32_t buff_len, uint32
 
 	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
 
+	if(res != RES_SUCCESS) return res;
+
 	if(frc_size > 0)
 		dlt_asdu->type = 36;
 	else
 		dlt_asdu->type = 35;
 
-	if(res != RES_SUCCESS) return res;
+	// set to field fnc value cause of transmission - COT_Per_Cyc = 1 (cyclic transmission by IEC101/104 specifications)
+	dlt_asdu->fnc = 1;
 
 	if(pos == -1)
 	{
@@ -395,12 +401,15 @@ uint8_t dlt_asdu_parse_event_log(unsigned char *buff, uint32_t buff_len, uint32_
 
 	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
 
-	if(frc_size > 0)
-		dlt_asdu->type = 13;
-	else
-		dlt_asdu->type = 11;
-
 	if(res != RES_SUCCESS) return res;
+
+	if(frc_size > 0)
+		dlt_asdu->type = 36;
+	else
+		dlt_asdu->type = 35;
+
+	// set to field fnc value cause of transmission - COT_Per_Cyc = 1 (cyclic transmission by IEC101/104 specifications)
+	dlt_asdu->fnc = 1;
 
 	if(pos == -1)
 	{
@@ -520,7 +529,7 @@ uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_as
 	}
 
 #ifdef _DEBUG
-	printf("%s: ASDU parsed OK. Type = %d, IO num = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size);
+	printf("%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size, dlt_asdu->attr & 0x01);
 #endif
 
 	return RES_SUCCESS;
