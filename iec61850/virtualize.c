@@ -39,11 +39,16 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 	SCADA_ASDU_TYPE *myscadatype;
 } SCADA_ASDU;
 
+typedef struct _SCADA{
+	LIST l;
+	SCADA_ASDU *pscada;
+} SCADA;
+
 // Pointer to full mapping config as text
 char *MCFGfile;
 
 // Variables for asdu actions
-static LIST fasdu, fasdutype, fdm;
+static LIST fasdu, fasdutype, fdm, fscada;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
@@ -115,6 +120,7 @@ data_unit *pdu, *spdu;
 SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 asdu *pasdu, *psasdu;
 ASDU_DATAMAP *pdm;
+SCADA *actscada;
 
 	buff = malloc(len);
 
@@ -186,11 +192,15 @@ ASDU_DATAMAP *pdm;
 			rdlen -= sizeof(data_unit);
 		}
 
-		// TODO Send data to all SCADA
-		// fake only for SCADA addr = 55555
+		// TODO Send data to all registered SCADAs
 		if (psasdu->size){
-			sedh->adr = 55555;
-			mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, 55555, DIRDN);
+			actscada = (SCADA*) fscada.next;
+			while(actscada){
+				sedh->adr = actscada->pscada->ASDUaddr;
+				mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, actscada->pscada->ASDUaddr, DIRDN);
+				actscada = actscada->l.next;
+			}
+
 		}
 
 		free(sendbuff);
@@ -205,6 +215,7 @@ ASDU_DATAMAP *pdm;
 }
 
 int asdu_parser(void){
+SCADA *actscada;
 SCADA_ASDU *actasdu;
 SCADA_ASDU_TYPE *actasdutype;
 ASDU_DATAMAP *actasdudm;
@@ -257,8 +268,9 @@ DOBJ *adobj;
 	}
 
 
-	// Create SCADA_ASDU list
+	// Create SCADA_ASDU and SCADA lists
 	actasdu = (SCADA_ASDU*) &fasdu;
+	actscada = (SCADA*) &fscada;
 	aln = (LNODE*) fln.next;
 	while(aln){
 		if (aln->ln.options){
@@ -267,6 +279,12 @@ DOBJ *adobj;
 			// Fill SCADA_ASDU
 			actasdu->myln = aln;
 			actasdu->ASDUaddr = atoi(aln->ln.options);
+
+			// If 'scada', create SCADA
+			if (strstr(actasdu->myln->ln.iedname, "scada")){
+				actscada = create_next_struct_in_list((LIST*) actscada, sizeof(SCADA));
+				actscada->pscada = actasdu;
+			}
 
 			// Link to SCADA_ASDU_TYPE
 			// Find LNTYPE.id = SCADA_ASDU_TYPE.LN.lntype
