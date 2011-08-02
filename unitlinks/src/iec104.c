@@ -11,10 +11,6 @@
 /*End-point extensions array */
 static iec104_ep_ext *ep_exts[MAXEP] = {0};
 
-/* ASDU mapping array */
-static asdu_map			*asdu_maps = NULL;
-static uint32_t		 	asdu_maps_len = 0;
-
 /* Common ASDU parameters */
 static uint8_t cot_len = IEC104_COT_LEN;
 static uint8_t coa_len = IEC104_COA_LEN;

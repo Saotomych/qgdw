@@ -11,10 +11,6 @@
 /* End-point extensions array */
 static dlt645_ep_ext *ep_exts[MAXEP] = {0};
 
-/* ASDU mapping array */
-static asdu_map			*asdu_maps = NULL;
-static uint32_t		 	asdu_maps_len = 0;
-
 /* Request-Response frame buffer variables */
 static time_t			timer_recv = 0;				/* timer for full response from device */
 static uint16_t			t_recv = RECV_TIMEOUT;		/* timeout for full response from device */
