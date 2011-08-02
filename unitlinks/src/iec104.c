@@ -29,7 +29,7 @@ static uint8_t t_rc = IEC104_T_RC;
 
 /* Maximum numbers of outstanding frames */
 //static uint8_t k = IEC104_K;
-static uint8_t w = IEC104_W;
+static uint8_t w = IEC104_W; //TODO return to the default IEC104 value
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
@@ -560,6 +560,93 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 }
 
 
+uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
+{
+	uint16_t res;
+	asdu *iec_asdu = NULL;
+	time_t cur_time = time(NULL);
+
+	if(!ep_ext) return RES_INCORRECT;
+
+	iec_asdu = asdu_create();
+
+	if(!iec_asdu)
+	{
+		res = RES_MEM_ALLOC;
+	}
+	else
+	{
+		iec_asdu->adr = ep_ext->adr;
+		iec_asdu->type = C_CS_NA_1;
+		iec_asdu->fnc = COT_Act;
+
+		iec_asdu->size = 1;
+		iec_asdu->data = calloc(1, sizeof(data_unit));
+
+		if(iec_asdu->data)
+		{
+			iec_asdu->data->time_tag = cur_time;
+			iec_asdu->data->value_type = ASDU_VAL_TIME;
+
+			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
+
+#ifdef _DEBUG
+			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+#endif
+		}
+
+		asdu_destroy(&iec_asdu);
+	}
+
+	return res;
+}
+
+
+uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
+{
+	uint16_t res;
+	asdu *iec_asdu = NULL;
+
+	if(!ep_ext) return RES_INCORRECT;
+
+	iec_asdu = asdu_create();
+
+	if(!iec_asdu)
+	{
+		res = RES_MEM_ALLOC;
+	}
+	else
+	{
+		iec_asdu->adr = ep_ext->adr;
+		iec_asdu->type = C_IC_NA_1;
+		iec_asdu->fnc = COT_Act;
+
+		iec_asdu->size = 1;
+		iec_asdu->data = calloc(1, sizeof(data_unit));
+
+		if(iec_asdu->data)
+		{
+			iec_asdu->data->value.ui = COT_InroGen;
+			iec_asdu->data->value_type = ASDU_VAL_UINT;
+
+			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
+
+#ifdef _DEBUG
+			if(res == RES_SUCCESS) printf("%s: Common interrogation command sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+#endif
+		}
+		else
+		{
+			res = RES_MEM_ALLOC;
+		}
+
+		asdu_destroy(&iec_asdu);
+	}
+
+	return res;
+}
+
+
 uint16_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir)
 {
 	uint8_t res;
@@ -762,6 +849,12 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 		// stop t0 timer
 		ep_ext->timer_t0 = 0;
+
+		// synchronize time
+		iec104_time_sync_send(ep_ext);
+
+		// do common interrogation
+		iec104_comm_inter_send(ep_ext);
 
 		// start t2-t3 timers
 		ep_ext->timer_t2 = time(NULL);
@@ -984,11 +1077,6 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		return RES_INCORRECT;
 	}
 
-	if((ep_ext->vr - ep_ext->ar + 32767) % 32767 >= w)
-	{
-		iec104_frame_s_send(ep_ext, DIRDN);
-	}
-
 	iec_asdu = asdu_create();
 
 	if(!iec_asdu) return RES_MEM_ALLOC;
@@ -1003,6 +1091,11 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		{
 			ep_ext->vr = (ep_ext->vr + 1) % 32767;
 		}
+	}
+
+	if((ep_ext->vr - ep_ext->ar + 32767) % 32767 >= w)
+	{
+		iec104_frame_s_send(ep_ext, DIRDN);
 	}
 
 	asdu_destroy(&iec_asdu);
@@ -1042,7 +1135,7 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 			free(ep_buff);
 
 #ifdef _DEBUG
-		printf("%s: ASDU sent in DIRUP. Address = %d\n", APP_NAME, adr);
+		printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
 #endif
 		}
 		else
