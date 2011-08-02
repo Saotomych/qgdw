@@ -176,7 +176,7 @@ ASDU_DATAMAP *pdm;
 					sedh->len += sizeof(data_unit);
 					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 				}else{
-					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+//					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 				}
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
@@ -187,7 +187,11 @@ ASDU_DATAMAP *pdm;
 		}
 
 		// TODO Send data to all SCADA
-		mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, 55555, DIRDN);
+		// fake only for SCADA addr = 55555
+		if (psasdu->size){
+			sedh->adr = 55555;
+			mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, 55555, DIRDN);
+		}
 
 		free(sendbuff);
 
@@ -328,12 +332,10 @@ struct {
 				if (pdo){
 					// write datatypes by sys msg EP_MSG_NEWDOBJ
 					while((pdo) && (pdo->dobj.pmynodetype == plntype)){
-						printf("in:  %s, %s\n", sasdu->myln->ln.options, pdo->dobj.name);
 						fr_do.edh.adr = atoi(sasdu->myln->ln.options);
 						fr_do.edh.len = DOBJ_NAMESIZE;
 						fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
 						strcpy(fr_do.name, pdo->dobj.name);
-						printf("out: %d, %s, %d\n", (&fr_do)->edh.adr, (&fr_do)->name, sizeof(fr_do));
 
 						// write to endpoint
 						mf_toendpoint((char*) &fr_do, sizeof(fr_do), fr_do.edh.adr, DIRDN);
