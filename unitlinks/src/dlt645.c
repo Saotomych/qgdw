@@ -11,7 +11,6 @@
 /* End-point extensions array */
 static dlt645_ep_ext *ep_exts[MAXEP] = {0};
 
-
 /* Request-Response frame buffer variables */
 static time_t			timer_recv = 0;				/* timer for full response from device */
 static uint16_t			t_recv = RECV_TIMEOUT;		/* timeout for full response from device */
@@ -367,25 +366,6 @@ int dlt645_recv_data(int len)
 }
 
 
-int dlt645_recv_init(ep_init_header *ih)
-{
-#ifdef _DEBUG
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[2]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[3]);
-	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
-#endif
-
-	cd.addr = ih->addr;
-	strncpy(cd.name, ih->isstr[2], 100);
-	strncpy(cd.protoname, ih->isstr[3], 100);
-	strncpy(cd.phyname, ih->isstr[4], 100);
-
-	return 0;
-}
-
-
 dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by)
 {
 	int i;
@@ -583,7 +563,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_NEWDOBJ:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
+			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, buff, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
 			break;
@@ -893,6 +873,9 @@ uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir)
 			res = RES_SUCCESS;
 
 			free(ep_buff);
+#ifdef _DEBUG
+		printf("%s: ASDU sent in DIRUP. Address = %d\n", APP_NAME, adr);
+#endif
 		}
 		else
 		{
@@ -919,7 +902,7 @@ uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	res = asdu_from_byte(buff, buff_len, &dlt_asdu);
 
-	if(res == RES_SUCCESS && dlt_asdu->adr == ep_ext->adr)
+	if(res == RES_SUCCESS)
 	{
 		// FIXME finish dlt645_asdu_recv function
 		//res = dlt645_read_data_send(ep_ext->adr, 0x02010100, 0, 0);
@@ -994,6 +977,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 				buff_put_le_uint32(d_fr->data, 0, data_id);
 			}
 		}
+
 		if(d_fr->data)
 		{
 			res = dlt645_frame_send(d_fr, adr, DIRDN);
@@ -1078,6 +1062,7 @@ uint16_t dlt645_read_adr_send(uint16_t adr)
 
 uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 {
+	// TODO finish function dlt645_read_adr_recv()
 	return RES_SUCCESS;
 }
 

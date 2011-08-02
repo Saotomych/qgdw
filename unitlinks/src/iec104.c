@@ -388,20 +388,6 @@ int iec104_recv_data(int len)
 }
 
 
-//int iec104_recv_init(ep_init_header *ih)
-//{
-//#ifdef _DEBUG
-////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[0]);
-////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[1]);
-////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[2]);
-////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[3]);
-////	printf("%s: HAS READ INIT DATA: %s\n", APP_NAME, ih->isstr[4]);
-//#endif
-//
-//	return 0;
-//}
-
-
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	int res;
@@ -1054,6 +1040,10 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 			res = RES_SUCCESS;
 
 			free(ep_buff);
+
+#ifdef _DEBUG
+		printf("%s: ASDU sent in DIRUP. Address = %d\n", APP_NAME, adr);
+#endif
 		}
 		else
 		{
@@ -1079,7 +1069,7 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	res = asdu_from_byte(buff, buff_len, &iec_asdu);
 
-	if(res == RES_SUCCESS && iec_asdu->adr == ep_ext->adr)
+	if(res == RES_SUCCESS)
 	{
 		//TODO Add check for maximum difference receive sequence number to sent state variable!!!
 
