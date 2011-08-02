@@ -166,9 +166,11 @@ SCADA *actscada;
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen > 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
+
+ 				// TODO Copy variable to variable struct IEC61850
+
 				// TODO Find type of variable
 				// TODO Convert type on fly
-
 				// Mapping id
 				pdm = sasdu->myscadatype->fdmap;
 				while ((pdm) && (pdm->meterid != pdu->id))	pdm = pdm->l.next;
@@ -200,7 +202,6 @@ SCADA *actscada;
 				mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, actscada->pscada->ASDUaddr, DIRDN);
 				actscada = actscada->l.next;
 			}
-
 		}
 
 		free(sendbuff);
@@ -330,11 +331,13 @@ struct config_device cd = {
 
 void create_alldo(void){
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
-struct _LNODETYPE 	*plntype;
+ASDU_DATAMAP *pdm;
 DOBJ	*pdo;
+int adr;
 
 struct {
 	struct ep_data_header edh;
+	uint32_t		id;					/* device's internal identifier of data unit */
 	char name[DOBJ_NAMESIZE];
 } fr_do;
 
@@ -342,31 +345,23 @@ struct {
 		// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
 		sasdu = ((SCADA_ASDU *) &fasdu)->l.next;
 		while(sasdu){
+			adr = atoi(sasdu->myln->ln.options);
 			// find logical node type
-			plntype = sasdu->myln->ln.pmytype;
-			if (plntype){
-				// find and get pointer to data_object list
-				pdo = plntype->pfdobj;
-				if (pdo){
-					// write datatypes by sys msg EP_MSG_NEWDOBJ
-					while((pdo) && (pdo->dobj.pmynodetype == plntype)){
-						fr_do.edh.adr = atoi(sasdu->myln->ln.options);
-						fr_do.edh.len = DOBJ_NAMESIZE;
-						fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
-						strcpy(fr_do.name, pdo->dobj.name);
+			pdm = sasdu->myscadatype->fdmap;
+			while (pdm){
+				// write datatypes by sys msg EP_MSG_NEWDOBJ
+				pdo = pdm->mydobj;
+				fr_do.edh.adr = adr;
+				fr_do.edh.len = DOBJ_NAMESIZE + sizeof(uint32_t);
+				fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
+				fr_do.id = sasdu->myscadatype->fdmap->meterid;
+				strcpy(fr_do.name, pdo->dobj.name);
 
-						// write to endpoint
-						mf_toendpoint((char*) &fr_do, sizeof(fr_do), fr_do.edh.adr, DIRDN);
+				// write to endpoint
+				mf_toendpoint((char*) &fr_do, sizeof(fr_do), fr_do.edh.adr, DIRDN);
+				usleep(5);	// delay for forming  next event
 
-						pdo = pdo->l.next;
-					}
-
-
-				}else{
-					printf("IEC61850 error: pointer to list of DOBJs = 0\n");
-				}
-			}else{
-				printf("IEC61850 error: pointer to LNTYPE = 0\n");
+				pdm = pdm->l.next;
 			}
 
 			sasdu = sasdu->l.next;
