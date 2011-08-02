@@ -108,12 +108,12 @@ int ret = 0;
 }
 
 int rcvdata(int len){
-char *buff;
+char *buff, *sendbuff;
 int adr, dir, rdlen;
-ep_data_header *edh;
-data_unit *pdu;
+ep_data_header *edh, *sedh;
+data_unit *pdu, *spdu;
 SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
-asdu *pasdu;
+asdu *pasdu, *psasdu;
 ASDU_DATAMAP *pdm;
 
 	buff = malloc(len);
@@ -144,6 +144,19 @@ ASDU_DATAMAP *pdm;
 
 		// TODO time synchronization, broadcast request, etc.
 
+		// Making up Buffer for send to SCADA.
+		// It has data objects having mapping only
+		sendbuff = malloc(len);
+		sedh = (ep_data_header*) sendbuff;
+		sedh->sys_msg = EP_USER_DATA;
+		sedh->len = sizeof(asdu);
+
+		psasdu = (asdu*) (sendbuff + sizeof(ep_data_header));
+		memcpy(psasdu, pasdu, sizeof(asdu));
+		psasdu->size = 0;
+
+		spdu = (data_unit*) (psasdu + sizeof(asdu));
+
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen > 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
@@ -157,11 +170,14 @@ ASDU_DATAMAP *pdm;
 					// TODO Find type of variable & Convert type on fly
 					// Remap variable pdu->id -> id (for SCADA)
 					pdu->id = pdm->scadaid;
+					memcpy(spdu, pdu, sizeof(data_unit));
+					spdu++;
+					psasdu->size++;
+					sedh->len += sizeof(data_unit);
 					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 				}else{
-//					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 				}
-
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
 			}
@@ -169,7 +185,11 @@ ASDU_DATAMAP *pdm;
 			pdu++;
 			rdlen -= sizeof(data_unit);
 		}
+
 		// TODO Send data to all SCADA
+		mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, 55555, DIRDN);
+
+		free(sendbuff);
 
 		break;
 	}
@@ -214,12 +234,12 @@ DOBJ *adobj;
 					// Fill ASDU_DATAMAP
 					actasdudm->mydobj = adobj;
 					actasdutype->fdmap = actasdudm;
-					actasdudm->meterid = atoi(adobj->dobj.options);
-					if (!get_map_by_name(adobj->dobj.name, &actasdudm->scadaid)){
+					actasdudm->scadaid = atoi(adobj->dobj.options);
+					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
 						// find by DOType->DA.name = stVal => DOType->DA.btype
 						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.type);
 						printf("ASDU: new SCADA_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
-								adobj->dobj.name, adobj->dobj.type, actasdudm->scadaid, actasdudm->meterid, actasdudm->value_type);
+								adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
 					}else printf("ASDU: new SCADA_DO for DOBJ error: Tag not found into mainmap.cfg");
 			}else printf("ASDU: new SCADA_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
 
