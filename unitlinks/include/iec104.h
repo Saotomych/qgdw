@@ -85,8 +85,6 @@ void iec104_catch_alarm(int sig);
 
 int iec104_recv_data(int len);
 
-int iec104_recv_init(ep_init_header *ih);
-
 
 iec104_ep_ext* iec104_get_ep_ext(uint16_t adr);
 
