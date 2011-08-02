@@ -722,6 +722,10 @@ struct ep_init_header *eih=0;
 		}
 
 		// Init ep by recv index
+		if (edh.numep >= maxep){
+			printf("MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
+			return -1;
+		}
 		ep = myeps[edh.numep];
 		if (!ep){
 			printf("MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
@@ -991,7 +995,7 @@ char fname[160];
 
 
 int mf_toendpoint(char *buf, int len, int addr, int direct){
-int i, wrlen;
+int i, wrlen = 0;
 struct channel *ch = 0;
 struct endpoint *ep = 0;
 

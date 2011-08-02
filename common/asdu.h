@@ -3,10 +3,9 @@
  * grymster@gmail.com
  * LLC "Mediakon"
  */
- 
+
 #ifndef _ASDU_H_
 #define _ASDU_H_
-
 
 #include <stdint.h>
 #include "resp_codes.h"

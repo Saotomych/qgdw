@@ -43,7 +43,7 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 char *MCFGfile;
 
 // Variables for asdu actions
-static LIST fasdu, fasdutype;
+static LIST fasdu, fasdutype, fdm;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
@@ -108,13 +108,13 @@ int ret = 0;
 }
 
 int rcvdata(int len){
-char *buff, *data;
-int adr, dir, rdlen, *pdat, id;
+char *buff;
+int adr, dir, rdlen;
 ep_data_header *edh;
-asdu *pasdu;
 data_unit *pdu;
-u08 *frame;
 SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
+asdu *pasdu;
+ASDU_DATAMAP *pdm;
 
 	buff = malloc(len);
 
@@ -125,12 +125,11 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 //	printf("IEC61850: Data received. Address = %d, Length = %d  %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
 
 	edh = (ep_data_header *) buff;
-	data = buff + sizeof(ep_data_header);
 
 	switch(edh->sys_msg){
 	case EP_USER_DATA:
 		rdlen = edh->len;
-		pasdu = (asdu*) data;
+		pasdu = (asdu*) (buff + sizeof(ep_data_header));
 		rdlen -= sizeof(asdu);
 
 		// find scada_asdu
@@ -143,24 +142,26 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 
 		printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
 
-//		frame = sasdu->ASDUframe;
+		// TODO time synchronization, broadcast request, etc.
+
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen > 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
-				if (pasdu->type == ASDU_VAL_NONE){
-					// TODO time synchronization, broadcast request, etc.
+				// TODO Find type of variable
+				// TODO Convert type on fly
 
-				}else{
+				// Mapping id
+				pdm = sasdu->myscadatype->fdmap;
+				while ((pdm) && (pdm->meterid != pdu->id))	pdm = pdm->l.next;
+				if (pdm){
+					// TODO Find type of variable & Convert type on fly
 					// Remap variable pdu->id -> id (for SCADA)
-					// TODO Find type of variable
-
-					// TODO Convert type on fly
-
-					// Copy variable
-//					pdat = (void*) &frame[id];
-//					*pdat = pdu->value.i;
-//					printf("IEC61850: Value 0x%X with id = %d received\n", *pdat, pdu->id);
+					pdu->id = pdm->scadaid;
+					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
+				}else{
+//					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 				}
+
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
 			}
@@ -168,6 +169,7 @@ SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
 			pdu++;
 			rdlen -= sizeof(data_unit);
 		}
+		// TODO Send data to all SCADA
 
 		break;
 	}
@@ -182,9 +184,6 @@ int asdu_parser(void){
 SCADA_ASDU *actasdu;
 SCADA_ASDU_TYPE *actasdutype;
 ASDU_DATAMAP *actasdudm;
-
-LIST fdm;
-
 LNODE *aln;
 LNTYPE *alnt;
 DOBJ *adobj;
@@ -200,12 +199,12 @@ DOBJ *adobj;
 
 		printf("ASDU: new SCADA_ASDU_TYPE\n");
 
-				// Fill SCADA_ASDU_TYPE
+		// Fill SCADA_ASDU_TYPE
 		actasdutype->mylntype = alnt;
 
 		// create ASDU_DATAMAP list
 		actasdudm = (ASDU_DATAMAP*) &fdm;
-		adobj = (DOBJ*) fdo.next;
+		adobj = actasdutype->mylntype->lntype.pfdobj; // (DOBJ*) fdo.next;
 
 		while(adobj){
 			if ((adobj->dobj.options) &&
@@ -214,8 +213,9 @@ DOBJ *adobj;
 					actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
 					// Fill ASDU_DATAMAP
 					actasdudm->mydobj = adobj;
-					actasdudm->scadaid = atoi(adobj->dobj.options);
-					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
+					actasdutype->fdmap = actasdudm;
+					actasdudm->meterid = atoi(adobj->dobj.options);
+					if (!get_map_by_name(adobj->dobj.name, &actasdudm->scadaid)){
 						// find by DOType->DA.name = stVal => DOType->DA.btype
 						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.type);
 						printf("ASDU: new SCADA_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
@@ -258,6 +258,9 @@ DOBJ *adobj;
 						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
 			}
 			else printf("ASDU: SCADA_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
+
+			// Link ASDU_TYPE to DATAMAP
+
 		}
 
 		printf("ASDU: new SCADA_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
@@ -332,7 +335,7 @@ struct {
 
 int virt_start(char *appname){
 FILE *fmcfg;
-int clen, ret, i;
+int clen, ret;
 struct stat fst;
 pid_t chldpid;
 
