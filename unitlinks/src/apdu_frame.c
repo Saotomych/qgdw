@@ -141,7 +141,7 @@ uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	}
 
 	// check if rest of the buffer long enough to contain the frame
-	if(buff_len - *offset <= APDU_LEN_MIN) return RES_LEN_INVALID;
+	if(buff_len - *offset + 1 < APDU_LEN_MIN) return RES_LEN_INVALID;
 
 	// check if start byte found, otherwise return error
 	if(start_byte != APDU_START_BYTE) return RES_INCORRECT;
