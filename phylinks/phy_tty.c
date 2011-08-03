@@ -263,6 +263,7 @@ char *inoti_buf;
 struct phy_route *pr;
 ep_data_header *edh;
 int rdlen, i;
+int offset;
 
 char ascibuf[100];
 
@@ -271,53 +272,75 @@ char ascibuf[100];
 		inoti_buf = malloc(len);
 
 		rdlen = mf_readbuffer(inoti_buf, len, &tai.addr, &tai.direct);
-//		// Get phy_route by addr
-		for(i=0; i < maxpr; i++){
-			if (myprs[i]->asdu == tai.addr){ pr = myprs[i]; break;}
-		}
-		if (i==maxpr){ free(inoti_buf); return 0;}
 
+		// set offset to zero before loop
+		offset = 0;
 
-		edh = (struct ep_data_header *) inoti_buf;				// set start structure
-		tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
+		while(offset < rdlen)
+		{
+			if(rdlen - offset < sizeof(ep_data_header))
+			{
+				free(inoti_buf);
+				return 0;
+			}
 
-		printf("Phy TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
-		printf("Phy TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
+			edh = (struct ep_data_header *) (inoti_buf + offset);				// set start structure
+			offset += sizeof(ep_data_header);
 
-		switch(edh->sys_msg){
-		case EP_USER_DATA:	// Write data to socket
-				Hex2ASCII(tai.buf, ascibuf, edh->len);
-				printf("Buffer: %s\n", ascibuf);
+			pr = NULL;
 
-//				ty = &tdev[pr->devindex];
-//				printf("Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
+			// Get phy_route by addr
+			for(i=0; i < maxpr; i++){
+				if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
+			}
 
-				writeall(tdev[pr->devindex].desc, tai.buf, edh->len);
-				break;
+			// check if phy_route was found
+			if (!pr){
+				printf("Phy TTY: This connect not found\n");
+				offset += edh->len;
+				continue;
+			}
 
-		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
-				close(tdev[pr->devindex].desc);
-				if (start_ttydevice(&tdev[pr->devindex]) == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
-				else{
-					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
-					pr->state = 1;
-				}
-				break;
+			tai.buf = inoti_buf + offset;	// set pointer to begin data
 
-		case EP_MSG_CONNECT_CLOSE: // Disconnect endpoint
-				break;
+			printf("Phy TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
+			printf("Phy TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
 
-		case EP_MSG_CONNECT:
-				if (start_ttydevice(&tdev[pr->devindex]) == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
-				else{
-					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
-					pr->state = 1;
-				}
-				break;
+			switch(edh->sys_msg){
+			case EP_USER_DATA:	// Write data to socket
+					if(rdlen-offset >= edh->len) {
+						Hex2ASCII(tai.buf, ascibuf, edh->len);
+						printf("Buffer: %s\n", ascibuf);
 
-		case EP_MSG_QUIT:
-				appexit = 1;
-				break;
+//						ty = &tdev[pr->devindex];
+//						printf("Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
+
+						writeall(tdev[pr->devindex].desc, tai.buf, edh->len);
+					}
+					break;
+
+			case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
+					close(tdev[pr->devindex].desc);
+					pr->state = 0;
+
+			case EP_MSG_CONNECT:
+					if (start_ttydevice(&tdev[pr->devindex]) == -1) send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+					else{
+						send_sys_msg(pr, EP_MSG_CONNECT_ACK);
+						pr->state = 1;
+					}
+					break;
+
+			case EP_MSG_CONNECT_CLOSE: // Disconnect endpoint
+					break;
+
+			case EP_MSG_QUIT:
+					appexit = 1;
+					break;
+			}
+
+			// move over the data
+			offset += edh->len;
 		}
 
 		free(inoti_buf);

@@ -162,6 +162,7 @@ char *inoti_buf;
 struct phy_route *pr;
 ep_data_header *edh;
 int rdlen, i;
+int offset;
 
 	tai.len = len;
 	tai.addr = 1;
@@ -169,57 +170,85 @@ int rdlen, i;
 	inoti_buf = malloc(len);
 
 	rdlen = mf_readbuffer(inoti_buf, len, &tai.addr, &tai.direct);
-	// Get phy_route by addr
-	for(i=0; i < maxpr; i++){
-		if (myprs[i]->asdu == tai.addr){ pr = myprs[i]; break;}
+
+	// set offset to zero before loop
+	offset = 0;
+
+	while(offset < rdlen)
+	{
+		if(rdlen - offset < sizeof(ep_data_header))
+		{
+			free(inoti_buf);
+			return 0;
+		}
+
+		edh = (struct ep_data_header *) (inoti_buf + offset);				// set start structure
+		offset += sizeof(ep_data_header);
+
+		pr = NULL;
+		// Get phy_route by edh addr
+		for(i=0; i < maxpr; i++){
+			if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
+		}
+
+		// check if phy_route was found
+		if (!pr){
+			printf("Phylink TCP/IP: This connect not found\n");
+			offset += edh->len;
+			continue;
+		}
+
+		tai.buf = inoti_buf + offset;	// set pointer to begin data
+
+		switch(edh->sys_msg){
+		case EP_USER_DATA:	// Write data to socket
+				if(rdlen-offset >= edh->len) sendall(pr->socdesc, tai.buf, edh->len, 0);
+				break;
+
+		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
+				close(pr->socdesc);
+				pr->socdesc = 0;
+				pr->state = 0;
+
+		case EP_MSG_CONNECT:
+				// Find phy_route
+//				for (i = 0 ; i < maxpr; i++){
+//					if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
+//				}
+//				if (i == maxpr){
+//					printf("Phylink TCP/IP: This connect not found\n");
+//					return 0;	// Route not found
+//				}
+				if (pr->state){
+					printf("Phylink TCP/IP: This connect setting already\n");
+					break;
+				}
+				pr->ep_index = edh->numep;
+				printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", edh->adr, edh->numep);
+				printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
+
+				// Create & bind new socket
+				pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
+				if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
+				else{
+					printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
+					connect_by_config(pr);
+				}
+				break;
+
+		case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
+				close(pr->socdesc);
+				break;
+
+		case EP_MSG_QUIT:
+				appexit = 1;
+				break;
+		}
+
+		// move over the data
+		offset += edh->len;
 	}
-	if (i==maxpr){ free(inoti_buf); return 0;}
-	edh = (struct ep_data_header *) inoti_buf;				// set start structure
-	tai.buf = inoti_buf + sizeof(struct ep_data_header);	// set pointer to begin data
-	switch(edh->sys_msg){
-	case EP_USER_DATA:	// Write data to socket
-			sendall(pr->socdesc, tai.buf, len - sizeof(struct ep_data_header), 0);
-			break;
 
-	case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
-			close(pr->socdesc);
-			pr->socdesc = 0;
-			pr->state = 0;
-
-	case EP_MSG_CONNECT:
-			// Find phy_route
-			for (i = 0 ; i < maxpr; i++){
-				if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
-			}
-			if (i == maxpr){
-				printf("Phylink TCP/IP: This connect not found\n");
-				return 0;	// Route not found
-			}
-			if (pr->state){
-				printf("This connect setting already\n");
-				return 0;	// Route init already
-			}
-			pr->ep_index = edh->numep;
-			printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", edh->adr, edh->numep);
-			printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
-
-			// Create & bind new socket
-			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
-			if (pr->socdesc == -1) printf("Phylink TCP/IP: socket error:%d - %s\n",errno, strerror(errno));
-			else{
-				printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
-				connect_by_config(pr);
-			}
-			break;
-
-	case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
-			close(pr->socdesc);
-			break;
-
-	case EP_MSG_QUIT:
-			appexit = 1;
-			break;
-	}
 
 	free(inoti_buf);
 	return 0;
