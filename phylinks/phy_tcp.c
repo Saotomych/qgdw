@@ -211,14 +211,6 @@ int offset;
 				pr->state = 0;
 
 		case EP_MSG_CONNECT:
-				// Find phy_route
-//				for (i = 0 ; i < maxpr; i++){
-//					if (myprs[i]->asdu == edh->adr){ pr = myprs[i]; break;}
-//				}
-//				if (i == maxpr){
-//					printf("Phylink TCP/IP: This connect not found\n");
-//					return 0;	// Route not found
-//				}
 				if (pr->state){
 					printf("Phylink TCP/IP: This connect setting already\n");
 					break;
