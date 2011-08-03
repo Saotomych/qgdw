@@ -424,7 +424,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_NEWDOBJ:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ received. Address = %d.\n", APP_NAME, ep_ext->adr);
+			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d.\n", APP_NAME, buff, ep_ext->adr);
 #endif
 
 			break;
@@ -577,8 +577,13 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 	else
 	{
 		iec_asdu->adr = ep_ext->adr;
+
 		iec_asdu->type = C_CS_NA_1;
-		iec_asdu->fnc = COT_Act;
+
+		if(ep_ext->host_type == IEC_HOST_MASTER)
+			iec_asdu->fnc = COT_Act;
+		else
+			iec_asdu->fnc = COT_ActCon;
 
 		iec_asdu->size = 1;
 		iec_asdu->data = calloc(1, sizeof(data_unit));
@@ -593,6 +598,10 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 #ifdef _DEBUG
 			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
+		}
+		else
+		{
+			res = RES_MEM_ALLOC;
 		}
 
 		asdu_destroy(&iec_asdu);
@@ -618,8 +627,14 @@ uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
 	else
 	{
 		iec_asdu->adr = ep_ext->adr;
+
 		iec_asdu->type = C_IC_NA_1;
-		iec_asdu->fnc = COT_Act;
+
+		if(ep_ext->host_type == IEC_HOST_MASTER)
+			iec_asdu->fnc = COT_Act;
+		else
+			iec_asdu->fnc = COT_ActCon;
+
 
 		iec_asdu->size = 1;
 		iec_asdu->data = calloc(1, sizeof(data_unit));
@@ -1085,11 +1100,24 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	if(res == RES_SUCCESS)
 	{
-		res = iec104_asdu_send(iec_asdu, ep_ext->adr, DIRUP);
-
 		if(res == RES_SUCCESS)
 		{
 			ep_ext->vr = (ep_ext->vr + 1) % 32767;
+		}
+
+		switch(iec_asdu->type)
+		{
+		case C_IC_NA_1:
+			if(ep_ext->host_type == IEC_HOST_SLAVE) iec104_comm_inter_send(ep_ext);
+			break;
+
+		case C_CS_NA_1:
+			if(ep_ext->host_type == IEC_HOST_SLAVE) iec104_time_sync_send(ep_ext);
+			break;
+
+		default:
+			res = iec104_asdu_send(iec_asdu, ep_ext->adr, DIRUP);
+			break;
 		}
 	}
 
