@@ -254,7 +254,7 @@ int i;
 struct phy_route *pr;
 struct linger l = { 1, 0 };
 
-	printf("Phylink TCP/IP: close all sockets\n");
+	printf("Phylink TCP/IP: fast close all sockets\n");
 	for (i=0; i<maxpr; i++){
 		pr = myprs[i];
 		if ((pr->state) && (pr->socdesc)){
