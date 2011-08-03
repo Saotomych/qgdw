@@ -105,6 +105,28 @@ typedef struct _IED_LIST{
 	} ied;
 } IED;
 
+// Real Attributes for every DOBJ
+typedef struct _iec_attr_unit{
+	LIST l;
+	union {
+		uint32_t	ui;					/* unsigned integer representation */
+		int32_t		i;					/* integer representation */
+		float		f;					/* float representation */
+	} attr;							/* transferring value (e.g. measured value, counter readings, etc.) */
+	ATTR *myattr;
+} IEC_ATTR_UNIT;
+
+// Real Values for every LN
+typedef struct _iec_data_unit{
+	LIST l;
+	union {
+		uint32_t	ui;					/* unsigned integer representation */
+		int32_t		i;					/* integer representation */
+		float		f;					/* float representation */
+	} value;							/* transferring value (e.g. measured value, counter readings, etc.) */
+	DOBJ *mydobj;
+} IEC_DATA_UNIT;
+
 extern LIST fied, fln, flntype, fdo, fdtype, fattr;
 
 extern int virt_start(char *appname);

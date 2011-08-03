@@ -161,7 +161,7 @@ SCADA *actscada;
 		memcpy(psasdu, pasdu, sizeof(asdu));
 		psasdu->size = 0;
 
-		spdu = (data_unit*) (psasdu + sizeof(asdu));
+		spdu = (data_unit*) ((void*)psasdu + sizeof(asdu));
 
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen > 0){
@@ -173,7 +173,7 @@ SCADA *actscada;
 				// TODO Convert type on fly
 				// Mapping id
 				pdm = sasdu->myscadatype->fdmap;
-				while ((pdm) && (pdm->meterid != pdu->id))	pdm = pdm->l.next;
+				while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
 				if (pdm){
 					// TODO Find type of variable & Convert type on fly
 					// Remap variable pdu->id -> id (for SCADA)
@@ -250,7 +250,6 @@ DOBJ *adobj;
 					actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
 					// Fill ASDU_DATAMAP
 					actasdudm->mydobj = adobj;
-					actasdutype->fdmap = actasdudm;
 					actasdudm->scadaid = atoi(adobj->dobj.options);
 					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
 						// find by DOType->DA.name = stVal => DOType->DA.btype
@@ -263,6 +262,7 @@ DOBJ *adobj;
 			// Next DOBJ
 			adobj = adobj->l.next;
 		}
+		if (fdm.next) actasdutype->fdmap = fdm.next;
 
 		printf("ASDU: ready SCADA_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 

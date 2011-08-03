@@ -5,9 +5,8 @@
   </Header>
   <Substation name="S12" desc="SPb">
     <Text />
-    <LNode asdu="11111" lnInst="1" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-dlt645.phy_tty" lnType="MMXUa" />
-    <LNode asdu="55555" lnInst="1" lnClass="MMXU" iedName="scada" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
     <LNode asdu="967" lnInst="2" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+    <LNode asdu="55555" lnInst="1" lnClass="MMXU" iedName="scada" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
   </Substation>
   <IED inst="Gallery, bay1" name="m700.place001" />
   <IED inst="Center" name="scada" />
@@ -17,7 +16,25 @@
       <DO name="Mod" type="myMod">
         <Text />
       </DO>
-      <DO asdupos="32" name="TotW" type="myPwr">
+      <DO asdupos="64" name="PhV.phsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="65" name="A.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="66" name="TotW.mag" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="67" name="W.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="68" name="Wback.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="69" name="VAr.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="70" name="VArback.PhsAHar" type="myPwr">
         <Text />
       </DO>
       <DO name="Health" type="myBeh">
