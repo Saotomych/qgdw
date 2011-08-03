@@ -252,10 +252,15 @@ int offset;
 void sighandler_sigterm(int arg){
 int i;
 struct phy_route *pr;
+struct linger l = { 1, 0 };
+
 	printf("Phylink TCP/IP: close all sockets\n");
 	for (i=0; i<maxpr; i++){
 		pr = myprs[i];
-		if ((pr->state) && (pr->socdesc)) close(pr->socdesc);
+		if ((pr->state) && (pr->socdesc)){
+			setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
+			close(pr->socdesc);
+		}
 	}
 	exit(0);
 }
