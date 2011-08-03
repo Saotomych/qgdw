@@ -161,7 +161,7 @@ SCADA *actscada;
 		memcpy(psasdu, pasdu, sizeof(asdu));
 		psasdu->size = 0;
 
-		spdu = (data_unit*) (psasdu + sizeof(asdu));
+		spdu = (data_unit*) ((void*)psasdu + sizeof(asdu));
 
 		pdu = (void*) pasdu + sizeof(asdu);
 		while(rdlen > 0){
