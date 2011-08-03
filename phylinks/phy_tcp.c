@@ -289,7 +289,10 @@ int maxdesc;
 		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
-	    if (ret == -1) printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    if (ret == -1){
+	    	printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    	exit(0);
+	    }
 	    else
 	    if (ret){
 	    	for (i=0; i<maxpr; i++){

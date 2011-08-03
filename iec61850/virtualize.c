@@ -200,6 +200,7 @@ SCADA *actscada;
 			while(actscada){
 				sedh->adr = actscada->pscada->ASDUaddr;
 				mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, actscada->pscada->ASDUaddr, DIRDN);
+				printf("IEC61850: %d data_units sent to scada %d\n", psasdu->size, actscada->pscada->ASDUaddr);
 				actscada = actscada->l.next;
 			}
 		}
