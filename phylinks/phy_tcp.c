@@ -291,6 +291,10 @@ int maxdesc;
 	    ret = select(maxdesc + 1, &rd_socks, NULL, &ex_socks, &tv);
 	    if (ret == -1){
 	    	printf("Phylink TCP/IP: select error:%d - %s\n",errno, strerror(errno));
+	    	for(i=0; i < maxpr; i++){
+	    		pr = myprs[i];
+		    	printf("Phylink TCP/IP: phy_route %d, desc = 0x%X\n", i, pr->socdesc);
+	    	}
 	    	exit(0);
 	    }
 	    else
