@@ -114,7 +114,8 @@ int ret = 0;
 
 int rcvdata(int len){
 char *buff, *sendbuff;
-int adr, dir, rdlen;
+int adr, dir, rdlen, fullrdlen;
+int offset;
 ep_data_header *edh, *sedh;
 data_unit *pdu, *spdu;
 SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
@@ -126,88 +127,102 @@ SCADA *actscada;
 
 	if(!buff) return -1;
 
-	mf_readbuffer(buff, len, &adr, &dir);
+	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 //#ifdef _DEBUG
 //	printf("IEC61850: Data received. Address = %d, Length = %d  %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+	// set offset to zero before loop
+	offset = 0;
 
-	edh = (ep_data_header *) buff;
-
-	switch(edh->sys_msg){
-	case EP_USER_DATA:
-		rdlen = edh->len;
-		pasdu = (asdu*) (buff + sizeof(ep_data_header));
-		rdlen -= sizeof(asdu);
-
-		// find scada_asdu
-		while ((sasdu) && (sasdu->ASDUaddr != edh->adr)) sasdu = sasdu->l.next;
-		if (!sasdu){
-			printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
+	while(offset < fullrdlen){
+		if(rdlen - offset < sizeof(ep_data_header)){
 			free(buff);
 			return 0;
 		}
 
-		printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
+		edh = (struct ep_data_header *) (buff + offset);				// set start structure
+		offset += sizeof(ep_data_header);
 
-		// TODO time synchronization, broadcast request, etc.
+		switch(edh->sys_msg){
+		case EP_USER_DATA:
+			rdlen = edh->len;
+			pasdu = (asdu*) (buff + sizeof(ep_data_header));
+			rdlen -= sizeof(asdu);
 
-		// Making up Buffer for send to SCADA.
-		// It has data objects having mapping only
-		sendbuff = malloc(len);
-		sedh = (ep_data_header*) sendbuff;
-		sedh->sys_msg = EP_USER_DATA;
-		sedh->len = sizeof(asdu);
+			// find scada_asdu
+			while ((sasdu) && (sasdu->ASDUaddr != edh->adr)) sasdu = sasdu->l.next;
+			if (!sasdu){
+				printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
+				free(buff);
+				return 0;
+			}
 
-		psasdu = (asdu*) (sendbuff + sizeof(ep_data_header));
-		memcpy(psasdu, pasdu, sizeof(asdu));
-		psasdu->size = 0;
+			printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
 
-		spdu = (data_unit*) ((void*)psasdu + sizeof(asdu));
+			// TODO time synchronization, broadcast request, etc.
 
-		pdu = (void*) pasdu + sizeof(asdu);
-		while(rdlen > 0){
-			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
+			// Making up Buffer for send to SCADA.
+			// It has data objects having mapping only
+			sendbuff = malloc(len);
+			sedh = (ep_data_header*) sendbuff;
+			sedh->sys_msg = EP_USER_DATA;
+			sedh->len = sizeof(asdu);
 
- 				// TODO Copy variable to data struct IEC61850
+			psasdu = (asdu*) (sendbuff + sizeof(ep_data_header));
+			memcpy(psasdu, pasdu, sizeof(asdu));
+			psasdu->size = 0;
 
-				// TODO Find type of variable
-				// TODO Convert type on fly
-				// Mapping id
-				pdm = sasdu->myscadatype->fdmap;
-				while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
-				if (pdm){
-					// TODO Find type of variable & Convert type on fly
-					// Remap variable pdu->id -> id (for SCADA)
-					pdu->id = pdm->scadaid;
-					memcpy(spdu, pdu, sizeof(data_unit));
-					spdu++;
-					psasdu->size++;
-					sedh->len += sizeof(data_unit);
-					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
+			spdu = (data_unit*) ((void*)psasdu + sizeof(asdu));
+
+			pdu = (void*) pasdu + sizeof(asdu);
+			while(rdlen > 0){
+				if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
+//					printf("IEC61850: Value = 0x%X. Time %X\n", pdu->value.ui, pdu->time_tag);
+
+	 				// TODO Copy variable to data struct IEC61850
+
+					// TODO Find type of variable
+					// TODO Convert type on fly
+					// Mapping id
+					pdm = sasdu->myscadatype->fdmap;
+					while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
+					if (pdm){
+						// TODO Find type of variable & Convert type on fly
+						// Remap variable pdu->id -> id (for SCADA)
+						pdu->id = pdm->scadaid;
+						memcpy(spdu, pdu, sizeof(data_unit));
+						spdu++;
+						psasdu->size++;
+						sedh->len += sizeof(data_unit);
+						printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
+					}else{
+//						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+					}
 				}else{
-					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+					printf("IEC61850 error: id %d very big\n", pdu->id);
 				}
-			}else{
-				printf("IEC61850 error: id %d very big\n", pdu->id);
+				// Next pdu
+				pdu++;
+				rdlen -= sizeof(data_unit);
 			}
-			// Next pdu
-			pdu++;
-			rdlen -= sizeof(data_unit);
+
+			// TODO Send data to all registered SCADAs
+			if (psasdu->size){
+				actscada = (SCADA*) fscada.next;
+				while(actscada){
+					sedh->adr = actscada->pscada->ASDUaddr;
+					mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, actscada->pscada->ASDUaddr, DIRDN);
+					printf("IEC61850: %d data_units sent to scada asdu=%d\n", psasdu->size, actscada->pscada->ASDUaddr);
+					actscada = actscada->l.next;
+				}
+			}
+
+			free(sendbuff);
+
+			break;
 		}
 
-		// TODO Send data to all registered SCADAs
-		if (psasdu->size){
-			actscada = (SCADA*) fscada.next;
-			while(actscada){
-				sedh->adr = actscada->pscada->ASDUaddr;
-				mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, actscada->pscada->ASDUaddr, DIRDN);
-				printf("IEC61850: %d data_units sent to scada %d\n", psasdu->size, actscada->pscada->ASDUaddr);
-				actscada = actscada->l.next;
-			}
-		}
-
-		free(sendbuff);
-
-		break;
+		// move over the data
+		offset += edh->len;
 	}
 
 //#endif

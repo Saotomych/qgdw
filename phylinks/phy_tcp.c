@@ -130,10 +130,11 @@ int ret;
 	ret = bind(pr->socdesc, (struct sockaddr *) &pr->sailist, sizeof(struct sockaddr_in));
 	if (ret){
 		printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
-		return;
-	}else printf("Phylink TCP/IP: bind established, listen waiting...\n");
-	listen(pr->socdesc, 1);
-	pr->state = 1;
+	}else{
+		printf("Phylink TCP/IP: bind established, listen waiting...\n");
+		if (listen(pr->socdesc, 1) == -1) printf("Phylink TCP/IP: listen error:%d - %s\n",errno, strerror(errno));
+		else pr->state = 1;
+	}
 }
 
 void set_connect(struct phy_route *pr){
@@ -247,6 +248,17 @@ int offset;
 	return 0;
 }
 
+// Program terminating
+void sighandler_sigterm(int arg){
+int i;
+struct phy_route *pr;
+	printf("Phylink TCP/IP: close all sockets\n");
+	for (i=0; i<maxpr; i++){
+		pr = myprs[i];
+		if ((pr->state) && (pr->socdesc)) close(pr->socdesc);
+	}
+	exit(0);
+}
 
 int main(int argc, char * argv[]){
 pid_t chldpid;
@@ -272,7 +284,10 @@ int maxdesc;
 	// Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata);
 
-	// Cycle select for sockets descriptors
+	signal(SIGTERM, sighandler_sigterm);
+	signal(SIGINT, sighandler_sigterm);
+
+// Cycle select for sockets descriptors
 	do{
 	    FD_ZERO(&rd_socks);
 	    FD_ZERO(&ex_socks);
