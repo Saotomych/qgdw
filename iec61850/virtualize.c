@@ -167,7 +167,7 @@ SCADA *actscada;
 		while(rdlen > 0){
 			if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
 
- 				// TODO Copy variable to variable struct IEC61850
+ 				// TODO Copy variable to data struct IEC61850
 
 				// TODO Find type of variable
 				// TODO Convert type on fly
@@ -184,7 +184,7 @@ SCADA *actscada;
 					sedh->len += sizeof(data_unit);
 					printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 				}else{
-//					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+					printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 				}
 			}else{
 				printf("IEC61850 error: id %d very big\n", pdu->id);
@@ -328,7 +328,7 @@ struct config_device cd = {
 		55555
 };
 
-
+// Load data to low level
 void create_alldo(void){
 SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 ASDU_DATAMAP *pdm;
