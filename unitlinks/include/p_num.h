@@ -34,7 +34,7 @@ extern "C" {
                         (((v)&0x000000000000FF00) << 40) |  \
                         (((v)&0x00000000000000FF) << 56))
 
-/*=========================little-endian2le representation============================ */
+/* =========================little-endian2le representation============================ */
 /* pointer to integer */
 #define pletoint16(p)  ((uint16_t)									\
                        ((uint16_t)*((const uint8_t *)(p)+1)<<8  |	\
@@ -139,7 +139,7 @@ void buff_put_le_uint64(unsigned char *buff, uint32_t offset, uint64_t num);
 void buff_put_le_ieee_float(unsigned char *buff, uint32_t offset, float num);
 
 
-/*=========================little-endian2le BCD representation======================== */
+/* =========================little-endian2le BCD representation======================== */
 
 uint8_t buff_bcd_check(unsigned char *buff, uint32_t offset, uint8_t len);
 
@@ -151,6 +151,14 @@ float buff_bcd_get_le_flt(unsigned char *buff, int32_t offset, uint8_t len, uint
 void buff_bcd_put_le_uint(unsigned char *buff, uint32_t offset, uint64_t num, uint8_t len);
 
 void buff_bcd_put_le_flt(unsigned char *buff, uint32_t offset, float num, uint8_t len, uint8_t frac);
+
+
+
+/* =========================miscellaneous functions======================== */
+int hex2ascii(unsigned char *h_buff, char *c_buff, int len);
+
+
+
 
 
 #ifdef __cplusplus

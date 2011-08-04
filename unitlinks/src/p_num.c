@@ -4,6 +4,8 @@
  * LLC "Mediakon"
  */
 
+#include <stdio.h>
+#include <string.h>
 #include "../include/p_num.h"
 
 uint8_t  buff_get_le_uint8(unsigned char *buff, uint32_t offset)
@@ -257,6 +259,23 @@ void buff_bcd_put_le_flt(unsigned char *buff, uint32_t offset, float num, uint8_
 	buff_bcd_put_le_uint(buff, offset, uint_num, len);
 
 	return;
+}
+
+
+int hex2ascii(unsigned char *h_buff, char *c_buff, int len)
+{
+	char tmp[4];
+	int i;
+
+	c_buff[0]=0;
+
+	for(i=0; i<len; i++)
+	{
+		sprintf(tmp, "%02X", h_buff[i]);
+		strcat(c_buff, tmp);
+	}
+
+	return len;
 }
 
 
