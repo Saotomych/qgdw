@@ -19,44 +19,45 @@ struct dlt_asdu_parse_build_tab{
 	uint32_t		type_value;
 	uint8_t			type_size;
 	uint8_t			frc_size;
+	uint8_t			start_id;
 }
 dlt_asdu_pb_tab[] = {
 	// D3 = 00 - energy
-	{ 0xFF000000,	0x00000000,	4,	2 },
+	{ 0xFF000000,	0x00000000,	4,	2,	0 },
 
 	// D3 = 02 - instantaneous values
-	{ 0xFFFF0000,	0x02010000,	2,	1 },
-	{ 0xFFFF0000,	0x02020000,	3,	3 },
-	{ 0xFFFF0000,	0x02030000,	3,	4 },
-	{ 0xFFFF0000,	0x02040000,	3,	4 },
-	{ 0xFFFF0000,	0x02050000,	3,	4 },
-	{ 0xFFFF0000,	0x02060000,	2,	3 },
-	{ 0xFFFF0000,	0x02070000,	2,	1 },
-	{ 0xFFFF0000,	0x02080000,	2,	2 },
-	{ 0xFFFF0000,	0x02090000,	2,	2 },
-	{ 0xFFFF0000,	0x020A0000,	2,	2 },
-	{ 0xFFFF0000,	0x020B0000,	2,	2 },
-	{ 0xFFFF00FF,	0x02080001,	3,	3 },
-	{ 0xFFFF00FF,	0x02080002,	2,	2 },
-	{ 0xFFFF00FF,	0x02080003,	3,	4 },
-	{ 0xFFFF00FF,	0x02080004,	3,	4 },
-	{ 0xFFFF00FF,	0x02080005,	3,	4 },
-	{ 0xFFFF00FF,	0x02080006,	3,	4 },
-	{ 0xFFFF00FF,	0x02080007,	2,	1 },
-	{ 0xFFFF00FF,	0x02080008,	2,	2 },
-	{ 0xFFFF00FF,	0x02080009,	2,	2 },
-	{ 0xFFFF00FF,	0x0208000A,	4,	0 },
+	{ 0xFFFF0000,	0x02010000,	2,	1,	1 },
+	{ 0xFFFF0000,	0x02020000,	3,	3,	1 },
+	{ 0xFFFF0000,	0x02030000,	3,	4,	0 },
+	{ 0xFFFF0000,	0x02040000,	3,	4,	0 },
+	{ 0xFFFF0000,	0x02050000,	3,	4,	0 },
+	{ 0xFFFF0000,	0x02060000,	2,	3,	0 },
+	{ 0xFFFF0000,	0x02070000,	2,	1,	1 },
+	{ 0xFFFF0000,	0x02080000,	2,	2,	1 },
+	{ 0xFFFF0000,	0x02090000,	2,	2,	1 },
+	{ 0xFFFF0000,	0x020A0000,	2,	2,	1 },
+	{ 0xFFFF0000,	0x020B0000,	2,	2,	1 },
+	{ 0xFFFF00FF,	0x02080001,	3,	3,	0 },
+	{ 0xFFFF00FF,	0x02080002,	2,	2,	0 },
+	{ 0xFFFF00FF,	0x02080003,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02080004,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02080005,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02080006,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02080007,	2,	1,	0 },
+	{ 0xFFFF00FF,	0x02080008,	2,	2,	0 },
+	{ 0xFFFF00FF,	0x02080009,	2,	2,	0 },
+	{ 0xFFFF00FF,	0x0208000A,	4,	0,	0 },
 
 	// D3 = 03 - events log
-	{ 0xFFFFFFFF,	0x03300D00,	3,	0 },
-	{ 0xFFFFFFFF,	0x03300E00,	3,	0 },
+	{ 0xFFFFFFFF,	0x03300D00,	3,	0,	0 },
+	{ 0xFFFFFFFF,	0x03300E00,	3,	0,	0 },
 
 	// that's all folks
 	{ 0x00000000,	0x00000000,	0,	0 }
 };
 
 
-uint8_t dlt_asdu_find_type_params(uint32_t ib_id, uint8_t *type_size, uint8_t *frc_size)
+uint8_t dlt_asdu_find_type_params(uint32_t ib_id, uint8_t *type_size, uint8_t *frc_size, uint8_t *start_id)
 {
 	uint8_t res, i;
 
@@ -72,6 +73,7 @@ uint8_t dlt_asdu_find_type_params(uint32_t ib_id, uint8_t *type_size, uint8_t *f
 
 			if(type_size != NULL) *type_size = dlt_asdu_pb_tab[i].type_size;
 			if(frc_size != NULL) *frc_size  = dlt_asdu_pb_tab[i].frc_size;
+			if(start_id != NULL) *start_id  = dlt_asdu_pb_tab[i].start_id;
 
 			return res;
 		}
@@ -204,12 +206,12 @@ uint8_t dlt_asdu_parse_energy(unsigned char *buff, uint32_t buff_len, uint32_t *
 {
 	int i, pos;
 	uint32_t block_id;
-	uint8_t res, type_size, frc_size;
+	uint8_t res, type_size, frc_size, start_id;
 
 	// check if it's data item or block
 	pos = dlt_asdu_check_data_block(buff, *offset);
 
-	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size, &start_id);
 
 	if(res != RES_SUCCESS) return res;
 
@@ -273,7 +275,7 @@ uint8_t dlt_asdu_parse_energy(unsigned char *buff, uint32_t buff_len, uint32_t *
 		for(i=0; i<dlt_asdu->size; i++)
 		{
 			// build id for each data item
-			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i);
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i + start_id);
 
 			dlt_asdu->data[i].time_tag = time(NULL);
 
@@ -292,12 +294,12 @@ uint8_t dlt_asdu_parse_inst_value(unsigned char *buff, uint32_t buff_len, uint32
 {
 	int i, pos;
 	uint32_t block_id;
-	uint8_t res, type_size, frc_size;
+	uint8_t res, type_size, frc_size, start_id;
 
 	// check if it's data item or block
 	pos = dlt_asdu_check_data_block(buff, *offset);
 
-	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size, &start_id);
 
 	if(res != RES_SUCCESS) return res;
 
@@ -368,7 +370,7 @@ uint8_t dlt_asdu_parse_inst_value(unsigned char *buff, uint32_t buff_len, uint32
 		for(i=0; i<dlt_asdu->size; i++)
 		{
 			// build id for each data item
-			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i);
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i + start_id);
 
 			dlt_asdu->data[i].time_tag = time(NULL);
 
@@ -394,12 +396,12 @@ uint8_t dlt_asdu_parse_event_log(unsigned char *buff, uint32_t buff_len, uint32_
 {
 	int i, pos;
 	uint32_t block_id;
-	uint8_t res, type_size, frc_size;
+	uint8_t res, type_size, frc_size, start_id;
 
 	// check if it's data item or block
 	pos = dlt_asdu_check_data_block(buff, *offset);
 
-	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size);
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size, &start_id);
 
 	if(res != RES_SUCCESS) return res;
 
@@ -468,7 +470,7 @@ uint8_t dlt_asdu_parse_event_log(unsigned char *buff, uint32_t buff_len, uint32_
 		for(i=0; i<dlt_asdu->size; i++)
 		{
 			// build id for each data item
-			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i);
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i + start_id);
 
 			if(frc_size > 0)
 			{
