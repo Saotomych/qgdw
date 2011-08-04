@@ -5,8 +5,9 @@
   </Header>
   <Substation name="S12" desc="SPb">
     <Text />
-    <LNode asdu="967" lnInst="2" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
-    <LNode asdu="55555" lnInst="1" lnClass="MMXU" iedName="scada" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+    <LNode asdu="967" lnInst="0" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+    <LNode asdu="55555" lnInst="99" lnClass="MMXU" iedName="scada" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+    <LNode asdu="11111" lnInst="1" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-dlt645.phy_tty" lnType="MMXUa" />
   </Substation>
   <IED inst="Gallery, bay1" name="m700.place001" />
   <IED inst="Center" name="scada" />
