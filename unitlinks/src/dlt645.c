@@ -11,6 +11,8 @@
 /* End-point extensions array */
 static dlt645_ep_ext *ep_exts[MAXEP] = {0};
 
+static dlt645_map *map_list = NULL;
+
 /* Request-Response frame buffer variables */
 static time_t			timer_recv = 0;				/* timer for full response from device */
 static uint16_t			t_recv = RECV_TIMEOUT;		/* timeout for full response from device */
@@ -55,6 +57,8 @@ int main(int argc, char *argv[])
 	res = dlt645_config_read(APP_CFG);
 
 	if(res != RES_SUCCESS) exit(1);
+
+	res = dlt645_map_read(APP_MAP);
 
 	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data);
 
@@ -187,6 +191,42 @@ uint64_t dlt645_config_read_bcd_link_adr(char *buff)
 	}
 
 	return link_adr;
+}
+
+
+uint16_t dlt645_map_read(const char *file_name)
+{
+	FILE *map_file = NULL;
+	char r_buff[256] = {0};
+	uint16_t map_num;
+	uint32_t dlt645_id, base_id;
+
+	map_file = fopen(file_name, "r");
+
+	if(map_file)
+	{
+		map_num = 0;
+
+		while(fgets(r_buff, 255, map_file))
+		{
+			if(*r_buff == '#') continue;
+
+			sscanf (r_buff,"%x %d", &dlt645_id, &base_id);
+
+			dlt645_add_map_item(dlt645_id, base_id);
+
+			map_num++;
+		}
+	}
+	else
+	{
+		return RES_UNKNOWN;
+	}
+
+	if(map_num)
+		return RES_SUCCESS;
+	else
+		return RES_NOT_FOUND;
 }
 
 
@@ -452,6 +492,78 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext)
 }
 
 
+uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id)
+{
+	dlt645_map *last_map, *new_map;
+
+	// try to allocate memory for new map
+	new_map = malloc(sizeof(dlt645_map));
+
+	if(!new_map) return RES_MEM_ALLOC;
+
+	new_map->dlt645_id = dlt645_id;
+	new_map->base_id = base_id;
+
+	last_map = map_list;
+
+	while(last_map && last_map->next)
+	{
+		last_map = last_map->next;
+	}
+
+	new_map->prev = last_map;
+	new_map->next = NULL;
+
+	if(!map_list)
+		map_list = new_map;
+	else
+		last_map->next = new_map;
+
+#ifdef _DEBUG
+			printf("%s: New dlt645_map added. dlt645_id = 0x%08X, base_id = %d\n", APP_NAME, new_map->dlt645_id, new_map->base_id);
+#endif
+	return RES_SUCCESS;
+}
+
+
+dlt645_map *dlt645_get_map_item(uint32_t dlt645_id)
+{
+	dlt645_map *res_map;
+
+	res_map = map_list;
+
+	while(res_map)
+	{
+		if(res_map->dlt645_id == dlt645_id) break;
+
+		res_map = res_map->next;
+	}
+
+	return res_map;
+}
+
+void dlt645_asdu_map_ids(asdu *dlt_asdu)
+{
+	// fast check input data
+	if(!dlt_asdu) return;
+
+	int i;
+	dlt645_map *res_map;
+
+	for(i=0; i<dlt_asdu->size; i++)
+	{
+		res_map = dlt645_get_map_item(dlt_asdu->data[i].id);
+
+		if(res_map) dlt_asdu->data[i].id = res_map->base_id;
+
+#ifdef _DEBUG
+		if(res_map) printf("%s: Identifier mapped. Address = %d, dlt645_id = 0x%08X, base_id = %d\n", APP_NAME, dlt_asdu->adr, res_map->dlt645_id, res_map->base_id);
+#endif
+	}
+}
+
+
+
 uint16_t dlt645_collect_data()
 {
 	// check state
@@ -604,6 +716,9 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			// set data transfer state
 			ep_ext->tx_ready = 1;
 
+			// synchronize time
+			dlt645_time_sync_send(ep_ext->adr);
+
 			// start t0 timer
 			ep_ext->timer_t0 = time(NULL);
 
@@ -612,9 +727,6 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			printf("%s: Data transfer state set to ready. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 			printf("%s: Timer t0 started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
-
-			// synchronize time
-			dlt645_time_sync_send(ep_ext->adr);
 
 			break;
 
@@ -852,6 +964,9 @@ uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
+	// map base identifiers instead of DLT645 data identifiers
+	dlt645_asdu_map_ids(dlt_asdu);
+
 	res = asdu_to_byte(&a_buff, &a_len, dlt_asdu);
 
 	if(res == RES_SUCCESS)
@@ -873,8 +988,9 @@ uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir)
 			res = RES_SUCCESS;
 
 			free(ep_buff);
+
 #ifdef _DEBUG
-		printf("%s: ASDU sent in DIRUP. Address = %d\n", APP_NAME, adr);
+		printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
 #endif
 		}
 		else
@@ -1015,6 +1131,10 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 
 		if(res == RES_SUCCESS)
 		{
+			// set asdu address
+			dlt_asdu->adr = ep_ext->adr;
+
+			// send asdu data
 			res = dlt645_asdu_send(dlt_asdu, ep_ext->adr, DIRUP);
 		}
 
@@ -1099,30 +1219,16 @@ uint16_t dlt645_time_sync_send(uint16_t adr)
 #ifdef _DEBUG
 			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, adr);
 #endif
-
+		}
+		else
+		{
+			res = RES_MEM_ALLOC;
 		}
 
 		dlt_frame_destroy(&d_fr);
 	}
 
 	return res;
-}
-
-
-int hex2ascii(unsigned char *h_buff, char *c_buff, int len)
-{
-	char tmp[4];
-	int i;
-
-	c_buff[0]=0;
-
-	for(i=0; i<len; i++)
-	{
-		sprintf(tmp, "%02X", h_buff[i]);
-		strcat(c_buff, tmp);
-	}
-
-	return len;
 }
 
 

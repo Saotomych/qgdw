@@ -31,6 +31,7 @@ extern "C" {
 #define APP_NAME				"unitlink-dlt645"
 #define APP_PATH 				"/rw/mx00/unitlinks"
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
+#define APP_MAP			"/rw/mx00/configs/dlt645map.cfg"
 #define CHILD_APP_PATH 			"/rw/mx00/phyints"
 
 #define ALARM_PER				1		/* timers check period */
@@ -74,6 +75,16 @@ typedef struct dlt645_ep_ext {
 } dlt645_ep_ext;
 
 
+/* Identifiers mapping list item */
+typedef struct dlt645_map dlt645_map;
+
+struct dlt645_map {
+	uint32_t	dlt645_id;	/* DLT645 identifier */
+	uint32_t	base_id;	/* base identifier */
+
+	dlt645_map	*prev;		/* previous item in the mapping list */
+	dlt645_map	*next;		/* next item in the mapping list */
+};
 
 
 /*
@@ -85,6 +96,7 @@ typedef struct dlt645_ep_ext {
 uint16_t dlt645_config_read(const char *file_name);
 uint64_t dlt645_config_read_bcd_link_adr(char *buff);
 
+uint16_t dlt645_map_read(const char *file_name);
 
 void dlt645_catch_alarm(int sig);
 
@@ -96,6 +108,12 @@ dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by);
 
 uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
+
+uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id);
+dlt645_map *dlt645_get_map_item(uint32_t dlt645_id);
+
+void dlt645_asdu_map_ids(asdu *dlt_asdu);
+
 
 uint16_t dlt645_collect_data();
 
@@ -123,9 +141,6 @@ void sighandler_sigchld(int arg);
 
 
 void sighandler_sigquit(int arg);
-
-
-int hex2ascii(unsigned char *h_buff, char *c_buff, int len);
 
 
 #ifdef __cplusplus
