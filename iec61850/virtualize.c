@@ -35,6 +35,7 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 	LIST l;
 	LNODE *myln;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
+	uint32_t baseoffset;		// Base offset of meter data in iec104 channel
 	data_unit  ASDUframe[SCADA_ASDU_MAXSIZE];
 	SCADA_ASDU_TYPE *myscadatype;
 } SCADA_ASDU;
@@ -188,14 +189,14 @@ SCADA *actscada;
 					if (pdm){
 						// TODO Find type of variable & Convert type on fly
 						// Remap variable pdu->id -> id (for SCADA)
-						pdu->id = pdm->scadaid;
+						pdu->id =  sasdu->baseoffset + pdm->scadaid;
 						memcpy(spdu, pdu, sizeof(data_unit));
 						spdu++;
 						psasdu->size++;
 						sedh->len += sizeof(data_unit);
 						printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
 					}else{
-//						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 					}
 				}else{
 					printf("IEC61850 error: id %d very big\n", pdu->id);
@@ -210,6 +211,7 @@ SCADA *actscada;
 				actscada = (SCADA*) fscada.next;
 				while(actscada){
 					sedh->adr = actscada->pscada->ASDUaddr;
+					psasdu->adr = actscada->pscada->ASDUaddr;
 					mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, actscada->pscada->ASDUaddr, DIRDN);
 					printf("IEC61850: %d data_units sent to scada asdu=%d\n", psasdu->size, actscada->pscada->ASDUaddr);
 					actscada = actscada->l.next;
@@ -296,6 +298,7 @@ DOBJ *adobj;
 			// Fill SCADA_ASDU
 			actasdu->myln = aln;
 			actasdu->ASDUaddr = atoi(aln->ln.options);
+			actasdu->baseoffset = atoi(aln->ln.lninst) * IEC104_CHLENGHT;
 
 			// If 'scada', create SCADA
 			if (strstr(actasdu->myln->ln.iedname, "scada")){
