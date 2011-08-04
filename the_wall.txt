@@ -1,5 +1,10 @@
 wall for stupid notes
 
-Redmine there 84.242.3.193/redmine
+- Redmine there 84.242.3.193/redmine
 
+3.08.11
+- Wow1 Пашет передача данных на телешкаф
 
+4.08.11
+- Inotify перестает падать в pipe_wait если входящий пайп открывать как O_NONBLOCK
+- Маппинг в iec из dlt у меня все равно не работает

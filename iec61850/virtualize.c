@@ -171,18 +171,15 @@ SCADA *actscada;
 			psasdu = (asdu*) (sendbuff + sizeof(ep_data_header));
 			memcpy(psasdu, pasdu, sizeof(asdu));
 			psasdu->size = 0;
-
 			spdu = (data_unit*) ((void*)psasdu + sizeof(asdu));
-
 			pdu = (void*) pasdu + sizeof(asdu);
+
 			while(rdlen > 0){
 				if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
-//					printf("IEC61850: Value = 0x%X. Time %X\n", pdu->value.ui, pdu->time_tag);
-
 	 				// TODO Copy variable to data struct IEC61850
 
-					// TODO Find type of variable
-					// TODO Convert type on fly
+					// TODO Find type of variable and convert type on fly
+
 					// Mapping id
 					pdm = sasdu->myscadatype->fdmap;
 					while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
@@ -206,7 +203,7 @@ SCADA *actscada;
 				rdlen -= sizeof(data_unit);
 			}
 
-			// TODO Send data to all registered SCADAs
+			// Send data to all registered SCADAs
 			if (psasdu->size){
 				actscada = (SCADA*) fscada.next;
 				while(actscada){

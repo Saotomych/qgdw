@@ -3,7 +3,7 @@
  * grymster@gmail.com
  * LLC "Mediakon"
  */
- 
+
 #include <malloc.h>
 #include <string.h>
 #include "asdu.h"

@@ -527,7 +527,7 @@ struct {
 
 	// Открываем канал на чтение
 	if (!ch->descin){
-		ch->descin = open(ch->f_namein, O_RDWR);
+		ch->descin = open(ch->f_namein, O_RDWR | O_NONBLOCK);
 		if (ch->descin == -1) ch->descin = 0;
 		if (ch->descin){
 //			printf("MFI %s: system has open working in file %s, desc = 0x%X\n", appname, ch->f_namein, ch->descin);
@@ -698,7 +698,7 @@ int len = 0, rdlen;
 }
 
 int sys_read(struct channel *ch){
-int rdlen, len, ret, *p;
+int rdlen, len, ret;
 struct endpoint *ep = 0;
 struct ep_data_header edh;
 struct ep_init_header *eih=0;
@@ -788,7 +788,7 @@ struct channel *ch = mychs[0];
 struct inotify_event einoty;
 static int evcnt=0;
 struct timeval tv;
-fd_set readset;
+fd_set readset, excpset;
 
 //	printf("MFI %s: start inotify thread OK\n", appname);
 
@@ -802,9 +802,21 @@ fd_set readset;
 		// Waiting for inotify events
 		FD_ZERO(&readset);
 		FD_SET(d_inoty, &readset);
+		FD_SET(d_inoty, &excpset);
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
-		ret = select(d_inoty + 1, &readset, 0, 0, &tv);
+		ret = select(d_inoty + 1, &readset, NULL, &excpset, &tv);
+
+		if (FD_ISSET(d_inoty, &excpset)){
+			for (i = 0; i < maxch; i++){
+				ch = mychs[i];
+				if (einoty.wd == ch->watch)	break;
+			}
+			if (i < maxch) printf("MFI %s: Inotify exception for channel %s\n", appname, ch->appname);
+			else  printf("MFI %s: Inotify exception for channel %s\n", appname, ch->appname);
+			exit(0);
+		}
+
 		if (FD_ISSET(d_inoty, &readset)){
 			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
 
