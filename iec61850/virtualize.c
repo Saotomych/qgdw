@@ -368,7 +368,7 @@ struct {
 				// write datatypes by sys msg EP_MSG_NEWDOBJ
 				pdo = pdm->mydobj;
 				fr_do.edh.adr = adr;
-				fr_do.edh.len = DOBJ_NAMESIZE + sizeof(uint32_t);
+				fr_do.edh.len = sizeof(fr_do) - sizeof(struct ep_data_header);
 				fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
 				fr_do.id = sasdu->myscadatype->fdmap->meterid;
 				strcpy(fr_do.name, pdo->dobj.name);

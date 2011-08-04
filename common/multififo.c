@@ -413,7 +413,10 @@ struct channel *ch = mychs[0];
 struct endpoint *ep = 0;
 struct channel *wch=0;
 ep_init_header eih;
-ep_data_header edh;
+struct {
+	ep_data_header edh;
+	int	numep;
+} epforup;
 int len, ret;
 
 	ep = create_ep();
@@ -459,11 +462,12 @@ int len, ret;
 	}else{
 		// Channel found, he exists already
 		ep->cdcup = wch;
-		edh.adr = ep->eih.addr;
-		edh.numep = ep->ep_up;
-		edh.len = 0;
-		edh.sys_msg = EP_MSG_NEWEP;
-		ret=write(wch->descout, &(edh), sizeof(ep_data_header));
+		epforup.edh.adr = ep->eih.addr;
+		epforup.edh.numep = ep->ep_up;
+		epforup.edh.len = 4;
+		epforup.edh.sys_msg = EP_MSG_NEWEP;
+		epforup.numep = ep->my_ep;
+		ret=write(wch->descout, &(epforup), sizeof(epforup));
 
 	}
 
@@ -514,7 +518,10 @@ int init_open(struct channel *ch){
 int sys_open(struct channel *ch){
 int ret, i;
 struct endpoint *ep = 0; // This endpoint is first for opening up channel in concrete situation
-ep_data_header edh;
+struct {
+	ep_data_header edh;
+	int	numep;
+} epforup;
 
 //	printf("\n-----\nMFI %s: SYSTEM OPEN %s\nActions:\n", appname, ch->appname);
 
@@ -536,11 +543,12 @@ ep_data_header edh;
 					printf("MFI %s error: Endpoint for up channel to %s not found\n", appname, ch->appname);
 					return 0;
 				}
-				edh.adr = ep->eih.addr;
-				edh.numep = ep->ep_up;
-				edh.len = 0;
-				edh.sys_msg = EP_MSG_NEWEP;
-				ret=write(ch->descout, &edh, sizeof(ep_data_header));
+				epforup.edh.adr = ep->eih.addr;
+				epforup.edh.numep = ep->ep_up;
+				epforup.edh.len = 4;
+				epforup.edh.sys_msg = EP_MSG_NEWEP;
+				epforup.numep = ep->my_ep;
+				ret=write(ch->descout, &(epforup), sizeof(epforup));
 
 			}
 		}
@@ -690,7 +698,7 @@ int len = 0, rdlen;
 }
 
 int sys_read(struct channel *ch){
-int rdlen, len, ret;
+int rdlen, len, ret, *p;
 struct endpoint *ep = 0;
 struct ep_data_header edh;
 struct ep_init_header *eih=0;
@@ -726,6 +734,7 @@ struct ep_init_header *eih=0;
 			printf("MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
 			return -1;
 		}
+
 		ep = myeps[edh.numep];
 		if (!ep){
 			printf("MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
@@ -734,8 +743,7 @@ struct ep_init_header *eih=0;
 
 		if (edh.sys_msg == EP_MSG_NEWEP){
 			// Get ep->ep_dn - downlink endpoint's number
-			ep->ep_dn = edh.numep;
-
+			len = getdatafromring(ch, (char*)&ep->ep_dn, sizeof(int));
 			// Channel ready to send data
 			if (mychs[0]->descout){
 	 			ret = close(mychs[0]->descout);
