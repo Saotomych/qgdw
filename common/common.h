@@ -61,6 +61,8 @@
 
 #define DOBJ_NAMESIZE			sizeof(int) * 4
 
+#define IEC104_CHLENGHT			400
+
 /*
  *
  * Structures
