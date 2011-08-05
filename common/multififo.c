@@ -193,8 +193,7 @@ int getframefalse(struct channel *ch){
 }
 
 int testrunningapp(char *name){
-char *par[2];
-char *env[1];
+char *par[3];
 char pidof[] = {"/bin/pidof"};
 char buf[160] = {0};
 int ret, pid, wait_st;
@@ -204,7 +203,7 @@ fd_set readset;
 
 		par[0] = pidof;
 		par[1] = name;
-		env[0] = NULL;
+		par[2] = NULL;
 
 		if (pipe(opipe) == -1)
 		{
@@ -212,13 +211,19 @@ fd_set readset;
 			return -1;
 		}
 		ret = fork();
+		if (ret < 0){
+			// fork failed
+			printf("MFI %s: fork failed: %d - %s\n", appname, errno, strerror(errno));
+			return -1;
+		}
 		if (!ret){
+			// child process
 	        close(1);
 	        dup2(opipe[1], 1);
 	        close(opipe[0]);
 	        close(opipe[1]);
-			execve(pidof, par, env);
-			printf("MFI %s: fork error:%d - %s\n",appname, errno, strerror(errno));
+			execv(pidof, par);
+			printf("MFI %s: testrunnigapp failed: %d - %s\n",appname, errno, strerror(errno));
 			exit(0);
 		}
 		pid = ret;
@@ -916,16 +921,31 @@ int ret, wrlen;
 struct channel *ch=0;
 struct endpoint *ep=0;
 char fname[160];
+char *par[2];
 
-	if (!testrunningapp(origdev->protoname)){
+	par[0] = origdev->protoname;
+	par[1] = NULL;
+
+	ret = testrunningapp(origdev->protoname);
+
+	if(ret == -1) return -1;
+
+	if (!ret){
 		// lowlevel application not running
 		// running it
 		ret = fork();
-		if (!ret){
-			execve(origdev->protoname, NULL, NULL);
-//			printf("MFI %s: inotify_init:%d - %s\n", appname, errno, strerror(errno));
+		if (ret < 0){
+			// fork failed
+			printf("MFI %s: fork failed: %d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
+		if (!ret){
+			// child process
+			execv(origdev->protoname, par);
+			printf("MFI %s: inotify_init failed: %d - %s\n", appname, errno, strerror(errno));
+			exit(0);
+		}
+
 		// TODO sleep exchange to other variant to wait
 		usleep(100000);
 	}else{
