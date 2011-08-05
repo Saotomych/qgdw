@@ -155,7 +155,7 @@ int ret;
 void connect_by_config(struct phy_route *pr){
 	pr->sai.sin_family = AF_INET;
 	if (pr->mode == CONNECT) set_connect(pr);
-	if (pr->mode == LISTEN) set_listen(pr);
+	if ((pr->mode == LISTEN) && (!pr->state)) set_listen(pr);
 }
 
 int rcvdata(int len){
@@ -165,6 +165,7 @@ struct phy_route *pr;
 ep_data_header *edh;
 int rdlen, i;
 int offset;
+struct linger l = { 1, 0 };
 
 	tai.len = len;
 	tai.addr = 1;
@@ -208,6 +209,7 @@ int offset;
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
+				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
 				close(pr->socdesc);
 				pr->socdesc = 0;
 				pr->state = 0;
@@ -269,6 +271,7 @@ int main(int argc, char * argv[]){
 pid_t chldpid;
 int ret, i, rdlen;
 struct timeval tv;	// for sockets select
+struct linger l = { 1, 0 };
 
 char outbuf[1024];
 struct phy_route *pr;
@@ -367,6 +370,7 @@ int maxdesc;
 			    	}
 
 			    	if (FD_ISSET(pr->socdesc, &ex_socks)){
+						setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
 			    		close(pr->socdesc);
 			    		pr->state = 0;
 			    		pr->socdesc = 0;
