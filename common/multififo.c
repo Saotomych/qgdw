@@ -193,7 +193,7 @@ int getframefalse(struct channel *ch){
 }
 
 int testrunningapp(char *name){
-char *par[2];
+char *par[3];
 char *env[1];
 char pidof[] = {"/bin/pidof"};
 char buf[160] = {0};
@@ -204,6 +204,7 @@ fd_set readset;
 
 		par[0] = pidof;
 		par[1] = name;
+		par[2] = NULL;
 		env[0] = NULL;
 
 		if (pipe(opipe) == -1)

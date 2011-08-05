@@ -15,6 +15,7 @@ struct phy_route{
 	u32 ep_index;
 	int state;
 	// sockets for phy_tcp
+	SOCKET lstsocdesc;
 	SOCKET socdesc;
 	struct sockaddr_in 	sai;		// sai->sin_addr->sadr; sai->sin_port
 	struct sockaddr_in 	sailist;	// sai->sin_addr->sadr; sai->sin_port
