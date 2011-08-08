@@ -13,3 +13,7 @@ wall for stupid notes
 Все работает, телескад реконнектится. 
 Пусть оно крутится все выхи.
 Пятницо!
+
+8.08.11
+На новом М700 настроена сеть и gdbserver.
+Host для gdb это build/staging/usr/bin/arm-linux-gdb

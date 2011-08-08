@@ -797,7 +797,7 @@ static int evcnt=0;
 struct timeval tv;
 fd_set readset, excpset;
 
-//	printf("MFI %s: start inotify thread OK\n", appname);
+//	printf("MFI %X: start inotify thread OK\n", appname);
 
 	if (!d_inoty){
 		printf("MFI %s error: inotify not init\n", appname);
@@ -860,7 +860,7 @@ fd_set readset, excpset;
 			}
 		}
 	}while(inotifystop);
-//	printf("MFI %s: inotify thread exit!\n", appname);
+	printf("MFI %s: inotify thread exit!\n", appname);
 
 	return 0;
 }
@@ -905,7 +905,7 @@ struct channel *initch = 0;
 	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
 
 	signal(SIGQUIT, sighandler_sigquit);
-//	signal(SIGCHLD, sighandler_sigchld);
+	signal(SIGCHLD, sighandler_sigchld);
 
 	return ret;
 }
@@ -969,9 +969,7 @@ char *par[2];
 		// Create new endpoint
 		ep = create_ep();
 		if (!ep) return -1;		// endpoint don't create
-
 //		printf("%s: Create endpoint begin\n", appname);
-
 	}
 
 // offset for next run level
