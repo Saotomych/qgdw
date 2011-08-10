@@ -807,8 +807,8 @@ fd_set readset, excpset;
 
     do{
 		// Waiting for inotify events
-//		FD_ZERO(&readset);
-//		FD_ZERO(&excpset);
+		FD_ZERO(&readset);
+		FD_ZERO(&excpset);
 		FD_SET(d_inoty, &readset);
 		FD_SET(d_inoty, &excpset);
 		tv.tv_sec = 1;
@@ -816,7 +816,6 @@ fd_set readset, excpset;
 		ret = select(d_inoty + 1, &readset, NULL, &excpset, &tv);
 
 		if (FD_ISSET(d_inoty, &excpset)){
-			FD_CLR(d_inoty, &excpset);
 
 			for (i = 0; i < maxch; i++){
 				ch = mychs[i];
@@ -828,7 +827,6 @@ fd_set readset, excpset;
 		}
 
 		if (FD_ISSET(d_inoty, &readset)){
-			FD_CLR(d_inoty, &readset);
 
 			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
 
@@ -885,12 +883,10 @@ void sighandler_sigquit(int arg){
 
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
-char stack[INOTIFYTHR_STACKSIZE];
-pthread_t mfthread;
-
 int mf_init(char *pathinit, char *a_name, void *func_rcvdata){
 int ret;
 struct channel *initch = 0;
+void *stack = NULL;
 
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
@@ -909,7 +905,8 @@ struct channel *initch = 0;
 
 	inotifystop = 1;
 
-	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-sizeof(int)), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
+	stack = (void*) malloc(INOTIFYTHR_STACKSIZE);
+	ret =  clone(inotify_thr, stack + INOTIFYTHR_STACKSIZE - sizeof(int), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
 
 //	signal(SIGQUIT, sighandler_sigquit);
 //	signal(SIGCHLD, sighandler_sigchld);
@@ -1095,16 +1092,12 @@ struct ep_data_header *edh = 0;
 	return (i==maxep ? 0 : ret);
 }
 
-//void mf_set_cb_rcvclose(void *func_rcvclose){
-//	cb_rcvclose = func_rcvclose;
-//}
-
 int mf_waitevent(char *buf, int len, int ms_delay){
 fd_set rddesc;
 int ret;
 struct timeval tm;
 
-//	FD_ZERO(&rddesc);
+	FD_ZERO(&rddesc);
 
 	FD_SET(hpp[0], &rddesc);
 
@@ -1116,7 +1109,6 @@ struct timeval tm;
     }
 
     if (FD_ISSET(hpp[0], &rddesc)){
-    	FD_CLR(hpp[0], &rddesc);
     	if (ret > 0){
     		ret = read(hpp[0], buf, len);
 //    		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
