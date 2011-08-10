@@ -23,4 +23,4 @@ all: startiec
 rebuild: clean all
 
 clean:
-	-rm ../bin/startiec $(OBJS)
+	rm -f ../bin/startiec $(OBJS)
