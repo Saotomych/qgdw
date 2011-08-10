@@ -885,10 +885,10 @@ void sighandler_sigquit(int arg){
 
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
-char stack[INOTIFYTHR_STACKSIZE];
 int mf_init(char *pathinit, char *a_name, void *func_rcvdata){
 int ret;
 struct channel *initch = 0;
+void *stack = NULL;
 
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
@@ -907,7 +907,9 @@ struct channel *initch = 0;
 
 	inotifystop = 1;
 
-	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
+	stack = (void*) malloc(INOTIFYTHR_STACKSIZE);
+
+	ret =  clone(inotify_thr, stack + INOTIFYTHR_STACKSIZE - sizeof(int), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
 
 //	signal(SIGQUIT, sighandler_sigquit);
 //	signal(SIGCHLD, sighandler_sigchld);
