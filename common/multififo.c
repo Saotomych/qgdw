@@ -230,7 +230,7 @@ fd_set readset;
 		}
 		pid = ret;
 		waitpid(pid, &wait_st, 0);
-		FD_ZERO(&readset);
+//		FD_ZERO(&readset);
 	    FD_SET(opipe[0], &readset);
 	    close(opipe[1]);
 	    tv.tv_sec = 1;
@@ -807,7 +807,8 @@ fd_set readset, excpset;
 
     do{
 		// Waiting for inotify events
-		FD_ZERO(&readset);
+//		FD_ZERO(&readset);
+//		FD_ZERO(&excpset);
 		FD_SET(d_inoty, &readset);
 		FD_SET(d_inoty, &excpset);
 		tv.tv_sec = 1;
@@ -815,43 +816,47 @@ fd_set readset, excpset;
 		ret = select(d_inoty + 1, &readset, NULL, &excpset, &tv);
 
 		if (FD_ISSET(d_inoty, &excpset)){
+			FD_CLR(d_inoty, &excpset);
+
 			for (i = 0; i < maxch; i++){
 				ch = mychs[i];
 				if (einoty.wd == ch->watch)	break;
 			}
 			if (i < maxch) printf("MFI %s: Inotify exception for channel %s\n", appname, ch->appname);
-			else  printf("MFI %s: Inotify exception for channel %s\n", appname, ch->appname);
+			else  printf("MFI %s: Inotify exception for non-exist channel 0x%X\n", appname, (int) ch);
 			exit(0);
 		}
 
 		if (FD_ISSET(d_inoty, &readset)){
+			FD_CLR(d_inoty, &readset);
+
 			rdlen = read(d_inoty, (char*) &einoty, sizeof(struct inotify_event));
 
 			note = 0;
 			if (rdlen){
 				if (einoty.mask){
-				evcnt++;
-//				printf("MFI %s: detect file event: 0x%X in watch %d num %d\n", appname, einoty[note].mask, einoty.wd, evcnt);
-				// Find channel by watch
-				for (i = 0; i < maxch; i++){
-					ch = mychs[i];
-					if (einoty.wd == ch->watch){
-//						printf("MFI %s: found channel %d of %d\n", appname, i, maxch);
-						break;
+					evcnt++;
+	//				printf("MFI %s: detect file event: 0x%X in watch %d num %d\n", appname, einoty[note].mask, einoty.wd, evcnt);
+					// Find channel by watch
+					for (i = 0; i < maxch; i++){
+						ch = mychs[i];
+						if (einoty.wd == ch->watch){
+	//						printf("MFI %s: found channel %d of %d\n", appname, i, maxch);
+							break;
+						}
 					}
-				}
 
-				if (i < maxch){
-					// Set some events in one
-					mask = einoty.mask & ch->events;
-//					printf("MFI event %s: mask: 0x%X[%d]\n", appname, mask, i);
+					if (i < maxch){
+						// Set some events in one
+						mask = einoty.mask & ch->events;
+	//					printf("MFI event %s: mask: 0x%X[%d]\n", appname, mask, i);
 
-					// Calling callback functions
-//					printf("MFI %s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
-					if (mask & IN_OPEN)	ch->in_open(ch);
-					if (mask & IN_MODIFY) ch->in_read(ch);
-					if (mask & IN_CLOSE) ch->in_close(ch);
-				}
+						// Calling callback functions
+	//					printf("MFI %s: callback event 0x%X; with event mask 0x%X in watch %d\n", appname, einoty.mask, mask, ch->watch);
+						if (mask & IN_OPEN)	ch->in_open(ch);
+						if (mask & IN_MODIFY) ch->in_read(ch);
+						if (mask & IN_CLOSE) ch->in_close(ch);
+					}
 				}
 
 				rdlen -= sizeof(struct inotify_event);
@@ -904,8 +909,8 @@ struct channel *initch = 0;
 
 	ret =  clone(inotify_thr, (void*)(stack+INOTIFYTHR_STACKSIZE-1), CLONE_VM | CLONE_FS | CLONE_FILES, NULL);
 
-	signal(SIGQUIT, sighandler_sigquit);
-	signal(SIGCHLD, sighandler_sigchld);
+//	signal(SIGQUIT, sighandler_sigquit);
+//	signal(SIGCHLD, sighandler_sigchld);
 
 	return ret;
 }
@@ -1097,7 +1102,7 @@ fd_set rddesc;
 int ret;
 struct timeval tm;
 
-	FD_ZERO(&rddesc);
+//	FD_ZERO(&rddesc);
 
 	FD_SET(hpp[0], &rddesc);
 
@@ -1108,8 +1113,9 @@ struct timeval tm;
     	ret = select(hpp[1] + 1, &rddesc, NULL, NULL, &tm);
     }
 
-    if (ret > 0){
-        if (FD_ISSET(hpp[0], &rddesc)){
+    if (FD_ISSET(hpp[0], &rddesc)){
+    	FD_CLR(hpp[0], &rddesc);
+    	if (ret > 0){
     		ret = read(hpp[0], buf, len);
 //    		printf("MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
     		return 1;
