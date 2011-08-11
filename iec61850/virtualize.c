@@ -128,7 +128,7 @@ SCADA *actscada;
 
 	if(!buff) return -1;
 
-	rdlen = fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
+	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
 //#ifdef _DEBUG
 //	printf("IEC61850: Data received. Address = %d, Length = %d  %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
@@ -137,7 +137,7 @@ SCADA *actscada;
 	offset = 0;
 
 	while(offset < fullrdlen){
-		if(rdlen - offset < sizeof(ep_data_header)){
+		if(fullrdlen - offset < sizeof(ep_data_header)){
 			free(buff);
 			return 0;
 		}
