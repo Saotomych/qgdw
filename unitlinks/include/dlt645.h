@@ -31,13 +31,13 @@ extern "C" {
 #define APP_NAME				"unitlink-dlt645"
 #define APP_PATH 				"/rw/mx00/unitlinks"
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
-#define APP_MAP			"/rw/mx00/configs/dlt645map.cfg"
+#define APP_MAP					"/rw/mx00/configs/dlt645map.cfg"
 #define CHILD_APP_PATH 			"/rw/mx00/phyints"
 
 #define ALARM_PER				1		/* timers check period */
 
 #define DLT645_T_T0				10		/* default timer_t0 timeout */
-#define DLT645_T_RC		10 /* default tcp re-connect timeout */
+#define DLT645_T_RC				10 		/* default tcp re-connect timeout */
 
 
 #define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
@@ -50,7 +50,10 @@ extern "C" {
 #define DLT645_ASDU_ADR			0
 #define DLT645_LINK_ADR			1
 
-#define DLT645_AWAKE_MSG		0xFEFE	/* device awake message */
+#define DLT645_ID				0
+#define BASE_ID					1
+
+#define DLT645_AWAKE_MSG		0xFEFEFEFE	/* device awake message */
 
 
 
@@ -110,7 +113,7 @@ uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
 
 uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id);
-dlt645_map *dlt645_get_map_item(uint32_t dlt645_id);
+dlt645_map *dlt645_get_map_item(uint32_t id, uint8_t get_by);
 
 void dlt645_asdu_map_ids(asdu *dlt_asdu);
 

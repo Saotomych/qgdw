@@ -526,7 +526,7 @@ uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id)
 }
 
 
-dlt645_map *dlt645_get_map_item(uint32_t dlt645_id)
+dlt645_map *dlt645_get_map_item(uint32_t id, uint8_t get_by)
 {
 	dlt645_map *res_map;
 
@@ -534,13 +534,15 @@ dlt645_map *dlt645_get_map_item(uint32_t dlt645_id)
 
 	while(res_map)
 	{
-		if(res_map->dlt645_id == dlt645_id) break;
+		if(get_by == DLT645_ID && res_map->dlt645_id == id) break;
+		if(get_by == BASE_ID   && res_map->base_id   == id) break;
 
 		res_map = res_map->next;
 	}
 
 	return res_map;
 }
+
 
 void dlt645_asdu_map_ids(asdu *dlt_asdu)
 {
@@ -552,9 +554,12 @@ void dlt645_asdu_map_ids(asdu *dlt_asdu)
 
 	for(i=0; i<dlt_asdu->size; i++)
 	{
-		res_map = dlt645_get_map_item(dlt_asdu->data[i].id);
+		res_map = dlt645_get_map_item(dlt_asdu->data[i].id, DLT645_ID);
 
-		if(res_map) dlt_asdu->data[i].id = res_map->base_id;
+		if(res_map)
+			dlt_asdu->data[i].id = res_map->base_id;
+		else
+			dlt_asdu->data[i].id = 0xFFFFFFFF;
 
 #ifdef _DEBUG
 		if(res_map) printf("%s: Identifier mapped. Address = %d, dlt645_id = 0x%08X, base_id = %d\n", APP_NAME, dlt_asdu->adr, res_map->dlt645_id, res_map->base_id);
@@ -675,7 +680,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_NEWDOBJ:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, buff, ep_ext->adr, ep_ext->adr_hex);
+			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, buff+4, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
 			break;
@@ -793,25 +798,13 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir)
 	unsigned char *d_buff = NULL;
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
-	uint16_t awk_msg = DLT645_AWAKE_MSG;
-	time_t cur_time = time(NULL);
+	uint32_t awk_msg = DLT645_AWAKE_MSG;
 
 	dlt645_ep_ext *ep_ext = NULL;
 
 	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
 
 	if(!ep_ext || !ep_ext->tx_ready) return RES_INCORRECT;
-
-	// check request-response variables
-	if(timer_recv > 0 && difftime(cur_time, timer_recv) < t_recv)
-	{
-		return RES_INCORRECT;
-	}
-	else
-	{
-		timer_recv = 0;
-		recv_buff_len = 0;
-	}
 
 	if(d_fr->adr_hex == 0 && ep_ext->adr_hex > 0)
 	{
@@ -822,32 +815,26 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir)
 
 	if(res == RES_SUCCESS)
 	{
-		ep_buff = (char*) malloc(sizeof(ep_data_header) + 2 + d_len);
+		ep_buff = (char*) malloc(sizeof(ep_data_header) + sizeof(awk_msg) + d_len);
 
 		if(ep_buff)
 		{
 			ep_header.adr = adr;
 			ep_header.sys_msg = EP_USER_DATA;
-			ep_header.len = 2 + d_len;
+			ep_header.len = sizeof(awk_msg) + d_len;
 
 			memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
-			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)&awk_msg, 2);
-			memcpy((void*)(ep_buff+sizeof(ep_data_header)+2), (void*)d_buff, d_len);
+			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)&awk_msg, sizeof(awk_msg));
+			memcpy((void*)(ep_buff+sizeof(ep_data_header)+sizeof(awk_msg)), (void*)d_buff, d_len);
 
-			mf_toendpoint(ep_buff, sizeof(ep_data_header) + 2 + d_len, adr, dir);
-
-			// set request-response variables
-			timer_recv = time(NULL);
-			recv_buff_len = 0;
+			mf_toendpoint(ep_buff, sizeof(ep_data_header) + sizeof(awk_msg) + d_len, adr, dir);
 
 #ifdef _DEBUG
 			printf("%s: User data in DIRDN sent. Address = %d, Link address (BCD) = %llx, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, ep_header.len);
 
 			char c_buff[512] = {0};
-			hex2ascii(d_buff, c_buff, d_len);
-			printf("%s: %04X%s\n", APP_NAME, awk_msg, c_buff);
-
-			printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
+			hex2ascii((unsigned char *)ep_buff+sizeof(ep_data_header), c_buff, sizeof(awk_msg) + d_len);
+			printf("%s: %s\n", APP_NAME, c_buff);
 #endif
 
 			free(ep_buff);
@@ -890,11 +877,11 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	recv_buff_len += buff_len;
 
 #ifdef _DEBUG
-//	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
-//
-//	char c_buff[512] = {0};
-//	hex2ascii(recv_buff, c_buff, recv_buff_len);
-//	printf("%s: %s\n", APP_NAME, c_buff);
+	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
+
+	char c_buff[512] = {0};
+	hex2ascii(recv_buff, c_buff, recv_buff_len);
+	printf("%s: %s\n", APP_NAME, c_buff);
 #endif
 
 	offset = 0;
@@ -1039,6 +1026,18 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 	uint16_t res;
 	dlt_frame *d_fr = NULL;
 	uint32_t offset = 0;
+	time_t cur_time = time(NULL);
+
+	// check request-response variables
+	if(timer_recv > 0 && difftime(cur_time, timer_recv) < t_recv)
+	{
+		return RES_INCORRECT;
+	}
+	else
+	{
+		timer_recv = 0;
+		recv_buff_len = 0;
+	}
 
 	d_fr = dlt_frame_create();
 
@@ -1097,6 +1096,16 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 		if(d_fr->data)
 		{
 			res = dlt645_frame_send(d_fr, adr, DIRDN);
+
+			if(res == RES_SUCCESS)
+			{
+				// set request-response variables
+				timer_recv = time(NULL);
+				recv_buff_len = 0;
+#ifdef _DEBUG
+			printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
+#endif
+			}
 		}
 		else
 		{
@@ -1157,6 +1166,18 @@ uint16_t dlt645_read_adr_send(uint16_t adr)
 {
 	uint16_t res;
 	dlt_frame *d_fr = NULL;
+	time_t cur_time = time(NULL);
+
+	// check request-response variables
+	if(timer_recv > 0 && difftime(cur_time, timer_recv) < t_recv)
+	{
+		return RES_INCORRECT;
+	}
+	else
+	{
+		timer_recv = 0;
+		recv_buff_len = 0;
+	}
 
 	d_fr = dlt_frame_create();
 
@@ -1172,6 +1193,17 @@ uint16_t dlt645_read_adr_send(uint16_t adr)
 		d_fr->adr_hex = 0xAAAAAAAAAAAA;
 
 		res = dlt645_frame_send(d_fr, adr, DIRDN);
+
+		if(res == RES_SUCCESS)
+		{
+			// set request-response variables
+			timer_recv = time(NULL);
+			recv_buff_len = 0;
+#ifdef _DEBUG
+			printf("%s: Read address command sent. Address = %d.\n", APP_NAME, adr);
+			printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
+#endif
+		}
 
 		dlt_frame_destroy(&d_fr);
 	}
