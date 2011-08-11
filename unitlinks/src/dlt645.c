@@ -120,7 +120,7 @@ uint16_t dlt645_config_read(const char *file_name)
 	char r_buff[256] = {0};
 	char *prm;
 	uint16_t adr, ep_num = 0;
-	uint64_t link_adr;
+	uint64_t link_adr = 0;
 
 
 	cfg_file = fopen(file_name, "r");
@@ -141,7 +141,7 @@ uint16_t dlt645_config_read(const char *file_name)
 
 				if(prm)
 				{
-					link_adr = dlt645_config_read_bcd_link_adr(prm+5);
+					sscanf(prm+5, "%llx", &link_adr);
 				}
 				else
 				{
@@ -166,34 +166,6 @@ uint16_t dlt645_config_read(const char *file_name)
 }
 
 
-uint64_t dlt645_config_read_bcd_link_adr(char *buff)
-{
-	uint64_t link_adr;
-	uint8_t len, bytex;
-
-	len = 0;
-
-	while(*(buff+len) != ' ') len++;
-
-	if(len%2)
-	{
-		buff -= 1;
-
-		*buff = '0';
-	}
-
-	link_adr = 0;
-
-	while(sscanf(buff, "%2x", (unsigned int*)&bytex))
-	{
-		link_adr = (link_adr << 8) | bytex;
-		buff += 2;
-	}
-
-	return link_adr;
-}
-
-
 uint16_t dlt645_map_read(const char *file_name)
 {
 	FILE *map_file = NULL;
@@ -211,7 +183,7 @@ uint16_t dlt645_map_read(const char *file_name)
 		{
 			if(*r_buff == '#') continue;
 
-			sscanf (r_buff,"%x %d", &dlt645_id, &base_id);
+			sscanf(r_buff,"%x %d", &dlt645_id, &base_id);
 
 			dlt645_add_map_item(dlt645_id, base_id);
 
@@ -798,7 +770,7 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir)
 	unsigned char *d_buff = NULL;
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
-	uint32_t awk_msg = DLT645_AWAKE_MSG;
+	uint16_t awk_msg = DLT645_AWAKE_MSG;
 
 	dlt645_ep_ext *ep_ext = NULL;
 
@@ -877,11 +849,11 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	recv_buff_len += buff_len;
 
 #ifdef _DEBUG
-	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
-
-	char c_buff[512] = {0};
-	hex2ascii(recv_buff, c_buff, recv_buff_len);
-	printf("%s: %s\n", APP_NAME, c_buff);
+//	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
+//
+//	char c_buff[512] = {0};
+//	hex2ascii(recv_buff, c_buff, recv_buff_len);
+//	printf("%s: %s\n", APP_NAME, c_buff);
 #endif
 
 	offset = 0;
