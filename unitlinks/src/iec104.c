@@ -28,7 +28,7 @@ static uint8_t t_rc = IEC104_T_RC;
 
 
 /* Maximum numbers of outstanding frames */
-//static uint8_t k = IEC104_K;
+static uint8_t k = IEC104_K;
 static uint8_t w = IEC104_W; //TODO return to the default IEC104 value
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
@@ -424,7 +424,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_NEWDOBJ:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d.\n", APP_NAME, buff, ep_ext->adr);
+			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d.\n", APP_NAME, buff+4, ep_ext->adr);
 #endif
 
 			break;
@@ -813,8 +813,8 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 			printf("%s: U-Format frame sent TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		}
-#endif
 	}
+#endif
 
 	apdu_frame_destroy(&a_fr);
 
@@ -867,9 +867,6 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 		// synchronize time
 		iec104_time_sync_send(ep_ext);
-
-		// do common interrogation
-		iec104_comm_inter_send(ep_ext);
 
 		// start t2-t3 timers
 		ep_ext->timer_t2 = time(NULL);
@@ -1017,7 +1014,6 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 
 	res  = iec_asdu_buff_build(&a_buff, &a_len, iec_asdu, cot_len, coa_len, ioa_len);
 
-	//TODO Add check for maximum difference receive sequence number to sent state variable!!!
 
 	if(res == RES_SUCCESS)
 	{
@@ -1027,7 +1023,14 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		a_fr->data_len = a_len;
 		a_fr->data = a_buff;
 
-		res = iec104_frame_send(a_fr, ep_ext->adr, dir);
+		if((ep_ext->vs - ep_ext->as + 32767) % 32767 < k)
+		{
+			res = iec104_frame_send(a_fr, ep_ext->adr, dir);
+		}
+		else
+		{
+			res = RES_INCORRECT;
+		}
 
 		if(res == RES_SUCCESS)
 		{
@@ -1192,8 +1195,6 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	if(res == RES_SUCCESS)
 	{
-		//TODO Add check for maximum difference receive sequence number to sent state variable!!!
-
 		res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 	}
 	else
