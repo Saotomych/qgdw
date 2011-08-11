@@ -135,7 +135,7 @@ SCADA *actscada;
 	offset = 0;
 
 	while(offset < fullrdlen){
-		if(rdlen - offset < sizeof(ep_data_header)){
+		if (rdlen - offset < sizeof(ep_data_header)){
 			free(buff);
 			return 0;
 		}
