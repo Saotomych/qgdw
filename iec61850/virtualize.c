@@ -193,9 +193,10 @@ SCADA *actscada;
 						psasdu->size++;
 						sedh->len += sizeof(data_unit);
 						printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
-					}else{
-						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
 					}
+//					else{
+//						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
+//					}
 				}else{
 					printf("IEC61850 error: id %d very big\n", pdu->id);
 				}
