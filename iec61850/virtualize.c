@@ -129,19 +129,20 @@ SCADA *actscada;
 	if(!buff) return -1;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
+
 //#ifdef _DEBUG
 //	printf("IEC61850: Data received. Address = %d, Length = %d  %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+
 	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < fullrdlen){
-		if (rdlen - offset < sizeof(ep_data_header)){
+		if(fullrdlen - offset < sizeof(ep_data_header)){
 			free(buff);
 			return 0;
 		}
 
 		edh = (struct ep_data_header *) (buff + offset);				// set start structure
-		offset += sizeof(ep_data_header);
 
 		switch(edh->sys_msg){
 		case EP_USER_DATA:
@@ -221,6 +222,7 @@ SCADA *actscada;
 		}
 
 		// move over the data
+		offset += sizeof(ep_data_header);
 		offset += edh->len;
 	}
 
