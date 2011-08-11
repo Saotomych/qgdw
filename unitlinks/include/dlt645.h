@@ -37,7 +37,7 @@ extern "C" {
 #define ALARM_PER				1		/* timers check period */
 
 #define DLT645_T_T0				10		/* default timer_t0 timeout */
-#define DLT645_T_RC				10 		/* default tcp re-connect timeout */
+#define DLT645_T_RC				10 		/* default re-connect period */
 
 
 #define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
@@ -53,7 +53,7 @@ extern "C" {
 #define DLT645_ID				0
 #define BASE_ID					1
 
-#define DLT645_AWAKE_MSG		0xFEFEFEFE	/* device awake message */
+#define DLT645_AWAKE_MSG		0xFEFE	/* device awake message */
 
 
 
@@ -97,8 +97,6 @@ struct dlt645_map {
  */
 
 uint16_t dlt645_config_read(const char *file_name);
-uint64_t dlt645_config_read_bcd_link_adr(char *buff);
-
 uint16_t dlt645_map_read(const char *file_name);
 
 void dlt645_catch_alarm(int sig);
