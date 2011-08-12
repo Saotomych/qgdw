@@ -596,7 +596,7 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 
 #ifdef _DEBUG
-			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+			if(res == RES_SUCCESS) printf("%s: Time synchronization command (COT = %d) sent. Address = %d.\n", APP_NAME, iec_asdu->fnc, ep_ext->adr);
 #endif
 		}
 		else
