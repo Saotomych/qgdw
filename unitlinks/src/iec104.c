@@ -200,8 +200,6 @@ void iec104_catch_alarm(int sig)
 			if(ep_exts[i]->timer_t3 > 0 && difftime(cur_time, ep_exts[i]->timer_t3) >= t_t3)
 			{
 				iec104_frame_u_send(APCI_U_TESTFR_ACT, ep_exts[i], DIRDN);
-
-				ep_exts[i]->u_cmd = APCI_U_TESTFR_ACT;
 			}
 
 			// check timer rc
@@ -434,7 +432,12 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
-			iec104_frame_u_send(APCI_U_STOPDT_ACT, ep_ext, DIRDN);
+			if(ep_ext->host_type == IEC_HOST_MASTER)
+			{
+				iec104_frame_u_send(APCI_U_STOPDT_ACT, ep_ext, DIRDN);
+
+				ep_ext->u_cmd = APCI_U_STOPDT_ACT;
+			}
 
 			break;
 
@@ -781,6 +784,11 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 		// start/reset timers t1, t3
 		ep_ext->timer_t1 = ep_ext->timer_t3 = time(NULL);
 		break;
+
+	case APCI_U_TESTFR_CON:
+		// stop t1 timer
+		ep_ext->timer_t1 = 0;
+		break;
 	}
 
 	a_fr->type = APCI_TYPE_U;
@@ -811,6 +819,7 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 			break;
 		case APCI_U_TESTFR_CON:
 			printf("%s: U-Format frame sent TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
+			printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		}
 	}
@@ -909,11 +918,10 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 #endif
 
 		iec104_frame_u_send(APCI_U_TESTFR_CON, ep_ext, DIRDN);
+
 		break;
 
 	case APCI_U_TESTFR_CON:
-		ep_ext->u_cmd = APCI_U_STARTDT_CON;
-
 		// stop t1 timer
 		ep_ext->timer_t1 = 0;
 
@@ -939,7 +947,13 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 {
-	if(ep_ext->u_cmd == APCI_U_TESTFR_ACT || (ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)) return RES_INCORRECT;
+	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
+	{
+		printf("%s: S-Format frame send rejected, tx is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+		return RES_INCORRECT;
+	}
+
+	if(ep_ext->ar >= ep_ext->vr) return RES_INCORRECT;
 
 	uint8_t res;
 	apdu_frame *a_fr = NULL;
@@ -962,7 +976,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 
 #ifdef _DEBUG
 		printf("%s: S-Format frame sent (N(R) = %d). Address = %d\n", APP_NAME, ep_ext->vr, ep_ext->adr);
-		printf("%s: Timer t2 reset.\n", APP_NAME);
+		printf("%s: Timer t2 reset. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 	}
 
@@ -1001,7 +1015,11 @@ uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 {
-	if(ep_ext->u_cmd == APCI_U_TESTFR_ACT || (ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)) return RES_INCORRECT;
+	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
+	{
+		printf("%s: I-Format frame send rejected, tx is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+		return RES_INCORRECT;
+	}
 
 	uint8_t res;
 	apdu_frame *a_fr = NULL;
@@ -1195,6 +1213,9 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	if(res == RES_SUCCESS)
 	{
+#ifdef _DEBUG
+		printf("%s: ASDU received in DIRDN. Address = %d, Length = %d\n", APP_NAME, adr, buff_len);
+#endif
 		res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 	}
 	else
