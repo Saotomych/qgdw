@@ -36,7 +36,6 @@ typedef struct _SCADA_ASDU{		// Analog Logical Node
 	LNODE *myln;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
 	uint32_t baseoffset;		// Base offset of meter data in iec104 channel
-	data_unit  ASDUframe[SCADA_ASDU_MAXSIZE];
 	SCADA_ASDU_TYPE *myscadatype;
 } SCADA_ASDU;
 
@@ -138,6 +137,7 @@ SCADA *actscada;
 
 	while(offset < fullrdlen){
 		if(fullrdlen - offset < sizeof(ep_data_header)){
+			printf("IEC61850: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
 		}
@@ -158,7 +158,7 @@ SCADA *actscada;
 				return 0;
 			}
 
-			printf("IEC61850: Value for ASDU = %d received\n", edh->adr);
+			printf("IEC61850: Values for ASDU = %d received\n", edh->adr);
 
 			// TODO time synchronization, broadcast request, etc.
 
@@ -178,7 +178,6 @@ SCADA *actscada;
 			while(rdlen > 0){
 				if (pdu->id <= (SCADA_ASDU_MAXSIZE - 4)){
 	 				// TODO Copy variable to data struct IEC61850
-
 					// TODO Find type of variable and convert type on fly
 
 					// Mapping id
@@ -192,11 +191,11 @@ SCADA *actscada;
 						spdu++;
 						psasdu->size++;
 						sedh->len += sizeof(data_unit);
-						printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid);
+						printf("IEC61850: Value = 0x%X. id %d map to SCADA id %d. Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->time_tag);
 					}
-//					else{
-//						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id\n", pdu->value.ui, pdu->id);
-//					}
+					else{
+						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
+					}
 				}else{
 					printf("IEC61850 error: id %d very big\n", pdu->id);
 				}

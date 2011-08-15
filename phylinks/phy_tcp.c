@@ -212,18 +212,20 @@ struct linger l = { 1, 0 };
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
-				if (pr->mode == LISTEN) break;
-				pr->state = 0;
-				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
-				close(pr->socdesc);
-				pr->socdesc = 0;
+				printf("Phylink TCP/IP: Reconnect to: %d %d\n", edh->adr, edh->numep);
+				pr->state = 0;	// Next work going to main cycle
+				break;
+//				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
+//				close(pr->socdesc);
+//				pr->socdesc = 0;
+//				if (pr->mode == LISTEN) break;
 
 		case EP_MSG_CONNECT:
 				if (pr->state){
 					printf("Phylink TCP/IP error: This connect setting already\n");
 				}else{
 					pr->ep_index = edh->numep;
-					printf("Phylink TCP/IP: HAS READ CONFIG_DEVICE: %d %d\n", edh->adr, edh->numep);
+					printf("Phylink TCP/IP: Connect to: %d %d\n", edh->adr, edh->numep);
 					printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
 
 					// Create & bind new socket
@@ -312,13 +314,29 @@ int maxdesc;
 		maxdesc = 0;
 		for (i=0; i<maxpr; i++){
 			pr = myprs[i];
+
+			// Close disconnect sockets and reconnect
+			if ((!pr->state) && (pr->socdesc)){
+				printf("IEC61850: Reconnect socket to asdu %d\n", pr->asdu);
+				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
+	    		close(pr->socdesc);
+	    		pr->socdesc = 0;
+	    		if (pr->mode == CONNECT){
+	    			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
+	    			set_connect(pr);
+	    		}
+			}
+
+			// Add connected sockets
 			if ((pr->state) && (pr->socdesc)){
-				if (pr->socdesc > maxdesc)	maxdesc = pr->socdesc;
+				if (pr->socdesc > maxdesc) maxdesc = pr->socdesc;
 				FD_SET(pr->socdesc, &rd_socks);
 				FD_SET(pr->socdesc, &ex_socks);
 			}
+
+			// Add listen sockets
 			if ((pr->state) && (pr->lstsocdesc)){
-				if (pr->lstsocdesc > maxdesc)	maxdesc = pr->lstsocdesc;
+				if (pr->lstsocdesc > maxdesc) maxdesc = pr->lstsocdesc;
 				FD_SET(pr->lstsocdesc, &rd_socks);
 			}
 		}

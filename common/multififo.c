@@ -9,6 +9,7 @@
  */
 
 #include "../common/common.h"
+#include "../common/asdu.h"
 #include "multififo.h"
 
 #define LENRINGBUF	1024
@@ -705,7 +706,7 @@ int len = 0, rdlen;
 }
 
 int sys_read(struct channel *ch){
-int rdlen, len, ret;
+int rdlen, len, ret, i;
 struct endpoint *ep = 0;
 struct ep_data_header edh;
 struct ep_init_header *eih=0;
@@ -728,8 +729,7 @@ struct ep_init_header *eih=0;
 
 	if (len == sizeof(ep_data_header)){
 
-		printf("MFI %s: ep_data_header_recv:\n- adr=%d\n- numep=%d\n- sysmsg=%d\n- len=%d\n", appname, edh.adr, edh.numep, edh.sys_msg, edh.len);
-
+//		printf("MFI %s: ep_data_header_recv:\n- adr=%d\n- numep=%d\n- sysmsg=%d\n- len=%d\n", appname, edh.adr, edh.numep, edh.sys_msg, edh.len);
 
 		if (edh.numep >= maxep){
 			printf("MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
