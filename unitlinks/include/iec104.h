@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <time.h>
+#include <sys/time.h>
 #include <signal.h>
 #include "p_num.h"
 #include "iec_def.h"
@@ -98,6 +99,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 
 uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext);
+uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext);
 
 uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext);
 

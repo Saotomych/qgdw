@@ -614,6 +614,37 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 }
 
 
+uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext)
+{
+#ifdef _DEBUG
+	printf("%s: Time synchronization command (COT = %d) received. Address = %d.\n", APP_NAME, iec_asdu->fnc, ep_ext->adr);
+#endif
+
+	int res;
+
+	struct timeval tv = {iec_asdu->data->time_tag, 0};
+
+	res = settimeofday(&tv, NULL);
+
+#ifdef _DEBUG
+	if(res == 0)
+	{
+		printf("%s: Time synchronization with IEC_HOST_MASTER succeeded. Address = %d.\n", APP_NAME, ep_ext->adr);
+	}
+	else
+	{
+		printf("%s: Time synchronization with IEC_HOST_MASTER failed. Address = %d.\n", APP_NAME, ep_ext->adr);
+	}
+#endif
+
+	if(res == 0)
+		return RES_SUCCESS;
+	else
+		return RES_ACCESS_DND;
+}
+
+
+
 uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
 {
 	uint16_t res;
@@ -1133,7 +1164,12 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 			break;
 
 		case C_CS_NA_1:
-			if(ep_ext->host_type == IEC_HOST_SLAVE) iec104_time_sync_send(ep_ext);
+			if(ep_ext->host_type == IEC_HOST_SLAVE)
+			{
+				iec104_time_sync_recv(iec_asdu, ep_ext);
+
+				iec104_time_sync_send(ep_ext);
+			}
 			break;
 
 		default:
