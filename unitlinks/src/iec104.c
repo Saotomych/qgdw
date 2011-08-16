@@ -1183,7 +1183,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		case C_CS_NA_1:
 			if(ep_ext->host_type == IEC_HOST_SLAVE)
 			{
-				iec104_time_sync_recv(iec_asdu, ep_ext);
+				iec104_sys_msg_send(EP_MSG_TIME_SYNC, ep_ext->adr, DIRUP, (unsigned char*) &iec_asdu->data->time_tag, sizeof(int32_t));
 
 				iec104_time_sync_send(ep_ext);
 			}
