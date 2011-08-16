@@ -620,13 +620,30 @@ uint16_t dlt645_collect_data()
 uint16_t dlt645_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	int res;
+	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
 	ep_header.adr     = adr;
 	ep_header.sys_msg = sys_msg;
-	ep_header.len     = 0;
+	ep_header.len     = buff_len;
 
-	res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
+	if(buff_len == 0)
+	{
+		res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
+	}
+	else
+	{
+		ep_buff = (char*) malloc(sizeof(ep_data_header) + buff_len);
+
+		if(!ep_buff) return RES_MEM_ALLOC;
+
+		memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
+		memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)buff, buff_len);
+
+		res = mf_toendpoint(ep_buff, sizeof(ep_data_header) + buff_len, adr, dir);
+
+		free(ep_buff);
+	}
 
 	if(res > 0)
 		return RES_SUCCESS;
@@ -704,6 +721,9 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			printf("%s: Data transfer state set to ready. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 			printf("%s: Timer t0 started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
+
+			// synchronize time
+			dlt645_time_sync_send(ep_ext->adr);
 
 			break;
 
@@ -1186,6 +1206,10 @@ uint16_t dlt645_read_adr_send(uint16_t adr)
 
 uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 {
+#ifdef _DEBUG
+		printf("%s: Read Address frame received. Address = %d, Link address (BCD) = %llx, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, d_fr->data_len);
+#endif
+
 	// TODO finish function dlt645_read_adr_recv()
 	return RES_SUCCESS;
 }

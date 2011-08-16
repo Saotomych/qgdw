@@ -389,13 +389,30 @@ int iec104_recv_data(int len)
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	int res;
+	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
 	ep_header.adr     = adr;
 	ep_header.sys_msg = sys_msg;
-	ep_header.len     = 0;
+	ep_header.len     = buff_len;
 
-	res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
+	if(buff_len == 0)
+	{
+		res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
+	}
+	else
+	{
+		ep_buff = (char*) malloc(sizeof(ep_data_header) + buff_len);
+
+		if(!ep_buff) return RES_MEM_ALLOC;
+
+		memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
+		memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)buff, buff_len);
+
+		res = mf_toendpoint(ep_buff, sizeof(ep_data_header) + buff_len, adr, dir);
+
+		free(ep_buff);
+	}
 
 	if(res > 0)
 		return RES_SUCCESS;
