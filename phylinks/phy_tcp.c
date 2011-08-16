@@ -122,7 +122,7 @@ int n;
 	return (n==-1 ? -1 : total);
 }
 
-void set_listen(struct phy_route *pr){
+int set_listen(struct phy_route *pr){
 int ret;
 	printf("Phylink TCP/IP: Listen for connect %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 // Bind привязывает к локальному адресу
@@ -136,29 +136,37 @@ int ret;
 	}else{
 		printf("Phylink TCP/IP: bind established, listen waiting...\n");
 		if (listen(pr->lstsocdesc, 1) == -1) printf("Phylink TCP/IP: listen error:%d - %s\n",errno, strerror(errno));
-		else pr->state = 1;
+		else ret = 1;
 	}
+
+	return ret;
 }
 
-void set_connect(struct phy_route *pr){
+int set_connect(struct phy_route *pr){
 int ret;
 	printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
 		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+		ret = 0;
 		printf("Phylink TCP/IP: connect error:%d - %s\n",errno, strerror(errno));
 	}else{
 		fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
 		send_sys_msg(pr, EP_MSG_CONNECT_ACK);
-		pr->state = 1;
+		ret = 1;
 		printf("Phylink TCP/IP: connect established.\n");
 	}
+
+	return ret;
 }
 
-void connect_by_config(struct phy_route *pr){
+int connect_by_config(struct phy_route *pr){
+int ret = 0;
 	pr->sai.sin_family = AF_INET;
-	if (pr->mode == CONNECT) set_connect(pr);
-	if (pr->mode == LISTEN) set_listen(pr);
+	if (pr->mode == CONNECT) ret = set_connect(pr);
+	if (pr->mode == LISTEN) ret = set_listen(pr);
+
+	return ret;
 }
 
 int rcvdata(int len){
@@ -168,7 +176,6 @@ struct phy_route *pr;
 ep_data_header *edh;
 int rdlen, i;
 int offset;
-struct linger l = { 1, 0 };
 
 	tai.len = len;
 	tai.addr = 1;
@@ -212,37 +219,32 @@ struct linger l = { 1, 0 };
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
-				printf("Phylink TCP/IP: Reconnect to: %d %d\n", edh->adr, edh->numep);
-				pr->state = 0;	// Next work going to main cycle
-				break;
-//				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
-//				close(pr->socdesc);
-//				pr->socdesc = 0;
-//				if (pr->mode == LISTEN) break;
+				printf("Phylink TCP/IP: Reconnect to: %d, local endpoint: %d\n", edh->adr, edh->numep);
+				if (pr->state != EP_MSG_CONNECT){
+					pr->state = EP_MSG_RECONNECT;	// Next work going to main cycle
+					break;
+				}
 
 		case EP_MSG_CONNECT:
-				if (pr->state){
+				if (pr->state == 1){
 					printf("Phylink TCP/IP error: This connect setting already\n");
 				}else{
-					pr->ep_index = edh->numep;
 					printf("Phylink TCP/IP: Connect to: %d %d\n", edh->adr, edh->numep);
 					printf("Phylink TCP/IP: route found: addr = %d, ep_index = %d\n", edh->adr, pr->ep_index);
+					pr->ep_index = edh->numep;
 
 					// Create & bind new socket
 					pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 					if (pr->socdesc == -1) printf("Phylink TCP/IP error: socket error:%d - %s\n",errno, strerror(errno));
 					else{
 						printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
-						connect_by_config(pr);
+						pr->state = connect_by_config(pr);
 					}
 				}
 				break;
 
 		case EP_MSG_CONNECT_CLOSE: // Disconnect and delete endpoint
-				pr->state = 0;
-				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
-				close(pr->socdesc);
-    			pr->socdesc = 0;
+				pr->state = EP_MSG_CONNECT_CLOSE;		// Demand to close
 				break;
 
 		case EP_MSG_QUIT:
@@ -315,27 +317,37 @@ int maxdesc;
 		for (i=0; i<maxpr; i++){
 			pr = myprs[i];
 
-			// Close disconnect sockets and reconnect
-			if ((!pr->state) && (pr->socdesc)){
+			// Close by demand
+			if ((pr->state == EP_MSG_CONNECT_CLOSE) && (pr->socdesc)){
+				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
+	    		close(pr->socdesc);
+	    		pr->socdesc = 0;
+	    		pr->state = 0;
+			}
+
+			// Close socket and reconnect for CONNECT mode
+			if ((pr->state == EP_MSG_RECONNECT) && (pr->socdesc)){
 				printf("IEC61850: Reconnect socket to asdu %d\n", pr->asdu);
 				setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
 	    		close(pr->socdesc);
 	    		pr->socdesc = 0;
 	    		if (pr->mode == CONNECT){
 	    			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
-	    			set_connect(pr);
+	    			pr->state = set_connect(pr);
+	    			if (!pr->state) pr->state = EP_MSG_CONNECT;	// Reconnect demanded
 	    		}
+	    		else pr->state = 0;
 			}
 
 			// Add connected sockets
-			if ((pr->state) && (pr->socdesc)){
+			if ((pr->state == 1) && (pr->socdesc)){
 				if (pr->socdesc > maxdesc) maxdesc = pr->socdesc;
 				FD_SET(pr->socdesc, &rd_socks);
 				FD_SET(pr->socdesc, &ex_socks);
 			}
 
 			// Add listen sockets
-			if ((pr->state) && (pr->lstsocdesc)){
+			if ((pr->state == 1) && (pr->lstsocdesc)){
 				if (pr->lstsocdesc > maxdesc) maxdesc = pr->lstsocdesc;
 				FD_SET(pr->lstsocdesc, &rd_socks);
 			}
@@ -376,8 +388,10 @@ int maxdesc;
     		    					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
     		    					printf("Phylink TCP/IP: accept OK\n");
     		    				}else{
+    		    					pr->state = 0;
     								setsockopt(pr->socdesc, SOL_SOCKET, SO_LINGER, &l, sizeof(struct linger));
     		    					close(pr->socdesc);
+    		    					pr->socdesc = 0;
     		    					printf("Phylink TCP/IP error: client address incorrect\n");
     					    		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
     		    				}
