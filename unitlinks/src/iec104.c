@@ -24,12 +24,7 @@ static uint8_t t_t1 = IEC104_T_T1;
 static uint8_t t_t2 = IEC104_T_T2;
 static uint8_t t_t3 = IEC104_T_T3;
 
-static uint8_t t_rc = IEC104_T_RC;
-
-
-/* Maximum numbers of outstanding frames */
-static uint8_t k = IEC104_K;
-static uint8_t w = IEC104_W; //TODO return to the default IEC104 value
+static uint16_t t_rc = IEC104_T_RC;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
@@ -111,7 +106,7 @@ uint16_t iec104_config_read(const char *file_name)
 	char r_buff[256] = {0};
 	char *prm;
 	uint16_t adr, ep_num;
-	uint8_t type;
+	iec104_ep_ext *ep_ext = NULL;
 
 	cfg_file = fopen(file_name, "r");
 
@@ -129,14 +124,40 @@ uint16_t iec104_config_read(const char *file_name)
 			{
 				adr = atoi(r_buff);
 
+				ep_ext = iec104_add_ep_ext(adr);
+
+				if(!ep_ext) continue;
+
 				prm = strstr(r_buff, "mode");
 
-				if(prm && strstr(prm, "CONNECT"))
-					type = IEC_HOST_MASTER;
+				if(prm && strstr(prm, "LISTEN"))
+					ep_ext->host_type = IEC_HOST_SLAVE;
 				else
-					type = IEC_HOST_SLAVE;
+					ep_ext->host_type = IEC_HOST_MASTER;
 
-				iec104_add_ep_ext(adr, type);
+				if(prm && ep_ext->host_type == IEC_HOST_MASTER)
+				{
+					prm = strstr(r_buff, "sync");
+
+					if(prm)
+						ep_ext->t_sync = atoi(prm+5);
+					else
+						ep_ext->t_sync = IEC104_T_SYNC;
+				}
+
+				prm = strstr(r_buff, "kack");
+
+				if(prm)
+					ep_ext->k_ack = atoi(prm+5);
+				else
+					ep_ext->k_ack = IEC104_K;
+
+				prm = strstr(r_buff, "wack");
+
+				if(prm)
+					ep_ext->w_ack = atoi(prm+5);
+				else
+					ep_ext->w_ack = IEC104_W;
 
 				ep_num++;
 			}
@@ -202,6 +223,13 @@ void iec104_catch_alarm(int sig)
 				iec104_frame_u_send(APCI_U_TESTFR_ACT, ep_exts[i], DIRDN);
 			}
 
+			// check timer sync
+			if(ep_exts[i]->timer_sync > 0 && difftime(cur_time, ep_exts[i]->timer_sync) >= ep_exts[i]->t_sync)
+			{
+				// synchronize time
+				iec104_time_sync_send(ep_exts[i]);
+			}
+
 			// check timer rc
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
@@ -213,7 +241,6 @@ void iec104_catch_alarm(int sig)
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
-
 		}
 	}
 
@@ -235,19 +262,20 @@ iec104_ep_ext* iec104_get_ep_ext(uint16_t adr)
 }
 
 
-uint16_t iec104_add_ep_ext(uint16_t adr, uint8_t host_type)
+iec104_ep_ext* iec104_add_ep_ext(uint16_t adr)
 {
 	int i;
 	iec104_ep_ext *ep_ext = NULL;
 
 	ep_ext = iec104_get_ep_ext(adr);
 
-	if(ep_ext) return RES_SUCCESS;
+	if(ep_ext) return ep_ext;
 
 	ep_ext = (iec104_ep_ext*) calloc(1, sizeof(iec104_ep_ext));
 
+	if(!ep_ext) return NULL;
+
 	ep_ext->adr       = adr;
-	ep_ext->host_type = host_type;
 	ep_ext->u_cmd     = APCI_U_STOPDT_CON;
 
 	for(i=0; i<MAXEP; i++)
@@ -256,13 +284,13 @@ uint16_t iec104_add_ep_ext(uint16_t adr, uint8_t host_type)
 		{
 			ep_exts[i] = ep_ext;
 #ifdef _DEBUG
-			printf("%s: New ep_ext added. Address = %d, Host type = %s\n", APP_NAME, ep_ext->adr, ep_ext->host_type == IEC_HOST_MASTER?"IEC_HOST_MASTER":"IEC_HOST_SLAVE");
+			printf("%s: New ep_ext added. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
-			return RES_SUCCESS;
+			return ep_ext;
 		}
 	}
 
-	return RES_INCORRECT;
+	return NULL;
 }
 
 
@@ -276,7 +304,7 @@ void iec104_init_ep_ext(iec104_ep_ext* ep_ext)
 	ep_ext->vs = ep_ext->vr = ep_ext->as = ep_ext->ar = 0;
 
 	// stop all timers
-	ep_ext->timer_t0 = ep_ext->timer_t1 = ep_ext->timer_t2 = ep_ext->timer_t3 = ep_ext->timer_rc = 0;
+	ep_ext->timer_t0 = ep_ext->timer_t1 = ep_ext->timer_t2 = ep_ext->timer_t3 = ep_ext->timer_sync = ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
 	printf("%s: ep_ext (re)initialized. Address = %d.\n", APP_NAME, ep_ext->adr);
@@ -389,13 +417,30 @@ int iec104_recv_data(int len)
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
 	int res;
+	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
 	ep_header.adr     = adr;
 	ep_header.sys_msg = sys_msg;
-	ep_header.len     = 0;
+	ep_header.len     = buff_len;
 
-	res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
+	if(buff_len == 0)
+	{
+		res = mf_toendpoint((char*) &ep_header, sizeof(ep_data_header), adr, dir);
+	}
+	else
+	{
+		ep_buff = (char*) malloc(sizeof(ep_data_header) + buff_len);
+
+		if(!ep_buff) return RES_MEM_ALLOC;
+
+		memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
+		memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)buff, buff_len);
+
+		res = mf_toendpoint(ep_buff, sizeof(ep_data_header) + buff_len, adr, dir);
+
+		free(ep_buff);
+	}
 
 	if(res > 0)
 		return RES_SUCCESS;
@@ -570,6 +615,16 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 	time_t cur_time = time(NULL);
 
 	if(!ep_ext) return RES_INCORRECT;
+
+	if(ep_ext->host_type == IEC_HOST_MASTER)
+	{
+		// start/reset sync timer
+		ep_ext->timer_sync = time(NULL);
+
+#ifdef _DEBUG
+		printf("%s: Timer sync started/reset. Address = %d, t_sync = %d\n", APP_NAME, ep_ext->adr, ep_ext->t_sync);
+#endif
+	}
 
 	iec_asdu = asdu_create();
 
@@ -1072,7 +1127,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		a_fr->data_len = a_len;
 		a_fr->data = a_buff;
 
-		if((ep_ext->vs - ep_ext->as + 32767) % 32767 < k)
+		if((ep_ext->vs - ep_ext->as + 32767) % 32767 < ep_ext->k_ack)
 		{
 			res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 		}
@@ -1160,13 +1215,18 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		switch(iec_asdu->type)
 		{
 		case C_IC_NA_1:
-			if(ep_ext->host_type == IEC_HOST_SLAVE) iec104_comm_inter_send(ep_ext);
+			if(ep_ext->host_type == IEC_HOST_SLAVE)
+			{
+				iec104_sys_msg_send(EP_MSG_COMM_INTER, ep_ext->adr, DIRUP, NULL, 0);
+
+				iec104_comm_inter_send(ep_ext);
+			}
 			break;
 
 		case C_CS_NA_1:
 			if(ep_ext->host_type == IEC_HOST_SLAVE)
 			{
-				iec104_time_sync_recv(iec_asdu, ep_ext);
+				iec104_sys_msg_send(EP_MSG_TIME_SYNC, ep_ext->adr, DIRUP, (unsigned char*) &iec_asdu->data->time_tag, sizeof(int32_t));
 
 				iec104_time_sync_send(ep_ext);
 			}
@@ -1178,7 +1238,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		}
 	}
 
-	if((ep_ext->vr - ep_ext->ar + 32767) % 32767 >= w)
+	if((ep_ext->vr - ep_ext->ar + 32767) % 32767 >= ep_ext->w_ack)
 	{
 		iec104_frame_s_send(ep_ext, DIRDN);
 	}

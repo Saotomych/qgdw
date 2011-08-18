@@ -41,7 +41,8 @@ extern "C" {
 #define CHILD_APP_PATH 	"/rw/mx00/phyints"
 #define ALARM_PER		1
 
-#define IEC104_T_RC		10 /* default re-connect period */
+#define IEC104_T_RC		10 	/* default re-connect period */
+#define IEC104_T_SYNC	300 /* default time sync period */
 
 /*
  *
@@ -64,12 +65,18 @@ typedef struct iec104_ep_ext {
 
 	uint8_t			u_cmd;		/* data transfer state */
 
+	uint16_t		k_ack;		/* latest acknowledgment after sending I-Format frame */
+	uint16_t		w_ack;		/* latest acknowledgment after receiving I-Format frame */
+
+	uint16_t 		t_sync;		/* time sync period */
+
 	time_t			timer_t0;
 	time_t			timer_t1;
 	time_t			timer_t2;
 	time_t			timer_t3;
 
 	time_t			timer_rc;	/* re-connect timer */
+	time_t			timer_sync;	/* time sync timer */
 } iec104_ep_ext;
 
 
@@ -89,7 +96,7 @@ int iec104_recv_data(int len);
 
 iec104_ep_ext* iec104_get_ep_ext(uint16_t adr);
 
-uint16_t iec104_add_ep_ext(uint16_t adr, uint8_t host_type);
+iec104_ep_ext* iec104_add_ep_ext(uint16_t adr);
 void iec104_init_ep_ext(iec104_ep_ext* ep_ext);
 
 

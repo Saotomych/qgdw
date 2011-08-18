@@ -579,7 +579,6 @@ uint8_t iec_asdu_parse_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 	iec_asdu->attr |= buff_get_le_uint8(buff, *offset) & ~IEC_ASDU_HEAD_CAUSE;
 	*offset += 1;
 
-	// TODO get originator address
 	*offset += cot_len - 1;
 
 	iec_asdu->adr = iec_asdu_parse_obj_address(buff, offset, coa_len);
@@ -611,7 +610,6 @@ uint8_t iec_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 	buff_put_le_uint8(buff, *offset, bytex);
 	*offset += 1;
 
-	// TODO put originator address
 	iec_asdu_build_obj_address(buff, offset, 0, cot_len - 1);
 
 	// build ASDU address
