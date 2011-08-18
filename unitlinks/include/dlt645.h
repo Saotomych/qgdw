@@ -107,7 +107,7 @@ int dlt645_recv_data(int len);
 
 dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by);
 
-uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr);
+dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
 
 uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id);
