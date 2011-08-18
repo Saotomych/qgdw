@@ -120,7 +120,7 @@ uint16_t dlt645_config_read(const char *file_name)
 	char r_buff[256] = {0};
 	char *prm;
 	uint16_t adr, ep_num = 0;
-	uint64_t link_adr = 0;
+	dlt645_ep_ext *ep_ext = NULL;
 
 
 	cfg_file = fopen(file_name, "r");
@@ -137,18 +137,20 @@ uint16_t dlt645_config_read(const char *file_name)
 			{
 				adr = atoi(r_buff);
 
+				ep_ext = dlt645_add_ep_ext(adr);
+
+				if(!ep_ext) continue;
+
 				prm = strstr(r_buff, "addr");
 
 				if(prm)
 				{
-					sscanf(prm+5, "%llx", &link_adr);
+					sscanf(prm+5, "%llx", &ep_ext->adr_hex);
 				}
 				else
 				{
-					buff_bcd_put_le_uint((unsigned char*)&link_adr, 0, adr, 6);
+					buff_bcd_put_le_uint((unsigned char*)&ep_ext->adr_hex, 0, adr, 6);
 				}
-
-				dlt645_add_ep_ext(adr, link_adr);
 
 				ep_num++;
 			}
@@ -400,19 +402,20 @@ dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by)
 }
 
 
-uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr)
+dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr)
 {
 	int i;
 	dlt645_ep_ext *ep_ext = NULL;
 
-	ep_ext = dlt645_get_ep_ext(adr, 0);
+	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
 
-	if(ep_ext) return RES_SUCCESS;
+	if(ep_ext) return ep_ext;
 
 	ep_ext = (dlt645_ep_ext*) calloc(1, sizeof(dlt645_ep_ext));
 
+	if(!ep_ext) return NULL;
+
 	ep_ext->adr     = adr;
-	ep_ext->adr_hex = link_adr;
 
 	for(i=0; i<MAXEP; i++)
 	{
@@ -440,11 +443,11 @@ uint16_t dlt645_add_ep_ext(uint16_t adr, uint64_t link_adr)
 #ifdef _DEBUG
 			printf("%s: New ep_ext added. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
-			return RES_SUCCESS;
+			return ep_ext;
 		}
 	}
 
-	return RES_INCORRECT;
+	return NULL;
 }
 
 
@@ -869,11 +872,11 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	recv_buff_len += buff_len;
 
 #ifdef _DEBUG
-//	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
-//
-//	char c_buff[512] = {0};
-//	hex2ascii(recv_buff, c_buff, recv_buff_len);
-//	printf("%s: %s\n", APP_NAME, c_buff);
+	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
+
+	char c_buff[512] = {0};
+	hex2ascii(recv_buff, c_buff, recv_buff_len);
+	printf("%s: %s\n", APP_NAME, c_buff);
 #endif
 
 	offset = 0;
@@ -999,8 +1002,7 @@ uint16_t dlt645_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 
 	if(res == RES_SUCCESS)
 	{
-		// FIXME finish dlt645_asdu_recv function
-		//res = dlt645_read_data_send(ep_ext->adr, 0x02010100, 0, 0);
+		// TODO finish dlt645_asdu_recv function
 	}
 	else
 	{
@@ -1144,7 +1146,6 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 	else
 	{
 		// TODO handle frame with error response
-
 	}
 
 	// continue collecting data if collection is in progress
