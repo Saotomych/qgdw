@@ -713,9 +713,6 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			// set data transfer state
 			ep_ext->tx_ready = 1;
 
-			// synchronize time
-			dlt645_time_sync_send(ep_ext->adr);
-
 			// start t0 timer
 			ep_ext->timer_t0 = time(NULL);
 
