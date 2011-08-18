@@ -165,6 +165,7 @@ int t;
 	if (t == 2400) td->speed = B2400;
 	if (t == 9600) td->speed = B9600;
 	if (t == 19200) td->speed = B19200;
+	if (t == 115200) td->speed = B115200;
 	while(*pars != ',') pars++;
 	pars++;
 	if (*pars == '5') td->bits = CS5;

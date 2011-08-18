@@ -144,7 +144,7 @@ int ret;
 		printf("Phylink TCP/IP: bind error:%d - %s\n",errno, strerror(errno));
 	}else{
 		printf("Phylink TCP/IP: bind established, listen waiting...\n");
-		if (listen(pr->lstsocdesc, 1) == -1) printf("Phylink TCP/IP: listen error:%d - %s\n",errno, strerror(errno));
+		if (listen(pr->lstsocdesc, 10) == -1) printf("Phylink TCP/IP: listen error:%d - %s\n",errno, strerror(errno));
 		else ret = 1;
 	}
 
