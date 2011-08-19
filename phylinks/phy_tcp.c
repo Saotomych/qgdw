@@ -145,10 +145,9 @@ int ret;
 	}else{
 		printf("Phylink TCP/IP: bind established, listen waiting...\n");
 		if (listen(pr->lstsocdesc, 10) == -1) printf("Phylink TCP/IP: listen error:%d - %s\n",errno, strerror(errno));
-		else ret = 1;
 	}
 
-	return ret;
+	return 0;
 }
 
 int set_connect(struct phy_route *pr){
@@ -229,10 +228,8 @@ int offset;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
 				printf("Phylink TCP/IP: Reconnect to: %d, local endpoint: %d\n", edh->adr, edh->numep);
-				if (pr->state){
-					pr->state = EP_MSG_RECONNECT;	// Next work going to main cycle
-					break;
-				}
+				pr->state = EP_MSG_RECONNECT;	// Next work going to main cycle
+				break;
 
 		case EP_MSG_CONNECT:
 				if (pr->state == 1){
@@ -274,7 +271,6 @@ int offset;
 void sighandler_sigterm(int arg){
 int i;
 struct phy_route *pr;
-struct linger l = { 1, 0 };
 
 	printf("Phylink TCP/IP: fast close all sockets\n");
 	for (i=0; i<maxpr; i++){
@@ -292,7 +288,6 @@ int main(int argc, char * argv[]){
 pid_t chldpid;
 int ret, i, rdlen;
 struct timeval tv;	// for sockets select
-struct linger l = { 1, 0 };
 
 char outbuf[1024];
 struct phy_route *pr;
@@ -350,7 +345,7 @@ int discnt = 5;
 			}
 
 			// Add listen sockets
-			if ((pr->state == 1) && (pr->lstsocdesc)){
+			if (pr->lstsocdesc){
 				if (pr->lstsocdesc > maxdesc) maxdesc = pr->lstsocdesc;
 				FD_SET(pr->lstsocdesc, &rd_socks);
 			}
@@ -370,35 +365,37 @@ int discnt = 5;
 	    else
 	    if (ret){
 	    	for (i=0; i<maxpr; i++){
-	    		if (myprs[i]->state){
-    				pr = myprs[i];
+				pr = myprs[i];
 
-    				if (FD_ISSET(pr->lstsocdesc, &rd_socks)){
-    					// One connection to one port with enabled IP
-		    			// Accept connection
-    					if (!pr->socdesc){
-    		    			printf("Phylink TCP/IP: accept\n");
-    		    			sinlen = sizeof(sin);
-    		    			rdlen = accept(pr->lstsocdesc, (struct sockaddr *) &sin, &sinlen);
-    		    			if (rdlen == -1){
-    		    				printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
-    		    				send_sys_msg(pr, EP_MSG_CONNECT_NACK);
-    		    				pr->state = 0;
-    		    			}else{
-    		    				if (pr->sai.sin_addr.s_addr == sin.sin_addr.s_addr){
-    		    					fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
-    		    					pr->socdesc = rdlen;
-    		    					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
-    		    					printf("Phylink TCP/IP: accept OK\n");
-    		    				}else{
-    		    					close_phyroute(pr);
-    		    					printf("Phylink TCP/IP error: client address incorrect\n");
-    					    		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
-    		    				}
-    		    			}
-    					}
-    				}
+				if (FD_ISSET(pr->lstsocdesc, &rd_socks)){
+					// One connection to one port with enabled IP
+	    			// Accept connection
+	    			printf("Phylink TCP/IP: accept\n");
+	    			sinlen = sizeof(sin);
+	    			rdlen = accept(pr->lstsocdesc, (struct sockaddr *) &sin, &sinlen);
+	    			if (rdlen == -1){
+	    				printf("Phylink TCP/IP: accept error:%d - %s\n",errno, strerror(errno));
+	    				send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+	    				pr->state = 0;
+	    			}else{
+	    				if (pr->sai.sin_addr.s_addr == sin.sin_addr.s_addr){
+	    					// Close old socket
+	    					if (pr->socdesc) close_phyroute(pr);
+	    					// Set new socket
+	    					pr->socdesc = rdlen;
+	    					fcntl(pr->socdesc, F_SETFL, O_NONBLOCK);	// Set socket as nonblock
+	    					send_sys_msg(pr, EP_MSG_CONNECT_ACK);
+	    					pr->state = 1;
+	    					printf("Phylink TCP/IP: accept OK\n");
+	    				}else{
+	    					close_phyroute(pr);
+	    					printf("Phylink TCP/IP error: client address incorrect\n");
+				    		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
+	    				}
+	    			}
+				}
 
+   	    		if (myprs[i]->state == 1){
 			    	if (FD_ISSET(pr->socdesc, &rd_socks)){
 		    			// Receive frame
 		    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024  - sizeof(ep_data_header), 0);

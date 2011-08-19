@@ -706,7 +706,7 @@ int len = 0, rdlen;
 }
 
 int sys_read(struct channel *ch){
-int rdlen, len, ret, i;
+int rdlen, len, ret;
 struct endpoint *ep = 0;
 struct ep_data_header edh;
 struct ep_init_header *eih=0;
