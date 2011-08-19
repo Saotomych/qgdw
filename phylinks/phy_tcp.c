@@ -299,8 +299,6 @@ fd_set rd_socks;
 fd_set ex_socks;
 int maxdesc;
 
-int discnt = 5;
-
 	if (createroutetable() == -1){
 		printf("Phylink TCP/IP: config file not found\n");
 		return 0;
@@ -411,12 +409,6 @@ int discnt = 5;
 		    			}else{
 		    				if (rdlen){
 					    		printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
-
-					    		// TODO Hell zatychka for testing
-					    		if (rdlen == 6){
-					    			discnt--;
-					    			if (!discnt) exit(0);
-					    		}else discnt = 10;
 
 					    		// Send data frame to endpoint
 			    				edh = (ep_data_header*) outbuf;

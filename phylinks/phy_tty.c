@@ -409,6 +409,13 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 				if (FD_ISSET(td->desc, &rd_desc)){
 		    		// Read device
 		    		rdlen = read(td->desc, outbuf + sizeof(ep_data_header), 300 - sizeof(ep_data_header));
+
+		    		printf("Phylink TTY: Recv data from tty: ");
+		    		for(j=0; j<rdlen; j++){
+		    			printf("0x%X ", outbuf[sizeof(ep_data_header) + j]);
+		    		}
+		    		printf("\n");
+
     				if (rdlen){
     					// Send to all endpoints connected to this device
     					for(j=0; j<maxpr; j++){
