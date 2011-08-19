@@ -153,7 +153,7 @@ int ret;
 
 int set_connect(struct phy_route *pr){
 int ret;
-	printf("Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
+	printf("Phylink TCP/IP: Connect to %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 	ret = connect(pr->socdesc, (struct sockaddr *) &pr->sai, sizeof(struct sockaddr_in));
 	if (ret){
 		send_sys_msg(pr, EP_MSG_CONNECT_NACK);
@@ -229,7 +229,7 @@ int offset;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
 				printf("Phylink TCP/IP: Reconnect to: %d, local endpoint: %d\n", edh->adr, edh->numep);
-				if (pr->state != EP_MSG_CONNECT){
+				if (pr->state){
 					pr->state = EP_MSG_RECONNECT;	// Next work going to main cycle
 					break;
 				}
@@ -304,6 +304,8 @@ fd_set rd_socks;
 fd_set ex_socks;
 int maxdesc;
 
+int discnt = 5;
+
 	if (createroutetable() == -1){
 		printf("Phylink TCP/IP: config file not found\n");
 		return 0;
@@ -331,12 +333,12 @@ int maxdesc;
 
 			// Close socket and reconnect for CONNECT mode
 			if ((pr->state == EP_MSG_RECONNECT) && (pr->socdesc)){
-				printf("IEC61850: Reconnect socket to asdu %d\n", pr->asdu);
+				printf("Phylink TCP/IP: Reconnect socket to asdu %d\n", pr->asdu);
 				close_phyroute(pr);
 	    		if (pr->mode == CONNECT){
 	    			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 	    			pr->state = set_connect(pr);
-	    			if (!pr->state) pr->state = EP_MSG_CONNECT;	// Reconnect demanded
+	    			if (!pr->state) pr->socdesc = 0;	// Connection error
 	    		}
 			}
 
@@ -412,7 +414,14 @@ int maxdesc;
 		    			}else{
 		    				if (rdlen){
 					    		printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
-		    					// Send data frame to endpoint
+
+					    		// TODO Hell zatychka for testing
+					    		if (rdlen == 6){
+					    			discnt--;
+					    			if (!discnt) exit(0);
+					    		}else discnt = 10;
+
+					    		// Send data frame to endpoint
 			    				edh = (ep_data_header*) outbuf;
 			    				edh->adr = pr->asdu;
 					    		edh->sys_msg = EP_USER_DATA;
