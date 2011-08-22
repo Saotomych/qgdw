@@ -241,7 +241,10 @@ int offset;
 
 					// Create & bind new socket
 					pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
-					if (pr->socdesc == -1) printf("Phylink TCP/IP error: socket error:%d - %s\n",errno, strerror(errno));
+					if (pr->socdesc == -1){
+						printf("Phylink TCP/IP error: socket error:%d - %s\n",errno, strerror(errno));
+						pr->socdesc = 0;
+					}
 					else{
 						printf("Phylink TCP/IP: Socket 0x%X SET: addrasdu = %d, mode = 0x%X, ep_up = %d\n", pr->socdesc, pr->asdu, pr->mode, pr->ep_index);
 						pr->state = connect_by_config(pr);
@@ -330,8 +333,14 @@ int maxdesc;
 				close_phyroute(pr);
 	    		if (pr->mode == CONNECT){
 	    			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
-	    			pr->state = set_connect(pr);
-	    			if (!pr->state) pr->socdesc = 0;	// Connection error
+					if (pr->socdesc == -1){
+						printf("Phylink TCP/IP error: socket error:%d - %s for asdu %d\n",errno, strerror(errno), pr->asdu);
+						pr->socdesc = 0;
+					}
+					else{
+						pr->state = set_connect(pr);
+						if (!pr->state) pr->socdesc = 0;	// Connection error
+					}
 	    		}
 			}
 
