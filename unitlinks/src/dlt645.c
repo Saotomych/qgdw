@@ -153,6 +153,9 @@ uint16_t dlt645_config_read(const char *file_name)
 				}
 
 				ep_num++;
+#ifdef _DEBUG
+				printf("%s: New ep_ext added. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
+#endif
 			}
 		}
 	}
@@ -440,9 +443,6 @@ dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr)
 
 			ep_exts[i]->data_ids_size = 12;
 
-#ifdef _DEBUG
-			printf("%s: New ep_ext added. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
-#endif
 			return ep_ext;
 		}
 	}
@@ -724,6 +724,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			// synchronize time
 			dlt645_time_sync_send(ep_ext->adr);
+			//dlt645_set_baudrate_send(ep_ext->adr, BR_9600);
 
 			break;
 
@@ -1046,7 +1047,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 		if(num > 0 && start_time == 0)
 		{
 			d_fr->data_len = 4 + 1;
-			d_fr->data = malloc(d_fr->data_len);
+			d_fr->data = (unsigned char*)malloc(d_fr->data_len);
 
 			if(d_fr->data)
 			{
@@ -1213,6 +1214,65 @@ uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 }
 
 
+uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br)
+{
+	uint16_t res;
+	dlt_frame *d_fr = NULL;
+
+	d_fr = dlt_frame_create();
+
+	if(!d_fr)
+	{
+		res = RES_MEM_ALLOC;
+	}
+	else
+	{
+		d_fr->fnc = FNC_SET_BAUD_RATE;
+		d_fr->dir = DIR_REQUEST;
+
+		d_fr->adr = adr;
+
+		d_fr->data_len = 1;
+		d_fr->data = (unsigned char*)malloc(d_fr->data_len);
+
+		if(d_fr->data)
+		{
+			*d_fr->data = br;
+
+			res = dlt645_frame_send(d_fr, adr, DIRDN);
+
+			if(res == RES_SUCCESS)
+			{
+				// set request-response variables
+				timer_recv = time(NULL);
+				recv_buff_len = 0;
+
+#ifdef _DEBUG
+				printf("%s: Set baud rate command sent. Address = %d, br = 0x%02X.\n", APP_NAME, adr, br);
+#endif
+			}
+		}
+		else
+		{
+			res = RES_MEM_ALLOC;
+		}
+
+		dlt_frame_destroy(&d_fr);
+	}
+
+	return RES_SUCCESS;
+}
+
+uint16_t dlt645_set_baudrate_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
+{
+
+	// TODO finish function dlt645_set_baudrate_recv()
+	return RES_SUCCESS;
+}
+
+
+
+
 uint16_t dlt645_time_sync_send(uint16_t adr)
 {
 	uint16_t res;
@@ -1234,7 +1294,7 @@ uint16_t dlt645_time_sync_send(uint16_t adr)
 		d_fr->adr = adr;
 
 		d_fr->data_len = 6;
-		d_fr->data = malloc(d_fr->data_len);
+		d_fr->data = (unsigned char*)malloc(d_fr->data_len);
 
 		if(d_fr->data)
 		{

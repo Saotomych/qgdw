@@ -69,8 +69,8 @@ typedef struct dlt645_ep_ext {
 
 	uint8_t			tx_ready;		/* data transfer state */
 
-	uint32_t		data_ids[12];	/* data idetifiers array */
-	uint32_t		data_ids_size;	/* size of data idetifiers array */
+	uint32_t		data_ids[12];	/* data identifiers array */
+	uint32_t		data_ids_size;	/* size of data identifiers array */
 
 	time_t			timer_t0;
 
@@ -127,6 +127,9 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 
 uint16_t dlt645_read_adr_send(uint16_t adr);
 uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
+
+uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br);
+uint16_t dlt645_set_baudrate_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 
 uint16_t dlt645_time_sync_send(uint16_t adr);
 
