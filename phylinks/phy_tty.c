@@ -186,7 +186,7 @@ int t;
 	if (*pars == 'Y') td->rts = 1;
 
 #ifdef _DEBUG
-	printf("parse port %s, %d, %d%d%d, rts:%d\n", td->devname, td->speed, td->bits, td->parity, td->stop, td->rts);
+	printf("Phylink TTY: parse port %s, %d, %d%d%d, rts:%d\n", td->devname, td->speed, td->bits, td->parity, td->stop, td->rts);
 #endif
 }
 
@@ -399,7 +399,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 			}
 		}
 
-		tv.tv_sec = 20;
+		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_desc, NULL, &ex_desc, &tv);
 	    if (ret == -1) printf("Phylink TTY: select error:%d - %s\n",errno, strerror(errno));
