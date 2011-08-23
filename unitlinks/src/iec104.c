@@ -160,6 +160,9 @@ uint16_t iec104_config_read(const char *file_name)
 					ep_ext->w_ack = IEC104_W;
 
 				ep_num++;
+#ifdef _DEBUG
+				printf("%s: New ep_ext added. Address = %d.\n", APP_NAME, ep_ext->adr);
+#endif
 			}
 		}
 	}
@@ -283,9 +286,7 @@ iec104_ep_ext* iec104_add_ep_ext(uint16_t adr)
 		if(!ep_exts[i])
 		{
 			ep_exts[i] = ep_ext;
-#ifdef _DEBUG
-			printf("%s: New ep_ext added. Address = %d.\n", APP_NAME, ep_ext->adr);
-#endif
+
 			return ep_ext;
 		}
 	}
