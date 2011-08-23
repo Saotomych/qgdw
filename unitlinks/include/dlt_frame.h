@@ -36,6 +36,14 @@ extern "C" {
 #define DIR_REQUEST				0		/* request from controlling station */
 #define DIR_RESPONSE			1		/* response from controlled station */
 
+/* Device port baud rates */
+#define BR_600					0x02
+#define BR_1200					0x04
+#define BR_2400					0x08
+#define BR_4800					0x10
+#define BR_9600					0x20
+#define BR_19200				0x40
+
 
 /*
  *
