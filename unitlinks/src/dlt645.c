@@ -21,8 +21,7 @@ static uint32_t		 	recv_buff_len = 0;			/* used length of receive frame buffer *
 
 /* Data collection variables */
 static time_t			timer_dcoll = 0;			/* data collection timer */
-//static uint16_t			t_dcoll = DCOLL_PER;		/* period for data collection */
-static uint16_t			t_dcoll = 2;		/* period for data collection */
+static uint16_t			t_dcoll = DCOLL_PER;		/* period for data collection */
 static uint32_t			dcoll_stopped = 1;			/* data collection state sign */
 static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working with */
 static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
@@ -433,10 +432,10 @@ dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr)
 			ep_exts[i]->data_ids[3]  = 0x0004FF00;
 
 			ep_exts[i]->data_ids[4]  = 0x0201FF00;
-			ep_exts[i]->data_ids[5]  = 0x02020100;//0100;
-			ep_exts[i]->data_ids[6]  = 0x0203FF00;
+			ep_exts[i]->data_ids[5]  = 0x02020100;//FF00;
+			ep_exts[i]->data_ids[6]  = 0x02030100;//FF00;
 			ep_exts[i]->data_ids[7]  = 0x0204FF00;
-			ep_exts[i]->data_ids[8]  = 0x0205FF00;
+			ep_exts[i]->data_ids[8]  = 0x02050100;//FF00;
 			ep_exts[i]->data_ids[9]  = 0x0206FF00;
 
 			ep_exts[i]->data_ids[10] = 0x03300D00;
@@ -863,6 +862,15 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 		printf("%s: Timer req stopped. Address = %d.\n", APP_NAME, adr);
 #endif
 
+		return RES_INCORRECT;
+	}
+
+	// check if collection
+	if(!dcoll_stopped && timer_dcoll == 0 && adr != ep_exts[dcoll_ep_idx]->adr)
+	{
+#ifdef _DEBUG
+		printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
+#endif
 		return RES_INCORRECT;
 	}
 
