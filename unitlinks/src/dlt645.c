@@ -21,7 +21,8 @@ static uint32_t		 	recv_buff_len = 0;			/* used length of receive frame buffer *
 
 /* Data collection variables */
 static time_t			timer_dcoll = 0;			/* data collection timer */
-static uint16_t			t_dcoll = DCOLL_PER;		/* period for data collection */
+//static uint16_t			t_dcoll = DCOLL_PER;		/* period for data collection */
+static uint16_t			t_dcoll = 2;		/* period for data collection */
 static uint32_t			dcoll_stopped = 1;			/* data collection state sign */
 static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working with */
 static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
