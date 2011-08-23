@@ -179,8 +179,8 @@ int t;
 	if (*pars == 'E') td->parity = 1;	// E A E
 	if (*pars == 'O') td->parity = 2;	// D B T
 	pars++;
-	if (*pars == '1') td->stop = 1;
-	if (*pars == '2') td->stop = 2;
+	if (*pars == '1') td->stop = 0;
+	if (*pars == '2') td->stop = 1;
 	pars+=2;
 	td->rts = 0;
 	if (*pars == 'Y') td->rts = 1;
