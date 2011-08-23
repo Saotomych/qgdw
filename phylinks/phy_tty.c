@@ -371,20 +371,6 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 
 // Init multififo
 	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata);
-//
-//
-//	td = &tdev[0];
-//	printf("Device: %s %d%d%d - %d\n", td->devname, td->bits, td->parity, td->stop, td->rts);
-//
-////	start_ttydevice(td);
-//
-//	td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
-////	CommRawSetup(td->desc, td->speed, td->bits, 1, 0, 1, 0);
-//	CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
-//
-//	write(td->desc, outbuf, 14);
-//
-//	return 0;
 
 	do{
 	    FD_ZERO(&rd_desc);

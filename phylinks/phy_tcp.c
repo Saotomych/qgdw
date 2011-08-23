@@ -328,9 +328,13 @@ int maxdesc;
 			}
 
 			// Close socket and reconnect for CONNECT mode
-			if ((pr->state == EP_MSG_RECONNECT) && (pr->socdesc)){
-				printf("Phylink TCP/IP: Reconnect socket to asdu %d\n", pr->asdu);
-				close_phyroute(pr);
+			if (pr->state == EP_MSG_RECONNECT){
+				if (pr->socdesc){
+					printf("Phylink TCP/IP: Reconnect socket to asdu %d\n", pr->asdu);
+					close_phyroute(pr);
+				}else{
+					printf("Phylink TCP/IP: Repeat reconnect socket to asdu %d\n", pr->asdu);
+				}
 	    		if (pr->mode == CONNECT){
 	    			pr->socdesc = socket(AF_INET, SOCK_STREAM, 0);	// TCP for this socket
 					if (pr->socdesc == -1){
