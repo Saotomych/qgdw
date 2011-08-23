@@ -71,7 +71,8 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
     ECHOE    Символ эхо стирания как BS-SP-BS
     ISIG    Разрешить SIGINTR, SIGSUSP, SIGDSUSP, и SIGQUIT сигналы
     */
-    CommOptions.c_lflag &= ~(ICANON | ISIG);
+    CommOptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    CommOptions.c_lflag |= ISIG;
     CommOptions.c_iflag &= ~(IXON | IXOFF | IXANY | CMSPAR);/*отмена программно управляемого управления потоком*/
     CommOptions.c_oflag &= ~OPOST;/*Выбор необработанного (raw) вывода*/
     /*
@@ -92,8 +93,8 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
     VTIME определяет величину времени ожидания ввода символа в десятых долях секунды.
     Если VTIME установлено в 0 (по умолчанию), то чтение будет заблокировано в ожидании на неопределенное время если для порта не была установлена опция NDELAY вызовом open или fcntl. */
 
-    CommOptions.c_cc[VMIN] = 80;                            // 10 байт - размер хидера
-    CommOptions.c_cc[VTIME] = 1;                            // таймаут 0.1 сек
+    CommOptions.c_cc[VMIN] = 0;                            // 10 байт - размер хидера
+    CommOptions.c_cc[VTIME] = 0;                            // таймаут 0.1 сек
 
     /* Установка параметров порта
     Константа    Описание
@@ -254,7 +255,7 @@ int start_ttydevice(TTYDEV *td){
     CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
     // Read setting with non-blocking
     //	return to blocking ops: fcntl(fd, F_SETFL, 0);
-    fcntl(td->desc, F_SETFL, FNDELAY);
+//    fcntl(td->desc, F_SETFL, FNDELAY);
 
     return td->desc;
 }
@@ -398,7 +399,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 			}
 		}
 
-		tv.tv_sec = 1;
+		tv.tv_sec = 20;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_desc, NULL, &ex_desc, &tv);
 	    if (ret == -1) printf("Phylink TTY: select error:%d - %s\n",errno, strerror(errno));
