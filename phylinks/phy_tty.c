@@ -128,8 +128,8 @@ int i;
 
 		// Find and open device
 		for(i=0; i<maxtdev; i++){
-			// Find ttydev by name
-			if (strstr(tdev[i].devname, par)) break;
+			// Find ttydev by name in parameters string
+			if (strstr(par, tdev[i].devname+5)) break;
 		}
 		if (i == maxtdev){
 			// tty device not found
