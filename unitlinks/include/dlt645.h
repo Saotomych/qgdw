@@ -44,7 +44,8 @@ extern "C" {
 #define RECV_BUFF_SIZE			512		/* frame receive buffer size */
 
 
-#define DCOLL_PER				15		/* default data collection period */
+#define DCOLL_PER				5		/* default data collection period */
+#define DCOLL_DELAY				5		/* default data collection start delay */
 
 
 #define DLT645_ASDU_ADR			0
@@ -69,7 +70,7 @@ typedef struct dlt645_ep_ext {
 
 	uint8_t			tx_ready;		/* data transfer state */
 
-	uint32_t		data_ids[12];	/* data identifiers array */
+	uint32_t		*data_ids;		/* data identifiers array */
 	uint32_t		data_ids_size;	/* size of data identifiers array */
 
 	time_t			timer_t0;
@@ -114,6 +115,8 @@ uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id);
 dlt645_map *dlt645_get_map_item(uint32_t id, uint8_t get_by);
 
 void dlt645_asdu_map_ids(asdu *dlt_asdu);
+
+uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name);
 
 
 uint16_t dlt645_collect_data();

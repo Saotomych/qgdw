@@ -21,7 +21,8 @@ static uint32_t		 	recv_buff_len = 0;			/* used length of receive frame buffer *
 
 /* Data collection variables */
 static time_t			timer_dcoll = 0;			/* data collection timer */
-static uint16_t			t_dcoll = DCOLL_PER;		/* period for data collection */
+static uint16_t			t_dcoll_p = DCOLL_PER;		/* period for data collection */
+static uint16_t			t_dcoll_d = DCOLL_DELAY;	/* delay for data collection start */
 static uint32_t			dcoll_stopped = 1;			/* data collection state sign */
 static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working with */
 static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
@@ -65,8 +66,8 @@ int main(int argc, char *argv[])
 	signal(SIGALRM, dlt645_catch_alarm);
 	alarm(alarm_t);
 
-	// start data collecting timer
-	timer_dcoll = time(NULL);
+	// start data collecting timer with delay for devices initialization
+	timer_dcoll = time(NULL) + t_dcoll_d;
 	dcoll_stopped = 0;
 
 #ifdef _DEBUG
@@ -236,7 +237,7 @@ void dlt645_catch_alarm(int sig)
 	}
 
 	// check data collection timer
-	if(timer_dcoll > 0 && difftime(cur_time, timer_dcoll) >= t_dcoll)
+	if(timer_dcoll > 0 && difftime(cur_time, timer_dcoll) >= t_dcoll_p)
 	{
 		// stop data collection timer and wait for collection to finish
 		timer_dcoll = 0;
@@ -418,30 +419,16 @@ dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr)
 
 	if(!ep_ext) return NULL;
 
-	ep_ext->adr     = adr;
+	ep_ext->adr           = adr;
+
+	ep_ext->data_ids      = NULL;
+	ep_ext->data_ids_size = 0;
 
 	for(i=0; i<MAXEP; i++)
 	{
 		if(!ep_exts[i])
 		{
 			ep_exts[i] = ep_ext;
-			// FIXME add initialization of data identifiers array
-			ep_exts[i]->data_ids[0]  = 0x0001FF00;
-			ep_exts[i]->data_ids[1]  = 0x0002FF00;
-			ep_exts[i]->data_ids[2]  = 0x0003FF00;
-			ep_exts[i]->data_ids[3]  = 0x0004FF00;
-
-			ep_exts[i]->data_ids[4]  = 0x0201FF00;
-			ep_exts[i]->data_ids[5]  = 0x02020100;//FF00;
-			ep_exts[i]->data_ids[6]  = 0x02030100;//FF00;
-			ep_exts[i]->data_ids[7]  = 0x0204FF00;
-			ep_exts[i]->data_ids[8]  = 0x02050100;//FF00;
-			ep_exts[i]->data_ids[9]  = 0x0206FF00;
-
-			ep_exts[i]->data_ids[10] = 0x03300D00;
-			ep_exts[i]->data_ids[11] = 0x03300E00;
-
-			ep_exts[i]->data_ids_size = 12;
 
 			return ep_ext;
 		}
@@ -541,6 +528,42 @@ void dlt645_asdu_map_ids(asdu *dlt_asdu)
 #endif
 	}
 }
+
+
+uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name)
+{
+	uint32_t *data_ids_new = NULL;
+
+	// fast check input data
+	if(!ep_ext) return RES_INCORRECT;
+
+	dlt645_map *res_map = dlt645_get_map_item(dobj_id, BASE_ID);
+
+	if(!res_map)
+	{
+#ifdef _DEBUG
+		printf("%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
+#endif
+	}
+
+	// try to allocate some more memory
+	data_ids_new = (uint32_t*) realloc((void*)ep_ext->data_ids, sizeof(uint32_t) * (ep_ext->data_ids_size + 1));
+
+	// check if memory was allocated ok
+	if(!data_ids_new) return RES_MEM_ALLOC;
+
+	ep_ext->data_ids = data_ids_new;
+
+	ep_ext->data_ids[ep_ext->data_ids_size] = res_map->dlt645_id;
+	ep_ext->data_ids_size++;
+
+#ifdef _DEBUG
+	printf("%s: New DOBJ was added. Address = %d, dlt645_id = 0x%08x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+#endif
+
+	return RES_SUCCESS;
+}
+
 
 
 
@@ -672,8 +695,10 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_NEWDOBJ:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, buff+4, ep_ext->adr, ep_ext->adr_hex);
+			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, *(uint32_t*) buff, buff+4, ep_ext->adr, ep_ext->adr_hex);
 #endif
+
+			dlt645_add_dobj_item(ep_ext, *(uint32_t*) buff, (unsigned char*)buff+4);
 
 			break;
 
@@ -724,7 +749,6 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			// synchronize time
 			dlt645_time_sync_send(ep_ext->adr);
-			//dlt645_set_baudrate_send(ep_ext->adr, BR_9600);
 
 			break;
 
@@ -865,7 +889,7 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 		return RES_INCORRECT;
 	}
 
-	// check if collection
+	// check if collection started and frame from correct address
 	if(!dcoll_stopped && timer_dcoll == 0 && adr != ep_exts[dcoll_ep_idx]->adr)
 	{
 #ifdef _DEBUG
