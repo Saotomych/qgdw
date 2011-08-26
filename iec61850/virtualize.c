@@ -354,12 +354,6 @@ ASDU_DATAMAP *pdm;
 DOBJ	*pdo;
 int adr;
 
-struct {
-	struct ep_data_header edh;
-	uint32_t		id;					/* device's internal identifier of data unit */
-	char name[DOBJ_NAMESIZE];
-} fr_do;
-
 	// Setup of unitlinks for getting DATA OBJECTS
 		// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
 		sasdu = ((SCADA_ASDU *) &fasdu)->l.next;

@@ -91,4 +91,10 @@ typedef struct config_device{
 	uint32_t		addr;
 } config_device;
 
+struct {
+	struct ep_data_header edh;
+	uint32_t		id;					/* device's internal identifier of data unit */
+	char name[DOBJ_NAMESIZE];
+} fr_do;
+
 #endif /* COMMON_H_ */
