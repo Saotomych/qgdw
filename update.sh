@@ -8,11 +8,9 @@ sourcce=/rw/mx00/update
 accepted=/usr/update/accepted
 soft=/rw/mx00/bin
 bin=bin
-host="84.242.3.190" #host to check
-port="21" # port to check
 d=`date`
 
-$OLDPWD=`pwd`
+$BGNPWD=`pwd`
 cd $site
 
 echo Download firmware with ftp
@@ -187,5 +185,4 @@ rm $site/$file
 rm $site/$file.md5
 done;
 
-cd $OLDPWD
-
+cd $BGNPWD

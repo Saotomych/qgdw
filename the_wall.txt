@@ -17,3 +17,7 @@ wall for stupid notes
 8.08.11
 На новом М700 настроена сеть и gdbserver.
 Host для gdb это build/staging/usr/bin/arm-linux-gdb
+
+26.08.11
+Сбор данных отпахал без сбоев 4 дня
+Апдейт прошивок и софта по ftp отлажен
