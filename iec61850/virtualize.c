@@ -353,6 +353,7 @@ SCADA_ASDU *sasdu = (SCADA_ASDU *) &fasdu;
 ASDU_DATAMAP *pdm;
 DOBJ	*pdo;
 int adr;
+frame_dobj fr_do;
 
 	// Setup of unitlinks for getting DATA OBJECTS
 		// get SCADA_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
@@ -365,7 +366,7 @@ int adr;
 				// write datatypes by sys msg EP_MSG_NEWDOBJ
 				pdo = pdm->mydobj;
 				fr_do.edh.adr = adr;
-				fr_do.edh.len = sizeof(fr_do) - sizeof(struct ep_data_header);
+				fr_do.edh.len = sizeof(frame_dobj) - sizeof(ep_data_header);
 				fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
 				fr_do.id = pdm->meterid;
 				strcpy(fr_do.name, pdo->dobj.name);
