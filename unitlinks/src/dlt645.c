@@ -683,6 +683,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 	// system message received
 
 	dlt645_ep_ext* ep_ext = NULL;
+	frame_dobj *fr_do = NULL;
 
 	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
 
@@ -694,11 +695,13 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		switch(sys_msg)
 		{
 		case EP_MSG_NEWDOBJ:
+			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
+
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, *(uint32_t*) buff, buff+4, ep_ext->adr, ep_ext->adr_hex);
+			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
-			dlt645_add_dobj_item(ep_ext, *(uint32_t*) buff, (unsigned char*)buff+4);
+			dlt645_add_dobj_item(ep_ext, fr_do->id, (unsigned char*)fr_do->name);
 
 			break;
 

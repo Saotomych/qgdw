@@ -313,6 +313,32 @@ void iec104_init_ep_ext(iec104_ep_ext* ep_ext)
 }
 
 
+uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name)
+{
+	uint32_t *data_ids_new = NULL;
+
+	// fast check input data
+	if(!ep_ext) return RES_INCORRECT;
+
+	// try to allocate some more memory
+	data_ids_new = (uint32_t*) realloc((void*)ep_ext->data_ids, sizeof(uint32_t) * (ep_ext->data_ids_size + 1));
+
+	// check if memory was allocated ok
+	if(!data_ids_new) return RES_MEM_ALLOC;
+
+	ep_ext->data_ids = data_ids_new;
+
+	ep_ext->data_ids[ep_ext->data_ids_size] = dobj_id;
+	ep_ext->data_ids_size++;
+
+#ifdef _DEBUG
+	printf("%s: New DOBJ was added. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+#endif
+
+	return RES_SUCCESS;
+}
+
+
 int iec104_recv_data(int len)
 {
 	char *buff;
@@ -456,6 +482,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 	int i;
 	iec104_ep_ext* ep_ext = NULL;
+	frame_dobj *fr_do = NULL;
 
 	ep_ext = iec104_get_ep_ext(adr);
 
@@ -467,9 +494,14 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		switch(sys_msg)
 		{
 		case EP_MSG_NEWDOBJ:
+
+			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
+
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%s) received. Address = %d.\n", APP_NAME, buff+4, ep_ext->adr);
+			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d.\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr);
 #endif
+
+			iec104_add_dobj_item(ep_ext, fr_do->id, (unsigned char*)fr_do->name);
 
 			break;
 

@@ -68,6 +68,9 @@ typedef struct iec104_ep_ext {
 	uint16_t		k_ack;		/* latest acknowledgment after sending I-Format frame */
 	uint16_t		w_ack;		/* latest acknowledgment after receiving I-Format frame */
 
+	uint32_t		*data_ids;		/* data identifiers array */
+	uint32_t		data_ids_size;	/* size of data identifiers array */
+
 	uint16_t 		t_sync;		/* time sync period */
 
 	time_t			timer_t0;
@@ -99,6 +102,7 @@ iec104_ep_ext* iec104_get_ep_ext(uint16_t adr);
 iec104_ep_ext* iec104_add_ep_ext(uint16_t adr);
 void iec104_init_ep_ext(iec104_ep_ext* ep_ext);
 
+uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name);
 
 
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
