@@ -10,7 +10,7 @@ soft=/rw/mx00/bin
 bin=bin
 d=`date`
 
-$OLDPWD=`pwd`
+$BGNPWD=`pwd`
 cd $site
 
 echo Download firmware with ftp
@@ -185,5 +185,4 @@ rm $site/$file
 rm $site/$file.md5
 done;
 
-cd $OLDPWD
-
+cd $BGNPWD

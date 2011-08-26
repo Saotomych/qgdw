@@ -372,7 +372,7 @@ frame_dobj fr_do;
 				strcpy(fr_do.name, pdo->dobj.name);
 
 				// write to endpoint
-				mf_toendpoint((char*) &fr_do, sizeof(fr_do), fr_do.edh.adr, DIRDN);
+				mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
 				usleep(5);	// delay for forming  next event
 
 				pdm = pdm->l.next;
@@ -431,7 +431,7 @@ char *p;
 		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
 
 		free(cd.protoname);
-		sleep(1);	// Delay for
+		sleep(1);	// Delay for forming next level endpoint
 
 		sasdu = sasdu->l.next;
 	};
