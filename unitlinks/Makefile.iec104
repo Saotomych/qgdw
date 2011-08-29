@@ -1,7 +1,5 @@
 -include ../common/common.mk
 
-RELEASE = no
-
 TARGET = ../bin/unitlink-iec104
 
 SRC_DIR = src
@@ -26,10 +24,10 @@ CCSYSTEM = $(shell $(CC) -dumpmachine)
 
 DEBUG = -g3 -D_DEBUG
 
-ifeq ($(RELEASE), no)
-CFLAGS = $(DEBUG) -Wall
-else
+ifeq ($(RELEASE), yes)
 CFLAGS = -Wall
+else
+CFLAGS = $(DEBUG) -Wall
 endif
 
 
