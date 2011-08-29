@@ -544,6 +544,8 @@ uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 #ifdef _DEBUG
 		printf("%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
 #endif
+
+		return RES_INCORRECT;
 	}
 
 	// try to allocate some more memory
