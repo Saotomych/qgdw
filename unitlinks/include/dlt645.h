@@ -36,7 +36,6 @@ extern "C" {
 
 #define ALARM_PER				1		/* timers check period */
 
-#define DLT645_T_T0				10		/* default timer_t0 timeout */
 #define DLT645_T_RC				10 		/* default re-connect period */
 
 

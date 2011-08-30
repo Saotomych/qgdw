@@ -30,8 +30,6 @@ static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index 
 /* Timer parameters */
 static uint8_t alarm_t	= ALARM_PER;
 
-static uint8_t t_t0		= DLT645_T_T0;
-
 static uint8_t t_rc		= DLT645_T_RC;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
@@ -254,12 +252,6 @@ void dlt645_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
-			// check timer t0
-			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t_t0)
-			{
-				// reset t0 timer
-				ep_exts[i]->timer_t0 = time(NULL);
-			}
 			// check timer rc
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
