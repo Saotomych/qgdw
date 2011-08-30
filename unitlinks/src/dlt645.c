@@ -438,7 +438,7 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext)
 	ep_ext->tx_ready = 0;
 
 	// stop all timers
-	ep_ext->timer_t0 = ep_ext->timer_rc = 0;
+	ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
 	printf("%s: ep_ext (re)initialized. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
@@ -735,13 +735,9 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			// set data transfer state
 			ep_ext->tx_ready = 1;
 
-			// start t0 timer
-			ep_ext->timer_t0 = time(NULL);
-
 #ifdef _DEBUG
 			printf("%s: Timer rc stopped. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 			printf("%s: Data transfer state set to ready. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
-			printf("%s: Timer t0 started. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
 #endif
 
 			// synchronize time

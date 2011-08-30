@@ -72,8 +72,6 @@ typedef struct dlt645_ep_ext {
 	uint32_t		*data_ids;		/* data identifiers array */
 	uint32_t		data_ids_size;	/* size of data identifiers array */
 
-	time_t			timer_t0;
-
 	time_t			timer_rc;	/* re-connect timer */
 } dlt645_ep_ext;
 
