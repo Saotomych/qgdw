@@ -37,6 +37,7 @@ extern "C" {
 #define ALARM_PER				1		/* timers check period */
 
 #define DLT645_T_RC				10 		/* default re-connect period */
+#define DLT645_T_SYNC			300 /* default time sync period */
 
 
 #define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
@@ -72,7 +73,10 @@ typedef struct dlt645_ep_ext {
 	uint32_t		*data_ids;		/* data identifiers array */
 	uint32_t		data_ids_size;	/* size of data identifiers array */
 
-	time_t			timer_rc;	/* re-connect timer */
+	uint16_t 		t_sync;			/* time sync period */
+
+	time_t			timer_rc;		/* re-connect timer */
+	time_t			timer_sync;		/* time sync timer */
 } dlt645_ep_ext;
 
 
@@ -114,6 +118,7 @@ dlt645_map *dlt645_get_map_item(uint32_t id, uint8_t get_by);
 void dlt645_asdu_map_ids(asdu *dlt_asdu);
 
 uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name);
+uint16_t dlt645_get_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dlt645_id);
 
 
 uint16_t dlt645_collect_data();
@@ -131,7 +136,7 @@ uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br);
 uint16_t dlt645_set_baudrate_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext);
 
-uint16_t dlt645_time_sync_send(uint16_t adr);
+uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext);
 
 uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir);
 uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);

@@ -151,6 +151,13 @@ uint16_t dlt645_config_read(const char *file_name)
 					buff_bcd_put_le_uint((unsigned char*)&ep_ext->adr_hex, 0, adr, 6);
 				}
 
+				prm = strstr(r_buff, "sync");
+
+				if(prm)
+					ep_ext->t_sync = atoi(prm+5);
+				else
+					ep_ext->t_sync = DLT645_T_SYNC;
+
 				ep_num++;
 #ifdef _DEBUG
 				printf("%s: New ep_ext added. Address = %d, Link address (BCD) = %llx\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
@@ -252,6 +259,13 @@ void dlt645_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
+			// check timer sync
+			if(ep_exts[i]->timer_sync > 0 && difftime(cur_time, ep_exts[i]->timer_sync) >= ep_exts[i]->t_sync)
+			{
+				// synchronize time
+				dlt645_time_sync_send(ep_exts[i]);
+			}
+
 			// check timer rc
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
@@ -438,7 +452,7 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext)
 	ep_ext->tx_ready = 0;
 
 	// stop all timers
-	ep_ext->timer_rc = 0;
+	ep_ext->timer_sync = ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
 	printf("%s: ep_ext (re)initialized. Address = %d, Link address (BCD) = %llx.\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex);
@@ -540,6 +554,14 @@ uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 		return RES_INCORRECT;
 	}
 
+	if(dlt645_get_dobj_item(ep_ext, res_map->dlt645_id) == RES_SUCCESS)
+	{
+#ifdef _DEBUG
+		printf("%s: New DOBJ already exists. Address = %d, dlt645_id = 0x%08x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+#endif
+		return RES_SUCCESS;
+	}
+
 	// try to allocate some more memory
 	data_ids_new = (uint32_t*) realloc((void*)ep_ext->data_ids, sizeof(uint32_t) * (ep_ext->data_ids_size + 1));
 
@@ -559,6 +581,17 @@ uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 }
 
 
+uint16_t dlt645_get_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dlt645_id)
+{
+	int i;
+
+	for(i=0; i<ep_ext->data_ids_size; i++)
+	{
+		if(ep_ext->data_ids[i] == dlt645_id) return RES_SUCCESS;
+	}
+
+	return RES_NOT_FOUND;
+}
 
 
 uint16_t dlt645_collect_data()
@@ -741,7 +774,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #endif
 
 			// synchronize time
-			dlt645_time_sync_send(ep_ext->adr);
+			dlt645_time_sync_send(ep_ext);
 
 			break;
 
@@ -896,7 +929,7 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	recv_buff_len += buff_len;
 
 #ifdef _DEBUG
-	printf("%s: Frame in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
+	printf("%s: Frame chunk in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
 
 	char c_buff[512] = {0};
 	hex2ascii(recv_buff, c_buff, recv_buff_len);
@@ -1244,6 +1277,18 @@ uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br)
 {
 	uint16_t res;
 	dlt_frame *d_fr = NULL;
+	time_t cur_time = time(NULL);
+
+	// check request-response variables
+	if(timer_recv > 0 && difftime(cur_time, timer_recv) < t_recv)
+	{
+		return RES_INCORRECT;
+	}
+	else
+	{
+		timer_recv = 0;
+		recv_buff_len = 0;
+	}
 
 	d_fr = dlt_frame_create();
 
@@ -1299,12 +1344,21 @@ uint16_t dlt645_set_baudrate_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 
 
 
-uint16_t dlt645_time_sync_send(uint16_t adr)
+uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 {
 	uint16_t res;
 	dlt_frame *d_fr = NULL;
 	uint32_t offset = 0;
 	time_t cur_time = time(NULL);
+
+	// start/reset sync timer
+	ep_ext->timer_sync = time(NULL);
+
+	// check request-response variables
+	if(timer_recv > 0 && difftime(cur_time, timer_recv) < t_recv)
+	{
+		return RES_INCORRECT;
+	}
 
 	d_fr = dlt_frame_create();
 
@@ -1317,7 +1371,7 @@ uint16_t dlt645_time_sync_send(uint16_t adr)
 		d_fr->fnc = FNC_TIME_SYNC;
 		d_fr->dir = DIR_REQUEST;
 
-		d_fr->adr = adr;
+		d_fr->adr = ep_ext->adr;
 
 		d_fr->data_len = 6;
 		d_fr->data = (unsigned char*)malloc(d_fr->data_len);
@@ -1326,10 +1380,10 @@ uint16_t dlt645_time_sync_send(uint16_t adr)
 		{
 			dlt_asdu_build_time_tag(d_fr->data, &offset, cur_time, 0xFF & ~DLT_ASDU_WDAY);
 
-			res = dlt645_frame_send(d_fr, adr, DIRDN);
+			res = dlt645_frame_send(d_fr, ep_ext->adr, DIRDN);
 
 #ifdef _DEBUG
-			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, adr);
+			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
 		}
 		else
