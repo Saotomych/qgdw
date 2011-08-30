@@ -109,6 +109,8 @@ extern "C" {
                         ((uint8_t*)(p))[0] = (uint8_t)((v) >> 0);	\
                        }
 
+uint32_t buff_get_le_uint(unsigned char *buff, uint32_t offset, uint8_t size);
+
 uint8_t  buff_get_le_uint8(unsigned char *buff, uint32_t offset);
 
 uint16_t buff_get_le_uint16(unsigned char *buff, uint32_t offset);

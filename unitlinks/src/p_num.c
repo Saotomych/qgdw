@@ -8,6 +8,31 @@
 #include <string.h>
 #include "../include/p_num.h"
 
+
+uint32_t buff_get_le_uint(unsigned char *buff, uint32_t offset, uint8_t size)
+{
+	if(!buff) return 0;
+
+	switch(size)
+	{
+	case 4:
+		return buff_get_le_uint32(buff, offset);
+		break;
+	case 3:
+		return buff_get_le_uint24(buff, offset);
+		break;
+	case 2:
+		return buff_get_le_uint16(buff, offset);
+		break;
+	case 1:
+		return  buff_get_le_uint8(buff, offset);
+		break;
+	}
+
+	return 0;
+}
+
+
 uint8_t  buff_get_le_uint8(unsigned char *buff, uint32_t offset)
 {
 	if(!buff) return 0;
