@@ -27,6 +27,7 @@ extern "C" {
 #define PROTO_IEC101			1
 #define PROTO_IEC104			2
 #define PROTO_DLT645			3
+#define PROTO_M700				4
 
 /* Value types */
 #define ASDU_VAL_NONE			0		/* no value (used in ASDU like time synchronization, broadcast request, etc.) */
