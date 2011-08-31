@@ -273,9 +273,10 @@ void dlt645_catch_alarm(int sig)
 
 				dlt645_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
-	#ifdef _DEBUG
+#ifdef _DEBUG
+				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
-	#endif
+#endif
 			}
 		}
 

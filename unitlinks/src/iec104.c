@@ -197,6 +197,7 @@ void iec104_catch_alarm(int sig)
 				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
+				printf("%s: Timer t0 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
@@ -210,6 +211,7 @@ void iec104_catch_alarm(int sig)
 				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
+				printf("%s: Timer t1 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
@@ -241,6 +243,7 @@ void iec104_catch_alarm(int sig)
 				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
+				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
