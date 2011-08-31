@@ -687,7 +687,7 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 
 #ifdef _DEBUG
-			if(res == RES_SUCCESS) printf("%s: Time synchronization command (COT = %d) sent. Address = %d.\n", APP_NAME, iec_asdu->fnc, ep_ext->adr);
+			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
 #endif
 		}
 		else
@@ -705,7 +705,7 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext)
 {
 #ifdef _DEBUG
-	printf("%s: Time synchronization command (COT = %d) received. Address = %d.\n", APP_NAME, iec_asdu->fnc, ep_ext->adr);
+	printf("%s: Time synchronization command received. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
 #endif
 
 	int res;
@@ -769,7 +769,7 @@ uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
 			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 
 #ifdef _DEBUG
-			if(res == RES_SUCCESS) printf("%s: Common interrogation command sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+			if(res == RES_SUCCESS) printf("%s: Common interrogation command sent. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
 #endif
 		}
 		else
@@ -1160,7 +1160,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		a_fr->data_len = a_len;
 		a_fr->data = a_buff;
 
-		if((ep_ext->vs - ep_ext->as + 32767) % 32767 < ep_ext->k_ack)
+		if((ep_ext->vs - ep_ext->as + 32768) % 32768 < ep_ext->k_ack)
 		{
 			res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 		}
@@ -1171,7 +1171,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 
 		if(res == RES_SUCCESS)
 		{
-			ep_ext->vs = (ep_ext->vs + 1) % 32767;
+			ep_ext->vs = (ep_ext->vs + 1) % 32768;
 
 			// start/reset t1 timer
 			ep_ext->timer_t1 = time(NULL);
@@ -1208,6 +1208,10 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) != RES_SUCCESS)
 	{
+		iec104_frame_s_send(ep_ext, DIRDN);
+
+		iec104_sys_msg_send(EP_MSG_RECONNECT, ep_ext->adr, DIRDN, NULL, 0);
+
 		return RES_INCORRECT;
 	}
 
@@ -1242,7 +1246,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	{
 		if(res == RES_SUCCESS)
 		{
-			ep_ext->vr = (ep_ext->vr + 1) % 32767;
+			ep_ext->vr = (ep_ext->vr + 1) % 32768;
 		}
 
 		switch(iec_asdu->type)
@@ -1259,6 +1263,8 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		case C_CS_NA_1:
 			if(ep_ext->host_type == IEC_HOST_SLAVE)
 			{
+				iec104_time_sync_recv(iec_asdu, ep_ext);
+
 				iec104_sys_msg_send(EP_MSG_TIME_SYNC, ep_ext->adr, DIRUP, (unsigned char*) &iec_asdu->data->time_tag, sizeof(int32_t));
 
 				iec104_time_sync_send(ep_ext);
@@ -1271,7 +1277,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		}
 	}
 
-	if((ep_ext->vr - ep_ext->ar + 32767) % 32767 >= ep_ext->w_ack)
+	if((ep_ext->vr - ep_ext->ar + 32768) % 32768 >= ep_ext->w_ack)
 	{
 		iec104_frame_s_send(ep_ext, DIRDN);
 	}
@@ -1372,7 +1378,7 @@ uint16_t iec104_frame_check_send_num(iec104_ep_ext *ep_ext, uint16_t send_num)
 
 uint16_t iec104_frame_check_recv_num(iec104_ep_ext *ep_ext, uint16_t recv_num)
 {
-	if( (recv_num - ep_ext->as + 32767) % 32767 <= (ep_ext->vs - ep_ext->as + 32767) % 32767 ) return RES_SUCCESS;
+	if( (recv_num - ep_ext->as + 32768) % 32768 <= (ep_ext->vs - ep_ext->as + 32768) % 32768 ) return RES_SUCCESS;
 
 #ifdef _DEBUG
 	printf("%s: ERROR - expected %d <= N(S) <= %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->as, ep_ext->vs, recv_num, ep_ext->adr);
