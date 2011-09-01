@@ -1172,7 +1172,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		a_fr->data_len = a_len;
 		a_fr->data = a_buff;
 
-		if((ep_ext->vs - ep_ext->as + 32768) % 32768 < ep_ext->k_ack)
+		if((ep_ext->vs - ep_ext->as + 32768) % 32768 <= ep_ext->k_ack)
 		{
 			res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 		}
