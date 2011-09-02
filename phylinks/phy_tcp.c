@@ -214,7 +214,7 @@ int offset;
 
 		// check if phy_route was found
 		if (!pr){
-			printf("Phylink TCP/IP error: This connect not found\n");
+			printf("Phylink TCP/IP error: This connect not found. addrasdu = %d\n", edh->adr);
 			offset += edh->len;
 			continue;
 		}
