@@ -268,7 +268,7 @@ ep_data_header *edh;
 int rdlen, i;
 int offset;
 
-char ascibuf[100];
+char ascibuf[300];
 
 		tai.len = len;
 		tai.addr = 0;
@@ -313,7 +313,7 @@ char ascibuf[100];
 			case EP_USER_DATA:	// Write data to socket
 					if(rdlen-offset >= edh->len) {
 						Hex2ASCII(tai.buf, ascibuf, edh->len);
-						printf("Buffer: %s\n", ascibuf);
+						printf("Phy TTY: Buffer: %s\n", ascibuf);
 
 //						ty = &tdev[pr->devindex];
 //						printf("Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
