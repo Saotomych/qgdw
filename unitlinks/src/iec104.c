@@ -192,12 +192,15 @@ void iec104_catch_alarm(int sig)
 			// check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t_t0)
 			{
+#ifdef _DEBUG
+				printf("%s: Timer t0 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+#endif
+
 				iec104_init_ep_ext(ep_exts[i]);
 
 				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				printf("%s: Timer t0 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
@@ -206,12 +209,15 @@ void iec104_catch_alarm(int sig)
 			// check timer t1
 			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t_t1)
 			{
+#ifdef _DEBUG
+				printf("%s: Timer t1 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+#endif
+
 				iec104_init_ep_ext(ep_exts[i]);
 
 				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				printf("%s: Timer t1 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
@@ -238,12 +244,15 @@ void iec104_catch_alarm(int sig)
 			// check timer rc
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
+#ifdef _DEBUG
+				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+#endif
+
 				iec104_init_ep_ext(ep_exts[i]);
 
 				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
@@ -1163,7 +1172,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		a_fr->data_len = a_len;
 		a_fr->data = a_buff;
 
-		if((ep_ext->vs - ep_ext->as + 32768) % 32768 < ep_ext->k_ack)
+		if((ep_ext->vs - ep_ext->as + 32768) % 32768 <= ep_ext->k_ack)
 		{
 			res = iec104_frame_send(a_fr, ep_ext->adr, dir);
 		}
