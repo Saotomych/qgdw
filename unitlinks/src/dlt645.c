@@ -871,7 +871,8 @@ uint16_t dlt645_frame_send(dlt_frame *d_fr, uint16_t adr, uint8_t dir)
 			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)&awk_msg, sizeof(awk_msg));
 			memcpy((void*)(ep_buff+sizeof(ep_data_header)+sizeof(awk_msg)), (void*)d_buff, d_len);
 
-			mf_toendpoint(ep_buff, sizeof(ep_data_header) + sizeof(awk_msg) + d_len, adr, dir);
+			if(mf_toendpoint(ep_buff, sizeof(ep_data_header) + sizeof(awk_msg) + d_len, adr, dir) <= 0) res = RES_INCORRECT;
+
 
 #ifdef _DEBUG
 			printf("%s: User data in DIRDN sent. Address = %d, Link address (BCD) = %llx, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, ep_header.len);
@@ -969,24 +970,39 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 			if(ep_ext)
 			{
-				switch(d_fr->fnc)
+				// check if collection started and frame from correct address
+				if(!dcoll_stopped && timer_dcoll == 0 && ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
 				{
-				case FNC_READ_DATA:
-					dlt645_read_data_recv(d_fr, ep_ext);
-					break;
-				case FNC_READ_ADDRESS:
-					dlt645_read_adr_recv(d_fr, ep_ext);
-					break;
+#ifdef _DEBUG
+					printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
+#endif
 
-				default:
-					res = RES_UNKNOWN;
-					break;
+					res = RES_INCORRECT;
+				}
+				else
+				{
+					switch(d_fr->fnc)
+					{
+					case FNC_READ_DATA:
+						dlt645_read_data_recv(d_fr, ep_ext);
+						break;
+					case FNC_READ_ADDRESS:
+						dlt645_read_adr_recv(d_fr, ep_ext);
+						break;
+
+					default:
+						res = RES_UNKNOWN;
+						break;
+					}
 				}
 			}
 			else
 			{
 				res = RES_INCORRECT;
 			}
+
+			// continue collecting data if collection is in progress
+			if(!dcoll_stopped) dlt645_collect_data();
 		}
 
 		dlt_frame_destroy(&d_fr);
@@ -1204,12 +1220,10 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 	else
 	{
 		// TODO handle frame with error response
+		res = RES_INCORRECT;
 	}
 
-	// continue collecting data if collection is in progress
-	if(!dcoll_stopped) dlt645_collect_data();
-
-	return RES_SUCCESS;
+	return res;
 }
 
 
@@ -1266,7 +1280,7 @@ uint16_t dlt645_read_adr_send(uint16_t adr)
 uint16_t dlt645_read_adr_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: Read Address frame received. Address = %d, Link address (BCD) = %llx, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, d_fr->data_len);
+	printf("%s: Read Address frame received. Address = %d, Link address (BCD) = %llx, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_hex, d_fr->data_len);
 #endif
 
 	// TODO finish function dlt645_read_adr_recv()
