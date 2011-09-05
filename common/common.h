@@ -57,7 +57,6 @@
 #define EP_MSG_TIME_SYNC		12		/* time sync command - down2up */
 #define EP_MSG_COMM_INTER		13		/* common interrogation command - down2up */
 #define EP_MSG_GETDOBJ			14		/* get data object now - up2down */
-#define EP_MSG_QUIT				15		/* quit application - up2down */
 
 // Messages for initialize endpoints
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
