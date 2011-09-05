@@ -8,6 +8,7 @@
  *
  */
 
+#include <sys/time.h>
 #include "../common/common.h"
 #include "../common/multififo.h"
 #include "../common/asdu.h"
@@ -115,7 +116,8 @@ int ret = 0;
 int rcvdata(int len){
 char *buff, *sendbuff;
 int adr, dir, rdlen, fullrdlen;
-int offset;
+int offset, res;
+struct timeval tv;
 ep_data_header *edh, *sedh;
 data_unit *pdu, *spdu;
 SCADA_ASDU *sasdu = (SCADA_ASDU*) fasdu.next;
@@ -147,7 +149,7 @@ SCADA *actscada;
 		switch(edh->sys_msg){
 		case EP_USER_DATA:
 			rdlen = edh->len;
-			pasdu = (asdu*) (buff + sizeof(ep_data_header));
+			pasdu = (asdu*) (buff + offset + sizeof(ep_data_header));
 			rdlen -= sizeof(asdu);
 
 			// find scada_asdu
@@ -218,6 +220,16 @@ SCADA *actscada;
 			}
 
 			free(sendbuff);
+
+			break;
+
+		case EP_MSG_TIME_SYNC:
+			tv.tv_sec  = *(time_t*)(buff + offset + sizeof(ep_data_header));
+			tv.tv_usec = 0;
+
+			res = settimeofday(&tv, NULL);
+
+			printf("IEC61850: Time synchronization with master host %s. Address = %d.\n", res?"failed":"succeeded", edh->adr);
 
 			break;
 		}
