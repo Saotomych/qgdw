@@ -17,7 +17,11 @@ extern "C" {
 #endif
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
 
 
 /*
@@ -36,6 +40,17 @@ typedef struct m700_frame {
 	uint8_t			data_len;	/* length of the data */
 	unsigned char	*data;		/* data of variable length frame */
 } m700_frame;
+
+
+/* Frame content type storage */
+typedef struct m700_asdu_parse_tab{
+	uint8_t		cmd;
+	uint8_t		idx;
+	uint8_t		num;
+	uint8_t		type_size;
+	float		mult;
+	uint8_t		sseq;
+} m700_asdu_parse_tab;
 
 
 /*
@@ -57,7 +72,8 @@ uint16_t m700_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t 
 uint16_t m700_frame_buff_build(unsigned char **buff, uint32_t *buff_len, m700_frame *frame);
 
 
-uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu);
+uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu, uint32_t *offset, uint8_t *sseq);
+
 
 #ifdef __cplusplus
 }

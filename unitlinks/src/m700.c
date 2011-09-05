@@ -846,7 +846,7 @@ uint16_t m700_frame_send(m700_frame *m_fr, uint16_t adr, uint8_t dir)
 			memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
 			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)m_buff, d_len);
 
-			mf_toendpoint(ep_buff, sizeof(ep_data_header)+ d_len, adr, dir);
+			if(mf_toendpoint(ep_buff, sizeof(ep_data_header)+ d_len, adr, dir) <= 0) res = RES_INCORRECT;
 
 #ifdef _DEBUG
 			printf("%s: User data in DIRDN sent. Address = %d, Link address= %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, ep_header.len);
@@ -944,12 +944,27 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 			if(ep_ext)
 			{
-				m700_read_data_recv(m_fr, ep_ext);
+				// check if collection started and frame from correct address
+				if(!dcoll_stopped && timer_dcoll == 0 && ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
+				{
+#ifdef _DEBUG
+					printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
+#endif
+
+					res = RES_INCORRECT;
+				}
+				else
+				{
+					m700_read_data_recv(m_fr, ep_ext);
+				}
 			}
 			else
 			{
 				res = RES_INCORRECT;
 			}
+
+			// continue collecting data if collection is in progress
+			if(!dcoll_stopped) m700_collect_data();
 		}
 
 		m700_frame_destroy(&m_fr);
@@ -1088,28 +1103,37 @@ uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 		printf("%s: Read Data frame received. Address = %d, Link address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, m_fr->data_len);
 #endif
 
-	uint8_t res;
+	uint8_t res, sseq;
+	uint32_t offset;
 	asdu *m700_asdu = NULL;
 
-	m700_asdu = asdu_create();
+	// set vars to zero
+	sseq = offset = 0;
 
-	if(!m700_asdu) return RES_MEM_ALLOC;
-
-	res = m700_asdu_buff_parse(m_fr, m700_asdu);
-
-	if(res == RES_SUCCESS)
+	while(offset < m_fr->data_len)
 	{
-		// set asdu address
-		m700_asdu->adr = ep_ext->adr;
+		m700_asdu = asdu_create();
 
-		// send asdu data
-		res = m700_asdu_send(m700_asdu, ep_ext->adr, DIRUP);
+		if(!m700_asdu) return RES_MEM_ALLOC;
+
+		res = m700_asdu_buff_parse(m_fr, m700_asdu, &offset, &sseq);
+
+		if(res == RES_SUCCESS)
+		{
+			// set asdu address
+			m700_asdu->adr = ep_ext->adr;
+
+			// send asdu data
+			res = m700_asdu_send(m700_asdu, ep_ext->adr, DIRUP);
+		}
+
+		asdu_destroy(&m700_asdu);
+
+		if(res == RES_SUCCESS && sseq)
+			continue;
+		else
+			break;
 	}
-
-	asdu_destroy(&m700_asdu);
-
-	// continue collecting data if collection is in progress
-	if(!dcoll_stopped) m700_collect_data();
 
 	return RES_SUCCESS;
 }
@@ -1165,7 +1189,7 @@ uint16_t m700_read_adr_send(uint16_t adr)
 uint16_t m700_read_adr_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: Read Address frame received. Address = %d, Link address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, m_fr->data_len);
+	printf("%s: Read Address frame received. Address = %d, Link address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, m_fr->data_len);
 #endif
 
 	// TODO finish function m700_read_adr_recv()

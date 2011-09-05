@@ -220,84 +220,94 @@ uint16_t m700_frame_buff_build(unsigned char **buff, uint32_t *buff_len, m700_fr
 }
 
 
-struct m700_asdu_parse_tab{
-	uint8_t		cmd;
-	uint8_t		num;
-	uint8_t		type_size;
-	float		mult;
-	uint8_t		extra;
-}
-m700_asdu_p_tab[] = {
-	{ 0xB0,	3,	2,	0.01,	1 },
-	{ 0xB1,	3,	3,	0.001,	0 },
-	{ 0xB2,	6,	4,	0.01,	0 },
-	{ 0xB3,	3,	2,	0.01,	0 },
-	{ 0xB4,	3,	2,	0.01,	0 },
+m700_asdu_parse_tab m700_asdu_p_tab[][27] = {
+		{
+				{ 0xB0,	1,	3,	2,	0.01,	1 },
+				{ 0xB1,	1,	3,	3,	0.001,	0 },
+				{ 0xB2,	1,	6,	4,	0.01,	0 },
+				{ 0xB3,	1,	3,	2,	0.01,	0 },
+				{ 0xB4,	1,	3,	2,	0.01,	0 },
 
-	{ 0xB9,	3,	2,	0.001,	0 },
-	{ 0xBA,	3,	2,	0.01,	0 },
-	{ 0xBB,	3,	2,	0.01,	0 },
-	{ 0xBC,	3,	4,	0.01,	0 },
+				{ 0xB9,	1,	3,	2,	0.001,	0 },
+				{ 0xBA,	1,	3,	2,	0.01,	0 },
+				{ 0xBB,	1,	3,	2,	0.01,	0 },
+				{ 0xBC,	1,	3,	4,	0.01,	0 },
 
-	{ 0xD4,	4,	4,	0.01,	0 },
-	{ 0xD5,	4,	4,	0.01,	0 },
-	{ 0xD6,	4,	4,	0.01,	0 },
-	{ 0xD7,	4,	4,	0.01,	0 },
-	{ 0xD8,	4,	4,	0.01,	0 },
-	{ 0xD9,	4,	4,	0.01,	0 },
+				{ 0xCB,	1,	3,	2,	0.01,	0 },
+				{ 0xCC,	1,	3,	2,	0.01,	0 },
+				{ 0xCD,	1,	20,	2,	0.01,	0 },
+				{ 0xCE,	1,	20,	2,	0.01,	0 },
+				{ 0xCF,	1,	20,	2,	0.01,	0 },
+				{ 0xD0,	1,	20,	2,	0.01,	0 },
+				{ 0xD1,	1,	20,	2,	0.01,	0 },
+				{ 0xD2,	1,	20,	2,	0.01,	0 },
+				{ 0xD3,	1,	3,	1,	1.0,	0 },
+				{ 0xD4,	1,	4,	4,	0.01,	0 },
+				{ 0xD5,	1,	4,	4,	0.01,	0 },
+				{ 0xD6,	1,	4,	4,	0.01,	0 },
+				{ 0xD7,	1,	4,	4,	0.01,	0 },
+				{ 0xD8,	1,	4,	4,	0.01,	0 },
+				{ 0xD9,	1,	4,	4,	0.01,	0 },
 
-	{ 0xDF,	1,	1,	1.0,	0 },
+				{ 0xDF,	1,	1,	1,	1.0,	0 },
 
-	{ 0xE1,	24,	4,	0.01,	1 },
+				{ 0xE1,	1,	24,	4,	0.01,	1 },
 
-	// that's all folks
-	{ 0x00,	0,	0,	0.0,	0 }
+				// that's all folks
+				{ 0x00,	0,	0,	0,	0.0,	0 }
+		},
+
+		{
+				{ 0xB0,	4,	2,	1,	1.0,	0 },
+				{ 0xE1,	25,	3,	2,	0.01,	0 },
+
+				// that's all folks
+				{ 0x00,	0,	0,	0,	0.0,	0 },
+		},
+
+		{
+				// that's all folks
+				{ 0x00,	0,	0,	0,	0.0,	0 },
+		}
 };
 
 
-uint8_t m700_asdu_find_cmd_params(uint8_t cmd, uint8_t *num, uint8_t *type_size, float *mult, uint8_t *extra)
+uint8_t m700_asdu_find_cmd_params(uint8_t cmd, uint8_t *idx, uint8_t *num, uint8_t *type_size, float *mult, uint8_t *sseq)
 {
-	uint8_t res, i;
-
-	// presume that cmd not found (by default)
-	res = RES_NOT_FOUND;
+	uint8_t i;
 
 	// look for specific cmd
-	for(i=0; m700_asdu_p_tab[i].cmd != 0 ; i++)
+	for(i=0; m700_asdu_p_tab[*sseq][i].cmd != 0 ; i++)
 	{
-		if(m700_asdu_p_tab[i].cmd == cmd)
+		if(m700_asdu_p_tab[*sseq][i].cmd == cmd)
 		{
-			res = RES_SUCCESS;
+			if(idx != NULL)			*idx =			m700_asdu_p_tab[*sseq][i].idx;
+			if(num != NULL)			*num = 			m700_asdu_p_tab[*sseq][i].num;
+			if(type_size != NULL)	*type_size =	m700_asdu_p_tab[*sseq][i].type_size;
+			if(mult != NULL)		*mult =			m700_asdu_p_tab[*sseq][i].mult;
+			if(sseq != NULL)		*sseq =			m700_asdu_p_tab[*sseq][i].sseq;
 
-			if(num != NULL) *num = m700_asdu_p_tab[i].num;
-			if(type_size != NULL) *type_size   = m700_asdu_p_tab[i].type_size;
-			if(mult != NULL) *mult = m700_asdu_p_tab[i].mult;
-			if(extra != NULL) *extra  = m700_asdu_p_tab[i].extra;
-
-			return res;
+			return RES_SUCCESS;
 		}
 	}
 
-	return res;
+	return RES_NOT_FOUND;
 }
 
 
-uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu)
+uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu, uint32_t *offset, uint8_t *sseq)
 {
 	// fast check input data
 	if(!m_fr->data || m_fr->data_len == 0) return RES_INCORRECT;
 
 	int i;
-	uint32_t offset;
-	uint8_t res, num, type_size, extra;
+	uint8_t res, idx, num, type_size;
 	float mult;
-
 
 	// set protocol type
 	m700_asdu->proto = PROTO_M700;
 
-
-	res = m700_asdu_find_cmd_params(m_fr->cmd, &num, &type_size, &mult, &extra);
+	res = m700_asdu_find_cmd_params(m_fr->cmd, &idx, &num, &type_size, &mult, sseq);
 
 	if(res != RES_SUCCESS) return res;
 
@@ -313,7 +323,7 @@ uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu)
 	m700_asdu->size = num;
 
 	// check if buffer length is correct
-	if(m_fr->data_len < num*type_size) return RES_INCORRECT;
+	if(m_fr->data_len-(*offset) < num*type_size) return RES_INCORRECT;
 
 	//try to allocate memory for the data unit array
 	m700_asdu->data = (data_unit*) calloc(m700_asdu->size, sizeof(data_unit));
@@ -325,27 +335,25 @@ uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu)
 		return RES_MEM_ALLOC;
 	}
 
-	offset = 0;
-
 	for(i=0; i<m700_asdu->size; i++)
 	{
 		// build id for each data item
-		m700_asdu->data[i].id = (m_fr->cmd << 8) + i + 1;
+		m700_asdu->data[i].id = (m_fr->cmd << 8) + i + idx;
 
 		m700_asdu->data[i].time_tag = time(NULL);
 
 		if(mult < 1.0)
 		{
-			m700_asdu->data[i].value.f = (float) buff_get_le_uint(m_fr->data, offset, type_size) * mult;
+			m700_asdu->data[i].value.f = (float) buff_get_le_uint(m_fr->data, *offset, type_size) * mult;
 			m700_asdu->data[i].value_type = ASDU_VAL_FLT;
 		}
 		else
 		{
-			m700_asdu->data[i].value.ui = buff_get_le_uint(m_fr->data, offset, type_size);
+			m700_asdu->data[i].value.ui = buff_get_le_uint(m_fr->data, *offset, type_size);
 			m700_asdu->data[i].value_type = ASDU_VAL_UINT;
 		}
 
-		offset += type_size;
+		*offset += type_size;
 	}
 
 #ifdef _DEBUG
@@ -354,16 +362,5 @@ uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu)
 
 	return RES_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
