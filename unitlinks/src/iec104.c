@@ -198,11 +198,14 @@ void iec104_catch_alarm(int sig)
 
 				iec104_init_ep_ext(ep_exts[i]);
 
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
+				if(ep_exts[i]->host_type == IEC_HOST_MASTER)
+				{
+					iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+					printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
+				}
 			}
 
 
@@ -215,11 +218,14 @@ void iec104_catch_alarm(int sig)
 
 				iec104_init_ep_ext(ep_exts[i]);
 
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
+				if(ep_exts[i]->host_type == IEC_HOST_MASTER)
+				{
+					iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+					printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
+				}
 			}
 
 			// check timer t2
@@ -250,11 +256,14 @@ void iec104_catch_alarm(int sig)
 
 				iec104_init_ep_ext(ep_exts[i]);
 
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
+				if(ep_exts[i]->host_type == IEC_HOST_MASTER)
+				{
+					iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+					printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
+				}
 			}
 		}
 	}
@@ -819,7 +828,7 @@ uint16_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir)
 			memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
 			memcpy((void*)(ep_buff+sizeof(ep_data_header)), (void*)a_buff, a_len);
 
-			mf_toendpoint(ep_buff, sizeof(ep_data_header) + a_len, adr, dir);
+			if(mf_toendpoint(ep_buff, sizeof(ep_data_header) + a_len, adr, dir) <= 0) res = RES_INCORRECT;
 
 			free(ep_buff);
 		}
@@ -1080,7 +1089,9 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 {
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
-		printf("%s: S-Format frame send rejected, tx is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+#ifdef _DEBUG
+		printf("%s: S-Format frame send rejected, TX is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
 		return RES_INCORRECT;
 	}
 
@@ -1148,7 +1159,9 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 {
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
-		printf("%s: I-Format frame send rejected, tx is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+#ifdef _DEBUG
+		printf("%s: I-Format frame send rejected, TX is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
 		return RES_INCORRECT;
 	}
 
@@ -1178,6 +1191,9 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		}
 		else
 		{
+#ifdef _DEBUG
+			printf("%s: I-Format frame send rejected, limit of unconfirmed sent frames is reached. Address = %d, k = %d\n", APP_NAME, ep_ext->adr, (ep_ext->vs - ep_ext->as + 32768) % 32768);
+#endif
 			res = RES_INCORRECT;
 		}
 
@@ -1275,8 +1291,6 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		case C_CS_NA_1:
 			if(ep_ext->host_type == IEC_HOST_SLAVE)
 			{
-				iec104_time_sync_recv(iec_asdu, ep_ext);
-
 				iec104_sys_msg_send(EP_MSG_TIME_SYNC, ep_ext->adr, DIRUP, (unsigned char*) &iec_asdu->data->time_tag, sizeof(int32_t));
 
 				iec104_time_sync_send(ep_ext);
