@@ -8,6 +8,12 @@
 #include "../common/common.h"
 #include "../common/multififo.h"
 
+// Scenario types
+#define KIPP104		1
+#define KIPP101		2
+#define MXDLT		3
+#define MXINT		4
+
 typedef struct lowrecord{
 	char 		cfg[128];
 	uint16_t	asdu;
@@ -20,7 +26,7 @@ typedef struct lowrecord{
 	uint16_t	scen;		// Case for type lowlevel string
 } LOWREC;
 
-LOWREC lrs[MAXEP];
+LOWREC *lrs[MAXEP];
 
 uint32_t maxrec = 0, actrec = 0;
 
@@ -66,7 +72,8 @@ void setstringintern(char *paddr, LOWREC *lr){
 
 }
 
-char *makellstring(char *paddr, LOWREC *lr){
+// For ready asdu from addr.cfg
+char *makellstringforasdu(char *paddr, LOWREC *lr){
 long testval;
 u08 i;
 char *p;
@@ -82,6 +89,7 @@ char *p;
 		while(*p != '"') p++;
 		p = finddig(p);
 
+		// Set addr:port & asdu
 		i=0;
 		do{
 			testval = atol(p);
@@ -89,27 +97,34 @@ char *p;
 			if (*p){
 				if ((*(p-1) == '.') && (i < 3)) lr->addr |= (testval & 0xFF) << i;
 				if ((*(p-1) == ':') && (i == 3)) lr->addr |= (testval & 0xFF) << 3;
-			}else lr->asdu = testval;
+			}else{
+				lr->asdu = testval;
+				lr->scen = KIPP101;
+			}
 			i++;
 		}while (testval);
-		if (i == 4) lr->port = testval;
-
-		// Set asdu
+		if (i == 4){
+			lr->port = testval;
+			lr->scen = KIPP104;
+			lr->asdu = finddig(p);
+			if (!lr->asdu){
+				lr->asdu = lastasdu++;
+				lastasdu++;
+			}
+		}
 
 		// Set ld.inst
+		lr->ldinst = lastldinst;
+		lastldinst++;
 
 		return lr->cfg;
 	}
+}
 
-	if (strncasecmp(m100, paddr, 4)){
-
-		return lr->cfg;
-	}
-
-	if (strncasecmp(m300, paddr, 4)){
-
-		return lr->cfg;
-	}
+char *makellstringforinternal(char *paddr, LOWREC *lr){
+long testval;
+u08 i;
+char *p;
 
 	if (strncasecmp(m500, paddr, 4)){
 
@@ -122,8 +137,24 @@ char *p;
 	}
 }
 
+// For local autoasdu
+char *makellstringforaddr(char *paddr, LOWREC *lr){
+long testval;
+u08 i;
+char *p;
+	if (strncasecmp(m100, paddr, 4)){
 
-int createroutetable(void){
+		return lr->cfg;
+	}
+
+	if (strncasecmp(m300, paddr, 4)){
+
+		return lr->cfg;
+	}
+}
+
+
+int createlltable(void){
 FILE *addrcfg;
 struct phy_route *pr;
 char *p, *pport;
@@ -134,27 +165,24 @@ int i = 1;
 	lastldinst = 0;
 
 // Init physical routes structures by phys.cfg file
-	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
-	addrcfg = fopen("/rw/mx00/configs/lowlevel.cfg", "r");
+	firstpr = malloc(sizeof(LOWREC) * MAXEP);
+	addrcfg = fopen("/rw/mx00/configs/addr.cfg", "r");
 	if (addrcfg){
 		// Create table lowlevel.cfg
 		// 1 - all for iec-101 & iec-104
-		// 2 - m700 & m500
+		// 2 - m700 & m500 - 1 only
 		// 3 - other
+		// For all internal tty-devices: test for speed 9600, 2400, 1200
+		// Create strings for lowlevel.cfg from 1 string of addr.cfg
 		do{
+			// For any string consists 'kipp' make string for lowlevel.cfg
 			p = fgets(outbuf, 250, addrcfg);
 			actrec = 0;
 			if (p){
-				// Для каждой строчки addr.cfg составляем строчку lowlevel.cfg и делаем так MAXEP строк
 				// Parse string addr.cfg
+				if (strncasecmp(kipp, p, 4)){
 
-				// Для каждого tty проверяем 3 раза на скоростях 9600, 2400, 1200
-				// Create strings for lowlevel.cfg from 1 string of addr.cfg
-
-				// Прокидываем enpoints
-
-				// Wait asdu answer
-
+				}
 			}
 			i++;
 		}while(p);
@@ -167,7 +195,7 @@ int main(int argc, char * argv[]){
 	// Backup previous lowlevel.cfg
 	rename("/rw/mx00/configs/lowlevel.cfg", "/rw/mx00/configs/lowlevel.bak");
 	// Create full table for all addr.cfg records
-	createroutetable();
+	createlltable();
 
 	// Start endpoints
 
