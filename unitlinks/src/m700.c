@@ -283,7 +283,6 @@ int m700_recv_data(int len)
 	printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN ? "DIRUP" : "DIRDN");
 #endif
 
-	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < len)
@@ -323,7 +322,7 @@ int m700_recv_data(int len)
 #ifdef _DEBUG
 			printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
-				// asdu received
+
 				m700_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
 			else
@@ -332,7 +331,7 @@ int m700_recv_data(int len)
 				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
-				// system message received
+
 				m700_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
@@ -345,7 +344,7 @@ int m700_recv_data(int len)
 				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
-				// dlt frame received
+
 				m700_frame_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 
 			}
@@ -355,7 +354,6 @@ int m700_recv_data(int len)
 				printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
-				// system message received
 				m700_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
@@ -520,7 +518,6 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 	uint32_t *data_ids_new = NULL;
 	uint32_t m700_id;
 
-	// fast check input data
 	if(!ep_ext) return RES_INCORRECT;
 
 	m700_map *res_map = m700_get_map_item(dobj_id, BASE_ID);
@@ -544,10 +541,8 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 		return RES_SUCCESS;
 	}
 
-	// try to allocate some more memory
 	data_ids_new = (uint32_t*) realloc((void*)ep_ext->data_ids, sizeof(uint32_t) * (ep_ext->data_ids_size + 1));
 
-	// check if memory was allocated ok
 	if(!data_ids_new) return RES_MEM_ALLOC;
 
 	ep_ext->data_ids = data_ids_new;
@@ -627,7 +622,6 @@ uint16_t m700_collect_data()
 
 	if(!ep_ext) return RES_INCORRECT;
 
-	// move to the next data identifier
 	dcoll_data_idx++;
 
 	if(!ep_ext->tx_ready || dcoll_data_idx >= ep_ext->data_ids_size)
@@ -689,8 +683,6 @@ uint16_t m700_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
-	// system message received
-
 	m700_ep_ext* ep_ext = NULL;
 	frame_dobj *fr_do = NULL;
 
@@ -747,7 +739,6 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 			// stop timer rc
 			ep_ext->timer_rc = 0;
 
-			// set data transfer state
 			ep_ext->tx_ready = 1;
 
 #ifdef _DEBUG
@@ -963,7 +954,6 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 				res = RES_INCORRECT;
 			}
 
-			// continue collecting data if collection is in progress
 			if(!dcoll_stopped) m700_collect_data();
 		}
 
@@ -982,7 +972,6 @@ uint16_t m700_asdu_send(asdu *m700_asdu, uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
-	// map base identifiers instead of M700 data identifiers
 	m700_asdu_map_ids(m700_asdu);
 
 	res = asdu_to_byte(&a_buff, &a_len, m700_asdu);
@@ -1085,6 +1074,7 @@ uint16_t m700_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t
 			// set request-response variables
 			timer_recv = time(NULL);
 			recv_buff_len = 0;
+
 #ifdef _DEBUG
 		printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
 #endif
@@ -1107,7 +1097,6 @@ uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 	uint32_t offset;
 	asdu *m700_asdu = NULL;
 
-	// set vars to zero
 	sseq = offset = 0;
 
 	while(offset < m_fr->data_len)
@@ -1120,10 +1109,8 @@ uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 
 		if(res == RES_SUCCESS)
 		{
-			// set asdu address
 			m700_asdu->adr = ep_ext->adr;
 
-			// send asdu data
 			res = m700_asdu_send(m700_asdu, ep_ext->adr, DIRUP);
 		}
 
@@ -1173,6 +1160,7 @@ uint16_t m700_read_adr_send(uint16_t adr)
 			// set request-response variables
 			timer_recv = time(NULL);
 			recv_buff_len = 0;
+
 #ifdef _DEBUG
 			printf("%s: Read address command sent. Address = %d.\n", APP_NAME, adr);
 			printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
