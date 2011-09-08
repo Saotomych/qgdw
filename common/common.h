@@ -66,6 +66,7 @@
 
 #define IEC104_CHLENGHT			400
 
+
 /*
  *
  * Structures
@@ -77,13 +78,22 @@ typedef struct ep_data_header {
 	uint16_t		numep;		/* Endpoint number of receiver */
 	uint32_t		sys_msg;	/* user data (0)/system message(1..n) */
 	uint32_t		len;		/* length of the data following the header */
-} ep_data_header;
+} __attribute__ ((packed)) ep_data_header;
+
 
 typedef struct ep_init_header {
 	char *isstr[5];
 	uint32_t addr;					/* link (ASDU) address */
 	uint32_t numep;
-} ep_init_header;
+} __attribute__ ((packed)) ep_init_header;
+
+
+typedef struct frame_dobj {
+	ep_data_header	edh;
+	uint32_t		id;					/* device's internal identifier of data unit */
+	char 			name[DOBJ_NAMESIZE];
+} __attribute__ ((packed)) frame_dobj;
+
 
 typedef struct config_device{
 	char   	*name;
@@ -92,10 +102,5 @@ typedef struct config_device{
 	uint32_t		addr;
 } config_device;
 
-typedef struct {
-	ep_data_header	edh;
-	uint32_t		id;					/* device's internal identifier of data unit */
-	char 			name[DOBJ_NAMESIZE];
-} frame_dobj;
 
 #endif /* COMMON_H_ */
