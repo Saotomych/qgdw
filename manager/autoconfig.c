@@ -174,6 +174,8 @@ int i = 1;
 		// 3 - other
 		// For all internal tty-devices: test for speed 9600, 2400, 1200
 		// Create strings for lowlevel.cfg from 1 string of addr.cfg
+
+
 		do{
 			// For any string consists 'kipp' make string for lowlevel.cfg
 			p = fgets(outbuf, 250, addrcfg);
@@ -186,6 +188,47 @@ int i = 1;
 			}
 			i++;
 		}while(p);
+
+		lseek(addrcfg, SEEK_SET, 0);
+
+		do{
+			// For any string consists 'kipp' make string for lowlevel.cfg
+			p = fgets(outbuf, 250, addrcfg);
+			actrec = 0;
+			if (p){
+				// Parse string addr.cfg
+				if (strncasecmp(m500, p, 4)){
+
+				}
+
+				if (strncasecmp(m700, p, 4)){
+
+				}
+
+			}
+			i++;
+		}while(p);
+
+		lseek(addrcfg, SEEK_SET, 0);
+
+		do{
+			// For any string consists 'kipp' make string for lowlevel.cfg
+			p = fgets(outbuf, 250, addrcfg);
+			actrec = 0;
+			if (p){
+				// Parse string addr.cfg
+				if (strncasecmp(m100, p, 4)){
+
+				}
+
+				if (strncasecmp(m300, p, 4)){
+
+				}
+
+			}
+			i++;
+		}while(p);
+
 	}else return -1;
 	return 0;
 }
