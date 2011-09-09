@@ -176,11 +176,11 @@ typedef struct data_unit {
 		float		f;					/* float representation */
 	} value;							/* transferring value (e.g. measured value, counter readings, etc.) */
 
-	int32_t			time_tag;	/* time tag in time_t representation */
-	uint8_t			value_type; /* e.g. integer, unsigned integer, float, boolean, etc. (need this for "on fly" protocol converting) */
-	uint8_t			attr;		/* value's additional attributes (e.g. quality descriptor, command qualifier, etc.) */
-	uint8_t			time_iv;	/* invalid(1)/valid(0) */
-	uint8_t			reserved;
+	int32_t			time_tag;			/* time tag in time_t representation */
+	uint8_t			value_type; 		/* e.g. integer, unsigned integer, float, boolean, etc. (need this for "on fly" protocol converting) */
+	uint8_t			attr;				/* value's additional attributes (e.g. quality descriptor, command qualifier, etc.) */
+	uint8_t			time_iv;			/* invalid(1)/valid(0) */
+	uint8_t			reserved;			/* padding */
 } data_unit;
 
 
@@ -215,10 +215,10 @@ void asdu_destroy(asdu **unit);
 void asdu_cleanup_data(asdu *unit);
 
 /* copies byte array to asdu in a correct way */
-uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit);
+uint16_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit);
 
 /* copies asdu to byte array in a correct way */
-uint8_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit);
+uint16_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit);
 
 
 #ifdef __cplusplus

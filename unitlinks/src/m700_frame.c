@@ -70,8 +70,7 @@ uint16_t m700_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t 
 {
 	if(!buff || !frame) return RES_INCORRECT;
 
-	uint8_t fcs = 0;
-	uint8_t start_byte = 0;
+	uint8_t fcs = 0, start_byte = 0;
 
 	// look for the frame start
 	for( ; *offset<buff_len; )
@@ -315,7 +314,8 @@ uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu, uint32_t *offse
 	if(!m_fr->data || m_fr->data_len == 0) return RES_INCORRECT;
 
 	int i;
-	uint8_t res, idx, num, type_size;
+	uint8_t idx, num, type_size;
+	uint16_t res;
 	float mult;
 
 	m700_asdu->proto = PROTO_M700;

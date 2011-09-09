@@ -29,6 +29,7 @@ typedef struct cp56time2a {
 	uint8_t		wday;		/* week's day since Monday(1-7) */
 	uint8_t		month;		/* month(1-12) */
 	uint8_t		year;		/* year(since 2000) */
+	uint8_t		res2;		/* reserved */
 } cp56time2a;
 /*===============================Basic Types End====================================*/
 

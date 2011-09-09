@@ -49,12 +49,13 @@ extern "C" {
 typedef struct apdu_frame {
 	/* Header */
 	uint8_t 		type;		/* frame type */
-	uint16_t		send_num;	/* send sequence number */
-	uint16_t		recv_num;	/* receive sequence number */
 	uint8_t			u_cmd;		/* U-Format command code */
 
+	uint16_t		send_num;	/* send sequence number */
+	uint16_t		recv_num;	/* receive sequence number */
+
 	/* Data */
-	uint8_t			data_len;	/* length of the data */
+	uint16_t		data_len;	/* length of the data */
 	unsigned char	*data;		/* data of I-Format frame */
 } apdu_frame;
 
@@ -72,10 +73,10 @@ apdu_frame *apdu_frame_create();
 void apdu_frame_destroy(apdu_frame **frame);
 
 /* parse input buffer to the frame structure */
-uint8_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, apdu_frame *frame);
+uint16_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, apdu_frame *frame);
 
 /* build buffer from given frame structure */
-uint8_t apdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, apdu_frame *frame);
+uint16_t apdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, apdu_frame *frame);
 
 
 #ifdef __cplusplus

@@ -36,10 +36,10 @@ extern "C" {
  */
 
 /* parse input buffer to the ASDU structure */
-uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len);
+uint16_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len);
 
 /* build buffer from given ASDU structure */
-uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len);
+uint16_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len);
 
 
 #ifdef __cplusplus

@@ -29,7 +29,6 @@ uint32_t iec_asdu_calculate_buffer_len(uint8_t type_buf_size, asdu *iec_asdu, ui
 {
 	uint32_t buff_len = 0;
 
-	// add header size
 	buff_len += 1 + 1 + cot_len + coa_len; // type size + num size + cause size + common object address size
 
 	// add information objects size depends on SQ flag
@@ -41,7 +40,6 @@ uint32_t iec_asdu_calculate_buffer_len(uint8_t type_buf_size, asdu *iec_asdu, ui
 
 uint32_t iec_asdu_parse_obj_address(unsigned char *buff, uint32_t *offset, uint8_t address_len)
 {
-	// parse object address depending on the address size
 	uint32_t address;
 
 	switch(address_len)
@@ -77,7 +75,6 @@ uint32_t iec_asdu_parse_obj_address(unsigned char *buff, uint32_t *offset, uint8
 
 void iec_asdu_build_obj_address(unsigned char *buff, uint32_t *offset, uint32_t address, uint8_t address_len)
 {
-	// build object address depending on the address size
 	switch(address_len)
 	{
 	case 1:
@@ -563,10 +560,7 @@ void iec_asdu_build_M_SP(unsigned char *buff, uint32_t *offset, data_unit *unit,
 
 uint8_t iec_asdu_parse_header(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len)
 {
-	// check size of the buffer
 	if(!buff || buff_len - *offset < 1 + 1 + cot_len + coa_len) return RES_INCORRECT;
-
-	// start parsing header field by field
 
 	iec_asdu->type = buff_get_le_uint8(buff, *offset);
 	*offset += 1;
@@ -591,8 +585,6 @@ uint8_t iec_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 {
 	uint8_t bytex;
 
-	// start building header field by field
-
 	buff_put_le_uint8(buff, *offset, iec_asdu->type);
 	*offset += 1;
 
@@ -612,7 +604,6 @@ uint8_t iec_asdu_build_header(unsigned char *buff, uint32_t buff_len, uint32_t *
 
 	iec_asdu_build_obj_address(buff, offset, 0, cot_len - 1);
 
-	// build ASDU address
 	iec_asdu_build_obj_address(buff, offset, iec_asdu->adr, coa_len);
 
 	return RES_SUCCESS;
@@ -656,77 +647,55 @@ iec_asdu_pb_tab[] = {
 };
 
 
-uint8_t iec_asdu_find_pb_func(uint8_t type, uint8_t *type_size, asdu_pb_funcp *p_funcp, asdu_pb_funcp *b_funcp)
+uint16_t iec_asdu_find_pb_func(uint8_t type, uint8_t *type_size, asdu_pb_funcp *p_funcp, asdu_pb_funcp *b_funcp)
 {
-	uint8_t res, i;
+	uint8_t i;
 
-	// presume that ASDU type not found (by default)
-	res = RES_UNKNOWN;
-
-	// look for specific ASDU type
 	for(i=0; iec_asdu_pb_tab[i].type != 0 ; i++)
 	{
 		if(iec_asdu_pb_tab[i].type == type)
 		{
-			res = RES_SUCCESS;
-
-			// take size of a type and pointer to the parser/builder
 			if(type_size != NULL) *type_size = iec_asdu_pb_tab[i].type_size;
-
 			if(p_funcp != NULL) *p_funcp = iec_asdu_pb_tab[i].parse_funcp;
-
 			if(b_funcp != NULL) *b_funcp = iec_asdu_pb_tab[i].build_funcp;
 
-			break;
+			return RES_SUCCESS;
 		}
 	}
 
-	return res;
+	return RES_UNKNOWN;
 }
 
 
-uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
+uint16_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
 {
-	// fast check input data
 	if(!buff || buff_len < IEC_ASDU_LEN_MIN || !cot_len || !coa_len || !ioa_len) return RES_INCORRECT;
 
-	// declare variables and function pointer to work with the buffer
 	uint8_t res, type_size;
 	asdu_pb_funcp asdu_object_parse;
-	uint32_t offset = 0;
+	uint32_t offset = 0, i;
 
-	// set protocol type
 	iec_asdu->proto = PROTO_IEC101;
 
-	// parse ASDU header
 	res = iec_asdu_parse_header(buff, buff_len, &offset, iec_asdu, cot_len, coa_len);
 
-	// check if header is OK
 	if(res != RES_SUCCESS) return res;
 
-	// look if parser available
 	res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, &asdu_object_parse, NULL);
 
-	// check if parse function found, otherwise return error
 	if(res != RES_SUCCESS) return res;
 
-	// check if rest of the buffer is long enough to contain all information objects
 	res = iec_asdu_check_io_buffer_len(buff_len, offset, type_size, iec_asdu, ioa_len);
 
-	// if rest of the buffer is not long enough return error
 	if(res != RES_SUCCESS) return res;
 
-	//try to allocate memory for the data unit array
 	iec_asdu->data = (data_unit*) calloc(iec_asdu->size, sizeof(data_unit));
 
-	// check if memory was allocated if not - return error
 	if(iec_asdu->data == NULL)
 	{
 		iec_asdu->size = 0;
 		return RES_MEM_ALLOC;
 	}
-
-	int i;
 
 	for(i=0; i<iec_asdu->size; i++)
 	{
@@ -736,7 +705,6 @@ uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_as
 		else
 			iec_asdu->data[i].id = iec_asdu->data[i-1].id + 1;
 
-		// parse ASDU information object
 		asdu_object_parse(buff, &offset, &iec_asdu->data[i], iec_asdu->type);
 	}
 
@@ -751,44 +719,32 @@ uint8_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_as
 }
 
 
-uint8_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
+uint16_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
 {
-	// set buffer length to zero and start building it
 	*buff_len = 0;
-	uint32_t offset = 0;
+	uint32_t offset = 0, i;
 
-	// fast check input data
 	if(!buff || !iec_asdu || !iec_asdu->data || !cot_len || !coa_len || !ioa_len) return RES_INCORRECT;
 
-	// declare variables and function pointer to work with the buffer
 	uint8_t res, type_size;
 	asdu_pb_funcp asdu_object_build;
 
-	// look if builder available
 	res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, NULL, &asdu_object_build);
 
-	// check if build function found, otherwise return error
 	if(res != RES_SUCCESS) return res;
 
-	// calculate needed buffer length based on unit header info and size of an unit of an information object type
 	*buff_len = iec_asdu_calculate_buffer_len(type_size, iec_asdu, cot_len, coa_len, ioa_len);
 
-	// allocate memory for the buffer
 	*buff = (unsigned char*) malloc(*buff_len);
 
-	// check if memory allocated OK, otherwise return error
 	if(!*buff)
 	{
-		// set buffer length to zero
 		*buff_len = 0;
 
 		return RES_MEM_ALLOC;
 	}
 
-	// build ASDU header
 	iec_asdu_build_header(*buff, *buff_len, &offset, iec_asdu, cot_len, coa_len);
-
-	int i;
 
 	for(i=0; i<iec_asdu->size; i++)
 	{

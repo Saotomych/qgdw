@@ -37,7 +37,7 @@ typedef struct m700_frame {
 	uint8_t 		adr;		/* link address */
 
 	/* Data */
-	uint8_t			data_len;	/* length of the data */
+	uint16_t		data_len;	/* length of the data */
 	unsigned char	*data;		/* data of variable length frame */
 } m700_frame;
 

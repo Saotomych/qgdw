@@ -54,16 +54,16 @@ extern "C" {
 /* Frame structure */
 typedef struct dlt_frame {
 	/* Header */
+	uint64_t 		adr_hex;	/* link address in BCD format or address mask or broadcast address */
+	uint16_t 		adr;		/* link address */
+
 	uint8_t			fnc;		/* function */
 	uint8_t			sseq;		/* subsequent data frame(1)/no subsequent data frame(0) */
 	uint8_t			err;		/* error(1)/no error(0) */
 	uint8_t			dir;		/* from controlled station(1)/from controlling station(0) */
 
-	uint16_t 		adr;		/* link address */
-	uint64_t 		adr_hex;	/* link address in BCD format or address mask or broadcast address */
-
 	/* Data */
-	uint8_t			data_len;	/* length of the data */
+	uint16_t		data_len;	/* length of the data */
 	unsigned char	*data;		/* data of variable length frame */
 } dlt_frame;
 
