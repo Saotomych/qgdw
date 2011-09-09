@@ -147,6 +147,7 @@ extern int virt_start(char *appname);
 extern void crossconnection(void);
 
 extern void ssd_create_ied(const char *pTag);			// call parse ied
+extern void ssd_create_ld(const char *pTag);			// call parse ld
 extern void ssd_create_ln(const char *pTag);			// call parse ln
 extern void ssd_create_lntype(const char *pTag);		// call parse lntype
 extern void ssd_create_dobj(const char *pTag);			// call parse do

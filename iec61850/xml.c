@@ -29,6 +29,10 @@ void TagEndSubs(const char *pTag){
 
 }
 
+void TagEndLD(const char *pTag){
+
+}
+
 void TagEndLN(const char *pTag){
 
 }
@@ -91,6 +95,8 @@ static const XML_Name XTags[] = {
   {"/IED", TagEndIED},
   {"Substation", ssd_create_subst},
   {"/Substation", TagEndSubs},
+  {"LDevice", ssd_create_ld},
+  {"/LDevice", TagEndLD},
   {"LNode", ssd_create_ln},
   {"/LNode", TagEndLN},
   {"LNodeType", ssd_create_lntype},

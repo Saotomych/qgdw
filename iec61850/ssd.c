@@ -12,8 +12,9 @@ struct _LNODETYPE *actlnodetype;
 struct _DTYPE  *actdtype;
 
 // Start points
-LIST fied, fln, flntype, fdo, fdtype, fattr;
+LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 IED *flastied = (IED*) &fied;
+LDEVICE *flastld = (LDEVICE*) &fld;
 LNODE *flastln = (LNODE*) &fln;
 LNTYPE *flastlntype = (LNTYPE*) &flntype;
 DOBJ *flastdo = (DOBJ*) &fdo;
@@ -89,6 +90,27 @@ char *key=0, *par=0;
 
 	printf("IEC61850: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
 
+}
+
+void ssd_create_ld(const char *pTag){			// call parse ld
+char *p;
+char *key=0, *par=0;
+	flastld = create_next_struct_in_list(&(flastld->l), sizeof(LDEVICE));
+	// Parse parameters for ln
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "inst")) flastld->ld.inst = par;
+			else
+			if (strstr((char*) key, "desc")) flastld->ld.desc = par;
+			else
+			if (strstr((char*) key, "asdu")) flastld->ld.options = par;
+		}
+	}while(p);
+
+	printf("IEC61850: new LDevice: inst=%s desc=%s options=%s\n",
+			flastld->ld.inst, flastld->ld.desc, flastld->ld.options);
 }
 
 void ssd_create_ln(const char *pTag){			// call parse ln
