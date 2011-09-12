@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SCL xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.iec.ch/61850/2003/SCL">
+  <Header id="SCL for iec-104" nameStructure="IEDName">
+    <History />
+  </Header>
+  <Substation name="S12" desc="SPb">
+    <Text />
+    <LNode asdu="967" lnInst="0" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+    <LNode asdu="55555" lnInst="99" lnClass="MMXU" iedName="scada" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+  </Substation>
+  <IED inst="Gallery, bay1" name="m700.place001" />
+  <IED inst="Center" name="scada" />
+  <DataTypeTemplates>
+    <LNodeType id="MMXUa" lnClass="MMXU">
+      <Text />
+      <DO name="Mod" type="myMod">
+        <Text />
+      </DO>
+      <DO asdupos="64" name="PhV.phsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="65" name="A.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="66" name="TotW.mag" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="67" name="W.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="68" name="Wback.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="69" name="VAr.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="70" name="VArback.PhsAHar" type="myPwr">
+        <Text />
+      </DO>
+      <DO name="Health" type="myBeh">
+        <Text />
+      </DO>
+    </LNodeType>
+    <DOType id="myBeh" cdc="INS">
+      <Text />
+      <DA name="stVal" bType="Enum" type="Beh" dchg="true" fc="ST">
+        <Text />
+      </DA>
+    </DOType>
+    <DOType id="myPwr" cdc="INS">
+      <Text />
+      <DA name="stVal" bType="INT32" dchg="true" fc="ST">
+        <Text />
+      </DA>
+    </DOType>
+    <DOType id="myMod" cdc="INC">
+      <Text />
+      <DA name="ctlVal" bType="Enum" type="Mod" fc="ST">
+        <Text />
+      </DA>
+      <DA name="stVal" bType="Enum" type="Mod" dchg="true" fc="ST">
+        <Text />
+      </DA>
+      <DA name="q" bType="Quality" dchg="true" fc="ST">
+        <Text />
+      </DA>
+      <DA name="t" bType="Timestamp" dchg="true" fc="ST">
+        <Text />
+      </DA>
+    </DOType>
+    <EnumType id="Beh">
+      <Text />
+      <EnumVal ord="1">on</EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+    <EnumType id="Mod">
+      <Text />
+      <EnumVal ord="1">on</EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+  </DataTypeTemplates>
+</SCL>
