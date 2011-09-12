@@ -251,106 +251,106 @@ int ret = 0;
 //}
 
 int asdu_parser(void){
-//SCADA_ASDU *actscada;
-//VIRT_ASDU *actasdu;
-//VIRT_ASDU_TYPE *actasdutype;
-//ASDU_DATAMAP *actasdudm;
-//LNODE *aln;
-//LNTYPE *alnt;
-//DOBJ *adobj;
-//
-//	printf("ASDU: Start ASDU mapping to parse\n");
-//
-//	// Create VIRT_ASDU_TYPE list
-//	actasdutype = (VIRT_ASDU_TYPE*) &fasdutype;
-//	alnt = (LNTYPE*) flntype.next;
-//	while(alnt){
-//
-//		actasdutype = create_next_struct_in_list((LIST*) actasdutype, sizeof(VIRT_ASDU_TYPE));
-//
-//		printf("ASDU: new VIRT_ASDU_TYPE\n");
-//
-//		// Fill VIRT_ASDU_TYPE
-//		actasdutype->mylntype = alnt;
-//
-//		// create ASDU_DATAMAP list
-//		actasdudm = (ASDU_DATAMAP*) &fdm;
-//		adobj = actasdutype->mylntype->lntype.pfdobj; // (DOBJ*) fdo.next;
-//
-//		while(adobj){
-//			if ((adobj->dobj.options) &&
-//				 (adobj->dobj.pmynodetype == &alnt->lntype)){
-//					// creating new DATAMAP and filling
-//					actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
-//					// Fill ASDU_DATAMAP
-//					actasdudm->mydobj = adobj;
-//					actasdudm->scadaid = atoi(adobj->dobj.options);
-//					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
-//						// find by DOType->DA.name = stVal => DOType->DA.btype
-//						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.type);
-//						printf("ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
-//								adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
-//					}else printf("ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg");
-//			}else printf("ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
-//
-//			// Next DOBJ
-//			adobj = adobj->l.next;
-//		}
-//		if (fdm.next) actasdutype->fdmap = fdm.next;
-//
-//		printf("ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
-//
-//		alnt = alnt->l.next;
-//	}
-//
-//
-//	// Create VIRT_ASDU and SCADA_ASDU lists
-//	actasdu = (VIRT_ASDU*) &fasdu;
-//	actscada = (SCADA_ASDU*) &fscada;
-//	aln = (LNODE*) fln.next;
-//	while(aln){
-//		if (aln->ln.options){
-//			actasdu = create_next_struct_in_list((LIST*) actasdu, sizeof(VIRT_ASDU));
-//
-//			// Fill VIRT_ASDU
-//			actasdu->myln = aln;
-//			actasdu->ASDUaddr = atoi(aln->ln.options);
-//			actasdu->baseoffset = atoi(aln->ln.lninst) * IEC104_CHLENGHT;
-//
-//			// If 'scada', create SCADA_ASDU
-//			if (strstr(actasdu->myln->ln.iedname, "scada")){
-//				actscada = create_next_struct_in_list((LIST*) actscada, sizeof(SCADA_ASDU));
-//				actscada->pscada = actasdu;
-//			}
-//
-//			// Link to VIRT_ASDU_TYPE
-//			// Find LNTYPE.id = VIRT_ASDU_TYPE.LN.lntype
-//			actasdutype =  (VIRT_ASDU_TYPE*) fasdutype.next;
-//			while(actasdutype){
-//				alnt = actasdutype->mylntype;
-//				if (!strcmp(alnt->lntype.id, aln->ln.lntype)) break;
-//				actasdutype = actasdutype->l.next;
-//			}
-//			if (actasdutype){
-//				actasdu->myasdutype = actasdutype;
-//				printf("ASDU: VIRT_ASDU %s.%s.%s linked to TYPE %s\n",
-//						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
-//			}
-//			else printf("ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
-//
-//			// Link ASDU_TYPE to DATAMAP
-//
-//		}
-//
-//		printf("ASDU: new VIRT_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
-//				actasdu->ASDUaddr, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
-//
-//		aln = aln->l.next;
-//	}
-//
-//	printf("ASDU: End ASDU mapping\n");
-//
-//	return 0;
+SCADA_ASDU *actscada;
+VIRT_ASDU *actasdu;
+VIRT_ASDU_TYPE *actasdutype;
+ASDU_DATAMAP *actasdudm;
+LNODE *aln;
+LNTYPE *alnt;
+DOBJ *adobj;
+
+	printf("ASDU: Start ASDU mapping to parse\n");
+
+	// Create VIRT_ASDU_TYPE list
+	actasdutype = (VIRT_ASDU_TYPE*) &fasdutype;
+	alnt = (LNTYPE*) flntype.next;
+	while(alnt){
+
+		actasdutype = create_next_struct_in_list((LIST*) actasdutype, sizeof(VIRT_ASDU_TYPE));
+
+		printf("ASDU: new VIRT_ASDU_TYPE\n");
+
+		// Fill VIRT_ASDU_TYPE
+		actasdutype->mylntype = alnt;
+
+		// create ASDU_DATAMAP list
+		actasdudm = (ASDU_DATAMAP*) &fdm;
+		adobj = actasdutype->mylntype->lntype.pfdobj; // (DOBJ*) fdo.next;
+
+		while(adobj){
+			if ((adobj->dobj.options) &&
+				 (adobj->dobj.pmynodetype == &alnt->lntype)){
+					// creating new DATAMAP and filling
+					actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
+					// Fill ASDU_DATAMAP
+					actasdudm->mydobj = adobj;
+					actasdudm->scadaid = atoi(adobj->dobj.options);
+					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
+						// find by DOType->DA.name = stVal => DOType->DA.btype
+						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.type);
+						printf("ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
+								adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
+					}else printf("ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg");
+			}else printf("ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
+
+			// Next DOBJ
+			adobj = adobj->l.next;
+		}
+		if (fdm.next) actasdutype->fdmap = fdm.next;
+
+		printf("ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
+
+		alnt = alnt->l.next;
+	}
+
+
+	// Create VIRT_ASDU and SCADA_ASDU lists
+	actasdu = (VIRT_ASDU*) &fasdu;
+	actscada = (SCADA_ASDU*) &fscada;
+	aln = (LNODE*) fln.next;
+	while(aln){
+		if (aln->ln.options){
+			actasdu = create_next_struct_in_list((LIST*) actasdu, sizeof(VIRT_ASDU));
+
+			// Fill VIRT_ASDU
+			actasdu->myln = aln;
+			actasdu->ASDUaddr = atoi(aln->ln.options);
+			actasdu->baseoffset = atoi(aln->ln.lninst) * IEC104_CHLENGHT;
+
+			// If 'scada', create SCADA_ASDU
+			if (strstr(actasdu->myln->ln.iedname, "scada")){
+				actscada = create_next_struct_in_list((LIST*) actscada, sizeof(SCADA_ASDU));
+				actscada->pscada = actasdu;
+			}
+
+			// Link to VIRT_ASDU_TYPE
+			// Find LNTYPE.id = VIRT_ASDU_TYPE.LN.lntype
+			actasdutype =  (VIRT_ASDU_TYPE*) fasdutype.next;
+			while(actasdutype){
+				alnt = actasdutype->mylntype;
+				if (!strcmp(alnt->lntype.id, aln->ln.lntype)) break;
+				actasdutype = actasdutype->l.next;
+			}
+			if (actasdutype){
+				actasdu->myasdutype = actasdutype;
+				printf("ASDU: VIRT_ASDU %s.%s.%s linked to TYPE %s\n",
+						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
+			}
+			else printf("ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
+
+			// Link ASDU_TYPE to DATAMAP
+
+		}
+
+		printf("ASDU: new VIRT_ASDU addr=%d for LN name=%s.%s.%s type=%s ied=%s\n",
+				actasdu->ASDUaddr, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
+
+		aln = aln->l.next;
+	}
+
+	printf("ASDU: End ASDU mapping\n");
+
+	return 0;
 }
 
 char mainapp[] 		= {"startiec"};
