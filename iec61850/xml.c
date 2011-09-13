@@ -9,7 +9,7 @@
 #include "../common/common.h"
 #include "iec61850.h"
 
-u08 Encoding, EndScript;
+static u08 Encoding, EndScript;
 
 //*** Tag RAW working ***//
 
@@ -77,6 +77,7 @@ void TagSetXml(const char *pTag){
     if (strstr(pTag,"Windows-1251")) Encoding=WIN;
     if (strstr(pTag,"windows-1251")) Encoding=WIN;
     if (strstr(pTag,"ASCII")) Encoding=DOS;
+    if (strstr(pTag,"KOI8-R")) Encoding=KOI8R;
     if (strstr(pTag,"UTF")) Encoding=UTF;
   }
 }

@@ -23,10 +23,6 @@ struct _LDEVICE_LIST;
 struct _IED;
 struct _IED_LIST;
 
-/* XML Params */
-#define WIN	1
-#define DOS 2
-#define UTF 3
 extern u08 Encoding;
 
 /* Just List */

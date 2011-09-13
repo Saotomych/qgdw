@@ -175,7 +175,6 @@ int i = 1;
 		// For all internal tty-devices: test for speed 9600, 2400, 1200
 		// Create strings for lowlevel.cfg from 1 string of addr.cfg
 
-
 		do{
 			// For any string consists 'kipp' make string for lowlevel.cfg
 			p = fgets(outbuf, 250, addrcfg);

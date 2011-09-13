@@ -408,26 +408,26 @@ pid_t chldpid;
 VIRT_ASDU *sasdu = (VIRT_ASDU *) &fasdu;
 char *p;
 //
-//// Read mainmap.cfg into memory
-//	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
-//		printf("IEC Virt: 'mainmap.cfg' file not found\n");
-//	}
-//	MCFGfile =  malloc(fst.st_size);
-//	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
-//	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
-//	if (clen != fst.st_size) ret = -1;
-//	else{
-//		// Building mapping meter asdu to ssd asdu
-//		if (asdu_parser()) ret = -1;
-//		else{
-//			// Run multififo
-//			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata);
-//			ret = chldpid;
-//		}
-//	}
-//	free(MCFGfile);
-//	printf("\n--- Configuration ready --- \n\n");
-//
+// Read mainmap.cfg into memory
+	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
+		printf("IEC Virt: 'mainmap.cfg' file not found\n");
+	}
+	MCFGfile =  malloc(fst.st_size);
+	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
+	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
+	if (clen != fst.st_size) ret = -1;
+	else{
+		// Building mapping meter asdu to ssd asdu
+		if (asdu_parser()) ret = -1;
+		else{
+			// Run multififo
+			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata);
+			ret = chldpid;
+		}
+	}
+	free(MCFGfile);
+	printf("\n--- Configuration ready --- \n\n");
+
 //	//	Execute all low level application for devices by LNodes
 //	sasdu = sasdu->l.next;
 //	while(sasdu){
