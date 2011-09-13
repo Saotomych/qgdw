@@ -33,7 +33,12 @@ uint32_t maxrec = 0, actrec = 0;
 uint16_t	lastasdu;
 uint16_t	lastldinst;
 
-int createlltable(void){
+// Create lowlevel.cfg for concrete level
+// 1: fixed asdu
+// 2: fixed MAC, dynamic asdu
+// 3: dynamic asdu
+// and concrete speed according to table
+int createlltable(u08 level, u08 spdidx){
 FILE *addrcfg;
 struct phy_route *pr;
 char *p, *pport;
@@ -59,43 +64,25 @@ int i = 1;
 }
 
 int main(int argc, char * argv[]){
-
-	// Backup previous lowlevel.cfg
+int i;
+// Backup previous lowlevel.cfg
 	rename("/rw/mx00/configs/lowlevel.cfg", "/rw/mx00/configs/lowlevel.bak");
-	// Create full table for all addr.cfg records
-	createlltable();
 
-// Start endpoints for kipp
+	for (i=0; i < MAXLEVEL; i++){
+		// Create full table for all addr.cfg records
+		createlltable();
+		// Start endpoints
 
-// Control of answers and forming new lowlevel.cfg
+		// Control of answers and forming new lowlevel.cfg
 
-// Exit by time
+		// Exit by time
 
-// write new lowlevel.cfg
+		// write new lowlevel.cfg
 
-// Quit all lowlevel applications
+		// Quit all lowlevel applications
 
+	}
 
-// Start endpoints for m500/m700
-
-// Control of answers and forming new lowlevel.cfg
-
-// Exit by time
-
-// write new lowlevel.cfg
-
-// Quit all lowlevel applications
-
-
-// Start endpoints for m100/m300
-
-// Control of answers and forming new lowlevel.cfg
-
-// Exit by time
-
-// write new lowlevel.cfg
-
-// Quit all lowlevel applications
-
+	rename("/rw/mx00/configs/lowlevel.bak", "/rw/mx00/configs/lowlevel.cfg");
 
 }
