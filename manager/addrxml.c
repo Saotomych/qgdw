@@ -12,6 +12,9 @@ uint configstep;
 
 u16 usasdu[MAXEP];
 u08 maxfixasdu;
+u08 llstring[128];
+
+char Speed[6]={"9600\0"};
 
 static u08 Encoding, EndScript;
 // Scenario functions
@@ -19,7 +22,7 @@ static u08 Encoding, EndScript;
 // In data: dlt-address
 // Out data: string to file lowlevel.3.<speed> , where speed=9600,2400,1200
 // asdu -addr <dlt-address> -name "unitlink-dlt645" -port "ttyS3" -pars <speed>,8E1,NO
-// asdu - dynamic
+// asdu - dynamic, dont equal with every ASDU from usasdu
 void TagM100300(const char *pTag){
 	if (configstep == 3){
 
@@ -29,24 +32,45 @@ void TagM100300(const char *pTag){
 // In data: MAC-address
 // Out data: 3 strings to files lowlevel.2.<speed>, where speed=9600,2400,1200
 // asdu -addr 01 -port "ttyS4" -name "unitlink-m700" -pars <speed>,8E1,NO
-// asdu - dynamic
+// asdu - dynamic, dont equal with every ASDU from usasdu
 void TagM500700(const char *pTag){
 	if (configstep == 2){
 
 	}
 }
 
-// In data: ASDU IP-address port
+// In data: ASDU IP-address port (default port = 2404)
 // Out data: string to file lowlevel.1
 // asdu -addr <IP-address> -name "unitlink-iec104" -port 2204 -mode CONNECT
 // or
 // In data: ASDU only
 // Out data: string to file lowlevel.1.<speed>, where speed=9600,2400,1200
 // asdu -name "unitlink-iec101" -port "ttyS3" -pars <speed>,8E1,NO
-// every ASDU set to usasdu[maxfixasdu]
+// every fixed ASDU add to usasdu[maxfixasdu]
 void TagKIPP(const char *pTag){
+uint32_t addr;
+uint16_t port;
+uint16_t asdu;
+char *p;
 	if (configstep == 1){
-
+		p = strstr((char*) pTag, "-asdu");
+		if (p) strncpy(llstring, p+6, 5);
+		else return;
+		strcat(llstring, " ");
+		p = strstr((char*) pTag, "-ip");
+		if (p){
+			strncat(llstring, p+4, 10);
+			p = strstr((char*) pTag, "-port");
+			if (p){
+				strcat(llstring, " -port ");
+				strncat(llstring, p+6, 4);
+				strcat(llstring, " -name \"unitlink-iec104\" -mode CONNECT\n");
+			}else strcat(llstring, " -port 2404 -name \"unitlink-iec104\" -mode CONNECT\n");
+		}else{
+			strcat(llstring, " -name \"unitlink-iec101\" -port ttyS3 -pars ");
+			strcat(llstring, Speed);
+			strcat(llstring, " 8E1,NO\n");
+		}
 	}
 }
 
@@ -105,6 +129,7 @@ u08 s, i;
         pS++; s++;
     }
     if ((XTags[i].Name[s] == 0) && (*pS <= 'A')){
+    	llstring[0] = 0;
     	XTags[i].Function(pS);
     	break;
     }
