@@ -951,6 +951,10 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 					dlt645_read_adr_recv(d_fr, ep_ext);
 					break;
 
+				case FNC_SET_BAUD_RATE:
+					dlt645_set_baudrate_recv(d_fr, ep_ext);
+					break;
+
 				default:
 					res = RES_UNKNOWN;
 					break;
@@ -1290,7 +1294,7 @@ uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br)
 				recv_buff_len = 0;
 
 #ifdef _DEBUG
-				printf("%s: Set baud rate command sent. Address = %d, br = 0x%02X.\n", APP_NAME, adr, br);
+				printf("%s: Set Baud Rate command sent. Address = %d, br = 0x%02X.\n", APP_NAME, adr, br);
 #endif
 			}
 		}
@@ -1307,6 +1311,9 @@ uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br)
 
 uint16_t dlt645_set_baudrate_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 {
+#ifdef _DEBUG
+	printf("%s: Set Baud Rate frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, d_fr->data_len);
+#endif
 
 	// TODO finish function dlt645_set_baudrate_recv()
 	return RES_SUCCESS;
