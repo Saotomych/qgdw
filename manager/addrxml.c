@@ -34,7 +34,12 @@ void TagM100300(const char *pTag){
 // asdu -addr 01 -port "ttyS4" -name "unitlink-m700" -pars <speed>,8E1,NO
 // asdu - dynamic, dont equal with every ASDU from usasdu
 void TagM500700(const char *pTag){
+char *p;
 	if (configstep == 2){
+		p = strstr((char*) pTag, "-asdu");
+		if (p) strncpy(llstring, p+6, 5);
+		else return;
+		strcat(llstring, " ");
 
 	}
 }
@@ -48,22 +53,19 @@ void TagM500700(const char *pTag){
 // asdu -name "unitlink-iec101" -port "ttyS3" -pars <speed>,8E1,NO
 // every fixed ASDU add to usasdu[maxfixasdu]
 void TagKIPP(const char *pTag){
-uint32_t addr;
-uint16_t port;
-uint16_t asdu;
 char *p;
 	if (configstep == 1){
-		p = strstr((char*) pTag, "-asdu");
-		if (p) strncpy(llstring, p+6, 5);
+		p = strstr((char*) pTag, "asdu");
+		if (p) strncpy(llstring, p+5, 5);
 		else return;
 		strcat(llstring, " ");
-		p = strstr((char*) pTag, "-ip");
+		p = strstr((char*) pTag, "ip");
 		if (p){
-			strncat(llstring, p+4, 10);
-			p = strstr((char*) pTag, "-port");
+			strncat(llstring, p+3, 10);
+			p = strstr((char*) pTag, "port");
 			if (p){
 				strcat(llstring, " -port ");
-				strncat(llstring, p+6, 4);
+				strncat(llstring, p+5, 4);
 				strcat(llstring, " -name \"unitlink-iec104\" -mode CONNECT\n");
 			}else strcat(llstring, " -port 2404 -name \"unitlink-iec104\" -mode CONNECT\n");
 		}else{

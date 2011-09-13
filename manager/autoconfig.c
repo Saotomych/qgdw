@@ -33,127 +33,6 @@ uint32_t maxrec = 0, actrec = 0;
 uint16_t	lastasdu;
 uint16_t	lastldinst;
 
-char iec104={"unitlink-iec104"};
-char iec101={"unitlink-iec101"};
-char intern={"unitlink-m700"};
-char tcp={"phy_tcp"};
-char tty={"phy_tty"};
-
-// E-Meters
-char *kipp={"kipp"};
-char *m100={"m100"};
-char *m300={"m300"};
-char *m500={"m500"};
-char *m700={"m700"};
-
-inline char *finddig(char *p){
-	while ((*p) && (*p <= '9') && (*p >= '0')) p++;
-	return p;
-}
-
-int findasdu(uint16_t){
-
-	return 0;
-}
-
-void setstring104(char *paddr, LOWREC *lr){
-
-}
-
-void setstringdlt(char *paddr, LOWREC *lr){
-
-}
-
-void setstring101(char *paddr, LOWREC *lr){
-
-}
-
-void setstringintern(char *paddr, LOWREC *lr){
-
-}
-
-// For ready asdu from addr.cfg
-char *makellstringforasdu(char *paddr, LOWREC *lr){
-long testval;
-u08 i;
-char *p;
-	// Detect scenario
-	if (strncasecmp(kipp, paddr, 4)){
-		lr->addr = 0;
-		lr->port = 0;
-
-		// Detect chain (unitlink - phylink)
-		p = paddr;
-		// Skip 2 "
-		while(*p != '"') p++;
-		while(*p != '"') p++;
-		p = finddig(p);
-
-		// Set addr:port & asdu
-		i=0;
-		do{
-			testval = atol(p);
-			p = finddig(p);
-			if (*p){
-				if ((*(p-1) == '.') && (i < 3)) lr->addr |= (testval & 0xFF) << i;
-				if ((*(p-1) == ':') && (i == 3)) lr->addr |= (testval & 0xFF) << 3;
-			}else{
-				lr->asdu = testval;
-				lr->scen = KIPP101;
-			}
-			i++;
-		}while (testval);
-		if (i == 4){
-			lr->port = testval;
-			lr->scen = KIPP104;
-			lr->asdu = finddig(p);
-			if (!lr->asdu){
-				lr->asdu = lastasdu++;
-				lastasdu++;
-			}
-		}
-
-		// Set ld.inst
-		lr->ldinst = lastldinst;
-		lastldinst++;
-
-		return lr->cfg;
-	}
-}
-
-char *makellstringforinternal(char *paddr, LOWREC *lr){
-long testval;
-u08 i;
-char *p;
-
-	if (strncasecmp(m500, paddr, 4)){
-
-		return lr->cfg;
-	}
-
-	if (strncasecmp(m700, paddr, 4)){
-
-		return lr->cfg;
-	}
-}
-
-// For local autoasdu
-char *makellstringforaddr(char *paddr, LOWREC *lr){
-long testval;
-u08 i;
-char *p;
-	if (strncasecmp(m100, paddr, 4)){
-
-		return lr->cfg;
-	}
-
-	if (strncasecmp(m300, paddr, 4)){
-
-		return lr->cfg;
-	}
-}
-
-
 int createlltable(void){
 FILE *addrcfg;
 struct phy_route *pr;
@@ -175,59 +54,6 @@ int i = 1;
 		// For all internal tty-devices: test for speed 9600, 2400, 1200
 		// Create strings for lowlevel.cfg from 1 string of addr.cfg
 
-		do{
-			// For any string consists 'kipp' make string for lowlevel.cfg
-			p = fgets(outbuf, 250, addrcfg);
-			actrec = 0;
-			if (p){
-				// Parse string addr.cfg
-				if (strncasecmp(kipp, p, 4)){
-
-				}
-			}
-			i++;
-		}while(p);
-
-		lseek(addrcfg, SEEK_SET, 0);
-
-		do{
-			// For any string consists 'kipp' make string for lowlevel.cfg
-			p = fgets(outbuf, 250, addrcfg);
-			actrec = 0;
-			if (p){
-				// Parse string addr.cfg
-				if (strncasecmp(m500, p, 4)){
-
-				}
-
-				if (strncasecmp(m700, p, 4)){
-
-				}
-
-			}
-			i++;
-		}while(p);
-
-		lseek(addrcfg, SEEK_SET, 0);
-
-		do{
-			// For any string consists 'kipp' make string for lowlevel.cfg
-			p = fgets(outbuf, 250, addrcfg);
-			actrec = 0;
-			if (p){
-				// Parse string addr.cfg
-				if (strncasecmp(m100, p, 4)){
-
-				}
-
-				if (strncasecmp(m300, p, 4)){
-
-				}
-
-			}
-			i++;
-		}while(p);
-
 	}else return -1;
 	return 0;
 }
@@ -239,15 +65,37 @@ int main(int argc, char * argv[]){
 	// Create full table for all addr.cfg records
 	createlltable();
 
-	// Start endpoints
+// Start endpoints for kipp
 
-	// Control of answers and forming new lowlevel.cfg
+// Control of answers and forming new lowlevel.cfg
 
-	// Exit by time
+// Exit by time
 
-	// write new lowlevel.cfg
+// write new lowlevel.cfg
 
-	// Quit all lowlevel applications
+// Quit all lowlevel applications
+
+
+// Start endpoints for m500/m700
+
+// Control of answers and forming new lowlevel.cfg
+
+// Exit by time
+
+// write new lowlevel.cfg
+
+// Quit all lowlevel applications
+
+
+// Start endpoints for m100/m300
+
+// Control of answers and forming new lowlevel.cfg
+
+// Exit by time
+
+// write new lowlevel.cfg
+
+// Quit all lowlevel applications
 
 
 }
