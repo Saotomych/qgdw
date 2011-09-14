@@ -48,13 +48,21 @@ int createllforlr(LOWREC *lr){
 // Cycle for creating all records for one type and speed
 int createlrfile(char *fname, u08 copy){
 int ret, i, len;
+LOWREC *lr;
+FILE *f;
 
+	f = fopen(fname, "w+");
 	for (i=0; i<maxrec; i++){
 		tlstr[0] = 0;
-		if ((lrs[i]->copied & copy) | (~copy&1)) createllforlr(lrs[i]);
+		lr = lrs[i];
+		if ((lr->copied & copy) | (~copy&1)) createllforlr(lr);
 		len = strlen(tlstr);
-		if (len) lrs[i]->scfg = malloc(len);
+		if (len) lr->scfg = malloc(len);
+		strcpy(lr->scfg, tlstr);
+		fputs(tlstr, f);
 	}
+	fputs("\n",f);
+	fclose(f);
 
 	return ret;
 }
@@ -70,7 +78,7 @@ int ret = -1;
 		lrs[maxrec]->asdu = lr->asdu;
 		lrs[maxrec]->ldinst = lr->ldinst;
 		lrs[maxrec]->port = lr->port;
-		lrs[maxrec]->cfg[0] = 0;
+		lrs[maxrec]->scfg = 0;
 		lrs[maxrec]->connect = 0;
 		lrs[maxrec]->copied = 0;
 		lrs[maxrec]->myep = 0;
@@ -135,6 +143,8 @@ int i, allfiles;
 		// Create full tables for all variants of records in the file 'addr.cfg'.
 		createlltables();
 	}
+
+	createlrfile("/rw/mx00/configs/ll/lowlevel.1", FALSE);
 
 	allfiles = 0;
 	for (i=0; i < allfiles; i++){

@@ -9,7 +9,7 @@
 #include "../common/common.h"
 #include "iec61850.h"
 
-static u08 Encoding, EndScript;
+u08 Encoding, EndScript;
 
 //*** Tag RAW working ***//
 

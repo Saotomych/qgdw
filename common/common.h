@@ -72,6 +72,8 @@
 
 #define IEC104_CHLENGHT			400
 
+#define TRUE	1
+#define FALSE	0
 
 /*
  *
