@@ -17,7 +17,7 @@
 #define MX00		4
 
 typedef struct lowrecord{
-	char 		cfg[128];
+	char 		*scfg;
 	// Vars for ICD
 	uint32_t	ldinst;
 	// Flags

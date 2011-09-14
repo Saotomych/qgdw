@@ -21,8 +21,7 @@ uint16_t	lastldinst;
 char *Addrfile;
 
 // Create string for lrs[idx]
-int createllforlr(u08 idx){
-LOWREC *lr=lrs[idx];
+int createllforlr(LOWREC *lr){
 	switch (lr->scen){
 	case IEC104:
 
@@ -46,8 +45,16 @@ LOWREC *lr=lrs[idx];
 	return 0;
 }
 
+// Cycle for creating all records for one type and speed
 int createlrfile(char *fname, u08 copy){
-int ret;
+int ret, i, len;
+
+	for (i=0; i<maxrec; i++){
+		tlstr[0] = 0;
+		if ((lrs[i]->copied & copy) | (~copy&1)) createllforlr(lrs[i]);
+		len = strlen(tlstr);
+		if (len) lrs[i]->scfg = malloc(len);
+	}
 
 	return ret;
 }
