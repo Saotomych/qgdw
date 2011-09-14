@@ -22,11 +22,34 @@ char *Addrfile;
 
 // Create string for lrs[idx]
 int createllforlr(u08 idx){
+LOWREC *lr=lrs[idx];
+	switch (lr->scen){
+	case IEC104:
 
+		break;
+
+	case IEC101:
+
+		break;
+
+	case DLT645:
+
+		break;
+
+	case MX00:
+
+		break;
+
+	default:
+		return -1;
+	}
+	return 0;
 }
 
 int createlrfile(char *fname, u08 copy){
+int ret;
 
+	return ret;
 }
 
 int createlowrecord(LOWREC *lr){
