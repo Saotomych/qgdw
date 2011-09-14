@@ -93,12 +93,12 @@ LOWREC lr;
 // ssd functions
 
 void TagSetSCL(const char *pTag){
-	printf("Manager: Start ADDR file to parse\n");
+	printf("Task Manager: Start ADDR file to parse\n");
 }
 
 void TagEndSCL(const char *pTag){
 	EndScript=1;
-	printf("Manager: Stop ADDR file to parse\n");
+	printf("Task Manager: Stop ADDR file to parse\n");
 }
 
 void TagSetXml(const char *pTag){
