@@ -63,7 +63,6 @@ extern "C" {
 typedef struct lpdu_frame {
 	/* Header */
 	uint8_t 		type;		/* frame type */
-
 	uint8_t			fnc;		/* function */
 	uint8_t			fcv;		/* FCB valid(1)/invalid (0) */
 	uint8_t			fcb;		/* frame count bit */
@@ -73,11 +72,13 @@ typedef struct lpdu_frame {
 	uint8_t			dir;		/* from controlling station(1)/from controlled station(0) */
 
 	uint8_t			sc;			/* single char frame */
+	uint8_t 		res1;		/* padding */
+	uint16_t 		res2;		/* padding */
 
 	uint16_t 		adr;		/* link address */
 
 	/* Data */
-	uint8_t			data_len;	/* length of the data */
+	uint16_t		data_len;	/* length of the data */
 	unsigned char	*data;		/* data of variable length frame */
 } lpdu_frame;
 
@@ -95,10 +96,10 @@ lpdu_frame *lpdu_frame_create();
 void lpdu_frame_destroy(lpdu_frame **frame);
 
 /* parse input buffer to the frame structure */
-uint8_t lpdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, lpdu_frame *frame, uint8_t format, uint8_t adr_len);
+uint16_t lpdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, lpdu_frame *frame, uint8_t format, uint8_t adr_len);
 
 /* build buffer from given frame structure */
-uint8_t lpdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, lpdu_frame *frame, uint8_t format, uint8_t adr_len);
+uint16_t lpdu_frame_buff_build(unsigned char **buff, uint32_t *buff_len, lpdu_frame *frame, uint8_t format, uint8_t adr_len);
 
 
 #ifdef __cplusplus

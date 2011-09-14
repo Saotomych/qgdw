@@ -23,7 +23,7 @@ static uint32_t		 	recv_buff_len = 0;			/* used length of receive frame buffer *
 static time_t			timer_dcoll = 0;			/* data collection timer */
 static uint16_t			t_dcoll_p = DCOLL_PER;		/* period for data collection */
 static uint16_t			t_dcoll_d = DCOLL_DELAY;	/* delay for data collection start */
-static uint32_t			dcoll_stopped = 1;			/* data collection state sign */
+static uint8_t			dcoll_stopped = 1;			/* data collection state sign */
 static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working with */
 static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
 
@@ -103,8 +103,9 @@ int main(int argc, char *argv[])
 #endif
 		}
 
+#ifdef _DEBUG
 		if(ret == 2) printf("%s: mf_waitevent timeout\n", APP_NAME);
-
+#endif
 	}while(!appexit);
 
 	mf_exit();
@@ -146,7 +147,7 @@ uint16_t m700_config_read(const char *file_name)
 
 				ep_num++;
 #ifdef _DEBUG
-				printf("%s: New ep_ext added. Address = %d, Link address = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
+				printf("%s: New ep_ext added. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 		}
@@ -214,8 +215,7 @@ void m700_catch_alarm(int sig)
 		recv_buff_len = 0;
 
 #ifdef _DEBUG
-		printf("%s: Timer req timeout.\n", APP_NAME);
-		printf("%s: Timer req stopped.\n", APP_NAME);
+		printf("%s: Timer req went off.\n", APP_NAME);
 #endif
 
 		// if collection is in progress force to collect data from the next device
@@ -234,7 +234,7 @@ void m700_catch_alarm(int sig)
 		timer_dcoll = 0;
 
 #ifdef _DEBUG
-		printf("%s: Data collection started.\n", APP_NAME);
+		printf("%s: Data Collection started.\n", APP_NAME);
 #endif
 
 		m700_collect_data();
@@ -253,6 +253,7 @@ void m700_catch_alarm(int sig)
 				m700_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 	#ifdef _DEBUG
+				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 	#endif
 			}
@@ -320,7 +321,7 @@ int m700_recv_data(int len)
 			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-			printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				m700_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
@@ -330,7 +331,6 @@ int m700_recv_data(int len)
 #ifdef _DEBUG
 				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
-
 
 				m700_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
@@ -343,7 +343,6 @@ int m700_recv_data(int len)
 #ifdef _DEBUG
 				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
-
 
 				m700_frame_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 
@@ -432,7 +431,7 @@ void m700_init_ep_ext(m700_ep_ext* ep_ext)
 	ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
-	printf("%s: ep_ext (re)initialized. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
+	printf("%s: ep_ext (re)initialized. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 }
 
@@ -465,8 +464,9 @@ uint16_t m700_add_map_item(uint32_t m700_id, uint32_t base_id)
 		last_map->next = new_map;
 
 #ifdef _DEBUG
-			printf("%s: New m700_map added. m700_id = 0x%02X, base_id = %d\n", APP_NAME, new_map->m700_id, new_map->base_id);
+	printf("%s: New m700_map added. m700_id = 0x%02X, base_id = %d\n", APP_NAME, new_map->m700_id, new_map->base_id);
 #endif
+
 	return RES_SUCCESS;
 }
 
@@ -590,7 +590,7 @@ uint16_t m700_collect_data()
 			if(dcoll_ep_idx >= MAXEP)
 			{
 #ifdef _DEBUG
-			printf("%s: m700_collect_data - reached end of ep_exts array\n", APP_NAME);
+				printf("%s: m700_collect_data - reached end of ep_exts array\n", APP_NAME);
 #endif
 
 				// reached end of array, time to wait for next data collection
@@ -610,7 +610,7 @@ uint16_t m700_collect_data()
 #ifdef _DEBUG
 		if(ep_ext && ep_ext->tx_ready)
 		{
-			printf("%s: Collecting data from - Address = %d, Link address = %d, ep_idx = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, dcoll_ep_idx);
+			printf("%s: Collecting data from - Address = %d, ep_idx = %d\n", APP_NAME, ep_ext->adr, dcoll_ep_idx);
 		}
 #endif
 	}
@@ -635,7 +635,7 @@ uint16_t m700_collect_data()
 	else
 	{
 #ifdef _DEBUG
-		printf("%s: m700_collect_data - data_idx = %d. Address = %d, Link address = %d\n", APP_NAME, dcoll_data_idx, ep_ext->adr, ep_ext->adr_link);
+		printf("%s: m700_collect_data - data_idx = %d. Address = %d\n", APP_NAME, dcoll_data_idx, ep_ext->adr);
 #endif
 
 		// device and data identifier were found! device is ready for data transfer! let's get the data from it!
@@ -699,7 +699,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d, Link address = %d.\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr, ep_ext->adr_link);
+			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr);
 #endif
 
 			m700_add_dobj_item(ep_ext, fr_do->id, (unsigned char*)fr_do->name);
@@ -708,7 +708,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
+			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			m700_init_ep_ext(ep_ext);
@@ -731,7 +731,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_CONNECT_ACK:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_ACK received. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
+			printf("%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			m700_init_ep_ext(ep_ext);
@@ -741,42 +741,29 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 			ep_ext->tx_ready = 1;
 
-#ifdef _DEBUG
-			printf("%s: Timer rc stopped. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
-			printf("%s: Data transfer state set to ready. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
-#endif
-
 			break;
 
 		case EP_MSG_CONNECT_NACK:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_NACK received. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
+			printf("%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			m700_init_ep_ext(ep_ext);
 
 			// start rc timer
 			ep_ext->timer_rc = time(NULL);
-
-#ifdef _DEBUG
-			printf("%s: Timer rc started. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
-#endif
 
 			break;
 
 		case EP_MSG_CONNECT_LOST:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_LOST received. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
+			printf("%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			m700_init_ep_ext(ep_ext);
 
 			// start rc timer
 			ep_ext->timer_rc = time(NULL);
-
-#ifdef _DEBUG
-			printf("%s: Timer rc started. Address = %d, Link address = %d.\n", APP_NAME, ep_ext->adr, ep_ext->adr_link);
-#endif
 
 			break;
 
@@ -840,7 +827,7 @@ uint16_t m700_frame_send(m700_frame *m_fr, uint16_t adr, uint8_t dir)
 			if(mf_toendpoint(ep_buff, sizeof(ep_data_header)+ d_len, adr, dir) <= 0) res = RES_INCORRECT;
 
 #ifdef _DEBUG
-			printf("%s: User data in DIRDN sent. Address = %d, Link address= %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, ep_header.len);
+			printf("%s: User data in DIRDN sent. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_header.len);
 
 			char c_buff[512] = {0};
 			hex2ascii((unsigned char *)ep_buff+sizeof(ep_data_header), c_buff, + d_len);
@@ -875,10 +862,6 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 		timer_recv = 0;
 		recv_buff_len = 0;
 
-#ifdef _DEBUG
-		printf("%s: Timer req stopped. Address = %d.\n", APP_NAME, adr);
-#endif
-
 		return RES_INCORRECT;
 	}
 
@@ -899,66 +882,59 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	printf("%s: Frame chunk in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
 
 	char c_buff[512] = {0};
-	hex2ascii(recv_buff, c_buff, recv_buff_len);
+	hex2ascii(buff, c_buff, buff_len);
 	printf("%s: %s\n", APP_NAME, c_buff);
 #endif
 
 	offset = 0;
 
-	while(offset < recv_buff_len)
+	m_fr = m700_frame_create();
+
+	if(!m_fr) return RES_MEM_ALLOC;
+
+	res = m700_frame_buff_parse(recv_buff, recv_buff_len, &offset, m_fr);
+
+	if(res == RES_SUCCESS)
 	{
-		m_fr = m700_frame_create();
+#ifdef _DEBUG
+		printf("%s: Frame in DIRUP received. Length = %d\n", APP_NAME, recv_buff_len);
 
-		if(!m_fr) return RES_MEM_ALLOC;
+		char c_buff[512] = {0};
+		hex2ascii(recv_buff, c_buff, recv_buff_len);
+		printf("%s: %s\n", APP_NAME, c_buff);
+#endif
 
-		res = m700_frame_buff_parse(recv_buff, recv_buff_len, &offset, m_fr);
+		// reset request-response variables
+		timer_recv = 0;
+		recv_buff_len = 0;
 
-		if(res == RES_SUCCESS)
+		ep_ext = m700_get_ep_ext(m_fr->adr, M700_LINK_ADR);
+
+		if(ep_ext)
 		{
-#ifdef _DEBUG
-			printf("%s: Frame in DIRUP received. Link address = %d, Length = %d\n", APP_NAME, m_fr->adr, recv_buff_len);
-
-			char c_buff[512] = {0};
-			hex2ascii(recv_buff, c_buff, recv_buff_len);
-			printf("%s: %s\n", APP_NAME, c_buff);
-#endif
-
-			// reset request-response variables
-			timer_recv = 0;
-			recv_buff_len = 0;
-
-#ifdef _DEBUG
-			printf("%s: Timer req stopped. Address = %d.\n", APP_NAME, adr);
-#endif
-
-			ep_ext = m700_get_ep_ext(m_fr->adr, M700_LINK_ADR);
-
-			if(ep_ext)
+			// check if collection started and frame from correct address
+			if(!dcoll_stopped && timer_dcoll == 0 && ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
 			{
-				// check if collection started and frame from correct address
-				if(!dcoll_stopped && timer_dcoll == 0 && ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
-				{
 #ifdef _DEBUG
-					printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
+				printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
 #endif
 
-					res = RES_INCORRECT;
-				}
-				else
-				{
-					m700_read_data_recv(m_fr, ep_ext);
-				}
+				res = RES_INCORRECT;
 			}
 			else
 			{
-				res = RES_INCORRECT;
+				m700_read_data_recv(m_fr, ep_ext);
 			}
-
-			if(!dcoll_stopped) m700_collect_data();
+		}
+		else
+		{
+			res = RES_INCORRECT;
 		}
 
-		m700_frame_destroy(&m_fr);
+		if(!dcoll_stopped) m700_collect_data();
 	}
+
+	m700_frame_destroy(&m_fr);
 
 	return res;
 }
@@ -1074,9 +1050,8 @@ uint16_t m700_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t
 			// set request-response variables
 			timer_recv = time(NULL);
 			recv_buff_len = 0;
-
 #ifdef _DEBUG
-		printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
+			printf("%s: Read Data command sent. Address = %d.\n", APP_NAME, adr);
 #endif
 		}
 
@@ -1090,7 +1065,7 @@ uint16_t m700_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t
 uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: Read Data frame received. Address = %d, Link address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, m_fr->data_len);
+	printf("%s: Read Data frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
 #endif
 
 	uint8_t res, sseq;
@@ -1163,7 +1138,6 @@ uint16_t m700_read_adr_send(uint16_t adr)
 
 #ifdef _DEBUG
 			printf("%s: Read address command sent. Address = %d.\n", APP_NAME, adr);
-			printf("%s: Timer req started. Address = %d.\n", APP_NAME, adr);
 #endif
 		}
 
@@ -1177,7 +1151,7 @@ uint16_t m700_read_adr_send(uint16_t adr)
 uint16_t m700_read_adr_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-	printf("%s: Read Address frame received. Address = %d, Link address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_ext->adr_link, m_fr->data_len);
+	printf("%s: Read Address frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
 #endif
 
 	// TODO finish function m700_read_adr_recv()

@@ -90,8 +90,9 @@ int main(int argc, char *argv[])
 #endif
 		}
 
+#ifdef _DEBUG
 		if(ret == 2) printf("%s: mf_waitevent timeout\n", APP_NAME);
-
+#endif
 	}while(!appexit);
 
 	mf_exit();
@@ -189,7 +190,6 @@ void iec104_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
-			// check timer t0
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t_t0)
 			{
 #ifdef _DEBUG
@@ -208,8 +208,6 @@ void iec104_catch_alarm(int sig)
 				}
 			}
 
-
-			// check timer t1
 			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t_t1)
 			{
 #ifdef _DEBUG
@@ -228,26 +226,21 @@ void iec104_catch_alarm(int sig)
 				}
 			}
 
-			// check timer t2
 			if(ep_exts[i]->timer_t2 > 0 && difftime(cur_time, ep_exts[i]->timer_t2) >= t_t2)
 			{
 				iec104_frame_s_send(ep_exts[i], DIRDN);
 			}
 
-			// check timer t3
 			if(ep_exts[i]->timer_t3 > 0 && difftime(cur_time, ep_exts[i]->timer_t3) >= t_t3)
 			{
 				iec104_frame_u_send(APCI_U_TESTFR_ACT, ep_exts[i], DIRDN);
 			}
 
-			// check timer sync
 			if(ep_exts[i]->timer_sync > 0 && difftime(cur_time, ep_exts[i]->timer_sync) >= ep_exts[i]->t_sync)
 			{
-				// synchronize time
 				iec104_time_sync_send(ep_exts[i]);
 			}
 
-			// check timer rc
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
 #ifdef _DEBUG
@@ -277,6 +270,7 @@ void iec104_catch_alarm(int sig)
 iec104_ep_ext* iec104_get_ep_ext(uint16_t adr)
 {
 	int i;
+
 	for(i=0; i < MAXEP; i++)
 	{
 		if(ep_exts[i] && ep_exts[i]->adr == adr) return ep_exts[i];
@@ -338,13 +332,10 @@ uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 {
 	uint32_t *data_ids_new = NULL;
 
-	// fast check input data
 	if(!ep_ext) return RES_INCORRECT;
 
-	// try to allocate some more memory
 	data_ids_new = (uint32_t*) realloc((void*)ep_ext->data_ids, sizeof(uint32_t) * (ep_ext->data_ids_size + 1));
 
-	// check if memory was allocated ok
 	if(!data_ids_new) return RES_MEM_ALLOC;
 
 	ep_ext->data_ids = data_ids_new;
@@ -367,7 +358,7 @@ int iec104_recv_data(int len)
 	uint32_t offset;
 	ep_data_header *ep_header_in;
 
-	buff = malloc(len);
+	buff = (char*) malloc(len);
 
 	if(!buff) return -1;
 
@@ -377,7 +368,6 @@ int iec104_recv_data(int len)
 	printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 #endif
 
-	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < len)
@@ -417,7 +407,6 @@ int iec104_recv_data(int len)
 #ifdef _DEBUG
 				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
-				// asdu received
 				iec104_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
 			else
@@ -426,7 +415,6 @@ int iec104_recv_data(int len)
 				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
-				// system message received
 				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
@@ -439,7 +427,6 @@ int iec104_recv_data(int len)
 				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
-				// apdu frame received
 				iec104_frame_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
 			else
@@ -448,7 +435,6 @@ int iec104_recv_data(int len)
 				printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
-				// system message received
 				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
 			}
 		}
@@ -499,8 +485,6 @@ uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
-	// system message received
-
 	int i;
 	iec104_ep_ext* ep_ext = NULL;
 	frame_dobj *fr_do = NULL;
@@ -574,11 +558,6 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 				// start t0 timer
 				ep_ext->timer_t0 = time(NULL);
-
-#ifdef _DEBUG
-				printf("%s: Timer rc stopped. Address = %d\n", APP_NAME, ep_ext->adr);
-				printf("%s: Timer t0 started. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 			}
 
 			break;
@@ -597,10 +576,6 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 				// start rc timer
 				ep_ext->timer_rc = time(NULL);
-
-#ifdef _DEBUG
-				printf("%s: Timer rc started. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 			}
 
 			break;
@@ -619,10 +594,6 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 				// start rc timer
 				ep_ext->timer_rc = time(NULL);
-
-#ifdef _DEBUG
-				printf("%s: Timer rc started. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 			}
 
 			break;
@@ -674,10 +645,6 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 	{
 		// start/reset sync timer
 		ep_ext->timer_sync = time(NULL);
-
-#ifdef _DEBUG
-		printf("%s: Timer sync started/reset. Address = %d, t_sync = %d\n", APP_NAME, ep_ext->adr, ep_ext->t_sync);
-#endif
 	}
 
 	iec_asdu = asdu_create();
@@ -698,7 +665,7 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 			iec_asdu->fnc = COT_ActCon;
 
 		iec_asdu->size = 1;
-		iec_asdu->data = calloc(1, sizeof(data_unit));
+		iec_asdu->data = (data_unit*) calloc(1, sizeof(data_unit));
 
 		if(iec_asdu->data)
 		{
@@ -780,7 +747,7 @@ uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
 
 
 		iec_asdu->size = 1;
-		iec_asdu->data = calloc(1, sizeof(data_unit));
+		iec_asdu->data = (data_unit*) calloc(1, sizeof(data_unit));
 
 		if(iec_asdu->data)
 		{
@@ -807,7 +774,7 @@ uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
 
 uint16_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir)
 {
-	uint8_t res;
+	uint16_t res;
 	uint32_t a_len = 0;
 	unsigned char *a_buff = NULL;
 	char *ep_buff = NULL;
@@ -846,7 +813,7 @@ uint16_t iec104_frame_send(apdu_frame *a_fr,  uint16_t adr, uint8_t dir)
 
 uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 {
-	uint8_t res;
+	uint16_t res;
 	uint32_t offset;
 	apdu_frame *a_fr = NULL;
 	iec104_ep_ext *ep_ext = NULL;
@@ -871,10 +838,6 @@ uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 			{
 				// reset t3 timer if it started
 				ep_ext->timer_t3 = time(NULL);
-
-#ifdef _DEBUG
-				printf("%s: Timer t3 reset. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 			}
 
 			switch(a_fr->type)
@@ -906,7 +869,7 @@ uint16_t iec104_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 {
-	uint8_t res;
+	uint16_t res;
 	apdu_frame *a_fr = NULL;
 
 	a_fr = apdu_frame_create();
@@ -955,11 +918,9 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 			break;
 		case APCI_U_TESTFR_ACT:
 			printf("%s: U-Format frame sent TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
-			printf("%s: Timers t1, t3 started/reset. Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_TESTFR_CON:
 			printf("%s: U-Format frame sent TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
-			printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		}
 	}
@@ -973,7 +934,8 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 
 uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
-	uint8_t res;
+	uint16_t res;
+
 	switch(a_fr->u_cmd)
 	{
 	case APCI_U_STARTDT_ACT:
@@ -994,10 +956,6 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 			// start t2-t3 timers
 			ep_ext->timer_t2 = time(NULL);
 			ep_ext->timer_t3 = time(NULL);
-
-#ifdef _DEBUG
-			printf("%s: Timers t2-t3 started. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 		}
 
 		break;
@@ -1014,17 +972,12 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		// stop t0 timer
 		ep_ext->timer_t0 = 0;
 
-		// synchronize time
 		iec104_time_sync_send(ep_ext);
 
 		// start t2-t3 timers
 		ep_ext->timer_t2 = time(NULL);
 		ep_ext->timer_t3 = time(NULL);
 
-#ifdef _DEBUG
-		printf("%s: Timer t0 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
-		printf("%s: Timers t2-t3 started. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 		break;
 
 	case APCI_U_STOPDT_ACT:
@@ -1067,7 +1020,6 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 #ifdef _DEBUG
 		printf("%s: U-Format frame received. TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
-		printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		break;
@@ -1097,7 +1049,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 
 	if(ep_ext->ar >= ep_ext->vr) return RES_INCORRECT;
 
-	uint8_t res;
+	uint16_t res;
 	apdu_frame *a_fr = NULL;
 
 	a_fr = apdu_frame_create();
@@ -1118,7 +1070,6 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 
 #ifdef _DEBUG
 		printf("%s: S-Format frame sent (N(R) = %d). Address = %d\n", APP_NAME, ep_ext->vr, ep_ext->adr);
-		printf("%s: Timer t2 reset. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 	}
 
@@ -1142,10 +1093,6 @@ uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		{
 			// stop t1 timer
 			ep_ext->timer_t1 = 0;
-
-#ifdef _DEBUG
-			printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 		}
 
 		return RES_SUCCESS;
@@ -1165,7 +1112,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		return RES_INCORRECT;
 	}
 
-	uint8_t res;
+	uint16_t res;
 	apdu_frame *a_fr = NULL;
 	uint32_t a_len = 0;
 	unsigned char *a_buff = NULL;
@@ -1209,8 +1156,6 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 
 #ifdef _DEBUG
 			printf("%s: I-Format frame sent (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
-			printf("%s: Timer t1 started/reset. Address = %d\n", APP_NAME, ep_ext->adr);
-			printf("%s: Timer t2 reset. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 		}
 	}
@@ -1228,10 +1173,10 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: I-Format frame received (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
+	printf("%s: I-Format frame received (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
 #endif
 
-	uint8_t res;
+	uint16_t res;
 	asdu *iec_asdu = NULL;
 
 	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) != RES_SUCCESS)
@@ -1249,10 +1194,6 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	{
 		// stop t1 timer
 		ep_ext->timer_t1 = 0;
-
-#ifdef _DEBUG
-		printf("%s: Timer t1 stopped. Address = %d\n", APP_NAME, ep_ext->adr);
-#endif
 	}
 
 	if(iec104_frame_check_send_num(ep_ext, a_fr->send_num) != RES_SUCCESS)
@@ -1316,7 +1257,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 {
-	uint8_t res;
+	uint16_t res;
 	uint32_t a_len = 0;
 	unsigned char *a_buff = NULL;
 	char *ep_buff = NULL;
@@ -1335,7 +1276,6 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 			ep_header.len = a_len;
 
 			memcpy((void*)ep_buff, (void*)&ep_header, sizeof(ep_data_header));
-
 			memcpy((void*)(ep_buff + sizeof(ep_data_header)), (void*)a_buff, a_len);
 
 			mf_toendpoint(ep_buff, sizeof(ep_data_header) + a_len, adr, dir);
@@ -1345,7 +1285,7 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 			free(ep_buff);
 
 #ifdef _DEBUG
-		printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
+			printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
 #endif
 		}
 		else
@@ -1362,7 +1302,7 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 
 uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 {
-	uint8_t res;
+	uint16_t res;
 	asdu *iec_asdu = NULL;
 	iec104_ep_ext *ep_ext = NULL;
 

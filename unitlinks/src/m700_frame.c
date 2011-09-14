@@ -70,8 +70,7 @@ uint16_t m700_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t 
 {
 	if(!buff || !frame) return RES_INCORRECT;
 
-	uint8_t fcs = 0;
-	uint8_t start_byte = 0;
+	uint8_t fcs = 0, start_byte = 0;
 
 	// look for the frame start
 	for( ; *offset<buff_len; )
@@ -225,6 +224,7 @@ m700_asdu_parse_tab m700_asdu_p_tab[][33] = {
 
 				{ 0xE0,	1,	6,	2,	0.01,	1 },
 				{ 0xE1,	1,	24,	4,	0.01,	1 },
+				{ 0xE2,	1,	13,	2,	1.0,	0 }, // not sure that it's correct!!!
 
 				{ 0xEA,	1,	1,	2,	0.01,	1 },
 				{ 0xEB,	1,	1,	2,	0.01,	1 },
@@ -249,7 +249,7 @@ m700_asdu_parse_tab m700_asdu_p_tab[][33] = {
 		},
 
 		{
-				{ 0xE0,	10,	3,	4,	0.01,	3 },
+				{ 0xE0,	10,	6,	4,	0.01,	3 },
 
 				{ 0xEA,	3,	42,	2,	0.01,	0 },
 				{ 0xEB,	3,	42,	2,	0.01,	0 },
@@ -260,27 +260,21 @@ m700_asdu_parse_tab m700_asdu_p_tab[][33] = {
 		},
 
 		{
-				{ 0xE0,	13,	3,	4,	0.001,	4 },
+				{ 0xE0,	16,	6,	2,	0.01,	4 },
 
 				// that's all folks
 				{ 0x00,	0,	0,	0,	0.0,	0 },
 		},
 
 		{
-				{ 0xE0,	16,	6,	2,	0.01,	5 },
+				{ 0xE0,	22,	2,	1,	1.0,	5 },
 
 				// that's all folks
 				{ 0x00,	0,	0,	0,	0.0,	0 },
 		},
 
 		{
-				{ 0xE0,	22,	2,	1,	1.0,	6 },
-
-				// that's all folks
-				{ 0x00,	0,	0,	0,	0.0,	0 },
-		},
-
-		{
+				{ 0xE0,	24,	1,	2,	1.0,	0 },
 
 				// that's all folks
 				{ 0x00,	0,	0,	0,	0.0,	0 },
@@ -315,7 +309,8 @@ uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu, uint32_t *offse
 	if(!m_fr->data || m_fr->data_len == 0) return RES_INCORRECT;
 
 	int i;
-	uint8_t res, idx, num, type_size;
+	uint8_t idx, num, type_size;
+	uint16_t res;
 	float mult;
 
 	m700_asdu->proto = PROTO_M700;

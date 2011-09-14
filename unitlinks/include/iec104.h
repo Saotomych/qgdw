@@ -53,7 +53,7 @@ extern "C" {
 /* Structure for extend end-point with protocol specific data */
 typedef struct iec104_ep_ext {
 	uint16_t		adr;		/* link (ASDU) address */
-	uint8_t			host_type;	/* master/slave */
+	uint16_t		host_type;	/* master/slave */
 
 	uint16_t		vs;			/* send sequence number counter */
 	uint16_t		vr;			/* receive sequence number counter*/
@@ -61,9 +61,9 @@ typedef struct iec104_ep_ext {
 	uint16_t		as;			/* last sent ASDU with acknowledge received from remote peer */
 	uint16_t		ar;			/* last received ASDU with acknowledge sent to remote peer */
 
-	uint8_t			rc_cnt;		/* re-connect counter */
+	uint16_t		rc_cnt;		/* re-connect counter */
 
-	uint8_t			u_cmd;		/* data transfer state */
+	uint16_t		u_cmd;		/* data transfer state */
 
 	uint16_t		k_ack;		/* latest acknowledgment after sending I-Format frame */
 	uint16_t		w_ack;		/* latest acknowledgment after receiving I-Format frame */
@@ -71,7 +71,7 @@ typedef struct iec104_ep_ext {
 	uint32_t		*data_ids;		/* data identifiers array */
 	uint32_t		data_ids_size;	/* size of data identifiers array */
 
-	uint16_t 		t_sync;		/* time sync period */
+	uint32_t 		t_sync;		/* time sync period */
 
 	time_t			timer_t0;
 	time_t			timer_t1;

@@ -65,13 +65,13 @@ extern "C" {
  */
 /* Structure for extend end-point with protocol specific data */
 typedef struct dlt645_ep_ext {
-	uint16_t		adr;			/* ASDU address */
 	uint64_t		adr_hex;		/* link address in BCD format */
-
-	uint8_t			tx_ready;		/* data transfer state */
+	uint32_t		adr;			/* ASDU address */
 
 	uint32_t		*data_ids;		/* data identifiers array */
 	uint32_t		data_ids_size;	/* size of data identifiers array */
+
+	uint16_t		tx_ready;		/* data transfer state */
 
 	uint16_t 		t_sync;			/* time sync period */
 

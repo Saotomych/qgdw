@@ -42,7 +42,7 @@ extern "C" {
  */
 
 /* parse input buffer to the ASDU structure */
-uint8_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_asdu);
+uint16_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_asdu);
 
 time_t dlt_asdu_parse_time_tag(unsigned char *buff, uint32_t *offset, uint8_t flags);
 void dlt_asdu_build_time_tag(unsigned char *buff, uint32_t *offset, time_t time_tag, uint8_t flags);

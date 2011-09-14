@@ -29,15 +29,12 @@
 
 uint8_t dlt_frame_get_fcs(unsigned char *buff, uint32_t buff_len)
 {
-	// fast check input data
 	if(!buff || buff_len == 0) return 0;
 
 	uint8_t i, fcs;
 
-	// initialize FCS value
 	fcs = 0;
 
-	// proceed through the buffer
 	for(i=0; i < buff_len; i++)
 	{
 		fcs = (fcs + buff[i]) % 256;
@@ -49,7 +46,6 @@ uint8_t dlt_frame_get_fcs(unsigned char *buff, uint32_t buff_len)
 
 dlt_frame *dlt_frame_create()
 {
-	// try to allocate memory for the structure
 	dlt_frame *frame = (dlt_frame*) calloc(1, sizeof(dlt_frame));
 
 	return frame;
@@ -58,10 +54,8 @@ dlt_frame *dlt_frame_create()
 
 void dlt_frame_cleanup(dlt_frame *frame)
 {
-	// fast check input data
 	if(!frame || !frame->data) return;
 
-	// free memory allocated for the data
 	frame->data_len = 0;
 	free(frame->data);
 	frame->data = NULL;
@@ -70,10 +64,8 @@ void dlt_frame_cleanup(dlt_frame *frame)
 
 void dlt_frame_destroy(dlt_frame **frame)
 {
-	// fast check input data
 	if(!*frame) return;
 
-	// cleanup insides
 	dlt_frame_cleanup(*frame);
 
 	free(*frame);
@@ -108,18 +100,15 @@ void dlt_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, dlt_
 
 uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, dlt_frame *frame)
 {
-	// fast check input data
 	if(!buff || !frame) return RES_INCORRECT;
 
-	uint8_t fcs = 0;
-	uint8_t start_byte = 0;
+	uint8_t fcs = 0, start_byte = 0, i;
 
 	// look for the frame start
 	for( ; *offset<buff_len; )
 	{
 		start_byte = buff_get_le_uint8(buff, *offset);
 
-		// move to the next byte
 		*offset += 1;
 
 		if(start_byte == DLT_START_BYTE) break;
@@ -152,19 +141,14 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 		// check if buffer length is correct
 		if(buff_len - *offset >= frame->data_len + 2)
 		{
-			// allocate memory for the data
 			frame->data = (unsigned char*) malloc(frame->data_len);
 
-			// check if memory allocated OK, otherwise return error
 			if(!frame->data)
 			{
-				// set data length to zero
 				frame->data_len = 0;
 
 				return RES_MEM_ALLOC;
 			}
-
-			uint8_t i;
 
 			// copy data from the buffer subtracting 0x33 from each byte
 			for(i=0; i< frame->data_len; i++)
@@ -172,7 +156,6 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 				frame->data[i] = *(buff + *offset + i) - 0x33;
 			}
 
-			// move over data in the buffer
 			*offset += frame->data_len;
 		}
 		else
@@ -185,7 +168,6 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 			// set offset to the end of the buffer
 			*offset = buff_len;
 
-			// return error
 			return RES_LEN_INVALID;
 		}
 	}
@@ -193,11 +175,9 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	// calculate frame checksum starting from the first start byte to the current position
 	fcs = dlt_frame_get_fcs(buff + (*offset - 10 - frame->data_len), 10 + frame->data_len);
 
-	// compare calculated and received frame checksums, if not the same return error
 	if(fcs != buff_get_le_uint8(buff, *offset)) return RES_FCS_INCORRECT;
 	*offset += 1;
 
-	// check if stop byte is correct, otherwise return error
 	if(buff_get_le_uint8(buff, *offset) != DLT_STOP_BYTE) return RES_INCORRECT;
 	*offset += 1;
 
@@ -207,23 +187,18 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 
 uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_frame *frame)
 {
-	// set buffer length to zero and start building it
 	*buff_len = 0;
 	uint32_t offset = 0;
+	uint8_t i;
 
-	// fast check input data
 	if(!buff || !frame || (frame->data_len > 0 && frame->data == NULL)) return RES_INCORRECT;
 
-	// calculate buffer length
 	*buff_len = 10 + frame->data_len + 2;
 
-	// allocate memory for the buffer
 	*buff = (unsigned char*) malloc(*buff_len);
 
-	// check if memory allocated OK, otherwise return error
 	if(!*buff)
 	{
-		// set buffer length to zero
 		*buff_len = 0;
 
 		return RES_MEM_ALLOC;
@@ -231,7 +206,6 @@ uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_fram
 
 	// start filling buffer
 
-	// put start byte
 	buff_put_le_uint8(*buff, offset, DLT_START_BYTE);
 	offset += 1;
 
@@ -241,7 +215,6 @@ uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_fram
 		buff_bcd_put_le_uint(*buff, offset, frame->adr, 6);
 	offset += 6;
 
-	// put second start byte
 	buff_put_le_uint8(*buff, offset, DLT_START_BYTE);
 	offset += 1;
 
@@ -252,8 +225,6 @@ uint16_t dlt_frame_buff_build(unsigned char **buff, uint32_t *buff_len, dlt_fram
 
 	if(frame->data_len > 0)
 	{
-		uint8_t i;
-
 		// copy data to the buffer adding 0x33 to each byte
 		for(i=0; i< frame->data_len; i++)
 		{

@@ -17,7 +17,6 @@
 
 asdu *asdu_create()
 {
-	// try to allocate memory for the structure
 	asdu *unit = (asdu*) calloc(1, sizeof(asdu));
 
 	return unit;
@@ -26,10 +25,8 @@ asdu *asdu_create()
 
 void asdu_destroy(asdu **unit)
 {
-	// fast check input data
 	if(!*unit) return;
 
-	// cleanup insides
 	asdu_cleanup_data(*unit);
 
 	free(*unit);
@@ -39,10 +36,8 @@ void asdu_destroy(asdu **unit)
 
 void asdu_cleanup_data(asdu *unit)
 {
-	// fast check input data
 	if(!unit || !unit->data) return;
 
-	// free memory allocated for the data array
 	free(unit->data);
 	unit->data = NULL;
 
@@ -50,10 +45,8 @@ void asdu_cleanup_data(asdu *unit)
 }
 
 
-
-uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit)
+uint16_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit)
 {
-	// fast check input data
 	if(buff_len < sizeof(asdu) || !unit) return RES_INCORRECT;
 
 	*unit = asdu_create();
@@ -82,15 +75,12 @@ uint8_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit)
 }
 
 
-uint8_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit)
+uint16_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit)
 {
-	// fast check input data
 	if(!buff || !unit || !unit->data ) return RES_INCORRECT;
 
-	// calculate buffer length
 	*buff_len = sizeof(asdu) + unit->size * sizeof(data_unit);
 
-	// allocate memory for the buffer
 	*buff = (unsigned char*) malloc(*buff_len);
 
 	if(!*buff)
