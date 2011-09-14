@@ -352,7 +352,6 @@ uint16_t dlt_asdu_parse_inst_value(unsigned char *buff, uint32_t buff_len, uint3
 
 		for(i=0; i<dlt_asdu->size; i++)
 		{
-			// build id for each data item
 			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i + start_id);
 
 			dlt_asdu->data[i].time_tag = time(NULL);

@@ -8,7 +8,12 @@
 #define _IEC_ASDU_DEF_H_
 
 
-/* Constants and byte flags, masks */
+/*
+ *
+ * Constants and byte flags, masks
+ *
+ */
+
 /* ASDU header masks */
 #define IEC_ASDU_HEAD_NUM			0x7F
 #define IEC_ASDU_HEAD_SQ			0x80

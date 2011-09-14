@@ -26,7 +26,12 @@ extern "C" {
 #endif
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
 #define APP_NAME				"unitlink-m700"
 #define APP_PATH 				"/rw/mx00/unitlinks"
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
@@ -53,12 +58,12 @@ extern "C" {
 #define BASE_ID					1
 
 
-
 /*
  *
  * Structures
  *
  */
+
 /* Structure for extend end-point with protocol specific data */
 typedef struct m700_ep_ext {
 	uint16_t		adr;			/* ASDU address */

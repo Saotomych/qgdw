@@ -16,7 +16,12 @@ extern "C" {
 #endif
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
 /* APDU constants */
 #define APDU_LEN_MIN			6		/* minimum LPDU length */
 

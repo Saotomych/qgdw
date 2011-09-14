@@ -11,7 +11,12 @@
 #include "../include/p_num.h"
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
 /* LPDU constants */
 #define LPDU_FT_12_START_VAR	0x68	/* FT 1.2 start byte (frame with variable length) */
 #define LPDU_FT_12_START_FIX	0x10	/* FT 1.2 start byte (frame with fixed length) */
@@ -40,7 +45,6 @@
 
 uint8_t lpdu_frame_get_fcs(unsigned char *buff, uint32_t buff_len)
 {
-	// fast check input data
 	if(!buff || buff_len == 0) return 0;
 
 	uint8_t i, fcs;
@@ -72,6 +76,7 @@ void lpdu_frame_cleanup(lpdu_frame *frame)
 	free(frame->data);
 	frame->data = NULL;
 }
+
 
 void lpdu_frame_destroy(lpdu_frame **frame)
 {
@@ -140,7 +145,6 @@ void lpdu_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, lpd
 
 uint16_t lpdu_frame_buff_parse_link_address(unsigned char *buff, uint32_t *offset, uint8_t address_len)
 {
-	// parse object address depending on the address length
 	uint16_t address;
 
 	switch(address_len)
@@ -167,7 +171,6 @@ uint16_t lpdu_frame_buff_parse_link_address(unsigned char *buff, uint32_t *offse
 
 void lpdu_frame_buff_build_link_address(unsigned char *buff, uint32_t *offset, uint16_t address, uint8_t address_len)
 {
-	// build object address depending on the address length
 	switch(address_len)
 	{
 	case 1:
@@ -190,13 +193,12 @@ uint16_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint
 {
 	if(!buff || buff_len - *offset < LPDU_LEN_MIN) return RES_INCORRECT;
 
-	uint16_t res;
-	uint8_t fcs = 0;
-	uint16_t user_data_len = 0;
+	uint16_t res, user_data_len = 0;
+	uint8_t fcs, start_byte = 0;
 
 	// get start byte and check type of the frame
 
-	uint8_t start_byte = buff_get_le_uint8(buff, *offset);
+	start_byte = buff_get_le_uint8(buff, *offset);
 	*offset += 1;
 
 	switch(start_byte)
@@ -313,7 +315,6 @@ uint16_t lpdu_frame_buff_parse_ft12(unsigned char *buff, uint32_t buff_len, uint
 uint16_t lpdu_frame_buff_build_ft12(unsigned char **buff, uint32_t *buff_len, lpdu_frame *frame, uint8_t adr_len)
 {
 	uint32_t offset = 0;
-
 	uint16_t res;
 
 	switch(frame->type)

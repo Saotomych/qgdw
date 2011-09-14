@@ -11,7 +11,12 @@
 #include "../include/p_num.h"
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
 /* APDU constants */
 #define APDU_START_BYTE			0x68	/* start byte (frame with variable and fixed length) */
 
@@ -107,7 +112,6 @@ void apdu_frame_buff_build_ctrl_field(unsigned char *buff, uint32_t *offset, apd
 
 uint16_t apdu_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *offset, apdu_frame *frame)
 {
-	// fast check input data
 	if(!buff || !frame) return RES_INCORRECT;
 
 	uint16_t res;

@@ -102,7 +102,7 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 {
 	if(!buff || !frame) return RES_INCORRECT;
 
-	uint8_t fcs = 0, start_byte = 0, i;
+	uint8_t fcs, start_byte = 0, i;
 
 	// look for the frame start
 	for( ; *offset<buff_len; )

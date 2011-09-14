@@ -122,7 +122,6 @@ uint16_t m700_config_read(const char *file_name)
 	uint16_t adr, ep_num = 0;
 	m700_ep_ext *ep_ext = NULL;
 
-
 	cfg_file = fopen(file_name, "r");
 
 	if(cfg_file)
@@ -245,17 +244,16 @@ void m700_catch_alarm(int sig)
 	{
 		if(ep_exts[i])
 		{
-			// check timer rc
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
 				m700_init_ep_ext(ep_exts[i]);
 
 				m700_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
-	#ifdef _DEBUG
+#ifdef _DEBUG
 				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
-	#endif
+#endif
 			}
 		}
 
@@ -274,7 +272,7 @@ int m700_recv_data(int len)
 	uint32_t offset;
 	ep_data_header *ep_header_in;
 
-	buff = malloc(len);
+	buff = (char*) malloc(len);
 
 	if(!buff) return -1;
 
@@ -369,6 +367,7 @@ int m700_recv_data(int len)
 m700_ep_ext* m700_get_ep_ext(uint16_t adr, uint8_t get_by)
 {
 	int i;
+
 	for(i=0; i<MAXEP; i++)
 	{
 		if(ep_exts[i])
@@ -440,8 +439,7 @@ uint16_t m700_add_map_item(uint32_t m700_id, uint32_t base_id)
 {
 	m700_map *last_map, *new_map;
 
-	// try to allocate memory for new map
-	new_map = malloc(sizeof(m700_map));
+	new_map = (m700_map*) malloc(sizeof(m700_map));
 
 	if(!new_map) return RES_MEM_ALLOC;
 
@@ -480,7 +478,7 @@ m700_map *m700_get_map_item(uint32_t id, uint8_t get_by)
 	while(res_map)
 	{
 		if(get_by == M700_ID && res_map->m700_id == id) break;
-		if(get_by == BASE_ID && res_map->base_id   == id) break;
+		if(get_by == BASE_ID && res_map->base_id == id) break;
 
 		res_map = res_map->next;
 	}
@@ -491,7 +489,6 @@ m700_map *m700_get_map_item(uint32_t id, uint8_t get_by)
 
 void m700_asdu_map_ids(asdu *m700_asdu)
 {
-	// fast check input data
 	if(!m700_asdu) return;
 
 	int i;
@@ -573,7 +570,7 @@ uint16_t m700_get_dobj_item(m700_ep_ext* ep_ext, uint32_t m700_id)
 
 uint16_t m700_collect_data()
 {
-	// check state
+	// check data collection state
 	if(dcoll_stopped || timer_dcoll > 0) return RES_INCORRECT;
 
 	uint16_t res;
@@ -1068,7 +1065,8 @@ uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 	printf("%s: Read Data frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
 #endif
 
-	uint8_t res, sseq;
+	uint16_t res;
+	uint8_t sseq;
 	uint32_t offset;
 	asdu *m700_asdu = NULL;
 

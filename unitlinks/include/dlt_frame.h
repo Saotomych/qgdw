@@ -16,8 +16,13 @@ extern "C" {
 #endif
 
 
-/* Constants and byte flags/masks */
-/* Function codes of control field */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
+/* Function's codes of control field */
 #define FNC_TIME_SYNC			0x08	/* time synchronization broadcast */
 #define FNC_READ_DATA			0x11	/* read data */
 #define FNC_READ_SSEQ_DATA		0x12	/* read subsequent data */

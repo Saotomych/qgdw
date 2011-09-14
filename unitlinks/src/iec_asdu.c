@@ -671,9 +671,10 @@ uint16_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_a
 {
 	if(!buff || buff_len < IEC_ASDU_LEN_MIN || !cot_len || !coa_len || !ioa_len) return RES_INCORRECT;
 
-	uint8_t res, type_size;
+	uint16_t res, i;
+	uint8_t type_size;
 	asdu_pb_funcp asdu_object_parse;
-	uint32_t offset = 0, i;
+	uint32_t offset = 0;
 
 	iec_asdu->proto = PROTO_IEC101;
 
@@ -722,11 +723,12 @@ uint16_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_a
 uint16_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec_asdu, uint8_t cot_len, uint8_t coa_len, uint8_t ioa_len)
 {
 	*buff_len = 0;
-	uint32_t offset = 0, i;
+	uint32_t offset = 0;
 
 	if(!buff || !iec_asdu || !iec_asdu->data || !cot_len || !coa_len || !ioa_len) return RES_INCORRECT;
 
-	uint8_t res, type_size;
+	uint16_t res, i;
+	uint8_t type_size;
 	asdu_pb_funcp asdu_object_build;
 
 	res = iec_asdu_find_pb_func(iec_asdu->type, &type_size, NULL, &asdu_object_build);

@@ -121,7 +121,6 @@ uint16_t dlt645_config_read(const char *file_name)
 	uint16_t adr, ep_num = 0;
 	dlt645_ep_ext *ep_ext = NULL;
 
-
 	cfg_file = fopen(file_name, "r");
 
 	if(cfg_file)
@@ -291,7 +290,7 @@ int dlt645_recv_data(int len)
 	uint32_t offset;
 	ep_data_header *ep_header_in;
 
-	buff = malloc(len);
+	buff = (char*) malloc(len);
 
 	if(!buff) return -1;
 
@@ -338,7 +337,7 @@ int dlt645_recv_data(int len)
 			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-			printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 				dlt645_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
@@ -455,8 +454,7 @@ uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id)
 {
 	dlt645_map *last_map, *new_map;
 
-	// try to allocate memory for new map
-	new_map = malloc(sizeof(dlt645_map));
+	new_map = (dlt645_map*) malloc(sizeof(dlt645_map));
 
 	if(!new_map) return RES_MEM_ALLOC;
 
@@ -529,10 +527,9 @@ void dlt645_asdu_map_ids(asdu *dlt_asdu)
 
 uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name)
 {
-	uint32_t *data_ids_new = NULL;
-
-	// fast check input data
 	if(!ep_ext) return RES_INCORRECT;
+
+	uint32_t *data_ids_new = NULL;
 
 	dlt645_map *res_map = dlt645_get_map_item(dobj_id, BASE_ID);
 
@@ -585,7 +582,7 @@ uint16_t dlt645_get_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dlt645_id)
 
 uint16_t dlt645_collect_data()
 {
-	// check state
+	// check data collection state
 	if(dcoll_stopped || timer_dcoll > 0) return RES_INCORRECT;
 
 	uint16_t res;
@@ -1009,7 +1006,7 @@ uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir)
 			free(ep_buff);
 
 #ifdef _DEBUG
-		printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
+			printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
 #endif
 		}
 		else
@@ -1086,7 +1083,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 		if(num > 0 && start_time == 0)
 		{
 			d_fr->data_len = 4 + 1;
-			d_fr->data = (unsigned char*)malloc(d_fr->data_len);
+			d_fr->data = (unsigned char*) malloc(d_fr->data_len);
 
 			if(d_fr->data)
 			{
@@ -1100,7 +1097,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 		else if(num > 0 && start_time > 0)
 		{
 			d_fr->data_len = 4 + 6;
-			d_fr->data = malloc(d_fr->data_len);
+			d_fr->data = (unsigned char*) malloc(d_fr->data_len);
 
 			if(d_fr->data)
 			{
@@ -1116,7 +1113,7 @@ uint16_t dlt645_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time
 		else
 		{
 			d_fr->data_len = 4;
-			d_fr->data = malloc(d_fr->data_len);
+			d_fr->data = (unsigned char*) malloc(d_fr->data_len);
 
 			if(d_fr->data)
 			{
@@ -1158,7 +1155,7 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 	printf("%s: Read Data frame received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
-	uint8_t res;
+	uint16_t res;
 	asdu *dlt_asdu = NULL;
 
 	if(!d_fr->err)
@@ -1279,7 +1276,7 @@ uint16_t dlt645_set_baudrate_send(uint16_t adr, uint8_t br)
 		d_fr->adr = adr;
 
 		d_fr->data_len = 1;
-		d_fr->data = (unsigned char*)malloc(d_fr->data_len);
+		d_fr->data = (unsigned char*) malloc(d_fr->data_len);
 
 		if(d_fr->data)
 		{
@@ -1352,7 +1349,7 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 		d_fr->adr = ep_ext->adr;
 
 		d_fr->data_len = 6;
-		d_fr->data = (unsigned char*)malloc(d_fr->data_len);
+		d_fr->data = (unsigned char*) malloc(d_fr->data_len);
 
 		if(d_fr->data)
 		{

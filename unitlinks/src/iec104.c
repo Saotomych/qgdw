@@ -703,14 +703,7 @@ uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext)
 	res = settimeofday(&tv, NULL);
 
 #ifdef _DEBUG
-	if(res == 0)
-	{
-		printf("%s: Time synchronization with IEC_HOST_MASTER succeeded. Address = %d.\n", APP_NAME, ep_ext->adr);
-	}
-	else
-	{
-		printf("%s: Time synchronization with IEC_HOST_MASTER failed. Address = %d.\n", APP_NAME, ep_ext->adr);
-	}
+	printf("%s: Time synchronization with IEC_HOST_MASTER %s. Address = %d.\n", APP_NAME, res?"failed":"succeeded", ep_ext->adr);
 #endif
 
 	if(res == 0)
@@ -718,7 +711,6 @@ uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext)
 	else
 		return RES_ACCESS_DND;
 }
-
 
 
 uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
@@ -894,7 +886,7 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 		break;
 	}
 
-	a_fr->type = APCI_TYPE_U;
+	a_fr->type  = APCI_TYPE_U;
 	a_fr->u_cmd = u_cmd;
 
 	res = iec104_frame_send(a_fr, ep_ext->adr, dir);
@@ -1056,7 +1048,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 
 	if(!a_fr) return RES_MEM_ALLOC;
 
-	a_fr->type = APCI_TYPE_S;
+	a_fr->type     = APCI_TYPE_S;
 	a_fr->recv_num = ep_ext->vr;
 
 	res = iec104_frame_send(a_fr, ep_ext->adr, dir);
@@ -1082,7 +1074,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-		printf("%s: S-Format frame received (N(R) = %d). Address = %d\n", APP_NAME, a_fr->recv_num, ep_ext->adr);
+	printf("%s: S-Format frame received (N(R) = %d). Address = %d\n", APP_NAME, a_fr->recv_num, ep_ext->adr);
 #endif
 
 	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) == RES_SUCCESS)
@@ -1126,11 +1118,11 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 
 	if(res == RES_SUCCESS)
 	{
-		a_fr->type = APCI_TYPE_I;
+		a_fr->type     = APCI_TYPE_I;
 		a_fr->send_num = ep_ext->vs;
 		a_fr->recv_num = ep_ext->vr;
 		a_fr->data_len = a_len;
-		a_fr->data = a_buff;
+		a_fr->data     = a_buff;
 
 		if((ep_ext->vs - ep_ext->as + 32768) % 32768 <= ep_ext->k_ack)
 		{

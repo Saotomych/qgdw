@@ -27,7 +27,12 @@ extern "C" {
 #endif
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
 #define APP_NAME				"unitlink-dlt645"
 #define APP_PATH 				"/rw/mx00/unitlinks"
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
@@ -63,6 +68,7 @@ extern "C" {
  * Structures
  *
  */
+
 /* Structure for extend end-point with protocol specific data */
 typedef struct dlt645_ep_ext {
 	uint64_t		adr_hex;		/* link address in BCD format */

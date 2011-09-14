@@ -11,7 +11,12 @@
 #include "../include/p_num.h"
 
 
-/* Constants and byte flags/masks */
+/*
+ *
+ * Constants and byte flags/masks
+ *
+ */
+
 /* M700 constants */
 #define M700_START_BYTE			0x68	/* frame start byte */
 #define M700_STOP_BYTE_REQ		0x0D	/* request frame stop  byte */
