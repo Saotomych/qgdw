@@ -11,12 +11,23 @@
 
 LOWREC *lrs[MAXEP];
 
+char tlstr[128];
+
 uint32_t maxrec = 0, actrec = 0;
 
 uint16_t	lastasdu;
 uint16_t	lastldinst;
 
 char *Addrfile;
+
+// Create string for lrs[idx]
+int createllforlr(u08 idx){
+
+}
+
+int createlrfile(char *fname, u08 copy){
+
+}
 
 int createlowrecord(LOWREC *lr){
 int ret = -1;

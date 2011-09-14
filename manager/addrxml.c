@@ -3,20 +3,36 @@
  *
  *  Created on: 12.09.2011
  *      Author: alex
+ *
+ * Module parse addr.cfg and create lowrecords for each record of addr.cfg
+ *
  */
 
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "autoconfig.h"
 
 uint configstep;
 
 u16 usasdu[MAXEP];
 u08 maxfixasdu;
-u08 llstring[128];
 
 char Speed[6]={"9600\0"};
 
 static u08 Encoding, EndScript;
+
+void lowrecordinit (LOWREC *lr){
+	lr->addr = 0;
+	lr->addrdlt = 0;
+	lr->asdu = 0;
+	lr->connect = 0;
+	lr->copied = 0;
+	lr->ldinst = 0;
+	lr->myep = 0;
+	lr->port = 0;
+	lr->scen = 0;
+}
+
 // Scenario functions
 
 // In data: dlt-address
@@ -37,10 +53,9 @@ void TagM500700(const char *pTag){
 char *p;
 	if (configstep == 2){
 		p = strstr((char*) pTag, "-asdu");
-		if (p) strncpy(llstring, p+6, 5);
+		if (p){
+		}
 		else return;
-		strcat(llstring, " ");
-
 	}
 }
 
@@ -54,25 +69,24 @@ char *p;
 // every fixed ASDU add to usasdu[maxfixasdu]
 void TagKIPP(const char *pTag){
 char *p;
+LOWREC lr;
 	if (configstep == 1){
+		lowrecordinit(&lr);
 		p = strstr((char*) pTag, "asdu");
-		if (p) strncpy(llstring, p+5, 5);
+		if (p){
+			lr.asdu = atoi(p+5);
+		}
 		else return;
-		strcat(llstring, " ");
 		p = strstr((char*) pTag, "ip");
 		if (p){
-			strncat(llstring, p+3, 10);
 			p = strstr((char*) pTag, "port");
 			if (p){
-				strcat(llstring, " -port ");
-				strncat(llstring, p+5, 4);
-				strcat(llstring, " -name \"unitlink-iec104\" -mode CONNECT\n");
-			}else strcat(llstring, " -port 2404 -name \"unitlink-iec104\" -mode CONNECT\n");
-		}else{
-			strcat(llstring, " -name \"unitlink-iec101\" -port ttyS3 -pars ");
-			strcat(llstring, Speed);
-			strcat(llstring, " 8E1,NO\n");
-		}
+				lr.port = atoi(p+5);
+			}else{
+				lr.port = 2404;
+			}
+			lr.scen = IEC104;
+		}else lr.scen = IEC101;
 	}
 }
 
@@ -131,7 +145,6 @@ u08 s, i;
         pS++; s++;
     }
     if ((XTags[i].Name[s] == 0) && (*pS <= 'A')){
-    	llstring[0] = 0;
     	XTags[i].Function(pS);
     	break;
     }

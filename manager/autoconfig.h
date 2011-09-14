@@ -10,6 +10,12 @@
 
 #define MAXLEVEL 3
 
+// Scens
+#define IEC104		1
+#define IEC101		2
+#define DLT645		3
+#define MX00		4
+
 typedef struct lowrecord{
 	char 		cfg[128];
 	// Vars for ICD
