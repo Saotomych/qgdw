@@ -18,6 +18,11 @@ uint32_t maxrec = 0, actrec = 0;
 uint16_t	lastasdu;
 uint16_t	lastldinst;
 
+// Speed chains for find connect
+uint32_t sciec101[]={9600,2400,1200,0};
+uint32_t scdlt645[]={9600,2400,1200,0};
+uint32_t scm700[]={9600,0};
+
 char *Addrfile;
 
 // Create string for lrs[idx]
