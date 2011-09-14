@@ -117,7 +117,7 @@ struct stat fst;
 // 2: fixed MAC, dynamic asdu
 // 3: dynamic asdu
 // and concrete speed according to table
-int createlltables(u08 level, u08 spdidx){
+int createlltables(u08 level, uint32_t spdidx){
 	lastasdu = 1;
 	lastldinst = 0;
 
@@ -137,11 +137,11 @@ int i, allfiles;
 // Backup previous lowlevel.cfg
 	rename("/rw/mx00/configs/lowlevel.cfg", "/rw/mx00/configs/lowlevel.bak");
 
-	if (loadadrcfg("addr.cfg") == -1) return -1;
+	if (loadaddrcfg("addr.cfg") == -1) return -1;
 
 	for (i=0; i < MAXLEVEL; i++){
 		// Create full tables for all variants of records in the file 'addr.cfg'.
-		createlltables();
+		createlltables(i, 9600);
 	}
 
 	createlrfile("/rw/mx00/configs/ll/lowlevel.1", FALSE);

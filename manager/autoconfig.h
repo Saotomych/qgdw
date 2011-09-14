@@ -32,5 +32,8 @@ typedef struct lowrecord{
 	uint32_t	myep;		// Endpoint number
 } LOWREC;
 
+extern void XMLSelectSource(char *xml);
+
+extern int createlowrecord(LOWREC *lr);
 
 #endif /* AUTOCONFIG_H_ */

@@ -93,12 +93,12 @@ LOWREC lr;
 // ssd functions
 
 void TagSetSCL(const char *pTag){
-	printf("IEC61850: Start SCL file to parse\n");
+	printf("Manager: Start ADDR file to parse\n");
 }
 
 void TagEndSCL(const char *pTag){
 	EndScript=1;
-	printf("IEC61850: Stop SCL file to parse\n");
+	printf("Manager: Stop ADDR file to parse\n");
 }
 
 void TagSetXml(const char *pTag){

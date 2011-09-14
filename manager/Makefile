@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS_MGR = autoconfig.o multififo.o
+OBJS_MGR = autoconfig.o addrxml.o multififo.o
 CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 
@@ -9,6 +9,9 @@ manager: $(OBJS_MGR)
 
 autoconfig.o: autoconfig.c
 	$(CC) $(CCFLAGS) autoconfig.c -o autoconfig.o
+
+addrxml.o: addrxml.c
+	$(CC) $(CCFLAGS) addrxml.c -o addrxml.o
 
 multififo.o: ../common/multififo.c
 	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
