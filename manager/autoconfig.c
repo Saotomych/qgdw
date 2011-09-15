@@ -28,26 +28,30 @@ char *Addrfile;
 
 // Create lowlevel strings in text buffer
 int createllforiec104(LOWREC *lr, uint16_t speed){
+// Example: 967 -addr 84.242.3.213 -port 2404 -name "unitlink-iec104" -mode CONNECT
 
 	return 0;
 }
 
 int createllforiec101(LOWREC *lr, uint16_t speed){
+// Example: 967 -name "unitlink-iec101" -port ttyS3 -pars 9600,8N1,NO
 
 	return 0;
 }
 
 int createllfordlt645(LOWREC *lr, uint16_t speed){
+// Example: 1001 -addr 001083100021 -name "unitlink-iec104" -port ttyS3 -pars 9600,8E1,NO
 
 	return 0;
 }
 
 int createllformx00(LOWREC *lr, uint16_t speed){
+// Example: 1000 -addr 001083100021 -name "unitlink-iec104" -port ttyS3 -pars 9600,8E1,NO
 
 	return 0;
 }
 
-int (*scenfunc[])(LOWREC *lr, uint16_t speed) = {createllforiec104, createllforiec101, createllfordlt645, createllformx00};
+int (*scenfunc[])(LOWREC *lr, uint16_t speed) = {createllforiec104, createllforiec101, createllformx00, createllfordlt645};
 
 int createfirstfile(char *fname, u08 scen, uint16_t spds){
 int ret = 0, i, len;
@@ -154,8 +158,8 @@ uint32_t *spds;
 	// Create lowlevel.cfg for concrete speed level
 	// 1: fixed asdu iec104
 	// 2: fixed asdu iec101
-	// 3: dynamic asdu, dlt645
-	// 4: fixed MAC, dynamic asdu, m700
+	// 3: fixed MAC, dynamic asdu, m700
+	// 4: dynamic asdu, dlt645
 	for (scen = 1; scen < 5; scen++){
 		spds = scens[scen];
 		i = 0;
