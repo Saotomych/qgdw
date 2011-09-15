@@ -7,248 +7,178 @@
 
 #include "../common/common.h"
 #include "../common/multififo.h"
-
-// Scenario types
-#define KIPP104		1
-#define KIPP101		2
-#define MXDLT		3
-#define MXINT		4
-
-typedef struct lowrecord{
-	char 		cfg[128];
-	uint16_t	asdu;
-	u08			connect;
-	u08 		copied;
-	uint32_t	ldinst;
-	uint32_t	addr;
-	uint32_t	addrdlt;
-	uint16_t	port;
-	uint16_t	scen;		// Case for type lowlevel string
-} LOWREC;
+#include "autoconfig.h"
 
 LOWREC *lrs[MAXEP];
+
+char tlstr[128];
 
 uint32_t maxrec = 0, actrec = 0;
 
 uint16_t	lastasdu;
 uint16_t	lastldinst;
 
-char iec104={"unitlink-iec104"};
-char iec101={"unitlink-iec101"};
-char intern={"unitlink-m700"};
-char tcp={"phy_tcp"};
-char tty={"phy_tty"};
+// Speed chains for find connect
+uint32_t sciec101[]={9600,2400,1200,0};
+uint32_t scdlt645[]={9600,2400,1200,0};
+uint32_t scm700[]={9600,0};
 
-// E-Meters
-char *kipp={"kipp"};
-char *m100={"m100"};
-char *m300={"m300"};
-char *m500={"m500"};
-char *m700={"m700"};
+char *Addrfile;
 
-inline char *finddig(char *p){
-	while ((*p) && (*p <= '9') && (*p >= '0')) p++;
-	return p;
-}
+// Create lowlevel string in tlstr buffer
+int createllforlr(LOWREC *lr, uint16_t speed){
+	tlstr[0] = 0;
+	switch (lr->scen){
+	case IEC104:
 
-int findasdu(uint16_t){
+		break;
 
+	case IEC101:
+
+		break;
+
+	case DLT645:
+
+		break;
+
+	case MX00:
+
+		break;
+
+	default:
+		return -1;
+	}
 	return 0;
 }
 
-void setstring104(char *paddr, LOWREC *lr){
+// Cycle for creating all records for one type and speed
+int createlrfile(char *fname, u08 copy){
+int ret, i, len;
+LOWREC *lr;
+FILE *f;
 
-}
-
-void setstringdlt(char *paddr, LOWREC *lr){
-
-}
-
-void setstring101(char *paddr, LOWREC *lr){
-
-}
-
-void setstringintern(char *paddr, LOWREC *lr){
-
-}
-
-// For ready asdu from addr.cfg
-char *makellstringforasdu(char *paddr, LOWREC *lr){
-long testval;
-u08 i;
-char *p;
-	// Detect scenario
-	if (strncasecmp(kipp, paddr, 4)){
-		lr->addr = 0;
-		lr->port = 0;
-
-		// Detect chain (unitlink - phylink)
-		p = paddr;
-		// Skip 2 "
-		while(*p != '"') p++;
-		while(*p != '"') p++;
-		p = finddig(p);
-
-		// Set addr:port & asdu
-		i=0;
-		do{
-			testval = atol(p);
-			p = finddig(p);
-			if (*p){
-				if ((*(p-1) == '.') && (i < 3)) lr->addr |= (testval & 0xFF) << i;
-				if ((*(p-1) == ':') && (i == 3)) lr->addr |= (testval & 0xFF) << 3;
-			}else{
-				lr->asdu = testval;
-				lr->scen = KIPP101;
-			}
-			i++;
-		}while (testval);
-		if (i == 4){
-			lr->port = testval;
-			lr->scen = KIPP104;
-			lr->asdu = finddig(p);
-			if (!lr->asdu){
-				lr->asdu = lastasdu++;
-				lastasdu++;
-			}
-		}
-
-		// Set ld.inst
-		lr->ldinst = lastldinst;
-		lastldinst++;
-
-		return lr->cfg;
+	f = fopen(fname, "w+");
+	for (i=0; i<maxrec; i++){
+		lr = lrs[i];
+		if ((lr->copied & copy) | (~copy&1)) createllforlr(lr, lr->setspeed);
+		len = strlen(tlstr);
+		if (len) lr->scfg = malloc(len);
+		strcpy(lr->scfg, tlstr);
+		fputs(tlstr, f);
 	}
+	fputs("\n",f);
+	fclose(f);
+
+	return ret;
 }
 
-char *makellstringforinternal(char *paddr, LOWREC *lr){
-long testval;
-u08 i;
-char *p;
+int createlowrecord(LOWREC *lr){
+int ret = -1;
 
-	if (strncasecmp(m500, paddr, 4)){
-
-		return lr->cfg;
+	lrs[maxrec] = malloc(sizeof(LOWREC));
+	if (lrs[maxrec]){
+		ret = 0;
+		lrs[maxrec]->addr = lr->addr;
+		lrs[maxrec]->addrdlt = lr->addrdlt;
+		lrs[maxrec]->asdu = lr->asdu;
+		lrs[maxrec]->ldinst = lr->ldinst;
+		lrs[maxrec]->port = lr->port;
+		lrs[maxrec]->scfg = 0;
+		lrs[maxrec]->connect = 0;
+		lrs[maxrec]->copied = 0;
+		lrs[maxrec]->myep = 0;
+		lrs[maxrec]->scen = 0;
+		lrs[maxrec]->setspeed = 0;
+		maxrec++;
 	}
 
-	if (strncasecmp(m700, paddr, 4)){
-
-		return lr->cfg;
-	}
+	return ret;
 }
 
-// For local autoasdu
-char *makellstringforaddr(char *paddr, LOWREC *lr){
-long testval;
-u08 i;
-char *p;
-	if (strncasecmp(m100, paddr, 4)){
-
-		return lr->cfg;
-	}
-
-	if (strncasecmp(m300, paddr, 4)){
-
-		return lr->cfg;
-	}
-}
-
-
-int createlltable(void){
+int loadaddrcfg(char *name){
 FILE *addrcfg;
-struct phy_route *pr;
-char *p, *pport;
-char outbuf[256];
-int i = 1;
+int adrlen, ret = -1;
+struct stat fst;
 
-	lastasdu = 1;
-	lastldinst = 0;
-
-// Init physical routes structures by phys.cfg file
-	firstpr = malloc(sizeof(LOWREC) * MAXEP);
 	addrcfg = fopen("/rw/mx00/configs/addr.cfg", "r");
 	if (addrcfg){
-		// Create table lowlevel.cfg
-		// 1 - all for iec-101 & iec-104
-		// 2 - m700 & m500 - 1 only
-		// 3 - other
-		// For all internal tty-devices: test for speed 9600, 2400, 1200
-		// Create strings for lowlevel.cfg from 1 string of addr.cfg
+	 	// Get size of main config file
+		if (stat("/rw/mx00/configs/addr.cfg", &fst) == -1){
+			printf("IEC61850: Addr.cfg file not found\n");
+		}
 
+		Addrfile = malloc(fst.st_size);
 
-		do{
-			// For any string consists 'kipp' make string for lowlevel.cfg
-			p = fgets(outbuf, 250, addrcfg);
-			actrec = 0;
-			if (p){
-				// Parse string addr.cfg
-				if (strncasecmp(kipp, p, 4)){
+		// Loading main config file
+		addrcfg = fopen("/rw/mx00/configs/addr.cfg", "r");
+		adrlen = fread(Addrfile, 1, (size_t) (fst.st_size), addrcfg);
+		if (adrlen == fst.st_size) ret = 0;
+	}
 
-				}
-			}
-			i++;
-		}while(p);
-
-		lseek(addrcfg, SEEK_SET, 0);
-
-		do{
-			// For any string consists 'kipp' make string for lowlevel.cfg
-			p = fgets(outbuf, 250, addrcfg);
-			actrec = 0;
-			if (p){
-				// Parse string addr.cfg
-				if (strncasecmp(m500, p, 4)){
-
-				}
-
-				if (strncasecmp(m700, p, 4)){
-
-				}
-
-			}
-			i++;
-		}while(p);
-
-		lseek(addrcfg, SEEK_SET, 0);
-
-		do{
-			// For any string consists 'kipp' make string for lowlevel.cfg
-			p = fgets(outbuf, 250, addrcfg);
-			actrec = 0;
-			if (p){
-				// Parse string addr.cfg
-				if (strncasecmp(m100, p, 4)){
-
-				}
-
-				if (strncasecmp(m300, p, 4)){
-
-				}
-
-			}
-			i++;
-		}while(p);
-
-	}else return -1;
-	return 0;
+	return ret;
 }
 
 int main(int argc, char * argv[]){
-
-	// Backup previous lowlevel.cfg
+int i, allfiles, j;
+// Backup previous lowlevel.cfg
 	rename("/rw/mx00/configs/lowlevel.cfg", "/rw/mx00/configs/lowlevel.bak");
-	// Create full table for all addr.cfg records
-	createlltable();
 
-	// Start endpoints
+	if (loadaddrcfg("addr.cfg") == -1) return -1;
 
-	// Control of answers and forming new lowlevel.cfg
+	// Create lowrecord structures
+	XMLSelectSource(Addrfile);
 
-	// Exit by time
+	// Create lowlevel.cfg for concrete level
+	// 1: fixed asdu iec104
+	// 2: fixed asdu iec101
+	// 3: fixed MAC, dynamic asdu, m700
+	// 4: dynamic asdu, dlt645
+	for (i=0; i < MAXLEVEL; i++){
+		// Create full tables for all variants of records in the file 'addr.cfg'.
+		switch(lrs[i]->scen){
+		case IEC104:
+			createllforlr(lrs[i], 0);
+			break;
 
-	// write new lowlevel.cfg
+		case IEC101:
+			j=0;
+			while(sciec101[i]){
+				createllforlr(lrs[i], sciec101[i]);
+			}
+			break;
 
-	// Quit all lowlevel applications
+		case DLT645:
+			j=0;
+			while(sciec101[i]){
+				createllforlr(lrs[i], sciec101[i]);
+			}
+			break;
 
+		case MX00:
+			createllforlr(lrs[i], 9600);
+			break;
+		}
+	}
 
+	createlrfile("/rw/mx00/configs/ll/lowlevel.1", FALSE);
+
+	allfiles = 0;
+	for (i=0; i < allfiles; i++){
+		// Substitution of level.??? to lowlevel.cfg
+
+		// Start endpoints
+
+		// Control of answers and forming new lowlevel.cfg
+
+		// Exit by time
+
+		// write new lowlevel.cfg
+
+		// Quit all lowlevel applications
+
+	}
+
+	rename("/rw/mx00/configs/lowlevel.bak", "/rw/mx00/configs/lowlevel.cfg");
+
+	return 0;
 }

@@ -36,6 +36,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+/* XML Params */
+#define WIN	1
+#define DOS 2
+#define UTF 3
+#define KOI8R 4
+
 /*
  *
  * Constants and byte flags/masks
@@ -66,6 +72,8 @@
 
 #define IEC104_CHLENGHT			400
 
+#define TRUE	1
+#define FALSE	0
 
 /*
  *
