@@ -25,8 +25,9 @@ uint32_t scm700[]={9600,0};
 
 char *Addrfile;
 
-// Create string for lrs[idx]
-int createllforlr(LOWREC *lr){
+// Create lowlevel string in tlstr buffer
+int createllforlr(LOWREC *lr, uint16_t speed){
+	tlstr[0] = 0;
 	switch (lr->scen){
 	case IEC104:
 
@@ -58,9 +59,8 @@ FILE *f;
 
 	f = fopen(fname, "w+");
 	for (i=0; i<maxrec; i++){
-		tlstr[0] = 0;
 		lr = lrs[i];
-		if ((lr->copied & copy) | (~copy&1)) createllforlr(lr);
+		if ((lr->copied & copy) | (~copy&1)) createllforlr(lr, lr->setspeed);
 		len = strlen(tlstr);
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
@@ -87,7 +87,8 @@ int ret = -1;
 		lrs[maxrec]->connect = 0;
 		lrs[maxrec]->copied = 0;
 		lrs[maxrec]->myep = 0;
-		lrs[maxrec]->scen = -1;
+		lrs[maxrec]->scen = 0;
+		lrs[maxrec]->setspeed = 0;
 		maxrec++;
 	}
 
@@ -117,36 +118,46 @@ struct stat fst;
 	return ret;
 }
 
-// Create lowlevel.cfg for concrete level
-// 1: fixed asdu
-// 2: fixed MAC, dynamic asdu
-// 3: dynamic asdu
-// and concrete speed according to table
-int createlltables(u08 level, uint32_t spdidx){
-	lastasdu = 1;
-	lastldinst = 0;
-
-	// Create tables in format lowlevel.cfg
-	// by names: lowlevel.<level asdu>.<type>.<speed>
-	// 1 - all for iec-101 & iec-104
-	// 2 - m700 & m500 - 1 only
-	// 3 - other
-	// Create string for lowlevel.cfg from 1 string of addr.cfg
-	XMLSelectSource(Addrfile);
-
-	return 0;
-}
-
 int main(int argc, char * argv[]){
-int i, allfiles;
+int i, allfiles, j;
 // Backup previous lowlevel.cfg
 	rename("/rw/mx00/configs/lowlevel.cfg", "/rw/mx00/configs/lowlevel.bak");
 
 	if (loadaddrcfg("addr.cfg") == -1) return -1;
 
+	// Create lowrecord structures
+	XMLSelectSource(Addrfile);
+
+	// Create lowlevel.cfg for concrete level
+	// 1: fixed asdu iec104
+	// 2: fixed asdu iec101
+	// 3: fixed MAC, dynamic asdu, m700
+	// 4: dynamic asdu, dlt645
 	for (i=0; i < MAXLEVEL; i++){
 		// Create full tables for all variants of records in the file 'addr.cfg'.
-		createlltables(i, 9600);
+		switch(lrs[i]->scen){
+		case IEC104:
+			createllforlr(lrs[i], 0);
+			break;
+
+		case IEC101:
+			j=0;
+			while(sciec101[i]){
+				createllforlr(lrs[i], sciec101[i]);
+			}
+			break;
+
+		case DLT645:
+			j=0;
+			while(sciec101[i]){
+				createllforlr(lrs[i], sciec101[i]);
+			}
+			break;
+
+		case MX00:
+			createllforlr(lrs[i], 9600);
+			break;
+		}
 	}
 
 	createlrfile("/rw/mx00/configs/ll/lowlevel.1", FALSE);

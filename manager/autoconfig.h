@@ -30,6 +30,7 @@ typedef struct lowrecord{
 	uint16_t	port;
 	uint16_t	scen;		// Case for type lowlevel string
 	uint32_t	myep;		// Endpoint number
+	uint16_t	setspeed;
 } LOWREC;
 
 extern void XMLSelectSource(char *xml);

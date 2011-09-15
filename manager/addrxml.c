@@ -17,8 +17,6 @@ uint configstep;
 u16 usasdu[MAXEP];
 u08 maxfixasdu;
 
-char Speed[6]={"9600\0"};
-
 static u08 Encoding, EndScript;
 
 void lowrecordinit (LOWREC *lr){
@@ -40,7 +38,7 @@ void lowrecordinit (LOWREC *lr){
 // asdu -addr <dlt-address> -name "unitlink-dlt645" -port "ttyS3" -pars <speed>,8E1,NO
 // asdu - dynamic, dont equal with every ASDU from usasdu
 void TagM100300(const char *pTag){
-	if (configstep == 3){
+	if (configstep == 2){
 
 	}
 }
@@ -165,6 +163,10 @@ const char *pS=XMLScript;
 void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
 
+	configstep = 1;
+	if (pt) XMLParser(pt);
+
+	configstep = 2;
 	if (pt) XMLParser(pt);
 
 }
