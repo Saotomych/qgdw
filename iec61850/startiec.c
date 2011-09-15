@@ -58,20 +58,20 @@ char buf[5];
 	crossconnection();
 
 	// Start of virtualize functions
-//	chldpid = virt_start(argv[0]);
-//	if (chldpid == -1){
-//		printf("IEC61850: Virtualization don't started\n");
-//		exit(2);
-//	}
+	chldpid = virt_start(argv[0]);
+	if (chldpid == -1){
+		printf("IEC61850: Virtualization don't started\n");
+		exit(2);
+	}
 
 	printf("\n--- Low level applications ready --- \n\n");
 
 	// Cycle data routing in rcv_data
-//	do{
-//		mf_waitevent(buf, sizeof(buf), 0);
-//	}while(!appexit);
-//
-//	mf_exit();
+	do{
+		mf_waitevent(buf, sizeof(buf), 0);
+	}while(!appexit);
+
+	mf_exit();
 
 	return 0;
 }
