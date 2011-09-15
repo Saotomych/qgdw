@@ -80,7 +80,7 @@ FILE *f;
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
 		if ((lr->copied & copy) | (~copy&1))
-			if (!scenfunc[scen](lr, spds)) printf("Task Manager error: don't create lowlevel.cfg");
+			if (!scenfunc[lr->scen](lr, lr->setspeed)) printf("Task Manager error: don't create lowlevel.cfg");
 		len = strlen(tlstr);
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
@@ -163,23 +163,21 @@ uint32_t *spds;
 			// Create lowlevel cfg file for devices of concrete level and speed
 			createfirstfile("/rw/mx00/configs/ll/lowlevel.cfg", scen, spds[i]);
 
+			// Start endpoints
+
+			// Control of answers and forming new lowlevel.cfg
+
+			// Exit by time
+
+			// write new lowlevel.cfg
+
+			// Quit all lowlevel applications
+
 			// Create lowlevel cfg file for online devices
 			createlrfile("/rw/mx00/configs/ll/lowlevel.cfg", FALSE);
 			i++;
 		}
 	}
-
-	// Substitution of level.??? to lowlevel.cfg
-
-	// Start endpoints
-
-	// Control of answers and forming new lowlevel.cfg
-
-	// Exit by time
-
-	// write new lowlevel.cfg
-
-	// Quit all lowlevel applications
 
 	rename("/rw/mx00/configs/lowlevel.bak", "/rw/mx00/configs/lowlevel.cfg");
 
