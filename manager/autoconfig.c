@@ -66,7 +66,7 @@ int createllfordlt645(LOWREC *lr, uint16_t speed, char *llstr){
 	setdynamicasdu(lr);
 
 	// Form lowlevel string
-	sprintf(llstr, "%d -addr %d -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->addrdlt, lr->setspeed);
+	sprintf(llstr, "%d -addr %10ld -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->addrdlt, lr->setspeed);
 
 	return 0;
 }

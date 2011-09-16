@@ -26,7 +26,7 @@ typedef struct lowrecord{
 	// Vars for lowlevel.cfg
 	uint16_t	asdu;
 	struct sockaddr_in 	sai;
-	uint64_t	addrdlt;
+	long		addrdlt;
 	uint16_t	port;
 	uint16_t	scen;		// Case for type lowlevel string
 	uint32_t	myep;		// Endpoint number
