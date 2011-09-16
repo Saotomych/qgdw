@@ -1,4 +1,4 @@
-all : mkdirs unitlinks u-tsts phylinks iec61850 manager
+all : mkdirs unitlinks phylinks iec61850 manager
 	
 clean : unitlinks-clean u-tsts-clean phylinks-clean iec61850-clean manager-clean
 
