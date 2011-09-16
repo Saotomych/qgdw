@@ -29,6 +29,8 @@ void lowrecordinit (LOWREC *lr){
 	lr->ldinst = 0;
 	lr->myep = 0;
 	lr->scen = 0;
+	lr->setspeed = 0;
+	lr->scfg = 0;
 }
 
 // Scenario functions
@@ -50,7 +52,7 @@ void TagM100300(const char *pTag){
 void TagM500700(const char *pTag){
 char *p;
 	if (configstep == 2){
-		p = strstr((char*) pTag, "-asdu");
+		p = strstr((char*) pTag, "-asdu=");
 		if (p){
 		}
 		else return;
@@ -68,18 +70,29 @@ char *p;
 void TagKIPP(const char *pTag){
 char *p;
 LOWREC lr;
+struct in_addr adr;
+char sadr[16], *ps = sadr;
+
 	if (configstep == 1){
 		lowrecordinit(&lr);
-		p = strstr((char*) pTag, "asdu");
+		p = strstr((char*) pTag, "asdu=");
 		if (p){
-			lr.asdu = atoi(p+5);
+			lr.asdu = atoi(p+6);
 		}
 		else return;
-		p = strstr((char*) pTag, "ip");
+		p = strstr((char*) pTag, "ip=");
 		if (p){
-			p = strstr((char*) pTag, "port");
+			// copy ip-address
+			p = p + 4;
+			while(*p != '"'){*ps=*p; ps++; p++;}
+			*ps = 0;
+			// set ip-address
+			inet_aton(sadr, &adr);
+			lr.sai.sin_addr.s_addr = adr.s_addr;
+			// set port
+			p = strstr((char*) pTag, "port=");
 			if (p){
-				lr.sai.sin_port = atoi(p+5);
+				lr.sai.sin_port = atoi(p+6);
 			}else{
 				lr.sai.sin_port = 2404;
 			}

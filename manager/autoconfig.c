@@ -46,7 +46,7 @@ int createllforiec104(LOWREC *lr, uint16_t speed, char *llstr){
 
 	// Form lowlevel string
 	// For energy meter used CONNECT mode only
-	sprintf(llstr, "%d -addr %s -port %d -name \"unitlink-iec104\" -mode CONNECT", lr->asdu, inet_ntoa(lr->sai.sin_addr), ntohs(lr->sai.sin_port));
+	sprintf(llstr, "%d -addr %s -port %d -name \"unitlink-iec104\" -mode CONNECT\n", lr->asdu, inet_ntoa(lr->sai.sin_addr), lr->sai.sin_port);
 
 	return 0;
 }
@@ -55,7 +55,7 @@ int createllforiec101(LOWREC *lr, uint16_t speed, char *llstr){
 // Example: 967 -name "unitlink-iec101" -port ttyS3 -pars 9600,8N1,NO
 
 	// Form lowlevel string
-	sprintf(llstr, "%d -name \"unitlink-iec101\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->setspeed);
+	sprintf(llstr, "%d -name \"unitlink-iec101\" -port ttyS3 -pars %d,8E1,NO\n", lr->asdu, lr->setspeed);
 
 	return 0;
 }
@@ -66,7 +66,7 @@ int createllfordlt645(LOWREC *lr, uint16_t speed, char *llstr){
 	setdynamicasdu(lr);
 
 	// Form lowlevel string
-	sprintf(llstr, "%d -addr %10ld -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->addrdlt, lr->setspeed);
+	sprintf(llstr, "%d -addr %10ld -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO\n", lr->asdu, lr->addrdlt, lr->setspeed);
 
 	return 0;
 }
@@ -77,15 +77,15 @@ int createllformx00(LOWREC *lr, uint16_t speed, char *llstr){
 	setdynamicasdu(lr);
 
 	// Form lowlevel string
-	sprintf(llstr, "%d -addr 01 -name \"unitlink-m700\" -port ttyS4 -pars 9600,8E1,NO", lr->asdu);
+	sprintf(llstr, "%d -addr 01 -name \"unitlink-m700\" -port ttyS4 -pars 9600,8E1,NO\n", lr->asdu);
 
 	return 0;
 }
 
-int (*scenfunc[])(LOWREC *lr, uint16_t speed, char *llstr) = {createllforiec104, createllforiec101, createllformx00, createllfordlt645};
+int (*scenfunc[])(LOWREC *lr, uint16_t speed, char *llstr) = {NULL, createllforiec104, createllforiec101, createllformx00, createllfordlt645};
 
 int createfirstfile(char *fname, u08 scen, uint16_t spds){
-int ret = 0, i, len;
+int i, len;
 LOWREC *lr;
 FILE *f;
 char *tlstr = malloc(128);
@@ -93,9 +93,11 @@ char *tlstr = malloc(128);
 	f = fopen(fname, "w+");
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
-		if (lr->scen == scen)
-			if (!scenfunc[scen](lr, spds, tlstr)) printf("Config Manager error: don't create lowlevel.cfg");
-		len = strlen(tlstr);
+		if ((lr->scen == scen) && (scenfunc[scen](lr, spds, tlstr))){
+			printf("Config Manager error: scenario error or don't create lowlevel.cfg\n");
+			return -1;
+		}
+		len = strlen(tlstr) + 1;
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
 		fputs(tlstr, f);
@@ -104,7 +106,7 @@ char *tlstr = malloc(128);
 	fclose(f);
 	free(tlstr);
 
-	return ret;
+	return 0;
 }
 
 // Cycle for creating all records for one type and speed
