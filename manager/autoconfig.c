@@ -45,7 +45,8 @@ int createllforiec104(LOWREC *lr, uint16_t speed, char *llstr){
 // Example: 967 -addr 84.242.3.213 -port 2404 -name "unitlink-iec104" -mode CONNECT
 
 	// Form lowlevel string
-	sprintf(llstr, "%d -addr %d -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->addrdlt, lr->setspeed);
+	// For energy meter used CONNECT mode only
+	sprintf(llstr, "%d -addr %s -port %d -name \"unitlink-iec104\" -mode CONNECT", lr->asdu, inet_ntoa(lr->sai.sin_addr), ntohs(lr->sai.sin_port));
 
 	return 0;
 }
