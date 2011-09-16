@@ -209,7 +209,7 @@ uint32_t *spds;
 			if (spds) createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, spds[i]);
 			else createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, 0);
 
-//			exit(0);
+			printf("Config Manager: create lowlevel.cfg for scen %d\n", scen);
 
 			// Start endpoints
 
@@ -222,12 +222,12 @@ uint32_t *spds;
 			// Quit all lowlevel applications
 
 			// Create lowlevel cfg file for online devices
-			createlrfile("/rw/mx00/configs/lowlevel.cfg", FALSE);
+//			createlrfile("/rw/mx00/configs/lowlevel.cfg", FALSE);
 			i++;
-		}while(spds[i]);
+		}while((spds) && (spds[i]));
 	}
 
-	rename("/rw/mx00/configs/lowlevel.bak", "/rw/mx00/configs/lowlevel.cfg");
+//	rename("/rw/mx00/configs/lowlevel.bak", "/rw/mx00/configs/lowlevel.cfg");
 
 	return 0;
 }

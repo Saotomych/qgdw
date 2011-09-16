@@ -19,6 +19,23 @@ u08 maxfixasdu;
 
 static u08 Encoding, EndScript;
 
+int ishex(char *p){
+	if ((*p >= '0') && (*p <='9')) return TRUE;
+	if ((*p >= 'A') && (*p <='F')) return TRUE;
+	if ((*p >= 'a') && (*p <='f')) return TRUE;
+	return FALSE;
+}
+
+int ismac(char *p){
+int i;
+	for(i=0; i<5; i++){
+		if ((ishex(&p[0])) && (ishex(&p[1])) && (p[2] == ':')) p+=3;
+		else return FALSE;
+	}
+	if ((ishex(&p[0])) && (ishex(&p[1]))) return TRUE;
+	return FALSE;
+}
+
 void lowrecordinit (LOWREC *lr){
 	lr->sai.sin_addr.s_addr = 0;
 	lr->sai.sin_port = 0;
@@ -45,9 +62,9 @@ LOWREC lr;
 
 	if (configstep == 3){
 		lowrecordinit(&lr);
-		p = strstr((char*) pTag, "addr=");
+		p = strstr((char*) pTag, "dlt=");
 		if (p){
-			lr.addrdlt = atol(p+6);
+			lr.addrdlt = atol(p+5);
 		}
 		lr.scen = DLT645;
 		createlowrecord(&lr);
@@ -61,14 +78,18 @@ LOWREC lr;
 char *macbuf;
 void TagM500700(const char *pTag){
 LOWREC lr;
+char *p;
 
 	if (configstep == 2){
-		// filter by MAC-address
-		// get my MAC as string
-
-		lowrecordinit(&lr);
-		lr.scen = MX00;
-		createlowrecord(&lr);
+		// Filter by MAC-address. This meter is one only.
+		p = strstr((char*) pTag, "mac=");
+		if (p){
+			if (!strcmp(p, macbuf)){
+				lowrecordinit(&lr);
+				lr.scen = MX00;
+				createlowrecord(&lr);
+			}
+		}
 	}
 }
 
@@ -191,10 +212,10 @@ void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
 FILE *f;
 struct stat fst;
-uint32_t adrlen;
+uint32_t adrlen, i;
 
 	// Read MAC-address
-	f = fopen("/etc/setmacaddr", "w+");
+	f = fopen("/etc/setmacaddr", "r");
 	if (f){
 		// Get size of main config file
 		if (stat("/etc/setmacaddr", &fst) == -1){
@@ -202,15 +223,20 @@ uint32_t adrlen;
 		}
 
 		macbuf = malloc(fst.st_size);
-
-		// Loading main config file
-		f = fopen("/rw/mx00/configs/addr.cfg", "r");
 		adrlen = fread(macbuf, 1, (size_t) (fst.st_size), f);
 		if (adrlen == fst.st_size){
-			// find MAC
-//			while(macadr[i])
-			// test & copy MAC to begin buffer
-
+			// Find, test & copy MAC to macbuf
+			i = 0;
+			do{
+				while ((ishex(&macbuf[i]) == FALSE) && (i < adrlen)) i++;
+				if (ismac(&macbuf[i])){
+					memcpy(macbuf, &macbuf[i], 16);
+					macbuf[17] = 0;
+					break;
+				}
+				i++;
+			}while(i < adrlen);
+			if (i >= adrlen) macbuf[0] = 0;
 		}
 	}
 
