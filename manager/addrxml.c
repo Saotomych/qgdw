@@ -40,8 +40,17 @@ void lowrecordinit (LOWREC *lr){
 // asdu -addr <dlt-address> -name "unitlink-dlt645" -port "ttyS3" -pars <speed>,8E1,NO
 // asdu - dynamic, dont equal with every ASDU from usasdu
 void TagM100300(const char *pTag){
-	if (configstep == 2){
+char *p;
+LOWREC lr;
 
+	if (configstep == 3){
+		lowrecordinit(&lr);
+		p = strstr((char*) pTag, "addr=");
+		if (p){
+			lr.addrdlt = atol(p+6);
+		}
+		lr.scen = DLT645;
+		createlowrecord(&lr);
 	}
 }
 
@@ -49,13 +58,17 @@ void TagM100300(const char *pTag){
 // Out data: 3 strings to files lowlevel.2.<speed>, where speed=9600,2400,1200
 // asdu -addr 01 -port "ttyS4" -name "unitlink-m700" -pars <speed>,8E1,NO
 // asdu - dynamic, dont equal with every ASDU from usasdu
+char *macbuf;
 void TagM500700(const char *pTag){
-char *p;
+LOWREC lr;
+
 	if (configstep == 2){
-		p = strstr((char*) pTag, "-asdu=");
-		if (p){
-		}
-		else return;
+		// filter by MAC-address
+		// get my MAC as string
+
+		lowrecordinit(&lr);
+		lr.scen = MX00;
+		createlowrecord(&lr);
 	}
 }
 
@@ -176,11 +189,40 @@ const char *pS=XMLScript;
 
 void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
+FILE *f;
+struct stat fst;
+uint32_t adrlen;
+
+	// Read MAC-address
+	f = fopen("/etc/setmacaddr", "w+");
+	if (f){
+		// Get size of main config file
+		if (stat("/etc/setmacaddr", &fst) == -1){
+			printf("IEC61850: Addr.cfg file not found\n");
+		}
+
+		macbuf = malloc(fst.st_size);
+
+		// Loading main config file
+		f = fopen("/rw/mx00/configs/addr.cfg", "r");
+		adrlen = fread(macbuf, 1, (size_t) (fst.st_size), f);
+		if (adrlen == fst.st_size){
+			// find MAC
+//			while(macadr[i])
+			// test & copy MAC to begin buffer
+
+		}
+	}
 
 	configstep = 1;
 	if (pt) XMLParser(pt);
 
 	configstep = 2;
 	if (pt) XMLParser(pt);
+
+	configstep = 3;
+	if (pt) XMLParser(pt);
+
+	free(macbuf);
 
 }

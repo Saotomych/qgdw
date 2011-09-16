@@ -93,14 +93,16 @@ char *tlstr = malloc(128);
 	f = fopen(fname, "w+");
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
-		if ((lr->scen == scen) && (scenfunc[scen](lr, spds, tlstr))){
-			printf("Config Manager error: scenario error or don't create lowlevel.cfg\n");
-			return -1;
+		if (lr->scen == scen){
+			if (scenfunc[scen](lr, spds, tlstr)){
+				printf("Config Manager error: scenario error or don't create lowlevel.cfg\n");
+				return -1;
+			}
+			len = strlen(tlstr) + 1;
+			if (len) lr->scfg = malloc(len);
+			strcpy(lr->scfg, tlstr);
+			fputs(tlstr, f);
 		}
-		len = strlen(tlstr) + 1;
-		if (len) lr->scfg = malloc(len);
-		strcpy(lr->scfg, tlstr);
-		fputs(tlstr, f);
 	}
 	fputs("\n",f);
 	fclose(f);
@@ -207,7 +209,7 @@ uint32_t *spds;
 			if (spds) createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, spds[i]);
 			else createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, 0);
 
-			exit(0);
+//			exit(0);
 
 			// Start endpoints
 
