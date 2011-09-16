@@ -13,8 +13,8 @@
 // Scens
 #define IEC104		1
 #define IEC101		2
-#define DLT645		3
-#define MX00		4
+#define MX00		3
+#define DLT645		4
 
 typedef struct lowrecord{
 	char 		*scfg;
@@ -25,7 +25,7 @@ typedef struct lowrecord{
 	u08 		copied;
 	// Vars for lowlevel.cfg
 	uint16_t	asdu;
-	uint32_t	addr;
+	struct sockaddr_in 	sai;
 	uint64_t	addrdlt;
 	uint16_t	port;
 	uint16_t	scen;		// Case for type lowlevel string

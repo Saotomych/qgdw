@@ -11,8 +11,6 @@
 
 LOWREC *lrs[MAXEP];
 
-char tlstr[128];
-
 uint32_t maxrec = 0, actrec = 0;
 
 uint16_t	lastasdu;
@@ -22,47 +20,80 @@ uint16_t	lastldinst;
 uint32_t spdstty4[] = {9600};
 uint32_t spdstty3[]={9600,2400,1200,0};
 
-uint32_t *scens = {0, 0, spdstty3, spdstty3, spdstty4};
+uint32_t *spdscens[] = {NULL, NULL, spdstty3, spdstty4, spdstty3};
 
 char *Addrfile;
 
+uint16_t actasdu = 100;
+
+// Support functions
+void setdynamicasdu(LOWREC *lr){
+u08 i = 0;
+	while(lrs[i]){
+		if (lrs[i]->asdu == actasdu){
+			actasdu++;
+			i = 0;
+		}
+		i++;
+	}
+	lr->asdu = actasdu;
+	actasdu++;
+}
+
 // Create lowlevel strings in text buffer
-int createllforiec104(LOWREC *lr, uint16_t speed){
+int createllforiec104(LOWREC *lr, uint16_t speed, char *llstr){
 // Example: 967 -addr 84.242.3.213 -port 2404 -name "unitlink-iec104" -mode CONNECT
 
+	// Form lowlevel string
+	sprintf(llstr, "%d -addr %d -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->addrdlt, lr->setspeed);
+
 	return 0;
 }
 
-int createllforiec101(LOWREC *lr, uint16_t speed){
+int createllforiec101(LOWREC *lr, uint16_t speed, char *llstr){
 // Example: 967 -name "unitlink-iec101" -port ttyS3 -pars 9600,8N1,NO
 
-	return 0;
-}
-
-int createllfordlt645(LOWREC *lr, uint16_t speed){
-// Example: 1001 -addr 001083100021 -name "unitlink-iec104" -port ttyS3 -pars 9600,8E1,NO
+	// Form lowlevel string
+	sprintf(llstr, "%d -name \"unitlink-iec101\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->setspeed);
 
 	return 0;
 }
 
-int createllformx00(LOWREC *lr, uint16_t speed){
-// Example: 1000 -addr 001083100021 -name "unitlink-iec104" -port ttyS3 -pars 9600,8E1,NO
+int createllfordlt645(LOWREC *lr, uint16_t speed, char *llstr){
+// Example: 1001 -addr 001083100021 -name "unitlink-dlt645" -port ttyS3 -pars 9600,8E1,NO
+	// Form real ASDU
+	setdynamicasdu(lr);
+
+	// Form lowlevel string
+	sprintf(llstr, "%d -addr %d -name \"unitlink-dlt645\" -port ttyS3 -pars %d,8E1,NO", lr->asdu, lr->addrdlt, lr->setspeed);
 
 	return 0;
 }
 
-int (*scenfunc[])(LOWREC *lr, uint16_t speed) = {createllforiec104, createllforiec101, createllformx00, createllfordlt645};
+int createllformx00(LOWREC *lr, uint16_t speed, char *llstr){
+// Example: 1000 -addr 01 -name "unitlink-m700" -port ttyS4 -pars 9600,8E1,NO
+	// Form real ASDU
+	setdynamicasdu(lr);
+
+	// Form lowlevel string
+	sprintf(llstr, "%d -addr 01 -name \"unitlink-m700\" -port ttyS4 -pars 9600,8E1,NO", lr->asdu);
+
+	return 0;
+}
+
+int (*scenfunc[])(LOWREC *lr, uint16_t speed, char *llstr) = {createllforiec104, createllforiec101, createllformx00, createllfordlt645};
 
 int createfirstfile(char *fname, u08 scen, uint16_t spds){
 int ret = 0, i, len;
 LOWREC *lr;
 FILE *f;
+char *tlstr = malloc(128);
 
 	f = fopen(fname, "w+");
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
 		if (lr->scen == scen)
-			if (!scenfunc[scen](lr, spds)) printf("Task Manager error: don't create lowlevel.cfg");
+			if (!scenfunc[scen](lr, spds, tlstr)) printf("Task Manager error: don't create lowlevel.cfg");
 		len = strlen(tlstr);
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
@@ -70,6 +101,7 @@ FILE *f;
 	}
 	fputs("\n",f);
 	fclose(f);
+	free(tlstr);
 
 	return ret;
 }
@@ -79,12 +111,13 @@ int createlrfile(char *fname, u08 copy){
 int ret = 0, i, len;
 LOWREC *lr;
 FILE *f;
+char *tlstr = malloc(128);
 
 	f = fopen(fname, "w+");
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
 		if ((lr->copied & copy) | (~copy&1))
-			if (!scenfunc[lr->scen](lr, lr->setspeed)) printf("Task Manager error: don't create lowlevel.cfg");
+			if (!scenfunc[lr->scen](lr, lr->setspeed, tlstr)) printf("Task Manager error: don't create lowlevel.cfg");
 		len = strlen(tlstr);
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
@@ -92,6 +125,7 @@ FILE *f;
 	}
 	fputs("\n",f);
 	fclose(f);
+	free(tlstr);
 
 	return ret;
 }
@@ -103,7 +137,9 @@ int ret = -1;
 	lrs[maxrec] = malloc(sizeof(LOWREC));
 	if (lrs[maxrec]){
 		ret = 0;
-		lrs[maxrec]->addr = lr->addr;
+		lrs[maxrec]->sai.sin_family = AF_INET;
+		lrs[maxrec]->sai.sin_addr.s_addr = 0;
+		lrs[maxrec]->sai.sin_port = 0;
 		lrs[maxrec]->addrdlt = lr->addrdlt;
 		lrs[maxrec]->asdu = lr->asdu;
 		lrs[maxrec]->ldinst = lr->ldinst;
@@ -161,11 +197,11 @@ uint32_t *spds;
 	// 3: fixed MAC, dynamic asdu, m700
 	// 4: dynamic asdu, dlt645
 	for (scen = 1; scen < 5; scen++){
-		spds = scens[scen];
+		spds = spdscens[scen];
 		i = 0;
 		while(spds[i]){
 			// Create lowlevel cfg file for devices of concrete level and speed
-			createfirstfile("/rw/mx00/configs/ll/lowlevel.cfg", scen, spds[i]);
+			createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, spds[i]);
 
 			// Start endpoints
 
@@ -178,7 +214,7 @@ uint32_t *spds;
 			// Quit all lowlevel applications
 
 			// Create lowlevel cfg file for online devices
-			createlrfile("/rw/mx00/configs/ll/lowlevel.cfg", FALSE);
+			createlrfile("/rw/mx00/configs/lowlevel.cfg", FALSE);
 			i++;
 		}
 	}
