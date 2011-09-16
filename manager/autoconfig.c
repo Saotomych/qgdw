@@ -94,7 +94,7 @@ char *tlstr = malloc(128);
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
 		if (lr->scen == scen)
-			if (!scenfunc[scen](lr, spds, tlstr)) printf("Task Manager error: don't create lowlevel.cfg");
+			if (!scenfunc[scen](lr, spds, tlstr)) printf("Config Manager error: don't create lowlevel.cfg");
 		len = strlen(tlstr);
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
@@ -118,7 +118,7 @@ char *tlstr = malloc(128);
 	for (i=0; i<maxrec; i++){
 		lr = lrs[i];
 		if ((lr->copied & copy) | (~copy&1))
-			if (!scenfunc[lr->scen](lr, lr->setspeed, tlstr)) printf("Task Manager error: don't create lowlevel.cfg");
+			if (!scenfunc[lr->scen](lr, lr->setspeed, tlstr)) printf("Config Manager error: don't create lowlevel.cfg");
 		len = strlen(tlstr);
 		if (len) lr->scfg = malloc(len);
 		strcpy(lr->scfg, tlstr);
@@ -139,17 +139,16 @@ int ret = -1;
 	if (lrs[maxrec]){
 		ret = 0;
 		lrs[maxrec]->sai.sin_family = AF_INET;
-		lrs[maxrec]->sai.sin_addr.s_addr = 0;
-		lrs[maxrec]->sai.sin_port = 0;
+		lrs[maxrec]->sai.sin_addr.s_addr = lr->sai.sin_addr.s_addr;
+		lrs[maxrec]->sai.sin_port = lr->sai.sin_port;
 		lrs[maxrec]->addrdlt = lr->addrdlt;
 		lrs[maxrec]->asdu = lr->asdu;
 		lrs[maxrec]->ldinst = lr->ldinst;
-		lrs[maxrec]->port = lr->port;
+		lrs[maxrec]->scen = lr->scen;
 		lrs[maxrec]->scfg = 0;
 		lrs[maxrec]->connect = 0;
 		lrs[maxrec]->copied = 0;
 		lrs[maxrec]->myep = 0;
-		lrs[maxrec]->scen = 0;
 		lrs[maxrec]->setspeed = 0;
 		maxrec++;
 	}
@@ -192,6 +191,7 @@ uint32_t *spds;
 	// Create lowrecord structures
 	XMLSelectSource(Addrfile);
 
+	printf("Config Manager: low records = %d\n", maxrec);
 	// Create lowlevel.cfg for concrete speed level
 	// 1: fixed asdu iec104
 	// 2: fixed asdu iec101
@@ -200,9 +200,12 @@ uint32_t *spds;
 	for (scen = 1; scen < 5; scen++){
 		spds = spdscens[scen];
 		i = 0;
-		while(spds[i]){
+		do{
 			// Create lowlevel cfg file for devices of concrete level and speed
-			createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, spds[i]);
+			if (spds) createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, spds[i]);
+			else createfirstfile("/rw/mx00/configs/lowlevel.cfg", scen, 0);
+
+			exit(0);
 
 			// Start endpoints
 
@@ -217,7 +220,7 @@ uint32_t *spds;
 			// Create lowlevel cfg file for online devices
 			createlrfile("/rw/mx00/configs/lowlevel.cfg", FALSE);
 			i++;
-		}
+		}while(spds[i]);
 	}
 
 	rename("/rw/mx00/configs/lowlevel.bak", "/rw/mx00/configs/lowlevel.cfg");

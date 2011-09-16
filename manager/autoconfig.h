@@ -27,9 +27,8 @@ typedef struct lowrecord{
 	uint16_t	asdu;
 	struct sockaddr_in 	sai;
 	long		addrdlt;
-	uint16_t	port;
-	uint16_t	scen;		// Case for type lowlevel string
 	uint32_t	myep;		// Endpoint number
+	uint16_t	scen;		// Case for type lowlevel string
 	uint16_t	setspeed;
 } LOWREC;
 

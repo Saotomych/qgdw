@@ -20,14 +20,14 @@ u08 maxfixasdu;
 static u08 Encoding, EndScript;
 
 void lowrecordinit (LOWREC *lr){
-	lr->addr = 0;
+	lr->sai.sin_addr.s_addr = 0;
+	lr->sai.sin_port = 0;
 	lr->addrdlt = 0;
 	lr->asdu = 0;
 	lr->connect = 0;
 	lr->copied = 0;
 	lr->ldinst = 0;
 	lr->myep = 0;
-	lr->port = 0;
 	lr->scen = 0;
 }
 
@@ -79,24 +79,25 @@ LOWREC lr;
 		if (p){
 			p = strstr((char*) pTag, "port");
 			if (p){
-				lr.port = atoi(p+5);
+				lr.sai.sin_port = atoi(p+5);
 			}else{
-				lr.port = 2404;
+				lr.sai.sin_port = 2404;
 			}
 			lr.scen = IEC104;
 		}else lr.scen = IEC101;
+		createlowrecord(&lr);
 	}
 }
 
 // ssd functions
 
 void TagSetSCL(const char *pTag){
-	printf("Task Manager: Start ADDR file to parse\n");
+	printf("Config Manager: Start ADDR file to parse\n");
 }
 
 void TagEndSCL(const char *pTag){
 	EndScript=1;
-	printf("Task Manager: Stop ADDR file to parse\n");
+	printf("Config Manager: Stop ADDR file to parse\n");
 }
 
 void TagSetXml(const char *pTag){
