@@ -78,18 +78,6 @@ typedef struct m700_ep_ext {
 } m700_ep_ext;
 
 
-/* Identifiers mapping list item */
-typedef struct m700_map m700_map;
-
-struct m700_map {
-	uint32_t	m700_id;	/* M700 identifier */
-	uint32_t	base_id;	/* base identifier */
-
-	m700_map	*prev;		/* previous item in the mapping list */
-	m700_map	*next;		/* next item in the mapping list */
-};
-
-
 /*
  *
  * Functions
@@ -97,7 +85,6 @@ struct m700_map {
  */
 
 uint16_t m700_config_read(const char *file_name);
-uint16_t m700_map_read(const char *file_name);
 
 void m700_catch_alarm(int sig);
 
@@ -109,11 +96,6 @@ m700_ep_ext* m700_get_ep_ext(uint16_t adr, uint8_t get_by);
 
 m700_ep_ext* m700_add_ep_ext(uint16_t adr);
 void m700_init_ep_ext(m700_ep_ext* ep_ext);
-
-uint16_t m700_add_map_item(uint32_t m700_id, uint32_t base_id);
-m700_map *m700_get_map_item(uint32_t id, uint8_t get_by);
-
-void m700_asdu_map_ids(asdu *dlt_asdu);
 
 uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name);
 uint16_t m700_get_dobj_item(m700_ep_ext* ep_ext, uint32_t m700_id);

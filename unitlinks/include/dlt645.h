@@ -86,18 +86,6 @@ typedef struct dlt645_ep_ext {
 } dlt645_ep_ext;
 
 
-/* Identifiers mapping list item */
-typedef struct dlt645_map dlt645_map;
-
-struct dlt645_map {
-	uint32_t	dlt645_id;	/* DLT645 identifier */
-	uint32_t	base_id;	/* base identifier */
-
-	dlt645_map	*prev;		/* previous item in the mapping list */
-	dlt645_map	*next;		/* next item in the mapping list */
-};
-
-
 /*
  *
  * Functions
@@ -105,7 +93,6 @@ struct dlt645_map {
  */
 
 uint16_t dlt645_config_read(const char *file_name);
-uint16_t dlt645_map_read(const char *file_name);
 
 void dlt645_catch_alarm(int sig);
 
@@ -117,11 +104,6 @@ dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by);
 
 dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);
-
-uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id);
-dlt645_map *dlt645_get_map_item(uint32_t id, uint8_t get_by);
-
-void dlt645_asdu_map_ids(asdu *dlt_asdu);
 
 uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name);
 uint16_t dlt645_get_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dlt645_id);

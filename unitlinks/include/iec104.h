@@ -38,6 +38,7 @@ extern "C" {
 #define APP_NAME		"unitlink-iec104"
 #define APP_PATH 		"/rw/mx00/unitlinks"
 #define APP_CFG			"/rw/mx00/configs/lowlevel.cfg"
+#define APP_MAP			"/rw/mx00/configs/iec10Xmap.cfg"
 #define CHILD_APP_PATH 	"/rw/mx00/phyints"
 #define ALARM_PER		1
 
@@ -103,6 +104,7 @@ iec104_ep_ext* iec104_add_ep_ext(uint16_t adr);
 void iec104_init_ep_ext(iec104_ep_ext* ep_ext);
 
 uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name);
+uint16_t iec104_get_dobj_item(iec104_ep_ext* ep_ext, uint32_t iec104_id);
 
 
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);

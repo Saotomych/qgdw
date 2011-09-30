@@ -11,6 +11,9 @@
 /*End-point extensions array */
 static iec104_ep_ext *ep_exts[MAXEP] = {0};
 
+/* list for mapping data identifiers */
+static asdu_map *map_list = NULL;
+
 /* Common ASDU parameters */
 static uint8_t cot_len = IEC104_COT_LEN;
 static uint8_t coa_len = IEC104_COA_LEN;
@@ -50,6 +53,8 @@ int main(int argc, char *argv[])
 	res = iec104_config_read(APP_CFG);
 
 	if(res != RES_SUCCESS) exit(1);
+
+	res = asdu_map_read(&map_list, APP_MAP, APP_NAME, DEC_BASE);
 
 	chldpid = mf_init(APP_PATH, APP_NAME, iec104_recv_data);
 
@@ -330,9 +335,28 @@ void iec104_init_ep_ext(iec104_ep_ext* ep_ext)
 
 uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name)
 {
+	if(!ep_ext) return RES_INCORRECT;
+
 	uint32_t *data_ids_new = NULL;
 
-	if(!ep_ext) return RES_INCORRECT;
+	asdu_map *res_map = asdu_get_map_item(&map_list, dobj_id, BASE_ID);
+
+	if(!res_map)
+	{
+#ifdef _DEBUG
+		printf("%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
+#endif
+
+		return RES_INCORRECT;
+	}
+
+	if(iec104_get_dobj_item(ep_ext, res_map->proto_id) == RES_SUCCESS)
+	{
+#ifdef _DEBUG
+		printf("%s: DOBJ already exists. Address = %d, iec104_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+#endif
+		return RES_SUCCESS;
+	}
 
 	data_ids_new = (uint32_t*) realloc((void*)ep_ext->data_ids, sizeof(uint32_t) * (ep_ext->data_ids_size + 1));
 
@@ -340,14 +364,27 @@ uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 
 	ep_ext->data_ids = data_ids_new;
 
-	ep_ext->data_ids[ep_ext->data_ids_size] = dobj_id;
+	ep_ext->data_ids[ep_ext->data_ids_size] = res_map->proto_id;
 	ep_ext->data_ids_size++;
 
 #ifdef _DEBUG
-	printf("%s: New DOBJ was added. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+	printf("%s: New DOBJ was added. Address = %d, iec104_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
 #endif
 
 	return RES_SUCCESS;
+}
+
+
+uint16_t iec104_get_dobj_item(iec104_ep_ext* ep_ext, uint32_t iec104_id)
+{
+	int i;
+
+	for(i=0; i<ep_ext->data_ids_size; i++)
+	{
+		if(ep_ext->data_ids[i] == iec104_id) return RES_SUCCESS;
+	}
+
+	return RES_NOT_FOUND;
 }
 
 
@@ -1254,6 +1291,9 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 	unsigned char *a_buff = NULL;
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
+
+	// FIXME id mapping!!!
+	//asdu_map_ids(&map_list, iec_asdu, APP_NAME, DEC_BASE);
 
 	res = asdu_to_byte(&a_buff, &a_len, iec_asdu);
 

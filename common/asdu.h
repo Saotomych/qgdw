@@ -23,20 +23,25 @@ extern "C" {
  */
 
 /* Protocols */
-#define PROTO_UNKNOWN			0
-#define PROTO_IEC101			1
-#define PROTO_IEC104			2
-#define PROTO_DLT645			3
-#define PROTO_M700				4
+#define PROTO_UNKNOWN		0
+#define PROTO_IEC101		1
+#define PROTO_IEC104		2
+#define PROTO_DLT645		3
+#define PROTO_M700			4
 
 /* Value types */
-#define ASDU_VAL_NONE			0		/* no value (used in ASDU like time synchronization, broadcast request, etc.) */
-#define ASDU_VAL_INT			1		/* integer 32-bit */
-#define ASDU_VAL_UINT			2		/* unsigned integer 32-bit */
-#define ASDU_VAL_FLT			3		/* float */
-#define ASDU_VAL_BOOL			4		/* boolean */
-#define ASDU_VAL_TIME			5		/* time */
+#define ASDU_VAL_NONE		0		/* no value (used in ASDU like time synchronization, broadcast request, etc.) */
+#define ASDU_VAL_INT		1		/* integer 32-bit */
+#define ASDU_VAL_UINT		2		/* unsigned integer 32-bit */
+#define ASDU_VAL_FLT		3		/* float */
+#define ASDU_VAL_BOOL		4		/* boolean */
+#define ASDU_VAL_TIME		5		/* time */
 
+#define PROTO_ID			0
+#define BASE_ID				1
+
+#define DEC_BASE			1
+#define HEX_BASE			2
 
 /* Identification Types */
 #define M_SP_NA_1		1
@@ -199,6 +204,20 @@ typedef struct asdu {
 } asdu;
 
 
+/* Identifiers mapping list item */
+typedef struct asdu_map asdu_map;
+
+struct asdu_map {
+	uint32_t	proto_id;			/* protocol specific identifier */
+	uint32_t	base_id;			/* base identifier */
+
+	char		name[DOBJ_NAMESIZE];/* name of variable (protocol IEC61850) */
+
+	asdu_map	*prev;				/* previous item in the mapping list */
+	asdu_map	*next;				/* next item in the mapping list */
+};
+
+
 /*
  *
  * Functions
@@ -219,6 +238,13 @@ uint16_t asdu_from_byte(unsigned char *buff, uint32_t buff_len, asdu **unit);
 
 /* copies asdu to byte array in a correct way */
 uint16_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit);
+
+/* protocol specific data identifiers mapping functions */
+uint16_t  asdu_map_read(asdu_map **m_list, const char *file_name, const char *app_name, uint8_t num_base);
+uint16_t  asdu_add_map_item(asdu_map **m_list, uint32_t proto_id, uint32_t base_id, const char *name, const char *app_name, uint8_t num_base);
+asdu_map *asdu_get_map_item(asdu_map **m_list, uint32_t id, uint8_t get_by);
+void      asdu_map_ids(asdu_map **m_list, asdu *cur_asdu, const char *app_name, uint8_t num_base);
+
 
 
 #ifdef __cplusplus

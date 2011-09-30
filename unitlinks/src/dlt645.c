@@ -11,7 +11,8 @@
 /* End-point extensions array */
 static dlt645_ep_ext *ep_exts[MAXEP] = {0};
 
-static dlt645_map *map_list = NULL;
+/* list for mapping data identifiers */
+static asdu_map *map_list = NULL;
 
 /* Request-Response frame buffer variables */
 static time_t			timer_recv = 0;				/* timer for full response from device */
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
-	res = dlt645_map_read(APP_MAP);
+	res = asdu_map_read(&map_list, APP_MAP, APP_NAME, HEX_BASE);
 
 	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data);
 
@@ -170,42 +171,6 @@ uint16_t dlt645_config_read(const char *file_name)
 	}
 
 	if(ep_num)
-		return RES_SUCCESS;
-	else
-		return RES_NOT_FOUND;
-}
-
-
-uint16_t dlt645_map_read(const char *file_name)
-{
-	FILE *map_file = NULL;
-	char r_buff[256] = {0};
-	uint16_t map_num;
-	uint32_t dlt645_id, base_id;
-
-	map_file = fopen(file_name, "r");
-
-	if(map_file)
-	{
-		map_num = 0;
-
-		while(fgets(r_buff, 255, map_file))
-		{
-			if(*r_buff == '#') continue;
-
-			sscanf(r_buff,"%x %d", &dlt645_id, &base_id);
-
-			dlt645_add_map_item(dlt645_id, base_id);
-
-			map_num++;
-		}
-	}
-	else
-	{
-		return RES_UNKNOWN;
-	}
-
-	if(map_num)
 		return RES_SUCCESS;
 	else
 		return RES_NOT_FOUND;
@@ -450,88 +415,13 @@ void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext)
 }
 
 
-uint16_t dlt645_add_map_item(uint32_t dlt645_id, uint32_t base_id)
-{
-	dlt645_map *last_map, *new_map;
-
-	new_map = (dlt645_map*) malloc(sizeof(dlt645_map));
-
-	if(!new_map) return RES_MEM_ALLOC;
-
-	new_map->dlt645_id = dlt645_id;
-	new_map->base_id   = base_id;
-
-	last_map = map_list;
-
-	while(last_map && last_map->next)
-	{
-		last_map = last_map->next;
-	}
-
-	new_map->prev = last_map;
-	new_map->next = NULL;
-
-	if(!map_list)
-		map_list = new_map;
-	else
-		last_map->next = new_map;
-
-#ifdef _DEBUG
-	printf("%s: New dlt645_map added. dlt645_id = 0x%08X, base_id = %d\n", APP_NAME, new_map->dlt645_id, new_map->base_id);
-#endif
-
-	return RES_SUCCESS;
-}
-
-
-dlt645_map *dlt645_get_map_item(uint32_t id, uint8_t get_by)
-{
-	dlt645_map *res_map;
-
-	res_map = map_list;
-
-	while(res_map)
-	{
-		if(get_by == DLT645_ID && res_map->dlt645_id == id) break;
-		if(get_by == BASE_ID   && res_map->base_id   == id) break;
-
-		res_map = res_map->next;
-	}
-
-	return res_map;
-}
-
-
-void dlt645_asdu_map_ids(asdu *dlt_asdu)
-{
-	if(!dlt_asdu) return;
-
-	int i;
-	dlt645_map *res_map;
-
-	for(i=0; i<dlt_asdu->size; i++)
-	{
-		res_map = dlt645_get_map_item(dlt_asdu->data[i].id, DLT645_ID);
-
-		if(res_map)
-			dlt_asdu->data[i].id = res_map->base_id;
-		else
-			dlt_asdu->data[i].id = 0xFFFFFFFF;
-
-#ifdef _DEBUG
-		if(res_map) printf("%s: Identifier mapped. Address = %d, dlt645_id = 0x%08X, base_id = %d\n", APP_NAME, dlt_asdu->adr, res_map->dlt645_id, res_map->base_id);
-#endif
-	}
-}
-
-
 uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name)
 {
 	if(!ep_ext) return RES_INCORRECT;
 
 	uint32_t *data_ids_new = NULL;
 
-	dlt645_map *res_map = dlt645_get_map_item(dobj_id, BASE_ID);
+	asdu_map *res_map = asdu_get_map_item(&map_list, dobj_id, BASE_ID);
 
 	if(!res_map)
 	{
@@ -542,10 +432,10 @@ uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 		return RES_INCORRECT;
 	}
 
-	if(dlt645_get_dobj_item(ep_ext, res_map->dlt645_id) == RES_SUCCESS)
+	if(dlt645_get_dobj_item(ep_ext, res_map->proto_id) == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		printf("%s: New DOBJ already exists. Address = %d, dlt645_id = 0x%08x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+		printf("%s: DOBJ already exists. Address = %d, dlt645_id = 0x%08x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
 #endif
 		return RES_SUCCESS;
 	}
@@ -556,7 +446,7 @@ uint16_t dlt645_add_dobj_item(dlt645_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 
 	ep_ext->data_ids = data_ids_new;
 
-	ep_ext->data_ids[ep_ext->data_ids_size] = res_map->dlt645_id;
+	ep_ext->data_ids[ep_ext->data_ids_size] = res_map->proto_id;
 	ep_ext->data_ids_size++;
 
 #ifdef _DEBUG
@@ -981,8 +871,7 @@ uint16_t dlt645_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
-	// map base identifiers instead of DLT645 data identifiers
-	dlt645_asdu_map_ids(dlt_asdu);
+	asdu_map_ids(&map_list, dlt_asdu, APP_NAME, HEX_BASE);
 
 	res = asdu_to_byte(&a_buff, &a_len, dlt_asdu);
 

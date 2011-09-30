@@ -11,7 +11,8 @@
 /* End-point extensions array */
 static m700_ep_ext *ep_exts[MAXEP] = {0};
 
-static m700_map *map_list = NULL;
+/* list for mapping data identifiers */
+static asdu_map *map_list = NULL;
 
 /* Request-Response frame buffer variables */
 static time_t			timer_recv = 0;				/* timer for full response from device */
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
-	res = m700_map_read(APP_MAP);
+	res = asdu_map_read(&map_list, APP_MAP, APP_NAME, HEX_BASE);
 
 	chldpid = mf_init(APP_PATH, APP_NAME, m700_recv_data);
 
@@ -157,42 +158,6 @@ uint16_t m700_config_read(const char *file_name)
 	}
 
 	if(ep_num)
-		return RES_SUCCESS;
-	else
-		return RES_NOT_FOUND;
-}
-
-
-uint16_t m700_map_read(const char *file_name)
-{
-	FILE *map_file = NULL;
-	char r_buff[256] = {0};
-	uint32_t map_num;
-	uint32_t m700_id, base_id;
-
-	map_file = fopen(file_name, "r");
-
-	if(map_file)
-	{
-		map_num = 0;
-
-		while(fgets(r_buff, 255, map_file))
-		{
-			if(*r_buff == '#') continue;
-
-			sscanf(r_buff,"%x %d", &m700_id, &base_id);
-
-			m700_add_map_item(m700_id, base_id);
-
-			map_num++;
-		}
-	}
-	else
-	{
-		return RES_UNKNOWN;
-	}
-
-	if(map_num)
 		return RES_SUCCESS;
 	else
 		return RES_NOT_FOUND;
@@ -435,89 +400,14 @@ void m700_init_ep_ext(m700_ep_ext* ep_ext)
 }
 
 
-uint16_t m700_add_map_item(uint32_t m700_id, uint32_t base_id)
-{
-	m700_map *last_map, *new_map;
-
-	new_map = (m700_map*) malloc(sizeof(m700_map));
-
-	if(!new_map) return RES_MEM_ALLOC;
-
-	new_map->m700_id = m700_id;
-	new_map->base_id = base_id;
-
-	last_map = map_list;
-
-	while(last_map && last_map->next)
-	{
-		last_map = last_map->next;
-	}
-
-	new_map->prev = last_map;
-	new_map->next = NULL;
-
-	if(!map_list)
-		map_list = new_map;
-	else
-		last_map->next = new_map;
-
-#ifdef _DEBUG
-	printf("%s: New m700_map added. m700_id = 0x%02X, base_id = %d\n", APP_NAME, new_map->m700_id, new_map->base_id);
-#endif
-
-	return RES_SUCCESS;
-}
-
-
-m700_map *m700_get_map_item(uint32_t id, uint8_t get_by)
-{
-	m700_map *res_map;
-
-	res_map = map_list;
-
-	while(res_map)
-	{
-		if(get_by == M700_ID && res_map->m700_id == id) break;
-		if(get_by == BASE_ID && res_map->base_id == id) break;
-
-		res_map = res_map->next;
-	}
-
-	return res_map;
-}
-
-
-void m700_asdu_map_ids(asdu *m700_asdu)
-{
-	if(!m700_asdu) return;
-
-	int i;
-	m700_map *res_map;
-
-	for(i=0; i<m700_asdu->size; i++)
-	{
-		res_map = m700_get_map_item(m700_asdu->data[i].id, M700_ID);
-
-		if(res_map)
-			m700_asdu->data[i].id = res_map->base_id;
-		else
-			m700_asdu->data[i].id = 0xFFFFFFFF;
-
-#ifdef _DEBUG
-		if(res_map) printf("%s: Identifier mapped. Address = %d, m700_id = 0x%04X, base_id = %d\n", APP_NAME, m700_asdu->adr, res_map->m700_id, res_map->base_id);
-#endif
-	}
-}
-
-
 uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char *dobj_name)
 {
+	if(!ep_ext) return RES_INCORRECT;
+
 	uint32_t *data_ids_new = NULL;
 	uint32_t m700_id;
 
-	if(!ep_ext) return RES_INCORRECT;
-
-	m700_map *res_map = m700_get_map_item(dobj_id, BASE_ID);
+	asdu_map *res_map = asdu_get_map_item(&map_list, dobj_id, BASE_ID);
 
 	if(!res_map)
 	{
@@ -528,12 +418,12 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 		return RES_INCORRECT;
 	}
 
-	m700_id = (res_map->m700_id >> 8) - 0x80;
+	m700_id = (res_map->proto_id >> 8) - 0x80;
 
 	if(m700_get_dobj_item(ep_ext, m700_id) == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		printf("%s: New DOBJ already exists. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->m700_id, dobj_name);
+		printf("%s: DOBJ already exists. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->proto_id, dobj_name);
 #endif
 		return RES_SUCCESS;
 	}
@@ -548,7 +438,7 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 	ep_ext->data_ids_size++;
 
 #ifdef _DEBUG
-	printf("%s: New DOBJ was added. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->m700_id, dobj_name);
+	printf("%s: New DOBJ was added. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->proto_id, dobj_name);
 #endif
 
 	return RES_SUCCESS;
@@ -945,7 +835,7 @@ uint16_t m700_asdu_send(asdu *m700_asdu, uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
-	m700_asdu_map_ids(m700_asdu);
+	asdu_map_ids(&map_list, m700_asdu, APP_NAME, HEX_BASE);
 
 	res = asdu_to_byte(&a_buff, &a_len, m700_asdu);
 

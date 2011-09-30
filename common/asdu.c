@@ -98,6 +98,139 @@ uint16_t asdu_to_byte(unsigned char **buff, uint32_t *buff_len, asdu *unit)
 }
 
 
+uint16_t asdu_map_read(asdu_map **m_list, const char *file_name, const char *app_name, uint8_t num_base)
+{
+	FILE *map_file = NULL;
+	char r_buff[256] = {0};
+	uint32_t map_num;
+	uint32_t proto_id, base_id;
+	char name[DOBJ_NAMESIZE];
+
+	map_file = fopen(file_name, "r");
+
+	if(map_file)
+	{
+		map_num = 0;
+
+		while(fgets(r_buff, 255, map_file))
+		{
+			if(*r_buff == '#') continue;
+
+			if(num_base == DEC_BASE)
+				sscanf(r_buff, "%d %d %s", &proto_id, &base_id, name);
+			else
+				sscanf(r_buff, "%x %d %s", &proto_id, &base_id, name);
+
+			asdu_add_map_item(m_list, proto_id, base_id, name, app_name, num_base);
+
+			map_num++;
+		}
+	}
+	else
+	{
+		return RES_UNKNOWN;
+	}
+
+	if(map_num)
+		return RES_SUCCESS;
+	else
+		return RES_NOT_FOUND;
+}
+
+
+uint16_t asdu_add_map_item(asdu_map **m_list, uint32_t proto_id, uint32_t base_id, const char *name, const char *app_name, uint8_t num_base)
+{
+	asdu_map *last_map, *new_map;
+
+	new_map = (asdu_map*) malloc(sizeof(asdu_map));
+
+	if(!new_map) return RES_MEM_ALLOC;
+
+	new_map->proto_id = proto_id;
+	new_map->base_id = base_id;
+	memcpy((void*)new_map->name, (void*)name, DOBJ_NAMESIZE);
+
+	last_map = *m_list;
+
+	while(last_map && last_map->next)
+	{
+		last_map = last_map->next;
+	}
+
+	new_map->prev = last_map;
+	new_map->next = NULL;
+
+	if(!*m_list)
+		*m_list = new_map;
+	else
+		last_map->next = new_map;
+
+#ifdef _DEBUG
+	if(num_base == DEC_BASE)
+		printf("%s: New asdu_map added. proto_id = %d, base_id = %d, iec61850 = %s\n", app_name, new_map->proto_id, new_map->base_id, new_map->name);
+	else
+		printf("%s: New asdu_map added. proto_id = 0x%X, base_id = %d, iec61850 = %s\n", app_name, new_map->proto_id, new_map->base_id, new_map->name);
+#endif
+
+	return RES_SUCCESS;
+}
+
+
+asdu_map *asdu_get_map_item(asdu_map **m_list, uint32_t id, uint8_t get_by)
+{
+	asdu_map *res_map;
+
+	res_map = *m_list;
+
+	while(res_map)
+	{
+		if(get_by == PROTO_ID && res_map->proto_id == id) break;
+		if(get_by == BASE_ID && res_map->base_id == id) break;
+
+		res_map = res_map->next;
+	}
+
+	return res_map;
+}
+
+
+void asdu_map_ids(asdu_map **m_list, asdu *cur_asdu, const char *app_name, uint8_t num_base)
+{
+	if(!cur_asdu) return;
+
+	int i;
+	asdu_map *res_map;
+
+	for(i=0; i<cur_asdu->size; i++)
+	{
+		res_map = asdu_get_map_item(m_list, cur_asdu->data[i].id, PROTO_ID);
+
+		if(res_map)
+			cur_asdu->data[i].id = res_map->base_id;
+		else
+			cur_asdu->data[i].id = 0xFFFFFFFF;
+
+#ifdef _DEBUG
+		if(res_map)
+		{
+			if(num_base == DEC_BASE)
+				printf("%s: Identifier mapped. Address = %d, proto_id = %d, base_id = %d\n", app_name, cur_asdu->adr, res_map->proto_id, res_map->base_id);
+			else
+				printf("%s: Identifier mapped. Address = %d, proto_id = 0x%X, base_id = %d\n", app_name, cur_asdu->adr, res_map->proto_id, res_map->base_id);
+		}
+#endif
+	}
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
