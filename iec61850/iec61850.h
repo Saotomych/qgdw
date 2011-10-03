@@ -18,13 +18,11 @@ struct _LNODETYPE;
 struct _LNODETYPE_LIST;
 struct _LNODE;
 struct _LNODE_LIST;
+struct _LDEVICE;
+struct _LDEVICE_LIST;
 struct _IED;
 struct _IED_LIST;
 
-/* XML Params */
-#define WIN	1
-#define DOS 2
-#define UTF 3
 extern u08 Encoding;
 
 /* Just List */
@@ -92,9 +90,21 @@ typedef struct _LNODE_LIST{
 		char *ldinst;
 		char *options;
 		struct _IED *pmyied;			// crossconnector set up this value
+		struct _LDEVICE *pmyld;			// crossconnector set up this value
 		struct _LNODETYPE *pmytype;		// crossconnector set up this value
 	} ln;
 } LNODE;
+
+/* Logical Device */
+typedef struct _LDEVICE_LIST{
+	LIST l;
+	struct _LDEVICE{
+		char *inst;
+		char *desc;
+		char *options;
+		struct _IED *pmyied;			// crossconnector set up this value
+	} ld;
+} LDEVICE;
 
 /* Intellectual Electronic Device */
 typedef struct _IED_LIST{
@@ -127,12 +137,13 @@ typedef struct _iec_data_unit{
 	DOBJ *mydobj;
 } IEC_DATA_UNIT;
 
-extern LIST fied, fln, flntype, fdo, fdtype, fattr;
+extern LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 
 extern int virt_start(char *appname);
 extern void crossconnection(void);
 
 extern void ssd_create_ied(const char *pTag);			// call parse ied
+extern void ssd_create_ld(const char *pTag);			// call parse ld
 extern void ssd_create_ln(const char *pTag);			// call parse ln
 extern void ssd_create_lntype(const char *pTag);		// call parse lntype
 extern void ssd_create_dobj(const char *pTag);			// call parse do

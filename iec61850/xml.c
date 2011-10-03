@@ -29,6 +29,10 @@ void TagEndSubs(const char *pTag){
 
 }
 
+void TagEndLD(const char *pTag){
+
+}
+
 void TagEndLN(const char *pTag){
 
 }
@@ -73,6 +77,7 @@ void TagSetXml(const char *pTag){
     if (strstr(pTag,"Windows-1251")) Encoding=WIN;
     if (strstr(pTag,"windows-1251")) Encoding=WIN;
     if (strstr(pTag,"ASCII")) Encoding=DOS;
+    if (strstr(pTag,"KOI8-R")) Encoding=KOI8R;
     if (strstr(pTag,"UTF")) Encoding=UTF;
   }
 }
@@ -91,6 +96,8 @@ static const XML_Name XTags[] = {
   {"/IED", TagEndIED},
   {"Substation", ssd_create_subst},
   {"/Substation", TagEndSubs},
+  {"LDevice", ssd_create_ld},
+  {"/LDevice", TagEndLD},
   {"LNode", ssd_create_ln},
   {"/LNode", TagEndLN},
   {"LNodeType", ssd_create_lntype},

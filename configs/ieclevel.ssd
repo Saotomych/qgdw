@@ -1,40 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SCL xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.iec.ch/61850/2003/SCL">
   <Header id="SCL for iec-104" nameStructure="IEDName">
-    <History />
   </Header>
   <Substation name="S12" desc="SPb">
-    <Text />
-    <LNode asdu="967" lnInst="0" lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
-    <LNode asdu="55555" lnInst="99" lnClass="MMXU" iedName="scada" ldInst="unitlink-iec104.phy_tcp" lnType="MMXUa" />
+    <VoltageLevel name="VL1">
+      <Bay name="B1">
+        <LNode lnInst="99" lnClass="MMXU" iedName="scada"         ldInst="unitlink-iec104.phy_tcp.0" lnType="MMXUa" />
+        <LNode lnInst="0"  lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp.1" lnType="MMXUa" />
+        <LNode lnInst="1"  lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-dlt645.phy_tty.2" lnType="MMXUa" />
+        <LNode lnInst="3"  lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-m700.phy_tty.3"   lnType="MMXUa" />
+      </Bay>
+    </VoltageLevel>
   </Substation>
-  <IED inst="Gallery, bay1" name="m700.place001" />
-  <IED inst="Center" name="scada" />
+  <IED desc="Center" name="scada">
+    <AccessPoint name="AP1" desc="">
+      <Server>
+        <Authentication />
+        <LDevice asdu="55555" inst="unitlink-iec104.phy_tcp.0" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+        </LDevice>
+      </Server>
+    </AccessPoint>
+  </IED>
+  <IED desc="Gallery, bay1" name="m700.place001">
+    <AccessPoint name="AP2" desc="">
+      <Server>
+        <Authentication />
+        <LDevice asdu="967" inst="unitlink-iec104.phy_tcp.1" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+        </LDevice>
+        <LDevice asdu="11111" inst="unitlink-dlt645.phy_tty.2" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+        </LDevice>
+        <LDevice asdu="33333" inst="unitlink-m700.phy_tty.3" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+        </LDevice>
+      </Server>
+    </AccessPoint>
+  </IED>
   <DataTypeTemplates>
     <LNodeType id="MMXUa" lnClass="MMXU">
       <Text />
-      <DO name="Mod" type="myMod">
+      <DO asdupos="64" name="PhVphsA" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="64" name="PhV.phsAHar" type="myPwr">
+      <DO asdupos="65" name="PhVphsB" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="65" name="A.PhsAHar" type="myPwr">
+      <DO asdupos="66" name="PhVphsC" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="66" name="TotW.mag" type="myPwr">
+      <DO asdupos="67" name="APhsA" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="67" name="W.PhsAHar" type="myPwr">
+      <DO asdupos="68" name="APhsB" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="68" name="Wback.PhsAHar" type="myPwr">
+      <DO asdupos="69" name="APhsC" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="69" name="VAr.PhsAHar" type="myPwr">
+      <DO asdupos="70" name="PPVphsAB" type="myPwr">
         <Text />
       </DO>
-      <DO asdupos="70" name="VArback.PhsAHar" type="myPwr">
+      <DO asdupos="71" name="PPVphsCA" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="72" name="PPVphsBC" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="73" name="WPhsA" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="74" name="WPhsB" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="75" name="WPhsC" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="76" name="VArPhsA" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="77" name="VArPhsB" type="myPwr">
+        <Text />
+      </DO>
+      <DO asdupos="78" name="VArPhsC" type="myPwr">
         <Text />
       </DO>
       <DO name="Health" type="myBeh">
@@ -80,3 +129,4 @@
     </EnumType>
   </DataTypeTemplates>
 </SCL>
+
