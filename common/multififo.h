@@ -33,7 +33,7 @@ extern pid_t mf_init(char *pathinit, char *a_name, void *func_rcvdata);
 // Exit from inotify waiting
 extern void mf_exit(void);
 // Create new endpoint in downlink application only
-extern int mf_newendpoint (struct config_device *cd, char *pathinit, u32 ep_num);
+extern int mf_newendpoint (u32 addr, char* chld_name, char *pathinit, u32 ep_num);
 // Send data to endpoint in any direction (up-down)
 extern int mftai_toendpoint(TRANSACTINFO *tai);
 extern int mf_toendpoint_by_index(char *buf, int len, int index, int direct);

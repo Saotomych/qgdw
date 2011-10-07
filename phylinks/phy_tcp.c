@@ -55,7 +55,15 @@ struct in_addr adr;
 	else return 0;
 
 	if (strstr(key, "name")){
-		return (int) strstr(par, "phy_tcp");
+		par = strstr(par, "phy_tcp");
+		if(par){
+			par+=8;
+
+			return atoi(par);
+		}
+		else{
+			return 0;
+		}
 	}
 
 	if (strstr(key, "mask")){
@@ -69,10 +77,6 @@ struct in_addr adr;
 	}
 
 	if (strstr(key, "port")){
-		return atoi(par);
-	}
-
-	if (strstr(key, "mode")){
 		if (strstr(par, "LISTEN")) return LISTEN;
 		if (strstr(par, "CONNECT")) return CONNECT;
 	}
@@ -85,6 +89,7 @@ FILE *addrcfg;
 struct phy_route *pr;
 char *p;
 char outbuf[256];
+int port;
 
 // Init physical routes structures by phys.cfg file
 	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
@@ -99,11 +104,12 @@ char outbuf[256];
 				pr = myprs[maxpr];
 				pr->asdu = atoi(outbuf);
 				if (pr->asdu){
-					if (cfgparse("-name", outbuf)){
+					port = cfgparse("-name", outbuf); // get tcp port number
+					if (port){
 						pr->sai.sin_addr.s_addr = cfgparse("-addr", outbuf);	// inet_aton returns net order (big endian)
-						pr->mode = cfgparse("-mode", outbuf);
+						pr->mode = cfgparse("-port", outbuf); // port mode - LISTEN/CONNECT
 						pr->mask = cfgparse("-mask", outbuf);
-						pr->sai.sin_port = htons(cfgparse("-port", outbuf));		// atoi returns little endian
+						pr->sai.sin_port = htons(port);		// convert port number from little endian
 						pr->ep_index = 0;
 						pr->socdesc = 0;
 						pr->lstsocdesc = 0;

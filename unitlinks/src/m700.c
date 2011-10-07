@@ -35,16 +35,6 @@ static uint8_t t_rc		= M700_T_RC;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
-char forname[100];
-char forprotoname[100];
-char forphyname[100];
-struct config_device cd ={
-		forname,
-		forprotoname,
-		forphyname,
-		0
-};
-
 
 int main(int argc, char *argv[])
 {
@@ -90,17 +80,12 @@ int main(int argc, char *argv[])
 			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
 
-			cd.addr = eih->addr;
-			strncpy(cd.name, eih->isstr[2], 100);
-			strncpy(cd.protoname, eih->isstr[3], 100);
-			strncpy(cd.phyname, eih->isstr[4], 100);
+			mf_newendpoint(eih->addr, CHILD_APP_NAME, CHILD_APP_PATH, 1);
 
-			mf_newendpoint(&cd, CHILD_APP_PATH, 1);
-
-			m700_sys_msg_send(EP_MSG_CONNECT, cd.addr, DIRDN, NULL, 0);
+			m700_sys_msg_send(EP_MSG_CONNECT, eih->addr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, cd.addr);
+			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, eih->addr);
 #endif
 		}
 

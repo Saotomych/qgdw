@@ -16,11 +16,6 @@ char pathphy[] = {"phyints"};
 char pathmain[] = {"mainapp"};
 char mainlink[] = {"main"};
 
-struct config_device_list{
-	LIST l;
-	struct config_device cd;
-};
-
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
 // Create structures according to ieclevel.ssd
@@ -58,9 +53,9 @@ char buf[5];
 	crossconnection();
 
 	// Start of virtualize functions
-	chldpid = virt_start(argv[0]);
+	chldpid = virt_start("startiec");
 	if (chldpid == -1){
-		printf("IEC61850: Virtualization don't started\n");
+		printf("IEC61850: Virtualization wasn't started\n");
 		exit(2);
 	}
 
