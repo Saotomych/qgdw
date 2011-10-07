@@ -4,3 +4,4 @@ lr-objs := ledsrelays.o
 
 clean: 
 	rm -rf *.o *.cmd *.mod.c
+
