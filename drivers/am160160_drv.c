@@ -252,8 +252,13 @@ struct fb_fix_screeninfo fix;
 struct fb_var_screeninfo var;
 struct fb_cmap_user cmap;
 
+	printk(KERN_INFO "fb_ioctl enter\n");
+
 	switch(cmd){
 	case FBIOGET_FSCREENINFO:
+
+		printk(KERN_INFO "fb_ioctl, FBIOGET_FSCREENINFO\n");
+
 		if (!lock_fb_info(info)) return -ENODEV;
 		fix = info->fix;
 		unlock_fb_info(info);
@@ -262,6 +267,9 @@ struct fb_cmap_user cmap;
 		break;
 
 	case FBIOGET_VSCREENINFO:
+
+		printk(KERN_INFO "fb_ioctl, FBIOGET_VSCREENINFO\n");
+
 		if (!lock_fb_info(info)) return -ENODEV;
 		var = info->var;
 		unlock_fb_info(info);
@@ -270,9 +278,15 @@ struct fb_cmap_user cmap;
 		break;
 
 	case FBIOGETCMAP:
+
+		printk(KERN_INFO "fb_ioctl, FBIOGETCMAP\n");
+
 		break;
 
 	case FBIOPUTCMAP:
+
+		printk(KERN_INFO "fb_ioctl, FBIOPUTCMAP\n");
+
 		if (copy_from_user(&cmap, (void __user *) arg, sizeof(cmap))) return -EFAULT;
 		// We are not used cmaps
 //		ret = fb_set_user_cmap(&cmap, info);
@@ -284,6 +298,16 @@ struct fb_cmap_user cmap;
 }
 
 static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
+
+	printk(KERN_INFO "fb_mmap\n");
+
+	return 0;
+}
+
+int am160160_fb_sync(struct fb_info *info)
+{
+
+	printk(KERN_INFO "fb_sync\n");
 
 	return 0;
 }
@@ -365,19 +389,6 @@ static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
 //}
 
 /* ------------ Accelerated Functions --------------------- */
-//void am160160_fb_fillrect(struct fb_info *p, const struct fb_fillrect *region)
-//{
-//}
-//
-//void am160160_fb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
-//{
-//}
-//
-//
-//void am160160_fb_imageblit(struct fb_info *p, const struct fb_image *image)
-//{
-//}
-//
 //int am160160_fb_cursor(struct fb_info *info, struct fb_cursor *cursor)
 //{
 //}
@@ -385,10 +396,6 @@ static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
 //{
 //}
 //
-//int am160160_fb_sync(struct fb_info *info)
-//{
-//	return 0;
-//}
 
     /*
      *  Frame buffer operations
