@@ -102,16 +102,17 @@ static struct fb_info def_fb_info = {
 
 };
 
-static struct fb_info *file_fb_info(struct file *file){
-struct inode *inode = file->f_path.dentry->d_inode;
-int fbidx = iminor(inode);
-//struct fb_info *info = registered_fb[fbidx];
-struct fb_info *info = registered_fb[0];
-
-	printk(KERN_INFO "filefbinfo: idx = %d\n", fbidx);
-
-	return info;
-}
+// This function returns incorrect idx. Reason unknown.
+//static struct fb_info *file_fb_info(struct file *file){
+//struct inode *inode = file->f_path.dentry->d_inode;
+//int fbidx = iminor(inode);
+////struct fb_info *info = registered_fb[fbidx];
+//struct fb_info *info = registered_fb[0];
+//
+//	printk(KERN_INFO "filefbinfo: idx = %d\n", fbidx);
+//
+//	return info;
+//}
 
 //static struct fb_info info;
 //static struct am160160__par __initdata current_par;
@@ -312,7 +313,8 @@ struct fb_cmap_user cmap;
 }
 
 static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
-struct fb_info *info = file_fb_info(file);
+//struct fb_info *info = file_fb_info(file);
+struct fb_info *info = registered_fb[0];	// Only first framebuffer now
 struct fb_ops *fb;
 unsigned long off;
 unsigned long start;
