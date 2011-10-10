@@ -32,6 +32,7 @@
 #include <linux/vt.h>
 #include <linux/list.h>
 #include <asm/uaccess.h>
+#include <asm/fb.h>
 #include <mach/at91sam9_smc.h>
 
 #include "am160160_drv.h"
@@ -101,6 +102,16 @@ static struct fb_info def_fb_info = {
 
 };
 
+static struct fb_info *file_fb_info(struct file *file){
+struct inode *inode = file->f_path.dentry->d_inode;
+int fbidx = iminor(inode);
+//struct fb_info *info = registered_fb[fbidx];
+struct fb_info *info = registered_fb[0];
+
+	printk(KERN_INFO "filefbinfo: idx = %d\n", fbidx);
+
+	return info;
+}
 
 //static struct fb_info info;
 //static struct am160160__par __initdata current_par;
@@ -238,12 +249,15 @@ unsigned char mask;
 
 static void am160160_fb_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
-	sys_fillrect(pinfo, rect);
+//	sys_fillrect(pinfo, rect);
+	printk(KERN_INFO "fb_fillrect enter\n");
+
 }
 
 static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea *area){
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
 	sys_fillrect(pinfo, area);
+	printk(KERN_INFO "fb_copyarea enter\n");
 }
 
 static long am160160_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg){
@@ -298,8 +312,41 @@ struct fb_cmap_user cmap;
 }
 
 static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
+struct fb_info *info = file_fb_info(file);
+struct fb_ops *fb;
+unsigned long off;
+unsigned long start;
+unsigned int  len;
 
-	printk(KERN_INFO "fb_mmap\n");
+	if (!info) return -ENODEV;
+	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) return -EINVAL;
+
+	printk(KERN_INFO "fb_mmap: info set\n");
+
+	// Set variables
+	off = vma->vm_pgoff << PAGE_SHIFT;
+	fb = info->fbops;
+	if (!fb) return -ENODEV;
+
+	printk(KERN_INFO "fb_mmap: fb set\n");
+
+	start = info->fix.smem_start;
+	len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.smem_len);
+	start &= PAGE_MASK;
+	if ((vma->vm_end - vma->vm_start + off) > len) return -EINVAL;
+	off += start;
+	vma->vm_pgoff = off >> PAGE_SHIFT;
+
+	printk(KERN_INFO "fb_mmap: start, end & len sets\n");
+
+	// Start memory mapping
+	vma->vm_flags |= VM_IO | VM_RESERVED;
+	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+	fb_pgprotect(file, vma, off);
+
+	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot)) return -EAGAIN;
+
+	printk(KERN_INFO "fb_mmap: memory mapping OK\n");
 
 	return 0;
 }
