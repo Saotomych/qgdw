@@ -31,6 +31,8 @@
 #include <linux/console.h>
 #include <linux/vt.h>
 #include <linux/list.h>
+#include <linux/timer.h>
+#include <linux/jiffies.h>
 #include <asm/uaccess.h>
 #include <asm/fb.h>
 #include <mach/at91sam9_smc.h>
@@ -43,11 +45,13 @@
 
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160
+#define VID_LEN		3200
 
 static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
+static unsigned char mapvd[VID_LEN];
 static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
 static unsigned char convideo[BUF_LEN];	// Console video buffer
@@ -102,22 +106,8 @@ static struct fb_info def_fb_info = {
 
 };
 
-// This function returns incorrect idx. Reason unknown.
-//static struct fb_info *file_fb_info(struct file *file){
-//struct inode *inode = file->f_path.dentry->d_inode;
-//int fbidx = iminor(inode);
-////struct fb_info *info = registered_fb[fbidx];
-//struct fb_info *info = registered_fb[0];
-//
-//	printk(KERN_INFO "filefbinfo: idx = %d\n", fbidx);
-//
-//	return info;
-//}
+struct vm_area_struct myvma;
 
-//static struct fb_info info;
-//static struct am160160__par __initdata current_par;
-
-//int am160160_fb_init(void);
 
 static int am160160_fb_open(struct fb_info *info, int user)
 {
@@ -147,7 +137,7 @@ static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_
 
 static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset)
 {
-    size_t rlen = info->fix.smem_len;
+    size_t rlen = info->fix.mmio_len;
 //    unsigned long pos = (unsigned long) offset;
     char *pvideo = video;
     unsigned int x, i;
@@ -212,7 +202,6 @@ unsigned int adrstart, adrstop, lenx;
 
 // Pointers to video data in and out
 char *pdat = (char *) image->data;
-//char *pvideo = pinfo->screen_base;
 unsigned char *pvideo;
 
 unsigned int x, y, i;
@@ -312,41 +301,32 @@ struct fb_cmap_user cmap;
 	return ret;
 }
 
-static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
-//struct fb_info *info = file_fb_info(file);
-struct fb_info *info = registered_fb[0];	// Only first framebuffer now
+static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
 struct fb_ops *fb;
 unsigned long off;
 unsigned long start;
 unsigned int  len;
 
-	if (!info) return -ENODEV;
-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT)) return -EINVAL;
+//	start = info->fix.smem_start;
+//	len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.smem_len);
+//
+//	start &= PAGE_MASK;
+//	if ((vma->vm_end - vma->vm_start + off) > len) return -EINVAL;
+//	off += start;
+//	vma->vm_start = info->fix.smem_start;
+//	vma->vm_end = info->fix.smem_start + VID_LEN;
+	vma->vm_pgoff = vma->vm_start >> PAGE_SHIFT;
 
-	printk(KERN_INFO "fb_mmap: info set\n");
-
-	// Set variables
-	off = vma->vm_pgoff << PAGE_SHIFT;
-	fb = info->fbops;
-	if (!fb) return -ENODEV;
-
-	printk(KERN_INFO "fb_mmap: fb set\n");
-
-	start = info->fix.smem_start;
-	len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.smem_len);
-	start &= PAGE_MASK;
-	if ((vma->vm_end - vma->vm_start + off) > len) return -EINVAL;
-	off += start;
-	vma->vm_pgoff = off >> PAGE_SHIFT;
-
-	printk(KERN_INFO "fb_mmap: start, end & len sets\n");
+	printk(KERN_INFO "fb_mmap: start 0x%X, end 0x%X, off 0x%X & len %d sets\n", vma->vm_start, vma->vm_end, vma->vm_pgoff, vma->vm_end - vma->vm_start);
 
 	// Start memory mapping
-	vma->vm_flags |= VM_IO | VM_RESERVED;
+//	vma->vm_flags = VM_RESERVED;
 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
-	fb_pgprotect(file, vma, off);
+//	fb_pgprotect(file, vma, vma->vm_pgoff);
 
-	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot)) return -EAGAIN;
+	if (remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot)) return -EAGAIN;
+
+	memcpy(&myvma, vma, sizeof(struct vm_area_struct));
 
 	printk(KERN_INFO "fb_mmap: memory mapping OK\n");
 
@@ -445,6 +425,44 @@ int am160160_fb_sync(struct fb_info *info)
 //{
 //}
 //
+#define TICKSMAX		7
+struct timer_list sync_timer;
+static unsigned char counter = TICKSMAX;
+void sync_timer_func(unsigned long data){
+unsigned char *pvideo = video;
+unsigned char *psrc = myvma.vm_start;
+unsigned int x, rlen = VID_LEN;
+unsigned char mask, i;
+
+	if (am_fbmode == AMFB_GRAPH_MODE){
+
+		printk(KERN_INFO "copy_from_user 0x%X\n", psrc);
+		// Читаем в буфер блок данных
+	    if (copy_from_user(tmpvd, (const char __user *) psrc, rlen)){
+	    	printk(KERN_INFO "copy_from_user error\n");
+	    	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
+	    	return -EFAULT;
+	    }
+
+	    // Decode to indicator format from 2color bmp
+	    memset(video, 0, BUF_LEN);
+	    for (x=0; x<rlen; x++){
+	    	mask = 0x80;
+	    	for (i=0; i<8; i++){
+	    		if (tmpvd[x] & mask){
+	    			pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+	    		}
+	    		mask >>= 1;
+	    	}
+	    }
+
+	    hard->writedat(video, rlen << 2);
+
+	}
+
+	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
+}
+
 
     /*
      *  Frame buffer operations
@@ -606,8 +624,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
      	 	 	 	 	 	 	 */
     info->flags = FBINFO_FLAG_DEFAULT;
 
-    info->screen_base = (char __iomem *) video;
-    info->screen_size = BUF_LEN;
+    info->screen_base = mapvd;
+    info->screen_size = VID_LEN;
     info->monspecs = pd_sinfo->monspecs;
     info->par = pd_sinfo->par;
 
@@ -632,10 +650,15 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     head->next=0;
 
 // Dinamic lets fix
-    am160160_fb_fix.smem_start = am160160_resources[2]->start;
-    am160160_fb_fix.smem_len = BUF_LEN;
-    am160160_fb_fix.mmio_start = video;
+//    am160160_fb_fix.smem_start = am160160_resources[2]->start;
+//    am160160_fb_fix.smem_len = BUF_LEN;
+//    am160160_fb_fix.mmio_start = (char __iomem *) video;
+//    am160160_fb_fix.mmio_len = BUF_LEN;
+    am160160_fb_fix.smem_start = mapvd;
+    am160160_fb_fix.smem_len = VID_LEN;
+    am160160_fb_fix.mmio_start = io_data;
     am160160_fb_fix.mmio_len = BUF_LEN;
+
     memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
 
     info->pseudo_palette = info->par;
@@ -669,6 +692,12 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     platform_set_drvdata(pdev, info);
 
     printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
+
+	init_timer(&sync_timer);
+	sync_timer.expires = jiffies + HZ/TICKSMAX;
+	sync_timer.data = 0;
+	sync_timer.function = sync_timer_func;
+	add_timer(&sync_timer);
 
     return 0;
 }
@@ -808,6 +837,7 @@ static int __init am160160_fb_init(void)
 
 static void __exit am160160_fb_exit(void)
 {
+	del_timer(&sync_timer);
 	platform_driver_unregister(&am160160_fb_driver);
 	hard->exit();
 	device_cnt--;
