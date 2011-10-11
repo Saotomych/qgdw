@@ -255,15 +255,12 @@ unsigned int x, y, i;
 unsigned char mask;
 
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
-	printk(KERN_INFO "fb_copyarea enter\n");
+	printk(KERN_INFO "fb_fillrect enter\n");
 	//lenx = w >> 3;	// y нас всегда кратна 8
 	//if ((fg ^ bg) & fg) fg = 0;
 	//else fg = 0xFF;
 
 //	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
-
-	// Clean low console string
-	memset(&convideo[12160], color, 640);
 
     for (y = 0; y < h; y++){
     	adrstart = lenx * y;
@@ -271,7 +268,6 @@ unsigned char mask;
     	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
     	for (x = adrstart; x < adrstop; x++){
     		mask = 0x80;
-			//bt = pdat[x] ^ fg;
     		for (i=0; i<8; i++){
     			if (color & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
     			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
