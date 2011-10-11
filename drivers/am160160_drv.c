@@ -237,13 +237,65 @@ unsigned char mask;
 }
 
 static void am160160_fb_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
-	if (am_fbmode == AMFB_GRAPH_MODE) return;
-	sys_fillrect(pinfo, rect);
+	
+unsigned int dx = rect->dx, dy = rect->dy;
+unsigned int w = rect->width, h = rect->height;
+unsigned int color = rect->color;
+unsigned int ll = pinfo->fix.line_length;
+
+// Start & end addrs of console screen
+unsigned int adrstart, adrstop, lenx;
+
+// Pointers to video data in and out
+//char *pdat = (char *) image->data;
+//char *pvideo = pinfo->screen_base;
+unsigned char *pvideo;
+
+unsigned int x, y, i;
+unsigned char mask;
+
+	//lenx = w >> 3;	// y нас всегда кратна 8
+	//if ((fg ^ bg) & fg) fg = 0;
+	//else fg = 0xFF;
+
+//	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
+
+	// Clean low console string
+	memset(&convideo[12160], color, 640);
+
+    for (y = 0; y < h; y++){
+    	adrstart = lenx * y;
+    	adrstop = adrstart + lenx;
+    	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
+    	for (x = adrstart; x < adrstop; x++){
+    		mask = 0x80;
+			//bt = pdat[x] ^ fg;
+    		for (i=0; i<8; i++){
+    			if (color & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
+    			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
+    			mask >>= 1;
+    			pvideo += (i&1);
+    		}
+    	}
+    }
+
+
+  
+  if (am_fbmode == AMFB_GRAPH_MODE) return;
+	//sys_fillrect(pinfo, rect);
 }
 
 static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea *area){
-	if (am_fbmode == AMFB_GRAPH_MODE) return;
-	sys_fillrect(pinfo, area);
+	
+   unsigned int dx = area->dx, dy = area->dy, 
+   unsigned int sx = area->sx, sy = area->sy;
+   unsigned int height = area->height, width = area->width;
+  
+  
+  
+  
+  if (am_fbmode == AMFB_GRAPH_MODE) return;
+	//sys_fillrect(pinfo, area);
 }
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
