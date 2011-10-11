@@ -60,11 +60,6 @@ struct endpoint{
 	volatile u08 ready;
 };
 
-// Variables for initialize endpoint
-int rdleninit;		// bytes read since channel opens
-int rdstrinit;		// strings reads since channel opens
-u08 lensinit[5];
-
 // List of channels
 static int maxch = 0;
 static struct channel *mychs[MAXCH];
@@ -210,7 +205,7 @@ fd_set readset;
 
 		if (pipe(opipe) == -1)
 		{
-			printf("Error: creating pipe");
+			printf("MFI %s: failed to create pipe", appname);
 			return -1;
 		}
 		ret = fork();
@@ -279,7 +274,7 @@ void initchannelstruct(struct channel *ch){
 }
 
 // Create init channel, it have index = 0 always
-// High level application opens init channel for sending struct config_device => register new endpoint
+// High level application opens init channel for sending struct ep_init_header => register new endpoint
 struct channel *initchannel(char *a_path, char *a_name){
 int len;
 struct channel *ch=0;
@@ -316,7 +311,7 @@ struct channel *ch=0;
 }
 
 // Create new two-direction channel to downlink
-// Channel work for data exchange with lower application
+// Channel works for data exchange with lower application
 struct channel *newchanneldn(char *a_path, char *a_name){
 int len;
 struct channel *ch=0;
@@ -394,76 +389,66 @@ struct channel *ch=0;
 	return ch;
 }
 
-struct endpoint *create_ep(void){
+struct endpoint *create_ep(u32 addr){
 struct endpoint *ep=0;
 	if (maxep > 63) return NULL;
 	ep = malloc(sizeof(struct endpoint));
-	if (ep > 0){
-		myeps[maxep] = ep;
-		ep->my_ep = maxep;
-		ep->eih.numep = maxep;
-		maxep++;
-	}else return NULL;
+	if(!ep) return NULL;
+
+	myeps[maxep] = ep;
+	ep->my_ep = maxep;
+
+	ep->eih.addr = addr;
+	ep->eih.numep = maxep;
 
 	ep->ep_dn = 0;
 	ep->ep_up = 0;
 	ep->cdcdn = 0;
 	ep->cdcup = 0;
-	ep->eih.numep = 0;
-	ep->eih.addr = 0;
 	ep->ready = 0;
+
+	maxep++;
 
 	return ep;
 }
 
-int newep2channelup(void){
+int newep2channelup(ep_init_header *eih_in){
 struct channel *ch = mychs[0];
 struct endpoint *ep = 0;
 struct channel *wch=0;
-ep_init_header eih;
 struct {
 	ep_data_header edh;
 	int	numep;
 } epforup;
-int len, ret;
+int ret;
 
-	ep = create_ep();
+	ep = create_ep(eih_in->addr);
+
 	if (!ep){
-		printf("MFI %s error: New endpoint don't create\n", appname);
+		printf("MFI %s error: New endpoint wasn't created\n", appname);
 		return -1;
 	}
 
 	ch->events = IN_CLOSE;
 
-	// Endpoint init
-	ch->bgnring = ch->bgnframe;
-	rdstrinit = 0;
-	while(rdstrinit < 5){
-		ep->eih.isstr[rdstrinit] = malloc(lensinit[rdstrinit] + 1);
-		len = getstringfromring(ch, ep->eih.isstr[rdstrinit]);
-		rdstrinit++;
-	}
 	printf("\n");
 
-	len = getdatafromring(ch, (char *) &eih, sizeof(ep_init_header) );
-	ep->eih.addr = eih.addr;
-	ep->ep_up = eih.numep;
+	memcpy((void*) ep->eih.appname, (void*) eih_in->appname, APP_NAME_LEN);
+	ep->ep_up = eih_in->numep;
+
 //	printf("MFI %s: Endpoint for asdu id = %d was created\n", appname, ep->eih.addr);
 
-	// Call callback function for working config_device
-	getframefalse(ch);
-
 	// Channel connect to endpoint
-	wch = findch_by_name(ep->eih.isstr[4]);
+	wch = findch_by_name(ep->eih.appname);
 	if (!wch){
 		// Channel not found, start new channel
-		wch = newchannelup(ep->eih.isstr[0], ep->eih.isstr[2], ep->eih.isstr[4]);
+		wch = newchannelup(pathapp, appname, ep->eih.appname);
 		if (wch){
 			// Add new channel to up
 //			printf("MFI %s: infile %s add to watch %d\n", appname, wch->f_namein, wch->watch);
 			wch->watch = inotify_add_watch(d_inoty, wch->f_namein, wch->events);
 			ep->cdcup = wch;
-//			printf("MFI %s: Channel for %s was created\n", appname, ep->eih.isstr[4]);
+//			printf("MFI %s: Channel for %s was created\n", appname, ep->eih.isstr[0]);
 			wch->descout = open(wch->f_nameout, O_RDWR);
 			//	- two fifos opens! bingo!
 		}else return -1;
@@ -476,7 +461,6 @@ int len, ret;
 		epforup.edh.sys_msg = EP_MSG_NEWEP;
 		epforup.numep = ep->my_ep;
 		ret=write(wch->descout, &(epforup), sizeof(epforup));
-
 	}
 
 	return 0;
@@ -500,8 +484,6 @@ int init_open(struct channel *ch){
 			ch->events &= ~IN_OPEN;
 			ch->events |= IN_CLOSE;
 //			printf("MFI %s: system has open init file %s, desc = %d\n", appname, ch->f_namein, ch->descin);
-			rdleninit = 0;
-			rdstrinit = 0;
 		}
 	}else{
 		printf("MFI %s error: Init channel opens already\n", appname);
@@ -644,7 +626,7 @@ int sys_close(struct channel *ch){
 //			- endpoint registers
 //			- send endpoint to application
 int init_read(struct channel *ch){
-char nbuf[160];
+ep_init_header eih_in;
 int len = 0, rdlen;
 
 //	printf("\n-----\nMFI %s: INIT READ %s\nActions:\n", appname, ch->appname);
@@ -670,35 +652,14 @@ int len = 0, rdlen;
 		return -1;
 	}
 
-	if (rdlen){
-		// Receive data, multientering enable in this block
-		while(rdlen > 0){
-			// Building init pointpp
-			if (rdstrinit < 5){
-				// get strings
-				len = getstringfromring(ch, nbuf);
-				if (len > 0){
-					// Store lenghts for next mallocs
-					lensinit[rdstrinit] = len;
-					rdstrinit++;
-					rdlen -= len;
-				}else rdlen = 0;
-			}else{
-				// get config_device
-				len = getdatafromring(ch, nbuf, sizeof(ep_init_header));
-				if (len == sizeof(ep_init_header)) rdleninit += len;
-				rdlen = 0;
-			}
-			if (len == -1) rdlen = 0;
-		}
+	if (rdlen >= sizeof(ep_init_header)){
+		// get ep_init_header
+		len = getdatafromring(ch, (char*)&eih_in, sizeof(ep_init_header));
 
-//		printf("\n%s: END RING BUFFER READING WITH PARS:\n", appname);
-//		printf("begin frame = %d, begin ring = %d, end ring = %d\n\n", ch->bgnframe-ch->ring, ch->bgnring-ch->ring, ch->endring-ch->ring);
-
-		if ((rdstrinit == 5) && (rdleninit == sizeof(ep_init_header))){
-			if (newep2channelup()) return -1;
-		} // rdstr == 5 .....
-	}	// rdlen != 0
+		if (len == sizeof(ep_init_header)){
+			if (newep2channelup(&eih_in)) return -1;
+		}  // len == sizeof(ep_init_header)
+	}	// rdlen >= sizeof(ep_init_header)
 
 //	printf("\nMFI %s: END INIT READ\n-----\n", appname);
 
@@ -711,7 +672,7 @@ struct endpoint *ep = 0;
 struct ep_data_header edh;
 struct ep_init_header *eih=0;
 
-//	printf("\n-----\nMFI %s: SYSTEM READ\nActions:\n", appname);
+//	printf("\n-----\nMFI %s: SYSTEM READ %s\nActions:\n", appname, ch->appname);
 
 	rdlen = readchannel(ch);
 
@@ -770,11 +731,10 @@ struct ep_init_header *eih=0;
 		if (cb_rcvdata) cb_rcvdata(rdlen);
 		actchannel = 0;
 	}
-	getframefalse(ch);
 
 	getframefalse(ch);
 
-//	printf("\nMFI %s: END SYSTEM READ\n-----\n", appname);
+//	printf("\nMFI %s: END SYSTEM READ %s\n-----\n", appname, ch->appname);
 
 	return 0;
 }
@@ -915,19 +875,20 @@ void mf_exit(){
 
 // Form new endpoint
 // Return 0: OK
-// Return -1: Error. Endpoint not created or cnahhel not created
-int mf_newendpoint (struct config_device *origdev, char *pathinit, u32 ep_num){
+// Return -1: Error. Endpoint not created or channel not created
+int mf_newendpoint (u32 addr, char* chld_name, char *pathinit, u32 ep_num){
 int ret, wrlen;
 //int dninit;
+ep_init_header eih_out;
 struct channel *ch=0;
 struct endpoint *ep=0;
 char fname[160];
 char *par[2];
 
-	par[0] = origdev->protoname;
+	par[0] = chld_name;
 	par[1] = NULL;
 
-	ret = testrunningapp(origdev->protoname);
+	ret = testrunningapp(chld_name);
 
 	if(ret == -1) return -1;
 
@@ -942,7 +903,7 @@ char *par[2];
 		}
 		if (!ret){
 			// child process
-			execv(origdev->protoname, par);
+			execv(chld_name, par);
 			printf("MFI %s: inotify_init failed: %d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
@@ -954,46 +915,36 @@ char *par[2];
 	// Find real endpoint number
 	if (ep_num){
 		// Forward existing endpoint
-		ep = find_ep_by_addr(origdev->addr);
+		ep = find_ep_by_addr(addr);
 		if (!ep){
-			printf("MFI %s error: Endpoint with address = %d not found\n", appname, origdev->addr);
+			printf("MFI %s error: Endpoint with address = %d not found\n", appname, addr);
 			return -1;		// if ep_num don't have, ep = 0
 		}
 		if (ep->cdcdn){
-			printf("MFI %s error: Endpoint with address = %d has down-channel already\n", appname, origdev->addr);
+			printf("MFI %s error: Endpoint with address = %d has down-channel already\n", appname, addr);
 			return -1;	// if down channel created already
 		}
 		ep->ready = 0;
 	}else{
 		// Create new endpoint
-		ep = create_ep();
+		ep = create_ep(addr);
 		if (!ep) return -1;		// endpoint don't create
 //		printf("%s: Create endpoint begin\n", appname);
 	}
 
-// offset for next run level
-	ep->eih.isstr[0] = pathinit;
-	ep->eih.isstr[1] = appname;
-	ep->eih.isstr[2] = origdev->protoname;
-	ep->eih.isstr[3] = origdev->phyname;
-	ep->eih.isstr[4] = origdev->name;
-
 	// Find channel for this low level application
-	ch = findch_by_name(ep->eih.isstr[2]);
+	ch = findch_by_name(chld_name);
 	if (!ch){
 		// Create new channel
-		printf("MFI %s: Create channel to %s\n", appname, origdev->name);
-		ch = newchanneldn(pathinit, ep->eih.isstr[2]);
+		printf("MFI %s: Create channel to %s\n", appname, chld_name);
+		ch = newchanneldn(pathinit, chld_name);
 		if (!ch) return -1;
 //		printf("MFI %s: Channel for %s was created\n", appname, ch->appname);
 	}else{
 		// Start connect new endpoint with exist channel
-		printf("MFI %s: Find channel for %s\n", appname, ch->appname);
+		printf("MFI %s: Found channel for %s\n", appname, chld_name);
 	}
 	ep->cdcdn = ch;
-
-	ep->eih.addr = origdev->addr;
-	ep->eih.numep = maxep-1;
 
 	mychs[0]->descout = 0;
 
@@ -1001,21 +952,21 @@ char *par[2];
 	// Open init channel for having endpoint
 	strcpy(fname, pathinit);
 	strcat(fname,"/");
-	strcat(fname, origdev->protoname);
+	strcat(fname, chld_name);
 	strcat(fname, sufinit);
 	mychs[0]->descout = open(fname, O_RDWR);
 	if (!mychs[0]->descout){
-		printf("MFI %s: Don't open init file\n", appname);
+		printf("MFI %s: Failed to open init file\n", chld_name);
 		return -1;
 	}
 
+	// prepare ep_init_heaer to transfer to child application
+	memcpy((void*) eih_out.appname, (void*) appname, APP_NAME_LEN);
+	eih_out.addr = ep->eih.addr;
+	eih_out.numep = ep->eih.numep;
+
 	// Write config to init channel
-	wrlen  = write(mychs[0]->descout, ep->eih.isstr[0], strlen(pathinit)+1);
-	wrlen += write(mychs[0]->descout, ep->eih.isstr[1], strlen(appname)+1);
-	wrlen += write(mychs[0]->descout, ep->eih.isstr[2], strlen(origdev->protoname)+1);
-	wrlen += write(mychs[0]->descout, ep->eih.isstr[3], strlen(origdev->phyname)+1);
-	wrlen += write(mychs[0]->descout, ep->eih.isstr[4], strlen(origdev->name)+1);
-	wrlen += write(mychs[0]->descout, (char*) &(ep->eih), sizeof(ep_init_header));
+	wrlen = write(mychs[0]->descout, (char*) &(eih_out), sizeof(ep_init_header));
 
 //	printf("\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 //	printf("- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);

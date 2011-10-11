@@ -35,9 +35,10 @@ extern "C" {
 
 #define APP_NAME				"unitlink-dlt645"
 #define APP_PATH 				"/rw/mx00/unitlinks"
+#define CHILD_APP_NAME			"phy_tty"
+#define CHILD_APP_PATH 			"/rw/mx00/phyints"
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
 #define APP_MAP					"/rw/mx00/configs/dlt645map.cfg"
-#define CHILD_APP_PATH 			"/rw/mx00/phyints"
 
 #define ALARM_PER				1		/* timers check period */
 

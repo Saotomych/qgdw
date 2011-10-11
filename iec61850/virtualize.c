@@ -370,17 +370,6 @@ DOBJ *adobj;
 	return 0;
 }
 
-char mainapp[] 		= {"startiec"};
-char unitlink[] 	= {"unitlink-iec104"};
-char physlink[] 	= {"phy_tcp"};
-
-struct config_device cd = {
-		mainapp,
-		unitlink,
-		physlink,
-		55555
-};
-
 // Load data to low level
 void create_alldo(void){
 VIRT_ASDU *sasdu = (VIRT_ASDU *) &fasdu;
@@ -423,7 +412,7 @@ struct stat fst;
 pid_t chldpid;
 
 SCADA_CH *sch = (SCADA_CH *) &fscadach;
-char *p;
+char *p, *chld_app;
 //
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
@@ -445,32 +434,24 @@ char *p;
 	free(MCFGfile);
 	printf("\n--- Configuration ready --- \n\n");
 
-	//	Execute all low level application for devices by LNodes
+	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	sch = sch->l.next;
 	while(sch){
 
 		printf("\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.options);
 
 		// Create config_device
-		cd.protoname = malloc(strlen(sch->myld->ld.inst) + 1);
-		strcpy(cd.protoname, sch->myld->ld.inst);
+		chld_app = malloc(strlen(sch->myld->ld.inst) + 1);
+		strcpy(chld_app, sch->myld->ld.inst);
 
-		p = cd.protoname;
+		p = chld_app;
 		while((*p != '.') && (*p)) p++;
 		*p = 0;
-
-
-		cd.phyname = ++p;
-		while((*p != '.') && (*p)) p++;
-		*p = 0;
-
-		cd.name = appname;
-		cd.addr = sch->ASDUaddr;
 
 		// New endpoint
-		mf_newendpoint(&cd, "/rw/mx00/unitlinks", 0);
+		mf_newendpoint(sch->ASDUaddr, chld_app,"/rw/mx00/unitlinks", 0);
 
-		free(cd.protoname);
+		free(chld_app);
 		sleep(1);	// Delay for forming next level endpoint
 
 		sch = sch->l.next;

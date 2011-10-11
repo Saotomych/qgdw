@@ -298,6 +298,72 @@ static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea
 	//sys_fillrect(pinfo, area);
 }
 
+static long am160160_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg){
+long ret = 0;
+struct fb_fix_screeninfo fix;
+struct fb_var_screeninfo var;
+struct fb_cmap_user cmap;
+
+	printk(KERN_INFO "fb_ioctl enter\n");
+
+	switch(cmd){
+	case FBIOGET_FSCREENINFO:
+
+		printk(KERN_INFO "fb_ioctl, FBIOGET_FSCREENINFO\n");
+
+		if (!lock_fb_info(info)) return -ENODEV;
+		fix = info->fix;
+		unlock_fb_info(info);
+
+		ret = copy_to_user((void __user *) arg, &fix, sizeof(fix)) ? -EFAULT : 0;
+		break;
+
+	case FBIOGET_VSCREENINFO:
+
+		printk(KERN_INFO "fb_ioctl, FBIOGET_VSCREENINFO\n");
+
+		if (!lock_fb_info(info)) return -ENODEV;
+		var = info->var;
+		unlock_fb_info(info);
+
+		ret = copy_to_user((void __user *) arg, &var, sizeof(var)) ? -EFAULT : 0;
+		break;
+
+	case FBIOGETCMAP:
+
+		printk(KERN_INFO "fb_ioctl, FBIOGETCMAP\n");
+
+		break;
+
+	case FBIOPUTCMAP:
+
+		printk(KERN_INFO "fb_ioctl, FBIOPUTCMAP\n");
+
+		if (copy_from_user(&cmap, (void __user *) arg, sizeof(cmap))) return -EFAULT;
+		// We are not used cmaps
+//		ret = fb_set_user_cmap(&cmap, info);
+		break;
+
+	}
+
+	return ret;
+}
+
+static int am160160_fb_mmap(struct file *file, struct vm_area_struct *vma){
+
+	printk(KERN_INFO "fb_mmap\n");
+
+	return 0;
+}
+
+int am160160_fb_sync(struct fb_info *info)
+{
+
+	printk(KERN_INFO "fb_sync\n");
+
+	return 0;
+}
+
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 //{
 //    /* ... */
@@ -375,19 +441,6 @@ static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea
 //}
 
 /* ------------ Accelerated Functions --------------------- */
-//void am160160_fb_fillrect(struct fb_info *p, const struct fb_fillrect *region)
-//{
-//}
-//
-//void am160160_fb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
-//{
-//}
-//
-//
-//void am160160_fb_imageblit(struct fb_info *p, const struct fb_image *image)
-//{
-//}
-//
 //int am160160_fb_cursor(struct fb_info *info, struct fb_cursor *cursor)
 //{
 //}
@@ -395,10 +448,6 @@ static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea
 //{
 //}
 //
-//int am160160_fb_sync(struct fb_info *info)
-//{
-//	return 0;
-//}
 
     /*
      *  Frame buffer operations
@@ -421,8 +470,8 @@ static struct fb_ops am160160_fb_ops = {
 //	.fb_cursor	= am160160_fb_cursor,		/* Optional !!! */
 //	.fb_rotate	= am160160_fb_rotate,
 //	.fb_sync	= am160160_fb_sync,
-//	.fb_ioctl	= am160160_fb_ioctl,
-//	.fb_mmap	= am160160_fb_mmap,
+	.fb_ioctl	= am160160_fb_ioctl,
+	.fb_mmap	= am160160_fb_mmap,
 };
 //EXPORT_SYMBOL_GPL(am160160_fb_read);
 //EXPORT_SYMBOL_GPL(am160160_fb_write);
@@ -490,10 +539,12 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	hard->init();
 
     memset(video, 0, BUF_LEN);
+
     /*
-     * Dynamically allocate info and par
+     * Dynamically allocate info and mode
      */
     var = kmalloc(sizeof(struct fb_var_screeninfo), GFP_KERNEL);
+
     if (!var){
     	// exception 2
 		release_mem_region(io_data, BUF_LEN);

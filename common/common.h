@@ -71,6 +71,7 @@
 #define DOBJ_NAMESIZE			sizeof(int) * 4
 
 #define IEC104_CHLENGHT			400
+#define APP_NAME_LEN			sizeof(int) * 8
 
 #define TRUE	1
 #define FALSE	0
@@ -83,32 +84,24 @@
 
 typedef struct ep_data_header {
 	uint16_t 		adr;		/* link (ASDU) address */
-	uint16_t		numep;		/* Endpoint number of receiver */
+	uint16_t		numep;		/* endpoint number of receiver */
 	uint32_t		sys_msg;	/* user data (0)/system message(1..n) */
 	uint32_t		len;		/* length of the data following the header */
 } __attribute__ ((packed)) ep_data_header;
 
 
 typedef struct ep_init_header {
-	char *isstr[5];
-	uint32_t addr;					/* link (ASDU) address */
+	char     appname[APP_NAME_LEN];
+	uint32_t addr;				/* link (ASDU) address */
 	uint32_t numep;
 } __attribute__ ((packed)) ep_init_header;
 
 
 typedef struct frame_dobj {
 	ep_data_header	edh;
-	uint32_t		id;					/* device's internal identifier of data unit */
+	uint32_t		id;			/* device's internal identifier of data unit */
 	char 			name[DOBJ_NAMESIZE];
 } __attribute__ ((packed)) frame_dobj;
-
-
-typedef struct config_device{
-	char   	*name;
-	char 	*protoname;			// ptr to protokol name
-	char 	*phyname;			// physlink number
-	uint32_t		addr;
-} config_device;
 
 
 #endif /* COMMON_H_ */
