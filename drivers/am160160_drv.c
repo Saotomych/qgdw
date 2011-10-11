@@ -513,10 +513,8 @@ void am160160_vma_open(struct vm_area_struct *vma){
 //      void *pageptr = NULL; /* default to "missing" */
 //      pageptr = address;
       vmf->page = virt_to_page(vmf->virtual_address);
-
       /* got it, now increment the count */
       get_page(vmf->page);
-
       return 0;
  }
 
