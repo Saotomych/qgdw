@@ -500,11 +500,38 @@ unsigned char mask, i;
 	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
 }
 
+void am160160_vma_open(struct vm_area_struct *vma){
+	 (*((int*)(vma->vm_private_data)))++;
+}
+
+ void am160160_vma_close(struct vm_area_struct *vma){
+	 (*((int*)(vma->vm_private_data)))--;
+}
+
+ int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf){
+ struct page *page = NULL;
+//      void *pageptr = NULL; /* default to "missing" */
+//      pageptr = address;
+      vmf->page = virt_to_page(vmf->virtual_address);
+
+      /* got it, now increment the count */
+      get_page(vmf->page);
+
+      return 0;
+ }
+
+	/*
+	 *  Virtual mem pages operations
+	 */
+static struct vm_operations_struct am160160_vm_ops = {
+	.open = am160160_vma_open,
+	.close = am160160_vma_close,
+	.fault = am160160_vma_fault,
+};
 
     /*
      *  Frame buffer operations
      */
-
 static struct fb_ops am160160_fb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_open	= am160160_fb_open,
