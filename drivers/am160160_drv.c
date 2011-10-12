@@ -33,6 +33,8 @@
 #include <linux/list.h>
 #include <linux/timer.h>
 #include <linux/jiffies.h>
+#include <linux/tty.h>
+#include <linux/tty_driver.h>
 #include <asm/uaccess.h>
 #include <asm/fb.h>
 #include <mach/at91sam9_smc.h>
@@ -46,6 +48,9 @@
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160
 #define VID_LEN		3200
+
+// Vars for ttyprintk
+struct tty_struct *my_tty;
 
 static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
@@ -73,6 +78,7 @@ static unsigned int lightpin;
 /*
  * Driver data
  */
+static struct vm_operations_struct am160160_vm_ops;
 static char *mode_option __initdata;
 struct am160160_par;
 
@@ -106,37 +112,44 @@ static struct fb_info def_fb_info = {
 
 };
 
+unsigned char constring[1024];
+static void myprintk(void){
+
+	if (my_tty != NULL) {
+	    ((my_tty->driver)->ops)->write(my_tty, constring, strlen(constring));
+	}
+}
+
 struct vm_area_struct myvma;
 
 
-static int am160160_fb_open(struct fb_info *info, int user)
-{
+static int am160160_fb_open(struct fb_info *info, int user){
 
 	if (user > 0) am_fbmode = AMFB_GRAPH_MODE;
 	else am_fbmode = AMFB_CONSOLE_MODE;
 
-	printk(KERN_INFO "fb_open(%d), fb mode = %d\n", user, am_fbmode);
+	sprintf(constring, KERN_INFO "fb_open(%d), fb mode = %d\n\r", user, am_fbmode);
+	myprintk();
 
 	return 0;
 }
 
 // (struct fb_info *info, char __user *buf,  size_t count, loff_t *ppos);
-static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset)
-{
+static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_t length, loff_t *offset){
 	unsigned int len=0, i;
 	unsigned char *prddata = 0;
 
 	len = (int) hard->readdata(prddata, BUF_LEN);
 	if ((prddata) && (len)){
 		for(i=0; i<length && i < info->fix.smem_len; i++) put_user(prddata[i], (char __user *) buffer + i);
-		printk(KERN_INFO "fb_read(%p,%p,%d)\n",info,buffer,length);
+		sprintf(constring, KERN_INFO "fb_read(%p,%p,%d)\n\r",info,buffer,length);
+		myprintk();
 	}
 
 	return len;
 }
 
-static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset)
-{
+static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset){
     size_t rlen = info->fix.mmio_len;
 //    unsigned long pos = (unsigned long) offset;
     char *pvideo = video;
@@ -145,7 +158,8 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
 
 	if (length < 8) am_fbmode = AMFB_CONSOLE_MODE;
 
-	printk(KERN_INFO "fb_write(%p,%p,%d,%lX)\n",info,buffer,length, (long unsigned int)offset);
+	sprintf(constring, KERN_INFO "fb_write(%p,%p,%d,%lX)\n\r",info,buffer,length, (long unsigned int)offset);
+	myprintk();
 
 	// Вместо офсета в реале приходит какая-то эпическая хуйня, поэтому пока не юзаем
 	// Выяснить где и как оно выставляется и юзается.
@@ -180,10 +194,10 @@ static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer
 	return rlen;
 }
 
-static int am160160_fb_release(struct fb_info *info, int user)
-{
+static int am160160_fb_release(struct fb_info *info, int user){
 
-	printk(KERN_INFO "fb_release(%d), fb mode = %d\n", user, am_fbmode);
+	sprintf(constring, KERN_INFO "fb_release(%d), fb mode = %d\n\r", user, am_fbmode);
+	myprintk();
 
 	return 0;
 }
@@ -211,7 +225,8 @@ unsigned char mask;
 	if ((fg ^ bg) & fg) fg = 0;
 	else fg = 0xFF;
 
-//	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
+//	sprintf(constring, KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n\r", dx, dy, image->depth, bg, fg, w, h);
+//	myprintk();
 
 	// Clean low console string
 	memset(&convideo[12160], fg, 640);
@@ -256,12 +271,14 @@ unsigned int x, y, i;
 unsigned char mask;
 
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
-	printk(KERN_INFO "fb_fillrect enter\n");
+	sprintf(constring, KERN_INFO "fb_fillrect enter\n\r");
+	myprintk();
 	//lenx = w >> 3;	// y нас всегда кратна 8
 	//if ((fg ^ bg) & fg) fg = 0;
 	//else fg = 0xFF;
 
-//	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
+//	sprintf(constring, KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n\r", dx, dy, image->depth, bg, fg, w, h);
+//	myprintk();
 
     for (y = 0; y < h; y++){
     	adrstart = lenx * y;
@@ -332,12 +349,14 @@ struct fb_fix_screeninfo fix;
 struct fb_var_screeninfo var;
 struct fb_cmap_user cmap;
 
-	printk(KERN_INFO "fb_ioctl enter\n");
+	sprintf(constring, KERN_INFO "fb_ioctl enter\n\r");
+	myprintk();
 
 	switch(cmd){
 	case FBIOGET_FSCREENINFO:
 
-		printk(KERN_INFO "fb_ioctl, FBIOGET_FSCREENINFO\n");
+		sprintf(constring, KERN_INFO "fb_ioctl, FBIOGET_FSCREENINFO\n\r");
+		myprintk();
 
 		if (!lock_fb_info(info)) return -ENODEV;
 		fix = info->fix;
@@ -348,7 +367,8 @@ struct fb_cmap_user cmap;
 
 	case FBIOGET_VSCREENINFO:
 
-		printk(KERN_INFO "fb_ioctl, FBIOGET_VSCREENINFO\n");
+		sprintf(constring ,KERN_INFO "fb_ioctl, FBIOGET_VSCREENINFO\n\r");
+		myprintk();
 
 		if (!lock_fb_info(info)) return -ENODEV;
 		var = info->var;
@@ -359,13 +379,15 @@ struct fb_cmap_user cmap;
 
 	case FBIOGETCMAP:
 
-		printk(KERN_INFO "fb_ioctl, FBIOGETCMAP\n");
+		sprintf(constring, KERN_INFO "fb_ioctl, FBIOGETCMAP\n\r");
+		myprintk();
 
 		break;
 
 	case FBIOPUTCMAP:
 
-		printk(KERN_INFO "fb_ioctl, FBIOPUTCMAP\n");
+		sprintf(constring, KERN_INFO "fb_ioctl, FBIOPUTCMAP\n\r");
+		myprintk();
 
 		if (copy_from_user(&cmap, (void __user *) arg, sizeof(cmap))) return -EFAULT;
 		// We are not used cmaps
@@ -389,22 +411,22 @@ unsigned int  len;
 //	start &= PAGE_MASK;
 //	if ((vma->vm_end - vma->vm_start + off) > len) return -EINVAL;
 //	off += start;
-//	vma->vm_start = info->fix.smem_start;
-//	vma->vm_end = info->fix.smem_start + VID_LEN;
-	vma->vm_pgoff = vma->vm_start >> PAGE_SHIFT;
+//	vma->vm_pgoff = vma->vm_start >> PAGE_SHIFT;
 
-	printk(KERN_INFO "fb_mmap: start 0x%X, end 0x%X, off 0x%X & len %d sets\n", vma->vm_start, vma->vm_end, vma->vm_pgoff, vma->vm_end - vma->vm_start);
+	sprintf(constring, KERN_INFO "fb_mmap: start 0x%X, end 0x%X, off 0x%X & len %d sets\n\r", vma->vm_start, vma->vm_end, vma->vm_pgoff, vma->vm_end - vma->vm_start);
+	myprintk();
 
 	// Start memory mapping
-//	vma->vm_flags = VM_RESERVED;
+	vma->vm_ops = &am160160_vm_ops;
+	vma->vm_flags |= VM_RESERVED;
 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
 //	fb_pgprotect(file, vma, vma->vm_pgoff);
 
-	if (remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot)) return -EAGAIN;
+//	if (remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot)) return -EAGAIN;
+//	memcpy(&myvma, vma, sizeof(struct vm_area_struct));
 
-	memcpy(&myvma, vma, sizeof(struct vm_area_struct));
-
-	printk(KERN_INFO "fb_mmap: memory mapping OK\n");
+	sprintf(constring, KERN_INFO "fb_mmap: memory mapping OK\n\r");
+	myprintk();
 
 	return 0;
 }
@@ -412,7 +434,8 @@ unsigned int  len;
 int am160160_fb_sync(struct fb_info *info)
 {
 
-	printk(KERN_INFO "fb_sync\n");
+	sprintf(constring, KERN_INFO "fb_sync\n\r");
+	myprintk();
 
 	return 0;
 }
@@ -512,10 +535,13 @@ unsigned char mask, i;
 
 	if (am_fbmode == AMFB_GRAPH_MODE){
 
-		printk(KERN_INFO "copy_from_user 0x%X\n", psrc);
+		sprintf(constring, KERN_INFO "copy_from_user 0x%X\n\r", psrc);
+		myprintk();
+
 		// Читаем в буфер блок данных
 	    if (copy_from_user(tmpvd, (const char __user *) psrc, rlen)){
-	    	printk(KERN_INFO "copy_from_user error\n");
+	    	sprintf(constring,KERN_INFO "copy_from_user error\n\r");
+	    	myprintk();
 	    	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
 	    	return -EFAULT;
 	    }
@@ -539,11 +565,45 @@ unsigned char mask, i;
 	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
 }
 
+void am160160_vma_open(struct vm_area_struct *vma){
+	sprintf(constring, KERN_INFO "vma_open OK\n\r");
+	myprintk();
+
+	(*((int*)(vma->vm_private_data)))++;
+}
+
+ void am160160_vma_close(struct vm_area_struct *vma){
+	 sprintf(constring, KERN_INFO "vma_close OK\n\r");
+	 myprintk();
+
+	 (*((int*)(vma->vm_private_data)))--;
+}
+
+ int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf){
+ struct page *page = NULL;
+//      void *pageptr = NULL; /* default to "missing" */
+//      pageptr = address;
+ 	  sprintf(constring, KERN_INFO "vma_fault entering\n\r");
+ 	  myprintk();
+
+      vmf->page = virt_to_page(vmf->virtual_address);
+      /* got it, now increment the count */
+      get_page(vmf->page);
+      return 0;
+ }
+
+	/*
+	 *  Virtual mem pages operations
+	 */
+static struct vm_operations_struct am160160_vm_ops = {
+	.open = am160160_vma_open,
+	.close = am160160_vma_close,
+	.fault = am160160_vma_fault,
+};
 
     /*
      *  Frame buffer operations
      */
-
 static struct fb_ops am160160_fb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_open	= am160160_fb_open,
@@ -597,10 +657,14 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	am160160_resources[1] = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	am160160_resources[2] = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 
-	printk(KERN_INFO "cmd cmd 0x%X\n", am160160_resources[1]->start);
-	printk(KERN_INFO "cmd dat 0x%X\n", am160160_resources[2]->start);
-	printk(KERN_INFO "reset 0x%X light 0x%X\n", am160160_resources[0]->start, am160160_resources[0]->end);
-	printk(KERN_INFO "device_open (0x%X) 0x%X 0x%X 0x%X\n", pdev, am160160_resources[0], am160160_resources[1], am160160_resources[2]);
+	sprintf(constring, KERN_INFO "cmd cmd 0x%X\n\r", am160160_resources[1]->start);
+	myprintk();
+	sprintf(constring, KERN_INFO "cmd dat 0x%X\n\r", am160160_resources[2]->start);
+	myprintk();
+	sprintf(constring, KERN_INFO "reset 0x%X light 0x%X\n\r", am160160_resources[0]->start, am160160_resources[0]->end);
+	myprintk();
+	sprintf(constring, KERN_INFO "device_open (0x%X) 0x%X 0x%X 0x%X\n\r", pdev, am160160_resources[0], am160160_resources[1], am160160_resources[2]);
+	myprintk();
 
 	/* Pins initialize */
 	resetpin = am160160_resources[0]->start;
@@ -665,10 +729,12 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     if (dev->platform_data){
     	pd_sinfo = (struct fb_info *) dev->platform_data;
-    	printk(KERN_INFO "Platform data exist\n");
+    	sprintf(constring, KERN_INFO "Platform data exist\n\r");
+    	myprintk();
     }else{
     	pd_sinfo = &def_fb_info;
-    	printk(KERN_INFO "Platform data not exist, will default data\n");
+    	sprintf(constring, KERN_INFO "Platform data not exist, will default data\n\r");
+    	myprintk();
     }
 
     memcpy(info, pd_sinfo, sizeof(struct fb_info));			// copy default fb_info to working fb_info
@@ -714,12 +780,15 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     	kfree(var);
     	release_mem_region(io_data, BUF_LEN);
 		release_mem_region(io_cmd, 1);
-		printk(KERN_INFO "fb not find video mode %s, ret=%d\n", mode_option, retval);
+		sprintf(constring, KERN_INFO "fb not find video mode %s, ret=%d\n\r", mode_option, retval);
+		myprintk();
     	return -EINVAL;
     }
 
 //  Video Mode OK
-    printk(KERN_INFO "set fb video mode x:%d, y:%d, bpp:%d, gray:%d, xv:%d, yv:%d\n", info->var.xres, info->var.yres, info->var.bits_per_pixel, info->var.grayscale, info->var.xres_virtual, info->var.yres_virtual);
+    sprintf(constring, KERN_INFO "set fb video mode x:%d, y:%d, bpp:%d, gray:%d, xv:%d, yv:%d\n\r", info->var.xres, info->var.yres, info->var.bits_per_pixel, info->var.grayscale, info->var.xres_virtual, info->var.yres_virtual);
+    myprintk();
+
     info->mode = mode;
     head = kmalloc(sizeof(struct list_head), GFP_KERNEL);
     head->prev=0;
@@ -739,7 +808,9 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     info->pseudo_palette = info->par;
 
-    printk(KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n", am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
+    sprintf(constring, KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n\r",
+    		am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
+    myprintk();
 
     cmap_len = 16;
     if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0){
@@ -749,7 +820,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     	kfree(var);
     	release_mem_region(io_data, BUF_LEN);
 		release_mem_region(io_cmd, 1);
-		printk(KERN_INFO "not allocated cmap\n");
+		sprintf(constring, KERN_INFO "not allocated cmap\n\r");
+		myprintk();
     	return -ENOMEM;
     }
 
@@ -761,13 +833,15 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     	kfree(var);
     	release_mem_region(io_data, BUF_LEN);
 		release_mem_region(io_cmd, 1);
-		printk(KERN_INFO "fb not registered\n");
+		sprintf(constring, KERN_INFO "fb not registered\n\r");
+		myprintk();
     	return -EINVAL;
     }
 
     platform_set_drvdata(pdev, info);
 
-    printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
+    sprintf(constring, KERN_INFO "fb%d: %s frame buffer device\n\r", info->node, info->fix.id);
+    myprintk();
 
 	init_timer(&sync_timer);
 	sync_timer.expires = jiffies + HZ/TICKSMAX;
@@ -786,15 +860,20 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 static int __exit am160160_fb_remove(struct platform_device *pdev)
 {
 	struct fb_info *info = platform_get_drvdata(pdev);
-	printk(KERN_INFO "fb remove\n");
+	sprintf(constring, KERN_INFO "fb remove\n\r");
+	myprintk();
 
 	if (info) {
 		unregister_framebuffer(info);
 		fb_dealloc_cmap(&info->cmap);
 		/* ... */
 		framebuffer_release(info);
-		printk(KERN_INFO "fb removed. OK.\n");
-	}else printk(KERN_INFO "fb don't removed. False.\n");
+		sprintf(constring, KERN_INFO "fb removed. OK.\n\r");
+		myprintk();
+	}else{
+		sprintf(constring, KERN_INFO "fb don't removed. False.\n\r");
+		myprintk();
+	}
 	return 0;
 }
 
@@ -887,18 +966,23 @@ static int __init am160160_fb_init(void)
 	am160160_fb_setup(option);
 #endif
 
+	// Grab tty for myprintk
+    my_tty = current->signal->tty;
+
 	am_fbmode = AMFB_CONSOLE_MODE;
 
 	for(tcon=console_drivers; tcon != NULL; tcon = tcon->next){
 		am160160fbcon = tcon;
-		printk(KERN_INFO "find console \"%s\", ptr=%lX \n", am160160fbcon->name, (long unsigned int) tcon);
+		sprintf(constring, KERN_INFO "find console \"%s\", ptr=%lX \n\r", am160160fbcon->name, (long unsigned int) tcon);
+		myprintk();
 	}
-	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
-	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
+	sprintf(constring, KERN_INFO "write func ptr=%lX \n\r", (long unsigned int) am160160fbcon->write);
+	myprintk();
 
 	ret = platform_driver_probe(&am160160_fb_driver, am160160_fb_probe);
 
-	printk(KERN_INFO "write func ptr=%lX \n", (long unsigned int) am160160fbcon->write);
+	sprintf(constring, KERN_INFO "write func ptr=%lX \n\r", (long unsigned int) am160160fbcon->write);
+	myprintk();
 
 	if (ret) {
 		// В случае когда девайс не добавлен
@@ -906,7 +990,8 @@ static int __init am160160_fb_init(void)
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "device_open(%d)\n",ret);
+	sprintf(constring, KERN_INFO "device_open(%d)\n\r",ret);
+	myprintk();
 
 	return ret;
 }
@@ -917,7 +1002,8 @@ static void __exit am160160_fb_exit(void)
 	platform_driver_unregister(&am160160_fb_driver);
 	hard->exit();
 	device_cnt--;
-	printk(KERN_INFO "device_closed\n");
+	sprintf(constring, KERN_INFO "device_closed\n\r");
+	myprintk();
 }
 
 /* ------------------------------------------------------------------------- */
