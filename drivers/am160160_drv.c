@@ -20,11 +20,9 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/string.h>
-#include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/init.h>
-//#include <linux/backlight.h>
 #include <linux/platform_device.h>
 #include <linux/fb.h>
 #include <linux/gpio.h>
@@ -35,8 +33,15 @@
 #include <linux/jiffies.h>
 #include <linux/tty.h>
 #include <linux/tty_driver.h>
+#include <linux/mm.h>
+#include <linux/mm_types.h>
+#include <linux/vmalloc.h>
+
 #include <asm/uaccess.h>
 #include <asm/fb.h>
+#include <asm/page.h>
+#include <asm/pgtable.h>
+
 #include <mach/at91sam9_smc.h>
 
 #include "am160160_drv.h"
@@ -56,7 +61,8 @@ static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
-static unsigned char mapvd[VID_LEN];
+unsigned char *mapvd;					// Income data buffer mapped to user space
+
 static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
 static unsigned char convideo[BUF_LEN];	// Console video buffer
@@ -108,9 +114,40 @@ static struct fb_videomode def_fb_videomode = {
 	.flag = FB_IGNOREMON,
 };
 
-static struct fb_info def_fb_info = {
+// Refresh timer, vars.
+#define TICKSMAX		7
+struct timer_list sync_timer;
+static unsigned char counter = TICKSMAX;
+// Refresh func
+void sync_timer_func(unsigned long data){
+unsigned int x, bt;
+unsigned char *pvideo = video;
+unsigned char mask, i;
 
-};
+	if (am_fbmode == AMFB_GRAPH_MODE){
+
+	    // Decode to indicator format from 2color bmp
+	    memset(video, 0, BUF_LEN);
+	    for (x=0; x < VID_LEN; x++){
+	    	mask = 0x80;
+			bt = mapvd[x];
+	    	for (i=0; i<8; i++){
+	    		if (bt & mask) pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+	    		mask >>= 1;
+	    		pvideo += (i&1);
+	    	}
+	    }
+
+	    hard->writedat(video, BUF_LEN);
+
+	}
+
+	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
+}
+
+void am160160_vma_open(struct vm_area_struct *vma);
+void am160160_vma_close(struct vm_area_struct *vma);
+int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf);
 
 unsigned char constring[1024];
 static void myprintk(void){
@@ -119,9 +156,6 @@ static void myprintk(void){
 	    ((my_tty->driver)->ops)->write(my_tty, constring, strlen(constring));
 	}
 }
-
-struct vm_area_struct myvma;
-
 
 static int am160160_fb_open(struct fb_info *info, int user){
 
@@ -381,13 +415,17 @@ unsigned int  len;
 	vma->vm_ops = &am160160_vm_ops;
 	vma->vm_flags |= VM_RESERVED;
 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
-//	fb_pgprotect(file, vma, vma->vm_pgoff);
 
-//	if (remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot)) return -EAGAIN;
-//	memcpy(&myvma, vma, sizeof(struct vm_area_struct));
+	am160160_vma_open(vma);
 
 	sprintf(constring, KERN_INFO "fb_mmap: memory mapping OK\n\r");
 	myprintk();
+
+	init_timer(&sync_timer);
+	sync_timer.expires = jiffies + HZ/TICKSMAX;
+	sync_timer.data = 0;
+	sync_timer.function = sync_timer_func;
+	add_timer(&sync_timer);
 
 	return 0;
 }
@@ -485,71 +523,43 @@ int am160160_fb_sync(struct fb_info *info)
 //{
 //}
 //
-#define TICKSMAX		7
-struct timer_list sync_timer;
-static unsigned char counter = TICKSMAX;
-void sync_timer_func(unsigned long data){
-unsigned char *pvideo = video;
-unsigned char *psrc = myvma.vm_start;
-unsigned int x, rlen = VID_LEN;
-unsigned char mask, i;
-
-	if (am_fbmode == AMFB_GRAPH_MODE){
-
-		sprintf(constring, KERN_INFO "copy_from_user 0x%X\n\r", psrc);
-		myprintk();
-
-		// Читаем в буфер блок данных
-	    if (copy_from_user(tmpvd, (const char __user *) psrc, rlen)){
-	    	sprintf(constring,KERN_INFO "copy_from_user error\n\r");
-	    	myprintk();
-	    	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
-	    	return -EFAULT;
-	    }
-
-	    // Decode to indicator format from 2color bmp
-	    memset(video, 0, BUF_LEN);
-	    for (x=0; x<rlen; x++){
-	    	mask = 0x80;
-	    	for (i=0; i<8; i++){
-	    		if (tmpvd[x] & mask){
-	    			pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
-	    		}
-	    		mask >>= 1;
-	    	}
-	    }
-
-	    hard->writedat(video, rlen << 2);
-
-	}
-
-	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
-}
 
 void am160160_vma_open(struct vm_area_struct *vma){
 	sprintf(constring, KERN_INFO "vma_open OK\n\r");
 	myprintk();
 
-	(*((int*)(vma->vm_private_data)))++;
+//	(*((int*)(vma->vm_private_data)))++;
 }
 
  void am160160_vma_close(struct vm_area_struct *vma){
 	 sprintf(constring, KERN_INFO "vma_close OK\n\r");
 	 myprintk();
 
-	 (*((int*)(vma->vm_private_data)))--;
+//	 (*((int*)(vma->vm_private_data)))--;
 }
 
- int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf){
- struct page *page = NULL;
-//      void *pageptr = NULL; /* default to "missing" */
-//      pageptr = address;
+int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf){
+struct page *page = NULL;
+void *lpage = vmf->virtual_address; /* default to "missing" */
+
  	  sprintf(constring, KERN_INFO "vma_fault entering\n\r");
  	  myprintk();
 
-      vmf->page = virt_to_page(vmf->virtual_address);
-      /* got it, now increment the count */
-      get_page(vmf->page);
+ 	  sprintf(constring, KERN_INFO "fault (vma): start 0x%X, end 0x%X, off 0x%X\n\r", vma->vm_start, vma->vm_end, vma->vm_pgoff);
+ 	  myprintk();
+
+ 	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", vmf->virtual_address, vmf->pgoff, vmf->page);
+ 	  myprintk();
+
+ 	  mapvd = vmalloc(VID_LEN);
+ 	  page = vmalloc_to_page(mapvd);
+ 	  vmf->page = page;
+
+ 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", mapvd, vmf->page);
+ 	  myprintk();
+
+ 	  /* got it, now increment the count */
+      get_page(page);
       return 0;
  }
 
@@ -690,15 +700,17 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     if (dev->platform_data){
     	pd_sinfo = (struct fb_info *) dev->platform_data;
-    	sprintf(constring, KERN_INFO "Platform data exist\n\r");
+        memcpy(info, pd_sinfo, sizeof(struct fb_info));			// copy default fb_info to working fb_info
+
+        sprintf(constring, KERN_INFO "Platform data exist\n\r");
     	myprintk();
     }else{
-    	pd_sinfo = &def_fb_info;
+//    	pd_sinfo = &def_fb_info;
+
     	sprintf(constring, KERN_INFO "Platform data not exist, will default data\n\r");
     	myprintk();
     }
 
-    memcpy(info, pd_sinfo, sizeof(struct fb_info));			// copy default fb_info to working fb_info
 
     mode = &def_fb_videomode;
     fb_videomode_to_var(var, mode);
@@ -727,7 +739,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
      	 	 	 	 	 	 	 */
     info->flags = FBINFO_FLAG_DEFAULT;
 
-    info->screen_base = mapvd;
+    info->screen_base = video;
     info->screen_size = VID_LEN;
     info->monspecs = pd_sinfo->monspecs;
     info->par = pd_sinfo->par;
@@ -760,7 +772,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 //    am160160_fb_fix.smem_len = BUF_LEN;
 //    am160160_fb_fix.mmio_start = (char __iomem *) video;
 //    am160160_fb_fix.mmio_len = BUF_LEN;
-    am160160_fb_fix.smem_start = mapvd;
+    am160160_fb_fix.smem_start = video;
     am160160_fb_fix.smem_len = VID_LEN;
     am160160_fb_fix.mmio_start = io_data;
     am160160_fb_fix.mmio_len = BUF_LEN;
@@ -803,12 +815,6 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     sprintf(constring, KERN_INFO "fb%d: %s frame buffer device\n\r", info->node, info->fix.id);
     myprintk();
-
-	init_timer(&sync_timer);
-	sync_timer.expires = jiffies + HZ/TICKSMAX;
-	sync_timer.data = 0;
-	sync_timer.function = sync_timer_func;
-	add_timer(&sync_timer);
 
     return 0;
 }
