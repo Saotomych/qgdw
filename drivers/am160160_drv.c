@@ -101,9 +101,9 @@ static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.line_length = 20,
 };
 
-//static struct fb_monspecs am_monspecs = {
-//
-//};
+static struct fb_monspecs am_monspecs = {
+
+};
 
 static struct fb_videomode def_fb_videomode = {
 	.name = "160x160-1@6",
@@ -115,9 +115,8 @@ static struct fb_videomode def_fb_videomode = {
 };
 
 // Refresh timer, vars.
-#define TICKSMAX		7
+#define TICKSMAX	7
 struct timer_list sync_timer;
-static unsigned char counter = TICKSMAX;
 // Refresh func
 void sync_timer_func(unsigned long data){
 unsigned int x, bt;
@@ -307,7 +306,7 @@ unsigned char mask;
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
 	sprintf(constring, KERN_INFO "fb_fillrect enter\n\r");
 	myprintk();
-	//lenx = w >> 3;	// y нас всегда кратна 8
+	lenx = w >> 3;	// y нас всегда кратна 8
 	//if ((fg ^ bg) & fg) fg = 0;
 	//else fg = 0xFF;
 
@@ -330,54 +329,30 @@ unsigned char mask;
     }
 }
 
-static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_image *image, const struct fb_copyarea *area){
-
-unsigned int fg = image->fg_color, bg = image->bg_color, bt; 
-unsigned int dx = area->dx, dy = area->dy;
-unsigned int sx = area->sx, sy = area->sy;
-unsigned int h = area->height, w = area->width;
+//static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_image *image, const struct fb_copyarea *area){
+static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea *region){
+unsigned int dx = region->dx, dy = region->dy;
+unsigned int sx = region->sx, sy = region->sy;
+unsigned int h = region->height, w = region->width;
 unsigned int ll = pinfo->fix.line_length;
 
-// Start & end addrs of console screen
-unsigned int adrstart, adrstop, lenx;
-
 // Pointers to video data in and out
-char *pdat = (char *) image->data;
+char *pdat;
 unsigned char *pvideo;
 
-unsigned int x, y, i;
-unsigned char mask;
+unsigned int y;
 
-	lenx = w >> 3;	// y нас всегда кратна 8
-	if ((fg ^ bg) & fg) fg = 0;
-	else fg = 0xFF;
-
-//	printk(KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n", dx, dy, image->depth, bg, fg, w, h);
-
-	//Clean low console string
-	//memset(&convideo[12160], fg, 640);
+	sprintf(constring, KERN_INFO "dx:%d, dy:%d, sx:0x%X, sy:0x%X, w:%d, h:%d\n\r", dx, dy, sx, sy, w, h);
+	myprintk();
 
     for (y = 0; y < h; y++){
-    	adrstart = lenx * y;
-    	adrstop = adrstart + lenx;
     	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
-    	for (x = adrstart; x < adrstop; x++){
-    		mask = 0x80;
-			bt = pdat[x] ^ fg;
-    		for (i=0; i<8; i++){
-    			if (bt & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
-    			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
-    			mask >>= 1;
-    			pvideo += (i&1);
-    		}
-    	}
+    	pdat = convideo + ((sy + y) * (ll<<2)) + (sx >> 1);
+    	memcpy(pvideo, pdat, w >> 1);
     }   
-   
-
-   
 }
 
-static long am160160_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg){
+static int am160160_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg){
 long ret = 0;
 struct fb_fix_screeninfo fix;
 struct fb_var_screeninfo var;
@@ -434,20 +409,8 @@ struct fb_cmap_user cmap;
 }
 
 static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
-struct fb_ops *fb;
-unsigned long off;
-unsigned long start;
-unsigned int  len;
 
-//	start = info->fix.smem_start;
-//	len = PAGE_ALIGN((start & ~PAGE_MASK) + info->fix.smem_len);
-//
-//	start &= PAGE_MASK;
-//	if ((vma->vm_end - vma->vm_start + off) > len) return -EINVAL;
-//	off += start;
-//	vma->vm_pgoff = vma->vm_start >> PAGE_SHIFT;
-
-	sprintf(constring, KERN_INFO "fb_mmap: start 0x%X, end 0x%X, off 0x%X & len %d sets\n\r", vma->vm_start, vma->vm_end, vma->vm_pgoff, vma->vm_end - vma->vm_start);
+	sprintf(constring, KERN_INFO "fb_mmap: start 0x%X, end 0x%X, off 0x%X & len %d sets\n\r", (unsigned int) vma->vm_start, (unsigned int) vma->vm_end, (unsigned int) vma->vm_pgoff, (unsigned int) (vma->vm_end - vma->vm_start));
 	myprintk();
 
 	// Start memory mapping
@@ -579,22 +542,21 @@ void am160160_vma_open(struct vm_area_struct *vma){
 
 int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf){
 struct page *page = NULL;
-void *lpage = vmf->virtual_address; /* default to "missing" */
 
  	  sprintf(constring, KERN_INFO "vma_fault entering\n\r");
  	  myprintk();
 
- 	  sprintf(constring, KERN_INFO "fault (vma): start 0x%X, end 0x%X, off 0x%X\n\r", vma->vm_start, vma->vm_end, vma->vm_pgoff);
+ 	  sprintf(constring, KERN_INFO "fault (vma): start 0x%X, end 0x%X, off 0x%X\n\r", (unsigned int) vma->vm_start, (unsigned int) vma->vm_end, (unsigned int) vma->vm_pgoff);
  	  myprintk();
 
- 	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", vmf->virtual_address, vmf->pgoff, vmf->page);
+ 	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", (unsigned int) vmf->virtual_address, (unsigned int) vmf->pgoff, (unsigned int) vmf->page);
  	  myprintk();
 
  	  mapvd = vmalloc(VID_LEN);
  	  page = vmalloc_to_page(mapvd);
  	  vmf->page = page;
 
- 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", mapvd, vmf->page);
+ 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd, (unsigned int) vmf->page);
  	  myprintk();
 
  	  /* got it, now increment the count */
@@ -649,17 +611,11 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 {
     struct device *dev = &pdev->dev;
     struct fb_info *info = 0;
-    unsigned char *pinfo = 0;
-//    struct am160160_info *aminfo;
     struct fb_info *pd_sinfo;
     struct fb_var_screeninfo *var = 0;
     struct fb_videomode *mode = 0;
     int cmap_len, retval;	
     struct list_head *head = 0;
-    struct fb_modelist *list = 0;
-    struct fb_event event;
-    struct fb_con2fbmap con2fb;
-//    unsigned int smem_len;
 
     am160160_device = pdev;
 
@@ -673,7 +629,7 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	myprintk();
 	sprintf(constring, KERN_INFO "reset 0x%X light 0x%X\n\r", am160160_resources[0]->start, am160160_resources[0]->end);
 	myprintk();
-	sprintf(constring, KERN_INFO "device_open (0x%X) 0x%X 0x%X 0x%X\n\r", pdev, am160160_resources[0], am160160_resources[1], am160160_resources[2]);
+	sprintf(constring, KERN_INFO "device_open (0x%X) 0x%X 0x%X 0x%X\n\r", (unsigned int) pdev, (unsigned int) am160160_resources[0], (unsigned int) am160160_resources[1], (unsigned int) am160160_resources[2]);
 	myprintk();
 
 	/* Pins initialize */
@@ -689,10 +645,10 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 // Registration I/O mem for indicator registers
 	io_cmd = ioremap(am160160_resources[1]->start, 1);
 	io_data = ioremap(am160160_resources[2]->start, BUF_LEN);
-	if (!request_mem_region(io_cmd, 1, pdev->name)) return -EBUSY;
-	if (!request_mem_region(io_data, BUF_LEN, pdev->name)){
+	if (!request_mem_region((unsigned long) io_cmd, 1, pdev->name)) return -EBUSY;
+	if (!request_mem_region((unsigned long) io_data, BUF_LEN, pdev->name)){
 		// exception 1
-		release_mem_region(io_cmd, 1);
+		release_mem_region((unsigned long) io_cmd, 1);
 		return -EBUSY;
 	}
 
@@ -712,8 +668,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 
     if (!var){
     	// exception 2
-		release_mem_region(io_data, BUF_LEN);
-		release_mem_region(io_cmd, 1);
+		release_mem_region((unsigned long) io_data, BUF_LEN);
+		release_mem_region((unsigned long) io_cmd, 1);
     	return -ENOMEM;
     }
 
@@ -721,8 +677,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     if (!mode){
     	// exception 3
     	kfree(var);
-		release_mem_region(io_data, BUF_LEN);
-		release_mem_region(io_cmd, 1);
+		release_mem_region((unsigned long) io_data, BUF_LEN);
+		release_mem_region((unsigned long) io_cmd, 1);
     	return -ENOMEM;
     }
     memcpy(mode, &def_fb_videomode, sizeof(struct fb_videomode));
@@ -732,24 +688,10 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     	// exception 4
     	kfree(mode);
     	kfree(var);
-    	release_mem_region(io_data, BUF_LEN);
-		release_mem_region(io_cmd, 1);
+    	release_mem_region((unsigned long) io_data, BUF_LEN);
+		release_mem_region((unsigned long) io_cmd, 1);
     	return -ENOMEM;
     }
-
-    if (dev->platform_data){
-    	pd_sinfo = (struct fb_info *) dev->platform_data;
-        memcpy(info, pd_sinfo, sizeof(struct fb_info));			// copy default fb_info to working fb_info
-
-        sprintf(constring, KERN_INFO "Platform data exist\n\r");
-    	myprintk();
-    }else{
-//    	pd_sinfo = &def_fb_info;
-
-    	sprintf(constring, KERN_INFO "Platform data not exist, will default data\n\r");
-    	myprintk();
-    }
-
 
     mode = &def_fb_videomode;
     fb_videomode_to_var(var, mode);
@@ -773,15 +715,26 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     memcpy(&(info->var), var, sizeof(struct fb_var_screeninfo));
 
     info->fbops = &am160160_fb_ops;
-    info->fix = am160160_fb_fix; /* this will be the only time am160160_fb_fix will be
-     	 	 	 	 	 	 	 * used, so mark it as __devinitdata
-     	 	 	 	 	 	 	 */
+
     info->flags = FBINFO_FLAG_DEFAULT;
 
     info->screen_base = video;
     info->screen_size = VID_LEN;
-    info->monspecs = pd_sinfo->monspecs;
-    info->par = pd_sinfo->par;
+
+    // Detect platform_data & set default fb_info
+    if (dev->platform_data){
+    	pd_sinfo = (struct fb_info *) dev->platform_data;
+        memcpy(info, pd_sinfo, sizeof(struct fb_info));			// copy default fb_info to working fb_info
+
+        sprintf(constring, KERN_INFO "Platform data exist\n\r");
+    	myprintk();
+    }else{
+    	memcpy(&(info->monspecs), &am_monspecs, sizeof(struct fb_monspecs));
+    	info->par = NULL;
+
+    	sprintf(constring, KERN_INFO "Platform data not exist, will default data\n\r");
+    	myprintk();
+    }
 
 // Set videomode
     mode_option = "160x160-1@6";
@@ -790,61 +743,56 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     	// exception 5 as 4
     	kfree(mode);
     	kfree(var);
-    	release_mem_region(io_data, BUF_LEN);
-		release_mem_region(io_cmd, 1);
+    	release_mem_region((unsigned long) io_data, BUF_LEN);
+		release_mem_region((unsigned long) io_cmd, 1);
 		sprintf(constring, KERN_INFO "fb not find video mode %s, ret=%d\n\r", mode_option, retval);
 		myprintk();
     	return -EINVAL;
     }
+    info->mode = mode;
 
 //  Video Mode OK
     sprintf(constring, KERN_INFO "set fb video mode x:%d, y:%d, bpp:%d, gray:%d, xv:%d, yv:%d\n\r", info->var.xres, info->var.yres, info->var.bits_per_pixel, info->var.grayscale, info->var.xres_virtual, info->var.yres_virtual);
     myprintk();
 
-    info->mode = mode;
     head = kmalloc(sizeof(struct list_head), GFP_KERNEL);
     head->prev=0;
     head->next=0;
 
-// Dinamic lets fix
-//    am160160_fb_fix.smem_start = am160160_resources[2]->start;
-//    am160160_fb_fix.smem_len = BUF_LEN;
-//    am160160_fb_fix.mmio_start = (char __iomem *) video;
-//    am160160_fb_fix.mmio_len = BUF_LEN;
-    am160160_fb_fix.smem_start = video;
+//  Videomemory set to fb_fix
+    am160160_fb_fix.smem_start = (unsigned long) video;
     am160160_fb_fix.smem_len = VID_LEN;
-    am160160_fb_fix.mmio_start = io_data;
+    am160160_fb_fix.mmio_start = (unsigned long) io_data;
     am160160_fb_fix.mmio_len = BUF_LEN;
-
     memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
-
-    info->pseudo_palette = info->par;
-
-    sprintf(constring, KERN_INFO "set i/o sram: %lX+%lX; %lX+%lX\n\r",
+    sprintf(constring, KERN_INFO "set i/o sram: %lX+%X; %lX+%X\n\r",
     		am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
     myprintk();
 
+    // Set palette
+    info->pseudo_palette = info->par;
     cmap_len = 16;
     if (fb_alloc_cmap(&info->cmap, cmap_len, 0) < 0){
     	// exception 6 as 5 as 4
     	kfree(head);
     	kfree(mode);
     	kfree(var);
-    	release_mem_region(io_data, BUF_LEN);
-		release_mem_region(io_cmd, 1);
+    	release_mem_region((unsigned long)io_data, BUF_LEN);
+		release_mem_region((unsigned long)io_cmd, 1);
 		sprintf(constring, KERN_INFO "not allocated cmap\n\r");
 		myprintk();
     	return -ENOMEM;
     }
 
+    // Register framebuffer
     if (register_framebuffer(info) < 0) {
     	// exception 7
     	fb_dealloc_cmap(&info->cmap);
     	kfree(head);
     	kfree(mode);
     	kfree(var);
-    	release_mem_region(io_data, BUF_LEN);
-		release_mem_region(io_cmd, 1);
+    	release_mem_region((unsigned long)io_data, BUF_LEN);
+		release_mem_region((unsigned long)io_cmd, 1);
 		sprintf(constring, KERN_INFO "fb not registered\n\r");
 		myprintk();
     	return -EINVAL;
