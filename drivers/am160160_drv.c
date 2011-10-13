@@ -61,7 +61,7 @@ static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
-unsigned char *mapvd;					// Income data buffer mapped to user space
+unsigned char *mapvd = NULL;					// Income data buffer mapped to user space
 
 static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
@@ -90,6 +90,7 @@ struct am160160_par;
 
 static int device_cnt=0;
 
+// Fixed parameters
 static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.id =		"am160160",
 	.type =		FB_TYPE_PACKED_PIXELS,
@@ -101,10 +102,12 @@ static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.line_length = 20,
 };
 
+// Hahaha
 static struct fb_monspecs am_monspecs = {
 
 };
 
+// Default video mode
 static struct fb_videomode def_fb_videomode = {
 	.name = "160x160-1@6",
 	.refresh = 6,
@@ -534,6 +537,13 @@ void am160160_vma_open(struct vm_area_struct *vma){
 }
 
  void am160160_vma_close(struct vm_area_struct *vma){
+
+	 if (mapvd){
+		 vunmap(mapvd);
+		 vfree(mapvd);
+	 }
+	 mapvd = NULL;
+
 	 sprintf(constring, KERN_INFO "vma_close OK\n\r");
 	 myprintk();
 
