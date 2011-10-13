@@ -61,7 +61,7 @@ static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
-unsigned char *mapvd = NULL;					// Income data buffer mapped to user space
+unsigned char *mapvd[8];					// Income data buffer mapped to user space
 
 static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
@@ -130,7 +130,7 @@ unsigned char mask, i;
 	    for (x=0; x < VID_LEN; x++){
 	    	mask = 0x80;
 	    	// Get as low byte of int
-			bt = mapvd[x];
+			bt = (mapvd[0])[x];
 			// Get as ints
 	    	for (i=0; i<8; i++){
 	    		if (bt & mask) video[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
@@ -426,7 +426,7 @@ static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
 	myprintk();
 
 	init_timer(&sync_timer);
-	sync_timer.expires = jiffies + HZ/TICKSMAX;
+	sync_timer.expires = jiffies + HZ;
 	sync_timer.data = 0;
 	sync_timer.function = sync_timer_func;
 	add_timer(&sync_timer);
@@ -527,7 +527,7 @@ static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
 //{
 //}
 //
-
+static int pgidx = 0;
 void am160160_vma_open(struct vm_area_struct *vma){
 	sprintf(constring, KERN_INFO "vma_open OK\n\r");
 	myprintk();
@@ -537,11 +537,17 @@ void am160160_vma_open(struct vm_area_struct *vma){
 
  void am160160_vma_close(struct vm_area_struct *vma){
 
-	 if (mapvd){
-		 vunmap(mapvd);
-		 vfree(mapvd);
+	 while(pgidx){
+		 pgidx--;
+
+		 sprintf(constring, KERN_INFO "unmap vma 0x%X, mapvd 0x%X\n\r",  (unsigned int) vma->vm_start, (unsigned int) mapvd[pgidx]);
+		 myprintk();
+
+		 if (mapvd[pgidx]){
+			 vfree(mapvd[pgidx]);
+		 }
+
 	 }
-	 mapvd = NULL;
 
 	 sprintf(constring, KERN_INFO "vma_close OK\n\r");
 	 myprintk();
@@ -561,11 +567,12 @@ struct page *page = NULL;
  	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", (unsigned int) vmf->virtual_address, (unsigned int) vmf->pgoff, (unsigned int) vmf->page);
  	  myprintk();
 
- 	  mapvd = vmalloc(VID_LEN);
- 	  page = vmalloc_to_page(mapvd);
+ 	  mapvd[pgidx] = vmalloc(VID_LEN);
+ 	  page = vmalloc_to_page(mapvd[pgidx]);
  	  vmf->page = page;
+ 	  pgidx++;
 
- 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd, (unsigned int) vmf->page);
+ 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd[pgidx], (unsigned int) vmf->page);
  	  myprintk();
 
  	  /* got it, now increment the count */
