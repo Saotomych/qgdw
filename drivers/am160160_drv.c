@@ -51,8 +51,8 @@
 #undef CONFIG_PM
 
 #define PIXMAP_SIZE	1
-#define BUF_LEN		80*160
-#define VID_LEN		3200
+#define BUF_LEN		80*160			// 2 point to byte, 160x160 points as int
+#define VID_LEN		BUF_LEN >> 2
 
 // Vars for ttyprintk
 struct tty_struct *my_tty;
@@ -102,7 +102,7 @@ static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
 	.line_length = 20,
 };
 
-// Hahaha
+// Hahaha skripach ne nujen, chista for have static pointer
 static struct fb_monspecs am_monspecs = {
 
 };
@@ -118,25 +118,24 @@ static struct fb_videomode def_fb_videomode = {
 };
 
 // Refresh timer, vars.
-#define TICKSMAX	7
 struct timer_list sync_timer;
 // Refresh func
 void sync_timer_func(unsigned long data){
 unsigned int x, bt;
-unsigned char *pvideo = video;
 unsigned char mask, i;
 
 	if (am_fbmode == AMFB_GRAPH_MODE){
 
 	    // Decode to indicator format from 2color bmp
-	    memset(video, 0, BUF_LEN);
 	    for (x=0; x < VID_LEN; x++){
 	    	mask = 0x80;
+	    	// Get as low byte of int
 			bt = mapvd[x];
+			// Get as ints
 	    	for (i=0; i<8; i++){
-	    		if (bt & mask) pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+	    		if (bt & mask) video[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
+	    		else video[(x<<2)+(i>>1)] &= ((i & 1) ? 0xF7 : 0x7F);
 	    		mask >>= 1;
-	    		pvideo += (i&1);
 	    	}
 	    }
 
@@ -144,7 +143,7 @@ unsigned char mask, i;
 
 	}
 
-	mod_timer(&sync_timer, jiffies + HZ/TICKSMAX);
+	mod_timer(&sync_timer, jiffies + HZ);
 }
 
 void am160160_vma_open(struct vm_area_struct *vma);
@@ -435,14 +434,14 @@ static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
 	return 0;
 }
 
-int am160160_fb_sync(struct fb_info *info)
-{
-
-	sprintf(constring, KERN_INFO "fb_sync\n\r");
-	myprintk();
-
-	return 0;
-}
+//int am160160_fb_sync(struct fb_info *info)
+//{
+//
+//	sprintf(constring, KERN_INFO "fb_sync\n\r");
+//	myprintk();
+//
+//	return 0;
+//}
 
 //static int am160160_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 //{
