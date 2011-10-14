@@ -53,7 +53,7 @@
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160			// 2 point to byte, 160x160 points as int
 #define VID_LEN		BUF_LEN >> 2
-
+#define TICKMAX		HZ/8
 // Vars for ttyprintk
 struct tty_struct *my_tty;
 
@@ -61,8 +61,7 @@ static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
-#define MAXPAGES	8
-unsigned char *mapvd[MAXPAGES];			// Income data buffer mapped to user space
+unsigned char *mapvd;			// Income data buffer mapped to user space
 
 static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
@@ -132,7 +131,7 @@ unsigned char mask, i;
 		// Wait of end unmap memory pages
    	    while (sync_on.counter);
    	    // If unmap => return;
-   		if (mapvd[0] == NULL) return;
+   		if (mapvd == NULL) return;
    		// Get mapvd to me
    		sync_on.counter++;
 
@@ -140,7 +139,7 @@ unsigned char mask, i;
 	    for (x=0; x < VID_LEN; x++){
 	    	mask = 0x80;
 	    	// Get as low byte of int
-			bt = (mapvd[0])[x];
+			bt = (mapvd)[x];
 			// Get as ints
 	    	for (i=0; i<8; i++){
 	    		if (bt & mask) video[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
@@ -154,7 +153,7 @@ unsigned char mask, i;
 	    hard->writedat(video, BUF_LEN);
 	}
 
-	mod_timer(&sync_timer, jiffies + HZ);
+	mod_timer(&sync_timer, jiffies + TICKMAX);
 }
 
 void am160160_vma_open(struct vm_area_struct *vma);
@@ -437,7 +436,7 @@ static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
 	myprintk();
 
 	init_timer(&sync_timer);
-	sync_timer.expires = jiffies + HZ;
+	sync_timer.expires = jiffies + TICKMAX;
 	sync_timer.data = 0;
 	sync_timer.function = sync_timer_func;
 	add_timer(&sync_timer);
@@ -538,7 +537,6 @@ static int am160160_fb_mmap(struct fb_info *info, struct vm_area_struct *vma){
 //{
 //}
 //
-static int pgidx = 0;
 void am160160_vma_open(struct vm_area_struct *vma){
 	sprintf(constring, KERN_INFO "vma_open OK\n\r");
 	myprintk();
@@ -550,20 +548,16 @@ void am160160_vma_open(struct vm_area_struct *vma){
 
 	 // Wait of end convert to display
 	 while (sync_on.counter);
+
 	 // Get mapvd for me
 	 sync_on.counter++;
 
-	 while(pgidx){
-		 pgidx--;
+	 sprintf(constring, KERN_INFO "unmap vma 0x%X, mapvd 0x%X\n\r",  (unsigned int) vma->vm_start, (unsigned int) mapvd);
+	 myprintk();
 
-		 sprintf(constring, KERN_INFO "unmap vma 0x%X, mapvd 0x%X\n\r",  (unsigned int) vma->vm_start, (unsigned int) mapvd[pgidx]);
-		 myprintk();
+	 vfree(mapvd);
+	 mapvd = NULL;
 
-		 if (mapvd[pgidx]){
-			 vfree(mapvd[pgidx]);
-			 mapvd[pgidx] = NULL;
-		 }
-	 }
 	 // Put mapvd for all
 	 sync_on.counter--;
 
@@ -577,31 +571,29 @@ struct page *page = NULL;
  	 sprintf(constring, KERN_INFO "vma_fault entering\n\r");
  	 myprintk();
 
- 	 if (pgidx < MAXPAGES){
+ 	 if (mapvd == NULL){
  	 	  sprintf(constring, KERN_INFO "fault (vma): start 0x%X, end 0x%X, off 0x%X\n\r", (unsigned int) vma->vm_start, (unsigned int) vma->vm_end, (unsigned int) vma->vm_pgoff);
  	 	  myprintk();
 
  	 	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", (unsigned int) vmf->virtual_address, (unsigned int) vmf->pgoff, (unsigned int) vmf->page);
  	 	  myprintk();
 
- 	 	  mapvd[pgidx] = vmalloc(VID_LEN);
- 	 	  page = vmalloc_to_page(mapvd[pgidx]);
+ 	 	  mapvd = vmalloc(VID_LEN);
+ 	 	  page = vmalloc_to_page(mapvd);
  	 	  vmf->page = page;
- 	 	  pgidx++;
 
- 	 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd[pgidx], (unsigned int) vmf->page);
+ 	 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd, (unsigned int) vmf->page);
  	 	  myprintk();
 
  	 	  /* got it, now increment the count */
  	      get_page(page);
- 	      return 0;
 
 	  }else{
-
-		  sprintf(constring, KERN_INFO "Page index overcount. %d\n\r", pgidx);
-	 	  myprintk();
-	 	  return -ENOMEM;
+ 	 	  sprintf(constring, KERN_INFO "fault page: Page allocated already: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd, (unsigned int) vmf->page);
+ 	 	  myprintk();
 	  }
+
+ 	 return 0;
  }
 
 	/*
