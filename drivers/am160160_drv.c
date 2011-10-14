@@ -61,7 +61,8 @@ static char defchipname[]={"uc1698"};
 static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
-unsigned char *mapvd[8];					// Income data buffer mapped to user space
+#define MAXPAGES	8
+unsigned char *mapvd[MAXPAGES];			// Income data buffer mapped to user space
 
 static unsigned char video[BUF_LEN];	// Graphics video buffer
 static unsigned char tmpvd[BUF_LEN];
@@ -87,8 +88,9 @@ static unsigned int lightpin;
 static struct vm_operations_struct am160160_vm_ops;
 static char *mode_option __initdata;
 struct am160160_par;
-
 static int device_cnt=0;
+
+volatile atomic_t	sync_on;
 
 // Fixed parameters
 static struct fb_fix_screeninfo am160160_fb_fix __devinitdata = {
@@ -124,9 +126,17 @@ void sync_timer_func(unsigned long data){
 unsigned int x, bt;
 unsigned char mask, i;
 
+
 	if (am_fbmode == AMFB_GRAPH_MODE){
 
-	    // Decode to indicator format from 2color bmp
+		// Wait of end unmap memory pages
+   	    while (sync_on.counter);
+   	    // If unmap => return;
+   		if (mapvd[0] == NULL) return;
+   		// Get mapvd to me
+   		sync_on.counter++;
+
+		// Decode to indicator format from 2color bmp
 	    for (x=0; x < VID_LEN; x++){
 	    	mask = 0x80;
 	    	// Get as low byte of int
@@ -138,9 +148,10 @@ unsigned char mask, i;
 	    		mask >>= 1;
 	    	}
 	    }
+   		// Put mapvd to all
+	    sync_on.counter--;
 
 	    hard->writedat(video, BUF_LEN);
-
 	}
 
 	mod_timer(&sync_timer, jiffies + HZ);
@@ -532,10 +543,15 @@ void am160160_vma_open(struct vm_area_struct *vma){
 	sprintf(constring, KERN_INFO "vma_open OK\n\r");
 	myprintk();
 
-//	(*((int*)(vma->vm_private_data)))++;
+	sync_on.counter = 0;
 }
 
  void am160160_vma_close(struct vm_area_struct *vma){
+
+	 // Wait of end convert to display
+	 while (sync_on.counter);
+	 // Get mapvd for me
+	 sync_on.counter++;
 
 	 while(pgidx){
 		 pgidx--;
@@ -545,39 +561,47 @@ void am160160_vma_open(struct vm_area_struct *vma){
 
 		 if (mapvd[pgidx]){
 			 vfree(mapvd[pgidx]);
+			 mapvd[pgidx] = NULL;
 		 }
-
 	 }
+	 // Put mapvd for all
+	 sync_on.counter--;
 
 	 sprintf(constring, KERN_INFO "vma_close OK\n\r");
 	 myprintk();
-
-//	 (*((int*)(vma->vm_private_data)))--;
 }
 
 int am160160_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf){
 struct page *page = NULL;
 
- 	  sprintf(constring, KERN_INFO "vma_fault entering\n\r");
- 	  myprintk();
+ 	 sprintf(constring, KERN_INFO "vma_fault entering\n\r");
+ 	 myprintk();
 
- 	  sprintf(constring, KERN_INFO "fault (vma): start 0x%X, end 0x%X, off 0x%X\n\r", (unsigned int) vma->vm_start, (unsigned int) vma->vm_end, (unsigned int) vma->vm_pgoff);
- 	  myprintk();
+ 	 if (pgidx < MAXPAGES){
+ 	 	  sprintf(constring, KERN_INFO "fault (vma): start 0x%X, end 0x%X, off 0x%X\n\r", (unsigned int) vma->vm_start, (unsigned int) vma->vm_end, (unsigned int) vma->vm_pgoff);
+ 	 	  myprintk();
 
- 	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", (unsigned int) vmf->virtual_address, (unsigned int) vmf->pgoff, (unsigned int) vmf->page);
- 	  myprintk();
+ 	 	  sprintf(constring, KERN_INFO "fault (vmf): virt 0x%X, off 0x%X, page 0x%X\n\r", (unsigned int) vmf->virtual_address, (unsigned int) vmf->pgoff, (unsigned int) vmf->page);
+ 	 	  myprintk();
 
- 	  mapvd[pgidx] = vmalloc(VID_LEN);
- 	  page = vmalloc_to_page(mapvd[pgidx]);
- 	  vmf->page = page;
- 	  pgidx++;
+ 	 	  mapvd[pgidx] = vmalloc(VID_LEN);
+ 	 	  page = vmalloc_to_page(mapvd[pgidx]);
+ 	 	  vmf->page = page;
+ 	 	  pgidx++;
 
- 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd[pgidx], (unsigned int) vmf->page);
- 	  myprintk();
+ 	 	  sprintf(constring, KERN_INFO "fault page: mapvd:0x%X, page:0x%X\n\r", (unsigned int) mapvd[pgidx], (unsigned int) vmf->page);
+ 	 	  myprintk();
 
- 	  /* got it, now increment the count */
-      get_page(page);
-      return 0;
+ 	 	  /* got it, now increment the count */
+ 	      get_page(page);
+ 	      return 0;
+
+	  }else{
+
+		  sprintf(constring, KERN_INFO "Page index overcount. %d\n\r", pgidx);
+	 	  myprintk();
+	 	  return -ENOMEM;
+	  }
  }
 
 	/*
@@ -730,12 +754,23 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     var->sync = FB_SYNC_EXT;
     memcpy(&(info->var), var, sizeof(struct fb_var_screeninfo));
 
+    // Set video memory in fb_fix
+    am160160_fb_fix.smem_start = am160160_resources[2]->start;
+    am160160_fb_fix.smem_len = BUF_LEN;
+    am160160_fb_fix.mmio_start = (unsigned long) video;
+    am160160_fb_fix.mmio_len = BUF_LEN;
+    // Set fb_fix
+    memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
+    sprintf(constring, KERN_INFO "set i/o sram: %lX+%X; %lX+%X\n\r",
+    		am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
+    myprintk();
+
     info->fbops = &am160160_fb_ops;
 
     info->flags = FBINFO_FLAG_DEFAULT;
 
-    info->screen_base = video;
-    info->screen_size = VID_LEN;
+    info->screen_base = (char __iomem *) video;
+    info->screen_size = BUF_LEN;
 
     // Detect platform_data & set default fb_info
     if (dev->platform_data){
@@ -776,14 +811,14 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
     head->next=0;
 
 //  Videomemory set to fb_fix
-    am160160_fb_fix.smem_start = (unsigned long) video;
-    am160160_fb_fix.smem_len = VID_LEN;
-    am160160_fb_fix.mmio_start = (unsigned long) io_data;
-    am160160_fb_fix.mmio_len = BUF_LEN;
-    memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
-    sprintf(constring, KERN_INFO "set i/o sram: %lX+%X; %lX+%X\n\r",
-    		am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
-    myprintk();
+//    am160160_fb_fix.smem_start = (unsigned long) video;
+//    am160160_fb_fix.smem_len = BUF_LEN;
+//    am160160_fb_fix.mmio_start = (unsigned long) io_data;
+//    am160160_fb_fix.mmio_len = BUF_LEN;
+//    memcpy(&(info->fix), &am160160_fb_fix, sizeof(struct fb_fix_screeninfo));
+//    sprintf(constring, KERN_INFO "set i/o sram: %lX+%X; %lX+%X\n\r",
+//    		am160160_fb_fix.mmio_start, am160160_fb_fix.mmio_len, am160160_fb_fix.smem_start, am160160_fb_fix.smem_len);
+//    myprintk();
 
     // Set palette
     info->pseudo_palette = info->par;
