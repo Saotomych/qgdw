@@ -52,7 +52,7 @@
 
 #define PIXMAP_SIZE	1
 #define BUF_LEN		80*160			// 2 point to byte, 160x160 points as int
-#define VID_LEN		BUF_LEN >> 2
+#define VID_LEN		(BUF_LEN >> 2)
 #define TICKMAX		HZ/8
 // Vars for ttyprintk
 struct tty_struct *my_tty;
@@ -62,9 +62,7 @@ static char *chipname = defchipname;
 module_param_string(chip, defchipname, 7, 0);
 
 unsigned char *mapvd;			// Income data buffer mapped to user space
-
 static unsigned char video[BUF_LEN];	// Graphics video buffer
-static unsigned char tmpvd[BUF_LEN];
 static unsigned char convideo[BUF_LEN];	// Console video buffer
 
 #define AMFB_CONSOLE_MODE	1
@@ -122,9 +120,6 @@ static struct fb_videomode def_fb_videomode = {
 struct timer_list sync_timer;
 // Refresh func
 void sync_timer_func(unsigned long data){
-unsigned int x, bt;
-unsigned char mask, i;
-
 
 	if (am_fbmode == AMFB_GRAPH_MODE){
 
@@ -135,22 +130,12 @@ unsigned char mask, i;
    		// Get mapvd to me
    		sync_on.counter++;
 
-		// Decode to indicator format from 2color bmp
-	    for (x=0; x < VID_LEN; x++){
-	    	mask = 0x80;
-	    	// Get as low byte of int
-			bt = (mapvd)[x];
-			// Get as ints
-	    	for (i=0; i<8; i++){
-	    		if (bt & mask) video[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
-	    		else video[(x<<2)+(i>>1)] &= ((i & 1) ? 0xF7 : 0x7F);
-	    		mask >>= 1;
-	    	}
-	    }
+   		// Writing to indicator
+   		hard->writedat(mapvd);
+
    		// Put mapvd to all
 	    sync_on.counter--;
 
-	    hard->writedat(video, BUF_LEN);
 	}
 
 	mod_timer(&sync_timer, jiffies + TICKMAX);
@@ -195,48 +180,20 @@ static ssize_t am160160_fb_read(struct fb_info *info, char __user *buffer, size_
 }
 
 static ssize_t am160160_fb_write(struct fb_info *info, const char __user *buffer, size_t length, loff_t *offset){
-    size_t rlen = info->fix.mmio_len;
-//    unsigned long pos = (unsigned long) offset;
-    char *pvideo = video;
-    unsigned int x, i;
-    unsigned char mask;
 
 	if (length < 8) am_fbmode = AMFB_CONSOLE_MODE;
 
 	sprintf(constring, KERN_INFO "fb_write(%p,%p,%d,%lX)\n\r",info,buffer,length, (long unsigned int)offset);
 	myprintk();
 
-	// Вместо офсета в реале приходит какая-то эпическая хуйня, поэтому пока не юзаем
-	// Выяснить где и как оно выставляется и юзается.
-
-	// Проверка на переход смещения за границу буфера и на приход блока с длиной 0
-	//    if (pos >= info->fix.smem_len || (!length)) return length;
 	if (!length) return 0;
 
-    // Если пришедший блок короче, чем выделенная память, то ставим длину этого блока.
-	// Обычно ожидается приход блока равный памяти
-    if (length <= info->fix.smem_len) rlen = length;
-    // Если текущая длина + смешщение больше, чем выделенная память, то вычитаем смещение
-    //    if (rlen + pos > info->fix.smem_len) rlen-=pos;
-
     // Читаем в буфер блок данных
-    if (copy_from_user(tmpvd, (const char __user *) buffer, rlen)) return -EFAULT;
+    if (copy_from_user(video, (const char __user *) buffer, VID_LEN)) return -EFAULT;
 
-    // Decode to indicator format from 2color bmp
-    memset(video, 0, BUF_LEN);
-    for (x=0; x<rlen; x++){
-    	mask = 0x80;
-    	for (i=0; i<8; i++){
-    		if (tmpvd[x] & mask){
-    			pvideo[(x<<2)+(i>>1)] |= ((i & 1) ? 0x8 : 0x80);
-    		}
-    		mask >>= 1;
-    	}
-    }
+    hard->writedat(video);
 
-    hard->writedat(pvideo, rlen << 2);
-
-	return rlen;
+	return length;
 }
 
 static int am160160_fb_release(struct fb_info *info, int user){
@@ -251,50 +208,33 @@ static int am160160_fb_release(struct fb_info *info, int user){
 //  Console graphics inbound to convideo buffer
 static void am160160_fb_imageblit(struct fb_info *pinfo, const struct fb_image *image){
 
-unsigned int fg = image->fg_color, bg = image->bg_color, bt;
+unsigned int fg = image->fg_color, bg = image->bg_color;
 unsigned int dx = image->dx, dy = image->dy;
 unsigned int w = image->width, h = image->height;
-unsigned int ll = pinfo->fix.line_length;
 
 // Start & end addrs of console screen
-unsigned int adrstart, adrstop, lenx;
+unsigned int adrstart, lenx;
 
 // Pointers to video data in and out
-char *pdat = (char *) image->data;
 unsigned char *pvideo;
-
-unsigned int x, y, i;
-unsigned char mask;
+unsigned int y;
 
 	lenx = w >> 3;	// y нас всегда кратна 8
-	if ((fg ^ bg) & fg) fg = 0;
-	else fg = 0xFF;
-
-//	sprintf(constring, KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n\r", dx, dy, image->depth, bg, fg, w, h);
-//	myprintk();
+	if (bg) bg = 0xFF;
+	if (fg) fg = 0xFF;
 
 	// Clean low console string
-	memset(&convideo[12160], fg, 640);
+	memset(&convideo[VID_LEN - (VID_LEN/20)], fg, VID_LEN/20);
 
-    for (y = 0; y < h; y++){
-    	adrstart = lenx * y;
-    	adrstop = adrstart + lenx;
-    	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
-    	for (x = adrstart; x < adrstop; x++){
-    		mask = 0x80;
-			bt = pdat[x] ^ fg;
-    		for (i=0; i<8; i++){
-    			if (bt & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
-    			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
-    			mask >>= 1;
-    			pvideo += (i&1);
-    		}
-    	}
-    }
+	for (y = 0; y < h; y++){
+		adrstart = lenx * y;
+		pvideo = convideo + ((y+dy) * 20) + (dx >> 3);
+		memcpy(pvideo, &(image->data[adrstart]), lenx);
+	}
 
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
 
-	if (hard) hard->writedat(convideo, BUF_LEN);
+	if (hard) hard->writedat(convideo);
 }
 
 static void am160160_fb_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
@@ -687,8 +627,8 @@ static int am160160_fb_probe (struct platform_device *pdev)	// -- for platform d
 	// Устройство описано в файле ядра board-sam9260dpm.c
 	/* Hardware initialize and testing */
 	// Connect to hardware driver
-	if (strstr(chipname,"uc1698")) hard = uc1698_connect(io_cmd, io_data);
-	if (strstr(chipname,"st7529")) hard = st7529_connect(io_cmd, io_data);
+	if (strstr(chipname,"uc1698")) hard = uc1698_connect(io_cmd, io_data, VID_LEN);
+	if (strstr(chipname,"st7529")) hard = st7529_connect(io_cmd, io_data, VID_LEN);
 	hard->init();
 
     memset(video, 0, BUF_LEN);

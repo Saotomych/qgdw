@@ -94,6 +94,7 @@ static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen = 0;
 static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
+static unsigned int endy;
 
 static inline void inlinecmd(unsigned char cmd){
 	// Write command to hardware driver
@@ -175,9 +176,40 @@ static void uc1698writecmd(unsigned char cmd){
 	writeb(cmd, io_cmd);
 }
 
-static void uc1698writedat(unsigned char *buf, unsigned int len){
-unsigned int x, y, sadr=0;
-unsigned int endx=len%80, endy=len/80;
+//static void uc1698writedat(unsigned char *buf, unsigned int len){
+//unsigned int x, y, sadr=0;
+//unsigned int endx=len%80, endy=len/80;
+//
+//// Write data buffer to hardware driver
+//// Full rows
+//	for (y=0; y < endy; y++){
+//		inlinecmd(SETCOLADDR_L | 5);
+//		inlinecmd(SETCOLADDR_H | 2);
+//		inlinecmd(SETROWADDR_L | (y&0xF) );
+//		inlinecmd(SETROWADDR_H | (y>>4) );
+//		for(x=0; x < 80; x++){
+//			writeb(buf[sadr], io_data);
+//			sadr++;
+//		}
+//		writeb(0, io_data);
+//	}
+//
+//// Last row
+//	inlinecmd(SETCOLADDR_L | 5);
+//	inlinecmd(SETCOLADDR_H | 2);
+//	inlinecmd(SETROWADDR_L | (y&0xF) );
+//	inlinecmd(SETROWADDR_H | (y>>4) );
+//	for(x=0; x < endx; x++){
+//		writeb(buf[sadr], io_data);
+//		sadr++;
+//	}
+//	writeb(0, io_data);
+//
+//}
+
+static void uc1698writedat(unsigned char *buf){
+unsigned int x, y;
+unsigned char ibt, obt, i, mask, *pv = buf;
 
 // Write data buffer to hardware driver
 // Full rows
@@ -186,34 +218,33 @@ unsigned int endx=len%80, endy=len/80;
 		inlinecmd(SETCOLADDR_H | 2);
 		inlinecmd(SETROWADDR_L | (y&0xF) );
 		inlinecmd(SETROWADDR_H | (y>>4) );
-		for(x=0; x < 80; x++){
-			writeb(buf[sadr], io_data);
-			sadr++;
+		for(x=0; x < 20; x++){
+			mask = 0x80;
+			ibt = *pv;
+			for (i=0; i<4; i++){
+				obt = 0;
+				if (ibt & mask) obt = 0x80;
+				mask>>=1;
+				if (ibt & mask) obt |= 8;
+				mask>>=1;
+
+				// Writing to indicator memory
+				writeb(obt, io_data);
+			}
+			pv++;
 		}
 		writeb(0, io_data);
 	}
-
-// Last row
-	inlinecmd(SETCOLADDR_L | 5);
-	inlinecmd(SETCOLADDR_H | 2);
-	inlinecmd(SETROWADDR_L | (y&0xF) );
-	inlinecmd(SETROWADDR_H | (y>>4) );
-	for(x=0; x < endx; x++){
-		writeb(buf[sadr], io_data);
-		sadr++;
-	}
-	writeb(0, io_data);
-
 }
 
-static unsigned int uc1698readinfo(void){
+static unsigned long uc1698readinfo(void){
 	// Return pointer to info buffer
 
     info[0] = readb(io_cmd);
     info[1] = readb(io_cmd);
     info[2] = readb(io_cmd);
 
-	return info;
+	return (unsigned long) info;
 }
 
 static unsigned char* uc1698readdata(unsigned char *addr, unsigned int len){
@@ -231,9 +262,10 @@ static AMLCDFUNC uc1698func = {
 	uc1698exit
 };
 
-PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d){
+PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d,  unsigned int len){
 	io_data = io_d;
 	io_cmd = io_c;
+	endy = len/20;
 
 	return &uc1698func;
 }

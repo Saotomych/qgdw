@@ -28,6 +28,7 @@ static unsigned char info[3];
 static unsigned char *video;
 static unsigned char videolen;
 static unsigned char *io_cmd, *io_data;								// virtual i/o indicator addresses
+static unsigned int endy;
 
 static inline void inlinecmd(unsigned char cmd){
 	// Write command to hardware driver
@@ -107,12 +108,12 @@ unsigned int i;
 	for (i=0; i<len; i++) inlinedat(buf[i]);
 }
 
-static unsigned int st7529readinfo(void){
+static unsigned long st7529readinfo(void){
 	// Return pointer to info buffer
 
 	info[0] = readb(io_cmd);
 
-	return info;
+	return (unsigned long) info;
 }
 
 static unsigned char* st7529readdata(unsigned char *addr, unsigned int len){
@@ -129,11 +130,11 @@ static AMLCDFUNC st7529func = {
 	st7529exit,
 };
 
-PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d){
+PAMLCDFUNC st7529_connect(unsigned char *io_c, unsigned char *io_d, unsigned int len){
 	io_data = io_d;
 	io_cmd = io_c;
+	endy = len/20;
 
-    printk(KERN_INFO "set i/o sram: %lX; %lX\n", io_cmd, io_data);
 	return &st7529func;
 }
 
