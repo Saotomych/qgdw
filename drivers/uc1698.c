@@ -152,7 +152,7 @@ static void uc1698init(void){
     	inlinecmd(0);
 
     	inlinecmd(SETALLPXON | 0);			// all pixel off
-    	inlinecmd(SETALLPXINV | off);		// inversed
+    	inlinecmd(SETALLPXINV | on);		// inversed
 
     	inlinecmd(SETDISPEN | 5);			//display on,select on/off mode.Green Enhance mode disable
 
@@ -175,37 +175,6 @@ static void uc1698writecmd(unsigned char cmd){
 	// Write command to hardware driver
 	writeb(cmd, io_cmd);
 }
-
-//static void uc1698writedat(unsigned char *buf, unsigned int len){
-//unsigned int x, y, sadr=0;
-//unsigned int endx=len%80, endy=len/80;
-//
-//// Write data buffer to hardware driver
-//// Full rows
-//	for (y=0; y < endy; y++){
-//		inlinecmd(SETCOLADDR_L | 5);
-//		inlinecmd(SETCOLADDR_H | 2);
-//		inlinecmd(SETROWADDR_L | (y&0xF) );
-//		inlinecmd(SETROWADDR_H | (y>>4) );
-//		for(x=0; x < 80; x++){
-//			writeb(buf[sadr], io_data);
-//			sadr++;
-//		}
-//		writeb(0, io_data);
-//	}
-//
-//// Last row
-//	inlinecmd(SETCOLADDR_L | 5);
-//	inlinecmd(SETCOLADDR_H | 2);
-//	inlinecmd(SETROWADDR_L | (y&0xF) );
-//	inlinecmd(SETROWADDR_H | (y>>4) );
-//	for(x=0; x < endx; x++){
-//		writeb(buf[sadr], io_data);
-//		sadr++;
-//	}
-//	writeb(0, io_data);
-//
-//}
 
 static void uc1698writedat(unsigned char *buf){
 unsigned int x, y;
