@@ -176,6 +176,7 @@ static void uc1698writecmd(unsigned char cmd){
 	writeb(cmd, io_cmd);
 }
 
+// Convert to indicator's format with record to indi memory
 static void uc1698writedat(unsigned char *buf){
 unsigned int x, y;
 unsigned char ibt, obt, i, mask, *pv = buf;
