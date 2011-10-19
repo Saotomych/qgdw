@@ -206,9 +206,9 @@ static int am160160_fb_release(struct fb_info *info, int user){
 
 //	according to sys_imageblit(pinfo, image)
 //  Console graphics inbound to convideo buffer
+//  For accelerate copy data to hardware we are ignore fore and background colors here
 static void am160160_fb_imageblit(struct fb_info *pinfo, const struct fb_image *image){
-
-unsigned int fg = image->fg_color, bg = image->bg_color;
+unsigned int fg = image->fg_color; //, bg = image->bg_color;
 unsigned int dx = image->dx, dy = image->dy;
 unsigned int w = image->width, h = image->height;
 
@@ -220,7 +220,7 @@ unsigned char *pvideo;
 unsigned int y;
 
 	lenx = w >> 3;	// y нас всегда кратна 8
-	if (bg) bg = 0xFF;
+//	if (bg) bg = 0xFF;
 	if (fg) fg = 0xFF;
 
 	// Clean low console string
@@ -237,47 +237,60 @@ unsigned int y;
 	if (hard) hard->writedat(convideo);
 }
 
+//  Buffer convideo fills according to data rectangle
+//  For accelerate copy data to hardware we are ignore fore and background colors here
 static void am160160_fb_fillrect(struct fb_info *pinfo, const struct fb_fillrect *rect){
 
 unsigned int dx = rect->dx, dy = rect->dy;
 unsigned int w = rect->width, h = rect->height;
 unsigned int color = rect->color;
-unsigned int ll = pinfo->fix.line_length;
 
 // Start & end addrs of console screen
-unsigned int adrstart, adrstop, lenx;
-
-// Pointers to video data in and out
-//char *pdat = (char *) image->data;
-//char *pvideo = pinfo->screen_base;
+unsigned int adrstart, lenx;
 unsigned char *pvideo;
-
-unsigned int x, y, i;
-unsigned char mask;
+unsigned int x, y;
+unsigned char lmask = 0xFF, rmask = 0xFF;
 
 	if (am_fbmode == AMFB_GRAPH_MODE) return;
 	sprintf(constring, KERN_INFO "fb_fillrect enter\n\r");
 	myprintk();
-	lenx = w >> 3;	// y нас всегда кратна 8
-	//if ((fg ^ bg) & fg) fg = 0;
-	//else fg = 0xFF;
+
+	lenx = w >> 3;
+	if (w & 7) lenx++;
+
+	x = dx % 8;
+	while(x){ lmask >>= 1; x--;}
+	lmask = ~lmask;
+
+	x = (dx+w) % 8;
+	while(x){ rmask <<= 1; x--;}
+	rmask = ~rmask;
+
+	if (color) color = 0xFF;
+	if (lenx > 1) lenx-=2;
+	else return;
 
 //	sprintf(constring, KERN_INFO "dx:%d, dy:%d, bpp:%d, bg:0x%X, fg:0x%X, w:%d, h:%d\n\r", dx, dy, image->depth, bg, fg, w, h);
 //	myprintk();
 
     for (y = 0; y < h; y++){
-    	adrstart = lenx * y;
-    	adrstop = adrstart + lenx;
-    	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
-    	for (x = adrstart; x < adrstop; x++){
-    		mask = 0x80;
-    		for (i=0; i<8; i++){
-    			if (color & mask)	*pvideo |= ((i & 1) ? 0x8 : 0x80);
-    			else     			*pvideo &= ~((i & 1) ? 0x8 : 0x80);
-    			mask >>= 1;
-    			pvideo += (i&1);
-    		}
+    	adrstart = dx * y;
+    	pvideo = convideo + ((dy + y) * 20) + (dx >> 3);
+
+    	// Fill left field
+    	*pvideo &= lmask;
+    	*pvideo |= color;
+
+    	// Fill full bytes
+    	for(x = 0; x < lenx; x++){
+    		*pvideo = color;
+    		pvideo++;
     	}
+
+    	// Fill right field
+    	*pvideo &= rmask;
+    	*pvideo |= color;
+
     }
 }
 

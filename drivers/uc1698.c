@@ -101,13 +101,12 @@ static inline void inlinecmd(unsigned char cmd){
 	writeb(cmd, io_cmd);
 }
 
+// Set initial state of hardware
 static void uc1698init(void){
-    // Хардварная инициализация индикатора
 
         inlinecmd(RESET);						// Reset
         mdelay(100);
 
-        // Хардварная инициализация индикатора
         // default rgb mode, default 64k color mod
 
     	inlinecmd(SETLCDBIASRT | 1);			//Bias Ratio:1/10 bias
@@ -165,6 +164,7 @@ static void uc1698init(void){
 
 }
 
+// Unmap io_memory before exit
 static unsigned int uc1698exit(void){
 	iounmap(io_cmd);
 	iounmap(io_data);
@@ -207,6 +207,7 @@ unsigned char ibt, obt, i, mask, *pv = buf;
 	}
 }
 
+// Read status from LCD
 static unsigned long uc1698readinfo(void){
 	// Return pointer to info buffer
 
@@ -217,6 +218,7 @@ static unsigned long uc1698readinfo(void){
 	return (unsigned long) info;
 }
 
+// Read screen data from memory or hardware (for some chips)
 static unsigned char* uc1698readdata(unsigned char *addr, unsigned int len){
 	// Return length & pointer to data buffer
 //	for (i=0; i<len; i++) video[i] = readb(io_data);
@@ -232,6 +234,7 @@ static AMLCDFUNC uc1698func = {
 	uc1698exit
 };
 
+// Set io memory addresses
 PAMLCDFUNC uc1698_connect(unsigned char *io_c, unsigned char *io_d,  unsigned int len){
 	io_data = io_d;
 	io_cmd = io_c;
