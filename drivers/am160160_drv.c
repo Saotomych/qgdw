@@ -245,8 +245,8 @@ unsigned int dx = rect->dx, dy = rect->dy;
 unsigned int w = rect->width, h = rect->height;
 unsigned int color = rect->color;
 
-// Start & end addrs of console screen
-unsigned int adrstart, lenx;
+// len of rect in bytes
+unsigned int lenx;
 unsigned char *pvideo;
 unsigned int x, y;
 unsigned char lmask = 0xFF, rmask = 0xFF;
@@ -274,7 +274,6 @@ unsigned char lmask = 0xFF, rmask = 0xFF;
 //	myprintk();
 
     for (y = 0; y < h; y++){
-    	adrstart = dx * y;
     	pvideo = convideo + ((dy + y) * 20) + (dx >> 3);
 
     	// Fill left field
@@ -299,21 +298,46 @@ static void am160160_fb_copyarea(struct fb_info *pinfo, const struct fb_copyarea
 unsigned int dx = region->dx, dy = region->dy;
 unsigned int sx = region->sx, sy = region->sy;
 unsigned int h = region->height, w = region->width;
-unsigned int ll = pinfo->fix.line_length;
 
 // Pointers to video data in and out
 char *pdat;
 unsigned char *pvideo;
+unsigned int lenx;
+unsigned int x, y;
+unsigned char lmask = 0xFF, rmask = 0xFF;
 
-unsigned int y;
-
-	sprintf(constring, KERN_INFO "dx:%d, dy:%d, sx:0x%X, sy:0x%X, w:%d, h:%d\n\r", dx, dy, sx, sy, w, h);
+	sprintf(constring, KERN_INFO "fb_copyarea enter\n\r");
 	myprintk();
+//	sprintf(constring, KERN_INFO "dx:%d, dy:%d, sx:0x%X, sy:0x%X, w:%d, h:%d\n\r", dx, dy, sx, sy, w, h);
+//	myprintk();
+
+	lenx = w >> 3;
+	if (w & 7) lenx++;
+
+	x = dx % 8;
+	while(x){ lmask >>= 1; x--;}
+
+	x = (dx+w) % 8;
+	while(x){ rmask <<= 1; x--;}
+
+	if (lenx > 1) lenx-=2;
+	else return;
 
     for (y = 0; y < h; y++){
-    	pvideo = convideo + ((dy + y) * (ll<<2)) + (dx >> 1);
-    	pdat = convideo + ((sy + y) * (ll<<2)) + (sx >> 1);
-    	memcpy(pvideo, pdat, w >> 1);
+    	pvideo = convideo + ((dy + y) * 20) + (dx >> 3);
+    	pdat = convideo + ((sy + y) * lenx) + (sx >> 3);
+
+    	// Copy left field
+    	*pvideo &= ~lmask;
+    	*pvideo |= (*pdat & lmask);
+
+    	// Copy full bytes
+    	memcpy(pvideo, pdat, lenx);
+    	pdat += lenx;
+
+    	// Copy right field
+    	*pvideo &= ~rmask;
+    	*pvideo |= (*pdat & rmask);
     }   
 }
 
