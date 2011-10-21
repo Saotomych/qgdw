@@ -9,14 +9,22 @@
 *.mod.c
 *.dll
 *.exe
+*.rexpfd
 Module.symvers
 modules.order
 uc1698u160160d.c
 am_rd
 bin/*
+Default/*
 unitlinks/main
 unitlinks/main.c
 unitlinks/Makefile.bin
 unitlinks/Makefile*.ut
+mediakon
+phylinks/adrs.cfg
+phylinks/fake-unitlink.h
+phylinks/phys.cfg
+phys.cfg
+u-tsts/fbmmap.c
 
 
