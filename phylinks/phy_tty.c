@@ -71,10 +71,11 @@ void CommRawSetup(int hPort, int Speed, int Bits, int Parity, int ParityOdd, int
     ECHOE    Символ эхо стирания как BS-SP-BS
     ISIG    Разрешить SIGINTR, SIGSUSP, SIGDSUSP, и SIGQUIT сигналы
     */
-    CommOptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-    CommOptions.c_lflag |= ISIG;
-    CommOptions.c_iflag &= ~(IXON | IXOFF | IXANY | CMSPAR);/*отмена программно управляемого управления потоком*/
-    CommOptions.c_oflag &= ~OPOST;/*Выбор необработанного (raw) вывода*/
+    CommOptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); /* выбор необработанного (raw) ввода*/
+    CommOptions.c_iflag &= ~ICRNL; /* отмена конвертации 0x0D в 0x0A (new line to carriage return) */
+    CommOptions.c_oflag &= ~ONLCR; /* отмена конвертации 0x0A в 0x0D (carriage return to new line) */
+    CommOptions.c_iflag &= ~(IXON | IXOFF | IXANY); /* отмена программно управляемого управления потоком*/
+    CommOptions.c_oflag &= ~OPOST; /* выбор необработанного (raw) вывода*/
     /*
     Драйвера последовательного интерфейса UNIX предоставляют возможность специфицировать таймауты для символа и пакета.
     Два элемента массива c_cc используемых для указания таймаутов: VMIN и VTIME.
