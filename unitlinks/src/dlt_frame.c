@@ -175,7 +175,14 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	// calculate frame checksum starting from the first start byte to the current position
 	fcs = dlt_frame_get_fcs(buff + (*offset - 10 - frame->data_len), 10 + frame->data_len);
 
-	if(fcs != buff_get_le_uint8(buff, *offset)) return RES_FCS_INCORRECT;
+	if(fcs != buff_get_le_uint8(buff, *offset))
+	{
+#ifdef _DEBUG
+		printf("%s: FCS incorrect. Expected FCS = %02X, received FCS = %02X.\n", "unitlink-dlt645", fcs, buff_get_le_uint8(buff, *offset));
+#endif
+
+		return RES_FCS_INCORRECT;
+	}
 	*offset += 1;
 
 	if(buff_get_le_uint8(buff, *offset) != DLT_STOP_BYTE) return RES_INCORRECT;

@@ -19,8 +19,7 @@
 
 /* M700 constants */
 #define M700_START_BYTE			0x68	/* frame start byte */
-#define M700_STOP_BYTE_REQ		0x0D	/* request frame stop  byte */
-#define M700_STOP_BYTE_RES		0x0A	/* response frame stop  byte */
+#define M700_STOP_BYTE			0x0D	/* request frame stop  byte */
 
 #define M700_LEN_MIN			6		/* minimum frame length */
 
@@ -137,10 +136,17 @@ uint16_t m700_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t 
 	// calculate frame checksum starting from the first start byte to the current position
 	fcs = m700_frame_get_fcs(buff + (*offset - 4 - frame->data_len), 4 + frame->data_len);
 
-	if(fcs != buff_get_le_uint8(buff, *offset)) return RES_FCS_INCORRECT;
+	if(fcs != buff_get_le_uint8(buff, *offset))
+	{
+#ifdef _DEBUG
+		printf("%s: FCS incorrect. Expected FCS = %02X, received FCS = %02X.\n", "unitlink-m700", fcs, buff_get_le_uint8(buff, *offset));
+#endif
+
+		return RES_FCS_INCORRECT;
+	}
 	*offset += 1;
 
-	if(buff_get_le_uint8(buff, *offset) != M700_STOP_BYTE_RES) return RES_INCORRECT;
+	if(buff_get_le_uint8(buff, *offset) != M700_STOP_BYTE) return RES_INCORRECT;
 	*offset += 1;
 
 	return RES_SUCCESS;
@@ -188,7 +194,7 @@ uint16_t m700_frame_buff_build(unsigned char **buff, uint32_t *buff_len, m700_fr
 	buff_put_le_uint8(*buff, offset, m700_frame_get_fcs(*buff, offset));
 	offset += 1;
 
-	buff_put_le_uint8(*buff, offset, M700_STOP_BYTE_REQ);
+	buff_put_le_uint8(*buff, offset, M700_STOP_BYTE);
 	offset += 1;
 
 	return RES_SUCCESS;
