@@ -88,7 +88,6 @@ typedef struct _LNODE_LIST{
 		char *lntype;
 		char *iedname;
 		char *ldinst;
-		char *options;
 		struct _IED *pmyied;			// crossconnector set up this value
 		struct _LDEVICE *pmyld;			// crossconnector set up this value
 		struct _LNODETYPE *pmytype;		// crossconnector set up this value
@@ -101,7 +100,6 @@ typedef struct _LDEVICE_LIST{
 	struct _LDEVICE{
 		char *inst;
 		char *desc;
-		char *options;
 		struct _IED *pmyied;			// crossconnector set up this value
 	} ld;
 } LDEVICE;

@@ -157,7 +157,7 @@ SCADA_ASDU *actscada;
 			rdlen -= sizeof(asdu);
 
 			// find VIRT_ASDU
-			while ((sasdu) && sasdu->myln->ln.pmyld && atoi(sasdu->myln->ln.pmyld->options) != edh->adr) sasdu = sasdu->l.next;
+			while ((sasdu) && sasdu->myln->ln.pmyld && atoi(sasdu->myln->ln.pmyld->inst) != edh->adr) sasdu = sasdu->l.next;
 			if (!sasdu){
 				printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
 				free(buff);
@@ -215,7 +215,7 @@ SCADA_ASDU *actscada;
 			if (psasdu->size){
 				actscada = (SCADA_ASDU*) fscada.next;
 				while(actscada){
-					sedh->adr = atoi(actscada->pscada->myln->ln.pmyld->options);
+					sedh->adr = atoi(actscada->pscada->myln->ln.pmyld->inst);
 					psasdu->adr = sedh->adr;
 					mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRDN);
 					printf("IEC61850: %d data_units sent to SCADA adr = %d\n", psasdu->size, sedh->adr);
@@ -309,12 +309,12 @@ DOBJ *adobj;
 	ald = (LDEVICE*) fld.next;
 	while(ald)
 	{
-		if(ald->ld.options){
+		if(ald->ld.inst){
 			actscadach = create_next_struct_in_list((LIST*) actscadach, sizeof(SCADA_CH));
 
 			// Fill SCADA_CH
 			actscadach->myld = ald;
-			actscadach->ASDUaddr = atoi(ald->ld.options);
+			actscadach->ASDUaddr = atoi(ald->ld.inst);
 
 			printf("ASDU: ready SCADA_CH addr=%d for LDEVICE inst=%s \n", actscadach->ASDUaddr, ald->ld.inst);
 		}
@@ -382,23 +382,26 @@ frame_dobj fr_do;
 		// get VIRT_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
 		sasdu = ((VIRT_ASDU *) &fasdu)->l.next;
 		while(sasdu){
-			adr = atoi(sasdu->myln->ln.pmyld->options);
-			// find logical node type
-			pdm = sasdu->myasdutype->fdmap;
-			while (pdm){
-				// write datatypes by sys msg EP_MSG_NEWDOBJ
-				pdo = pdm->mydobj;
-				fr_do.edh.adr = adr;
-				fr_do.edh.len = sizeof(frame_dobj) - sizeof(ep_data_header);
-				fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
-				fr_do.id = pdm->meterid;
-				strcpy(fr_do.name, pdo->dobj.name);
+			if(sasdu->myln->ln.pmyld) // check if pmyld is not NULL
+			{
+				adr = atoi(sasdu->myln->ln.pmyld->inst);
+				// find logical node type
+				pdm = sasdu->myasdutype->fdmap;
+				while (pdm){
+					// write datatypes by sys msg EP_MSG_NEWDOBJ
+					pdo = pdm->mydobj;
+					fr_do.edh.adr = adr;
+					fr_do.edh.len = sizeof(frame_dobj) - sizeof(ep_data_header);
+					fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
+					fr_do.id = pdm->meterid;
+					strcpy(fr_do.name, pdo->dobj.name);
 
-				// write to endpoint
-				mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
-				usleep(5);	// delay for forming  next event
+					// write to endpoint
+					mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
+					usleep(5);	// delay for forming  next event
 
-				pdm = pdm->l.next;
+					pdm = pdm->l.next;
+				}
 			}
 
 			sasdu = sasdu->l.next;
@@ -438,11 +441,11 @@ char *p, *chld_app;
 	sch = sch->l.next;
 	while(sch){
 
-		printf("\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.options);
+		printf("\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
 
 		// Create config_device
-		chld_app = malloc(strlen(sch->myld->ld.inst) + 1);
-		strcpy(chld_app, sch->myld->ld.inst);
+		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
+		strcpy(chld_app, sch->myld->ld.desc);
 
 		p = chld_app;
 		while((*p != '.') && (*p)) p++;
