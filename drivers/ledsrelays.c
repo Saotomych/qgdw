@@ -139,11 +139,12 @@ static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 {
 	int i;
 	int ret;
-	ret = register_chrdev(127, "ledsrelays", &lr_fops);
+
+	nmajor = 127;
+	ret = register_chrdev(nmajor, "ledsrelays", &lr_fops);
 	if (ret < 0){
 		return ret;
 	}
-	nmajor = 127;
 
     lr_device = pdev;
 

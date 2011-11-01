@@ -24,13 +24,26 @@
 #include <linux/gpio.h>
 #include <linux/timer.h>
 #include <linux/jiffies.h>
+#include <linux/interrupt.h>
+
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
 
 #include "at91_adc.h"
 
+static struct resource *adcmem_rc;
+static struct resource *adcirq_rc;
+static unsigned char __iomem *adcio;
+
 static struct platform_device *adc_device;
 int nmajor;
+
+static irqreturn_t get_temper_tc1046(int irq, void *dev_id)
+{
+	printk(KERN_INFO "adc interrupt %d cause\n", irq);
+
+	return IRQ_HANDLED;
+}
 
 static int adc_open(struct inode *inode, struct file *file)
 {
@@ -56,21 +69,38 @@ static int adc_probe (struct platform_device *pdev)	// -- for platform devs
 {
 	int i;
 	int ret;
-	ret = register_chrdev(127, "adc", &adc_fops);
+
+	nmajor = 130;
+	ret = register_chrdev(nmajor, "temper", &adc_fops);
 	if (ret < 0){
 		return ret;
 	}
-	nmajor = 138;
 
     adc_device = pdev;
 
     // Getting resources
+	adcmem_rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	adcirq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+	adcio = ioremap(adcmem_rc->start, 0);
+
+	// Register IRQ
+	request_irq(adcirq_rc->start, get_temper_tc1046, 0, "temper", pdev);
+
+	return 0;
+}
+
+static int __exit adc_remove(struct platform_device *pdev)
+{
+
+	if (platform_get_drvdata(pdev)) {
+		printk(KERN_INFO "driver removed. OK.\n");
+	}else printk(KERN_INFO "driver don't removed. False.\n");
 
 	return 0;
 }
 
 static struct platform_driver adc_driver = {
-//	.remove = __exit_p(tc1046_remove),
+	.remove = __exit_p(adc_remove),
 
 	.driver = {
 		.name = "tc1046",
