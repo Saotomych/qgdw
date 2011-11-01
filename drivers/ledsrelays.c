@@ -179,11 +179,10 @@ static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 
 static int __exit lr_remove(struct platform_device *pdev)
 {
-	struct fb_info *info = platform_get_drvdata(pdev);
 
-	if (info) {
-		printk(KERN_INFO "fb removed. OK.\n");
-	}else printk(KERN_INFO "fb don't removed. False.\n");
+	if (platform_get_drvdata(pdev)) {
+		printk(KERN_INFO "lr removed. OK.\n");
+	}else printk(KERN_INFO "lr don't removed. False.\n");
 
 	return 0;
 }
@@ -222,6 +221,6 @@ static void __exit lr_exit(void)
 module_init(lr_init);
 module_exit(lr_exit);
 
-MODULE_AUTHOR("alex AAV");
+MODULE_AUTHOR("Alex AVAlon");
 MODULE_SUPPORTED_DEVICE("ledsrelays");
 MODULE_LICENSE("GPL");

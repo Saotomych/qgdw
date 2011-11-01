@@ -988,7 +988,7 @@ static void __exit am160160_fb_exit(void)
 module_init(am160160_fb_init);
 module_exit(am160160_fb_exit);
 
-MODULE_AUTHOR("alex AAV");
+MODULE_AUTHOR("Alex AVAlon");
 //MODULE DESCRIPTION("driver for am160160 based by uc1698 or st7529");
 MODULE_SUPPORTED_DEVICE("am160160");
 MODULE_LICENSE("GPL");
