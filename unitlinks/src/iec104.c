@@ -163,6 +163,8 @@ uint16_t iec104_config_read(const char *file_name)
 		return RES_UNKNOWN;
 	}
 
+	fclose(cfg_file);
+
 	if(ep_num)
 		return RES_SUCCESS;
 	else
