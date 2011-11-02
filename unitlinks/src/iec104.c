@@ -533,6 +533,15 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			break;
 
+		case EP_MSG_DCOLL_START:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+
+			iec104_comm_inter_send(ep_ext);
+
+			break;
+
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
@@ -551,7 +560,32 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
 #endif
+
+			// initiate data transfer stop from all connected devices
+			for(i=0; i<MAXEP; i++)
+			{
+				if(ep_exts[i] && ep_ext->host_type == IEC_HOST_MASTER)
+				{
+					iec104_frame_u_send(APCI_U_STOPDT_ACT, ep_exts[i], DIRDN);
+
+					ep_exts[i]->u_cmd = APCI_U_STOPDT_ACT;
+				}
+			}
+
+			iec104_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
+
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
+#endif
+
 			appexit = 1;
+
+			break;
+
+		default:
+#ifdef _DEBUG
+			printf("%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+#endif
 
 			break;
 		}
@@ -621,33 +655,11 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			break;
 
-		case EP_MSG_QUIT:
-#ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT received. Address = all.\n", APP_NAME);
-#endif
-
-			// initiate data transfer stop from all connected devices
-			for(i=0; i<MAXEP; i++)
-			{
-				if(ep_exts[i] && ep_ext->host_type == IEC_HOST_MASTER)
-				{
-					iec104_frame_u_send(APCI_U_STOPDT_ACT, ep_exts[i], DIRDN);
-
-					ep_exts[i]->u_cmd = APCI_U_STOPDT_ACT;
-				}
-			}
-
-			iec104_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
-
-#ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
-#endif
-
-			appexit = 1;
-
-			break;
-
 		default:
+#ifdef _DEBUG
+			printf("%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+#endif
+
 			break;
 		}
 	}
@@ -1228,10 +1240,7 @@ uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	if(res == RES_SUCCESS)
 	{
-		if(res == RES_SUCCESS)
-		{
-			ep_ext->vr = (ep_ext->vr + 1) % 32768;
-		}
+		ep_ext->vr = (ep_ext->vr + 1) % 32768;
 
 		switch(iec_asdu->type)
 		{

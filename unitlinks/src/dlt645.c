@@ -23,8 +23,7 @@ static uint32_t		 	recv_buff_len = 0;			/* used length of receive frame buffer *
 /* Data collection variables */
 static time_t			timer_dcoll = 0;			/* data collection timer */
 static uint16_t			t_dcoll_p = DCOLL_PER;		/* period for data collection */
-static uint16_t			t_dcoll_d = DCOLL_DELAY;	/* delay for data collection start */
-static uint8_t			dcoll_stopped = 1;			/* data collection state sign */
+static uint8_t			dcoll_stopped = 1;			/* data collection state flag */
 static int32_t			dcoll_ep_idx = -1;			/* current ep_ext index collector working with */
 static int32_t			dcoll_data_idx = -1;		/* current data identifier array's index collector working with */
 
@@ -54,10 +53,6 @@ int main(int argc, char *argv[])
 
 	signal(SIGALRM, dlt645_catch_alarm);
 	alarm(alarm_t);
-
-	// start data collecting timer with delay for devices initialization
-	timer_dcoll = time(NULL) + t_dcoll_d;
-	dcoll_stopped = 0;
 
 #ifdef _DEBUG
 	printf("%s: Waiting for end-point initialization end event...\n", APP_NAME);
@@ -590,6 +585,37 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			break;
 
+		case EP_MSG_DCOLL_START:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+
+			if(dcoll_stopped) // do it only if data collection is stopped
+			{
+				// allow data collection
+				dcoll_stopped = 0;
+
+				// start data collection
+				dlt645_collect_data();
+			}
+
+			break;
+
+		case EP_MSG_DCOLL_STOP:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_DCOLL_STOP received. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+
+			// disable data collection
+			dcoll_stopped = 1;
+			timer_dcoll = 0;
+
+			// reset indexes
+			dcoll_ep_idx = -1;
+			dcoll_data_idx = -1;
+
+			break;
+
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
@@ -603,7 +629,21 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
 #endif
+
+			dlt645_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
+
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
+#endif
+
 			appexit = 1;
+
+			break;
+
+		default:
+#ifdef _DEBUG
+			printf("%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+#endif
 
 			break;
 		}
@@ -654,22 +694,11 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			break;
 
-		case EP_MSG_QUIT:
-#ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
-#endif
-
-			dlt645_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
-
-#ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
-#endif
-
-			appexit = 1;
-
-			break;
-
 		default:
+#ifdef _DEBUG
+			printf("%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+#endif
+
 			break;
 		}
 	}

@@ -118,6 +118,14 @@ int ret = 0;
 	return ret;
 }
 
+void send_sys_msg(int adr, int msg){
+ep_data_header edh;
+	edh.adr = adr;
+	edh.sys_msg = msg;
+	edh.len = 0;
+	mf_toendpoint((char*) &edh, sizeof(ep_data_header), adr, DIRDN);
+}
+
 int rcvdata(int len){
 char *buff, *sendbuff;
 int adr, dir, rdlen, fullrdlen;
@@ -402,6 +410,8 @@ frame_dobj fr_do;
 
 					pdm = pdm->l.next;
 				}
+
+				send_sys_msg(adr, EP_MSG_DCOLL_START);
 			}
 
 			sasdu = sasdu->l.next;

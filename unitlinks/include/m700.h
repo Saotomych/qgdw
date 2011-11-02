@@ -49,7 +49,6 @@ extern "C" {
 
 
 #define DCOLL_PER				5		/* default data collection period */
-#define DCOLL_DELAY				5		/* default data collection start delay */
 
 
 #define M700_ASDU_ADR			0
