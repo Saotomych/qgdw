@@ -28,12 +28,18 @@
 
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
+#include <mach/at91_adc.h>
+#include <mach/io.h>
 
-#include "at91_adc.h"
+#include "AT91SAM9260_inc.h"
 
 static struct resource *adcmem_rc;
 static struct resource *adcirq_rc;
 static unsigned char __iomem *adcio;
+
+#define u32_io unsigned int __iomem
+
+//static unsigned long ADC_OFFSET;
 
 static struct platform_device *adc_device;
 int nmajor;
@@ -54,21 +60,42 @@ static int adc_open(struct inode *inode, struct file *file)
 
 static ssize_t adc_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
 {
-int ret = 0;
+char s[32];
+int l, i;
 
-	return ret;
+	sprintf(s, "read status: 0x%04X\n", adcio[ADC_SR]);
+	l = strlen(s);
+	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
+
+	return l;
 }
+
+static ssize_t adc_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
+{
+	printk(KERN_INFO "file_write (0x%X)\n",file);
+
+	return length;
+}
+
+static int adc_release(struct inode *inode, struct file *file)
+{
+	printk(KERN_INFO "file_release (0x%X)\n",file);
+
+	return 0;
+}
+
 
 static struct file_operations adc_fops = {
 	.owner	= THIS_MODULE,
 	.open	= adc_open,
 	.read	= adc_read,
+	.write	= adc_write,
+	.release  = adc_release,
 };
 
 static int adc_probe (struct platform_device *pdev)	// -- for platform devs
 {
-	int i;
-	int ret;
+int ret;
 
 	nmajor = 130;
 	ret = register_chrdev(nmajor, "temper", &adc_fops);
@@ -80,11 +107,41 @@ static int adc_probe (struct platform_device *pdev)	// -- for platform devs
 
     // Getting resources
 	adcmem_rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	adcirq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
-	adcio = ioremap(adcmem_rc->start, 0);
+	printk(KERN_INFO "temper probe mem = 0x%X\n", adcmem_rc->start);
+
+	adcirq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	printk(KERN_INFO "temper probe irq = %d\n", adcirq_rc->start);
+
+	if (!request_mem_region((unsigned long) adcmem_rc->start, adcmem_rc->end - adcmem_rc->start + 1, "temper")) return -EBUSY;
+	adcio = ioremap(adcmem_rc->start, adcmem_rc->end - adcmem_rc->start);
+	printk(KERN_INFO "temper probe memio = 0x%X\n", adcio);
 
 	// Register IRQ
-	request_irq(adcirq_rc->start, get_temper_tc1046, 0, "temper", pdev);
+	ret = request_irq(adcirq_rc->start, get_temper_tc1046, 0, "temper", pdev);
+
+	// *** ADC Setup, channel 2, 10 bit etc ***
+	// Software reset
+	writel(AT91C_ADC_TRGEN_DIS |
+			AT91C_ADC_LOWRES_10_BIT |
+			AT91C_ADC_SLEEP_NORMAL_MODE |
+			31 << 8 | 12 << 16 | 0 << 24, adcio + ADC_MR);
+	ret = readl(adcio + ADC_MR);
+	printk(KERN_INFO "adc mode = 0x%X\n", ret);
+	// Channel enable
+	writel(AT91C_ADC_CH2, adcio + ADC_CHER);
+	// Interrupt enable
+	writel(AT91C_ADC_EOC2, adcio + ADC_IER);
+	// Start conversion
+	writel(AT91C_ADC_START, adcio + ADC_CR);
+
+	ret = readl(adcio + ADC_MR);
+	printk(KERN_INFO "adc mode = 0x%X\n", ret);
+	ret = readl(adcio + ADC_CHSR);
+	printk(KERN_INFO "adc chs = 0x%X\n", ret);
+	ret = readl(adcio + ADC_IMR);
+	printk(KERN_INFO "adc ints = 0x%X\n", ret);
+	ret = readl(adcio + ADC_SR);
+	printk(KERN_INFO "adc status = 0x%X\n", ret);
 
 	return 0;
 }
@@ -103,7 +160,7 @@ static struct platform_driver adc_driver = {
 	.remove = __exit_p(adc_remove),
 
 	.driver = {
-		.name = "tc1046",
+		.name = "adc",
 		.owner = THIS_MODULE,
 	},
 };
@@ -113,20 +170,24 @@ static int __init tc1046_init(void)
 {
 	int ret;
 
+	printk(KERN_INFO "temper init\n");
+
 	ret = platform_driver_probe(&adc_driver, adc_probe);
-//
-//	if (ret) {
-//		// В случае когда девайс еще не добавлен
-//		platform_driver_unregister(&lr_driver);
-//		return -ENODEV;
-//	}
+
+	printk(KERN_INFO "temper after the probe %d\n", ret);
+
+	if (ret) {
+		// В случае когда девайс еще не добавлен
+		platform_driver_unregister(&adc_driver);
+		return -ENODEV;
+	}
 
 	return 0;
 }
 
 static void __exit tc1046_exit(void)
 {
-	unregister_chrdev(nmajor, "tc1046");
+	unregister_chrdev(nmajor, "temper");
 	platform_driver_unregister(&adc_driver);
 	printk(KERN_INFO "device_closed\n");
 }
@@ -135,5 +196,5 @@ module_init(tc1046_init);
 module_exit(tc1046_exit);
 
 MODULE_AUTHOR("Alex AVAlon");
-MODULE_SUPPORTED_DEVICE("ledsrelays");
+MODULE_SUPPORTED_DEVICE("temper");
 MODULE_LICENSE("GPL");
