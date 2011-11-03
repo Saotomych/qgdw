@@ -29,6 +29,7 @@
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
 #include <mach/at91_adc.h>
+#include <mach/at91_pmc.h>
 #include <mach/io.h>
 
 #include "AT91SAM9260_inc.h"
@@ -46,7 +47,10 @@ int nmajor;
 
 static irqreturn_t get_temper_tc1046(int irq, void *dev_id)
 {
-	printk(KERN_INFO "adc interrupt %d cause\n", irq);
+
+	printk(KERN_INFO "adc mask int = 0x%X\n", readl(adcio + ADC_IMR));
+	printk(KERN_INFO "adc status in int = 0x%X\n", readl(adcio + ADC_SR));
+	printk(KERN_INFO "adc data = 0x%X\n", readl(adcio + ADC_CDR2));
 
 	return IRQ_HANDLED;
 }
@@ -63,7 +67,7 @@ static ssize_t adc_read(struct file *file, char __user *buffer, size_t length, l
 char s[32];
 int l, i;
 
-	sprintf(s, "read status: 0x%04X\n", adcio[ADC_SR]);
+	sprintf(s, "read status: 0x%04X\n", readl(adcio + ADC_SR));
 	l = strlen(s);
 	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
 
@@ -116,23 +120,26 @@ int ret;
 	adcio = ioremap(adcmem_rc->start, adcmem_rc->end - adcmem_rc->start);
 	printk(KERN_INFO "temper probe memio = 0x%X\n", adcio);
 
+	// Enable MCK to ADC
+	at91_sys_write(AT91_PMC_PCER, 1 << adcirq_rc->start);
+
 	// Register IRQ
 	ret = request_irq(adcirq_rc->start, get_temper_tc1046, 0, "temper", pdev);
 
+	// Control of MCK to ADC
+	ret = at91_sys_read(AT91_PMC_PCSR);
+	printk(KERN_INFO "pmc periph clock enabled = 0x%X\n", ret);
+
 	// *** ADC Setup, channel 2, 10 bit etc ***
-	// Software reset
 	writel(AT91C_ADC_TRGEN_DIS |
 			AT91C_ADC_LOWRES_10_BIT |
 			AT91C_ADC_SLEEP_NORMAL_MODE |
-			31 << 8 | 12 << 16 | 0 << 24, adcio + ADC_MR);
+			(63 << 8) | (9 << 16) | (0xF << 24), adcio + ADC_MR);
 	ret = readl(adcio + ADC_MR);
-	printk(KERN_INFO "adc mode = 0x%X\n", ret);
 	// Channel enable
 	writel(AT91C_ADC_CH2, adcio + ADC_CHER);
 	// Interrupt enable
 	writel(AT91C_ADC_EOC2, adcio + ADC_IER);
-	// Start conversion
-	writel(AT91C_ADC_START, adcio + ADC_CR);
 
 	ret = readl(adcio + ADC_MR);
 	printk(KERN_INFO "adc mode = 0x%X\n", ret);
@@ -141,7 +148,10 @@ int ret;
 	ret = readl(adcio + ADC_IMR);
 	printk(KERN_INFO "adc ints = 0x%X\n", ret);
 	ret = readl(adcio + ADC_SR);
-	printk(KERN_INFO "adc status = 0x%X\n", ret);
+	printk(KERN_INFO "adc status in probe = 0x%X\n", ret);
+
+	// Start conversion
+	writel(AT91C_ADC_START, adcio + ADC_CR);
 
 	return 0;
 }
