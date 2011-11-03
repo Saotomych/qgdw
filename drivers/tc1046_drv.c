@@ -42,7 +42,10 @@ static unsigned char __iomem *adcio;
 
 static unsigned int lastdata;
 static signed int tmpc;
+
+#ifdef DEBUG
 volatile static char tmpc_rdy;
+#endif
 
 #define u32_io unsigned int __iomem
 
@@ -68,9 +71,10 @@ unsigned int imask, stat, dat;
 	// 6250 mkV - it's weight 1 C
 	// 424000 mkV - it's zero C
 	tmpc = ((3222 * tmpc) - 424000)/6250;
-	tmpc_rdy = 1;
 
 #ifdef DEBUG
+	tmpc_rdy = 1;	// For correct `cat /dev/temper` reading
+
 	imask = readl(adcio + ADC_IMR);
 	printk(KERN_INFO "tc1046: adc mask int = 0x%04X\n", imask);
 	printk(KERN_INFO "tc1046: adc status in int = 0x%04X\n", stat);
@@ -103,14 +107,16 @@ static ssize_t adc_read(struct file *file, char __user *buffer, size_t length, l
 char s[32];
 int l, i;
 
-	if (!tmpc_rdy) return 0;
-	tmpc_rdy = 0;
 
 #ifdef DEBUG
+	// In Debug mode you can read tmpc by cat /dev/temper as string
+	if (!tmpc_rdy) return 0;
+	tmpc_rdy = 0;
 	sprintf(s, "tc1046: 0x%04d, %d C\n", lastdata, tmpc);
 	l = strlen(s);
 	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
 #else
+	// In Working mode you can read tmpc as signed int
 	l = 4;
 	s[0] = tmpc;
 	s[1] = tmpc >> 8;
