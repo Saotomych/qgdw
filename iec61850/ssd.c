@@ -104,22 +104,16 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "inst")) flastld->ld.inst = par;
 			else
 			if (strstr((char*) key, "desc")) flastld->ld.desc = par;
-			else
-			if (strstr((char*) key, "asdu")) flastld->ld.options = par;
 		}
 	}while(p);
 
-	printf("IEC61850: new LDevice: inst=%s desc=%s options=%s\n",
-			flastld->ld.inst, flastld->ld.desc, flastld->ld.options);
+	printf("IEC61850: new LDevice: inst=%s desc=%s\n", flastld->ld.inst, flastld->ld.desc);
 }
 
 void ssd_create_ln(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
 	flastln = create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
-	//DTYPE *adtype;
-	//ATTR *dattr;
-	//char *p;
 
 	// Parse parameters for ln
 	p = (char*) pTag;
@@ -138,8 +132,8 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("IEC61850: new LN: class=%s inst=%s iedname=%s ldclass=%s options=%s\n",
-			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst, flastln->ln.options);
+	printf("IEC61850: new LN: class=%s inst=%s iedname=%s ldinst=%s\n",
+			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);
 }
 
 void ssd_create_lntype(const char *pTag){			// call parse ln

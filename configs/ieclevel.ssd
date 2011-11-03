@@ -5,10 +5,10 @@
   <Substation name="S12" desc="SPb">
     <VoltageLevel name="VL1">
       <Bay name="B1">
-        <LNode lnInst="99" lnClass="MMXU" iedName="scada"         ldInst="unitlink-iec104.phy_tcp.0" lnType="MMXUa" />
-        <LNode lnInst="0"  lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-iec104.phy_tcp.1" lnType="MMXUa" />
-        <LNode lnInst="1"  lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-dlt645.phy_tty.2" lnType="MMXUa" />
-        <LNode lnInst="3"  lnClass="MMXU" iedName="m700.place001" ldInst="unitlink-m700.phy_tty.3"   lnType="MMXUa" />
+        <LNode lnInst="99" lnClass="MMXU" iedName="scada"         ldInst="55555" lnType="MMXUa" />
+        <LNode lnInst="0"  lnClass="MMXU" iedName="m700.place001" ldInst="967"   lnType="MMXUa" />
+        <LNode lnInst="1"  lnClass="MMXU" iedName="m700.place001" ldInst="11111" lnType="MMXUa" />
+        <LNode lnInst="2"  lnClass="MMXU" iedName="m700.place001" ldInst="33333" lnType="MMXUa" />
       </Bay>
     </VoltageLevel>
   </Substation>
@@ -16,7 +16,7 @@
     <AccessPoint name="AP1" desc="">
       <Server>
         <Authentication />
-        <LDevice asdu="55555" inst="unitlink-iec104.phy_tcp.0" desc="">
+        <LDevice inst="55555" desc="unitlink-iec104">
           <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
         </LDevice>
       </Server>
@@ -26,13 +26,13 @@
     <AccessPoint name="AP2" desc="">
       <Server>
         <Authentication />
-        <LDevice asdu="967" inst="unitlink-iec104.phy_tcp.1" desc="">
+        <LDevice inst="967" desc="unitlink-iec104">
           <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
         </LDevice>
-        <LDevice asdu="11111" inst="unitlink-dlt645.phy_tty.2" desc="">
+        <LDevice inst="11111" desc="unitlink-dlt645">
           <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
         </LDevice>
-        <LDevice asdu="33333" inst="unitlink-m700.phy_tty.3" desc="">
+        <LDevice inst="33333" desc="unitlink-m700">
           <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
         </LDevice>
       </Server>

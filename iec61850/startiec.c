@@ -34,6 +34,11 @@ struct stat fst;
 	// Loading main config file
 	fssd = fopen("/rw/mx00/configs/ieclevel.ssd", "r");
 	ssdlen = fread(SCLfile, 1, (size_t) (fst.st_size), fssd);
+	if(!strstr(SCLfile, "</SCL>"))
+	{
+		printf("IEC61850: SCL is incomplete\n");
+		exit(1);
+	}
 	if (ssdlen == fst.st_size) XMLSelectSource(SCLfile);
 	else ret = -1;
 
