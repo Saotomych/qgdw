@@ -40,7 +40,8 @@ static struct resource *adcmem_rc;
 static struct resource *adcirq_rc;
 static unsigned char __iomem *adcio;
 
-static unsigned int lastdata;
+static unsigned int lastdata
+static signed int tmpc;
 
 #define u32_io unsigned int __iomem
 
@@ -58,9 +59,9 @@ unsigned int imask, stat, dat;
 
 #ifdef DEBUG
 	imask = readl(adcio + ADC_IMR);
-	printk(KERN_INFO "dc1046: adc mask int = 0x%04X\n", imask);
-	printk(KERN_INFO "dc1046: adc status in int = 0x%04X\n", stat);
-	printk(KERN_INFO "dc1046: adc data = 0x%03X\n", dat);
+	printk(KERN_INFO "tc1046: adc mask int = 0x%04X\n", imask);
+	printk(KERN_INFO "tc1046: adc status in int = 0x%04X\n", stat);
+	printk(KERN_INFO "tc1046: adc data = 0x%03X\n", dat);
 #endif
 
 	return IRQ_HANDLED;
@@ -69,7 +70,7 @@ unsigned int imask, stat, dat;
 static int adc_open(struct inode *inode, struct file *file)
 {
 #ifdef DEBUG
-	printk(KERN_INFO "dc1046: file_open (0x%X)\n",file);
+	printk(KERN_INFO "tc1046: file_open (0x%X)\n",file);
 #endif
     return 0;
 }
@@ -79,9 +80,18 @@ static ssize_t adc_read(struct file *file, char __user *buffer, size_t length, l
 char s[32];
 int l, i;
 
-	sprintf(s, "dc1046: temperature %d\n", lastdata);
+#ifdef DEBUG
+	sprintf(s, "tc1046: %04d, %d C\n", lastdata, tmpc);
 	l = strlen(s);
 	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
+#else
+	l = 4;
+	s[0] = tmpc;
+	s[1] = tmpc >> 8;
+	s[2] = tmpc >> 16;
+	s[3] = tmpc >> 24;
+	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
+#endif
 
 	// Start AD conversion for get actual temperature
 	writel(AT91C_ADC_START, adcio + ADC_CR);
@@ -92,7 +102,7 @@ int l, i;
 static ssize_t adc_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
 {
 #ifdef DEBUG
-	printk(KERN_INFO "dc1046: file_write (0x%X)\n",file);
+	printk(KERN_INFO "tc1046: file_write (0x%X)\n",file);
 #endif
 	return length;
 }
@@ -100,7 +110,7 @@ static ssize_t adc_write(struct file *file, const char __user *buffer, size_t le
 static int adc_release(struct inode *inode, struct file *file)
 {
 #ifdef DEBUG
-	printk(KERN_INFO "dc1046: file_release (0x%X)\n",file);
+	printk(KERN_INFO "tc1046: file_release (0x%X)\n",file);
 #endif
 	return 0;
 }
@@ -154,17 +164,17 @@ int ret;
 	writel(AT91C_ADC_EOC2, adcio + ADC_IER);
 
 #ifdef DEBUG
-	printk(KERN_INFO "dc1046: irq = %d\n", adcirq_rc->start);
-	printk(KERN_INFO "dc1046: phys mem = 0x%X\n", adcmem_rc->start);
-	printk(KERN_INFO "dc1046: io mem = 0x%X\n", adcio);
+	printk(KERN_INFO "tc1046: irq = %d\n", adcirq_rc->start);
+	printk(KERN_INFO "tc1046: phys mem = 0x%X\n", adcmem_rc->start);
+	printk(KERN_INFO "tc1046: io mem = 0x%X\n", adcio);
 	ret = readl(adcio + ADC_MR);
-	printk(KERN_INFO "dc1046: adc mode = 0x%X\n", ret);
+	printk(KERN_INFO "tc1046: adc mode = 0x%X\n", ret);
 	ret = readl(adcio + ADC_IMR);
-	printk(KERN_INFO "dc1046: adc int set = 0x%X\n", ret);
+	printk(KERN_INFO "tc1046: adc int set = 0x%X\n", ret);
 	ret = readl(adcio + ADC_CHSR);
-	printk(KERN_INFO "dc1046: adc channel status = 0x%X\n", ret);
+	printk(KERN_INFO "tc1046: adc channel status = 0x%X\n", ret);
 	ret = readl(adcio + ADC_SR);
-	printk(KERN_INFO "dc1046: adc status = 0x%X\n", ret);
+	printk(KERN_INFO "tc1046: adc status = 0x%X\n", ret);
 #endif
 
 	// Start first conversion
@@ -177,8 +187,8 @@ static int __exit adc_remove(struct platform_device *pdev)
 {
 
 	if (platform_get_drvdata(pdev)) {
-		printk(KERN_INFO "dc1046: driver removed. OK.\n");
-	}else printk(KERN_INFO "dc1046: driver don't removed. False.\n");
+		printk(KERN_INFO "tc1046: driver removed. OK.\n");
+	}else printk(KERN_INFO "tc1046: driver don't removed. False.\n");
 
 	return 0;
 }
@@ -198,7 +208,7 @@ static int __init tc1046_init(void)
 	int ret;
 
 #ifdef DEBUG
-	printk(KERN_INFO "temper init\n");
+	printk(KERN_INFO "tc1046 init\n");
 #endif
 
 	ret = platform_driver_probe(&adc_driver, adc_probe);
@@ -206,8 +216,11 @@ static int __init tc1046_init(void)
 	if (ret) {
 		// В случае когда девайс еще не добавлен
 		platform_driver_unregister(&adc_driver);
+		printk(KERN_INFO "tc1046: probe error\n");
 		return -ENODEV;
 	}
+
+	printk(KERN_INFO "tc1046: OK\n");
 
 	return 0;
 }
@@ -218,7 +231,7 @@ static void __exit tc1046_exit(void)
 	platform_driver_unregister(&adc_driver);
 
 #ifdef DEBUG
-	printk(KERN_INFO "device_closed\n");
+	printk(KERN_INFO "tc1046: device_closed\n");
 #endif
 }
 
