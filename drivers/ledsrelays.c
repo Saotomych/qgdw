@@ -44,6 +44,8 @@ static unsigned char __iomem *io_dat[4];
 static unsigned char realstate[32];		// реальное состояние и тики мигания светодиода
 static struct platform_device *lr_device;
 
+volatile static char fexit = 0;
+
 int nmajor;
 
 static int lr_open(struct inode *inode, struct file *file)
@@ -132,7 +134,8 @@ unsigned char leds, mask;
 	*io_dat[led2] = leds;
 
 	counter--;
-	mod_timer(&led_timer, jiffies + HZ/TICKSMAX);
+
+	if (!fexit)	mod_timer(&led_timer, jiffies + HZ/TICKSMAX);
 }
 
 static int lr_probe (struct platform_device *pdev)	// -- for platform devs
@@ -214,6 +217,9 @@ static int __init lr_init(void)
 
 static void __exit lr_exit(void)
 {
+	fexit = 1;
+	del_timer_sync(&led_timer);
+
 	unregister_chrdev(nmajor, "ledsrelays");
 	platform_driver_unregister(&lr_driver);
 	printk(KERN_INFO "device_closed\n");

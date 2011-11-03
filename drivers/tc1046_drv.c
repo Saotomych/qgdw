@@ -40,8 +40,9 @@ static struct resource *adcmem_rc;
 static struct resource *adcirq_rc;
 static unsigned char __iomem *adcio;
 
-static unsigned int lastdata
+static unsigned int lastdata;
 static signed int tmpc;
+volatile static char tmpc_rdy;
 
 #define u32_io unsigned int __iomem
 
@@ -55,16 +56,38 @@ static irqreturn_t get_temper_tc1046(int irq, void *dev_id)
 unsigned int imask, stat, dat;
 	stat = readl(adcio + ADC_SR);
 	dat = readl(adcio + ADC_CDR2);
+
+	if (stat & AT91C_ADC_OVRE2) return IRQ_HANDLED;
+	if (stat & AT91C_ADC_GOVRE) return IRQ_HANDLED;
+
 	lastdata = dat;
+	tmpc = dat;		// tmpc - signed int
+
+	// Convert HEX to Real temperature
+	// 3222 mkV - it's weight 1 delta of ADC for 3,3 V analog power
+	// 6250 mkV - it's weight 1 C
+	// 424000 mkV - it's zero C
+	tmpc = ((3222 * tmpc) - 424000)/6250;
+	tmpc_rdy = 1;
 
 #ifdef DEBUG
 	imask = readl(adcio + ADC_IMR);
 	printk(KERN_INFO "tc1046: adc mask int = 0x%04X\n", imask);
 	printk(KERN_INFO "tc1046: adc status in int = 0x%04X\n", stat);
 	printk(KERN_INFO "tc1046: adc data = 0x%03X\n", dat);
+	printk(KERN_INFO "tc1046: real data = %d\n", tmpc);
 #endif
 
 	return IRQ_HANDLED;
+}
+
+struct timer_list adc_timer;
+void adc_timer_func(unsigned long data){
+
+	// Start AD conversion for get actual temperature
+	writel(AT91C_ADC_START, adcio + ADC_CR);
+
+	mod_timer(&adc_timer, jiffies + HZ);
 }
 
 static int adc_open(struct inode *inode, struct file *file)
@@ -80,8 +103,11 @@ static ssize_t adc_read(struct file *file, char __user *buffer, size_t length, l
 char s[32];
 int l, i;
 
+	if (!tmpc_rdy) return 0;
+	tmpc_rdy = 0;
+
 #ifdef DEBUG
-	sprintf(s, "tc1046: %04d, %d C\n", lastdata, tmpc);
+	sprintf(s, "tc1046: 0x%04d, %d C\n", lastdata, tmpc);
 	l = strlen(s);
 	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
 #else
@@ -92,9 +118,6 @@ int l, i;
 	s[3] = tmpc >> 24;
 	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
 #endif
-
-	// Start AD conversion for get actual temperature
-	writel(AT91C_ADC_START, adcio + ADC_CR);
 
 	return l;
 }
@@ -157,7 +180,7 @@ int ret;
 	writel(AT91C_ADC_TRGEN_DIS |
 			AT91C_ADC_LOWRES_10_BIT |
 			AT91C_ADC_SLEEP_NORMAL_MODE |
-			(63 << 8) | (9 << 16) | (0xF << 24), adcio + ADC_MR);
+			(127 << 8) | (63 << 16) | (0xF << 24), adcio + ADC_MR);
 	// Channel enable
 	writel(AT91C_ADC_CH2, adcio + ADC_CHER);
 	// Interrupt enable
@@ -177,8 +200,12 @@ int ret;
 	printk(KERN_INFO "tc1046: adc status = 0x%X\n", ret);
 #endif
 
-	// Start first conversion
-	writel(AT91C_ADC_START, adcio + ADC_CR);
+	// Start timer for get count
+	init_timer(&adc_timer);
+	adc_timer.expires = jiffies;
+	adc_timer.data = 0;
+	adc_timer.function = adc_timer_func;
+	add_timer(&adc_timer);
 
 	return 0;
 }
@@ -208,7 +235,7 @@ static int __init tc1046_init(void)
 	int ret;
 
 #ifdef DEBUG
-	printk(KERN_INFO "tc1046 init\n");
+	printk(KERN_INFO "tc1046: init\n");
 #endif
 
 	ret = platform_driver_probe(&adc_driver, adc_probe);
@@ -227,6 +254,15 @@ static int __init tc1046_init(void)
 
 static void __exit tc1046_exit(void)
 {
+	del_timer_sync(&adc_timer);
+
+	free_irq(adcirq_rc->start, adc_device);
+
+	// Disable MCK to ADC
+	at91_sys_write(AT91_PMC_PCDR, 1 << adcirq_rc->start);
+
+	release_mem_region((unsigned long) adcmem_rc->start, adcmem_rc->end - adcmem_rc->start + 1);
+
 	unregister_chrdev(nmajor, "temper");
 	platform_driver_unregister(&adc_driver);
 
