@@ -34,9 +34,13 @@
 
 #include "AT91SAM9260_inc.h"
 
+#define DEBUG
+
 static struct resource *adcmem_rc;
 static struct resource *adcirq_rc;
 static unsigned char __iomem *adcio;
+
+static unsigned int lastdata;
 
 #define u32_io unsigned int __iomem
 
@@ -47,18 +51,26 @@ int nmajor;
 
 static irqreturn_t get_temper_tc1046(int irq, void *dev_id)
 {
+unsigned int imask, stat, dat;
+	stat = readl(adcio + ADC_SR);
+	dat = readl(adcio + ADC_CDR2);
+	lastdata = dat;
 
-	printk(KERN_INFO "adc mask int = 0x%X\n", readl(adcio + ADC_IMR));
-	printk(KERN_INFO "adc status in int = 0x%X\n", readl(adcio + ADC_SR));
-	printk(KERN_INFO "adc data = 0x%X\n", readl(adcio + ADC_CDR2));
+#ifdef DEBUG
+	imask = readl(adcio + ADC_IMR);
+	printk(KERN_INFO "dc1046: adc mask int = 0x%04X\n", imask);
+	printk(KERN_INFO "dc1046: adc status in int = 0x%04X\n", stat);
+	printk(KERN_INFO "dc1046: adc data = 0x%03X\n", dat);
+#endif
 
 	return IRQ_HANDLED;
 }
 
 static int adc_open(struct inode *inode, struct file *file)
 {
-	printk(KERN_INFO "file_open (0x%X)\n",file);
-
+#ifdef DEBUG
+	printk(KERN_INFO "dc1046: file_open (0x%X)\n",file);
+#endif
     return 0;
 }
 
@@ -67,24 +79,29 @@ static ssize_t adc_read(struct file *file, char __user *buffer, size_t length, l
 char s[32];
 int l, i;
 
-	sprintf(s, "read status: 0x%04X\n", readl(adcio + ADC_SR));
+	sprintf(s, "dc1046: temperature %d\n", lastdata);
 	l = strlen(s);
 	for (i=0; i < l; i++) put_user(s[i], (char __user *) (buffer + i));
+
+	// Start AD conversion for get actual temperature
+	writel(AT91C_ADC_START, adcio + ADC_CR);
 
 	return l;
 }
 
 static ssize_t adc_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
 {
-	printk(KERN_INFO "file_write (0x%X)\n",file);
-
+#ifdef DEBUG
+	printk(KERN_INFO "dc1046: file_write (0x%X)\n",file);
+#endif
 	return length;
 }
 
 static int adc_release(struct inode *inode, struct file *file)
 {
-	printk(KERN_INFO "file_release (0x%X)\n",file);
-
+#ifdef DEBUG
+	printk(KERN_INFO "dc1046: file_release (0x%X)\n",file);
+#endif
 	return 0;
 }
 
@@ -111,14 +128,11 @@ int ret;
 
     // Getting resources
 	adcmem_rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	printk(KERN_INFO "temper probe mem = 0x%X\n", adcmem_rc->start);
 
 	adcirq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	printk(KERN_INFO "temper probe irq = %d\n", adcirq_rc->start);
 
 	if (!request_mem_region((unsigned long) adcmem_rc->start, adcmem_rc->end - adcmem_rc->start + 1, "temper")) return -EBUSY;
 	adcio = ioremap(adcmem_rc->start, adcmem_rc->end - adcmem_rc->start);
-	printk(KERN_INFO "temper probe memio = 0x%X\n", adcio);
 
 	// Enable MCK to ADC
 	at91_sys_write(AT91_PMC_PCER, 1 << adcirq_rc->start);
@@ -128,29 +142,32 @@ int ret;
 
 	// Control of MCK to ADC
 	ret = at91_sys_read(AT91_PMC_PCSR);
-	printk(KERN_INFO "pmc periph clock enabled = 0x%X\n", ret);
 
 	// *** ADC Setup, channel 2, 10 bit etc ***
 	writel(AT91C_ADC_TRGEN_DIS |
 			AT91C_ADC_LOWRES_10_BIT |
 			AT91C_ADC_SLEEP_NORMAL_MODE |
 			(63 << 8) | (9 << 16) | (0xF << 24), adcio + ADC_MR);
-	ret = readl(adcio + ADC_MR);
 	// Channel enable
 	writel(AT91C_ADC_CH2, adcio + ADC_CHER);
 	// Interrupt enable
 	writel(AT91C_ADC_EOC2, adcio + ADC_IER);
 
+#ifdef DEBUG
+	printk(KERN_INFO "dc1046: irq = %d\n", adcirq_rc->start);
+	printk(KERN_INFO "dc1046: phys mem = 0x%X\n", adcmem_rc->start);
+	printk(KERN_INFO "dc1046: io mem = 0x%X\n", adcio);
 	ret = readl(adcio + ADC_MR);
-	printk(KERN_INFO "adc mode = 0x%X\n", ret);
-	ret = readl(adcio + ADC_CHSR);
-	printk(KERN_INFO "adc chs = 0x%X\n", ret);
+	printk(KERN_INFO "dc1046: adc mode = 0x%X\n", ret);
 	ret = readl(adcio + ADC_IMR);
-	printk(KERN_INFO "adc ints = 0x%X\n", ret);
+	printk(KERN_INFO "dc1046: adc int set = 0x%X\n", ret);
+	ret = readl(adcio + ADC_CHSR);
+	printk(KERN_INFO "dc1046: adc channel status = 0x%X\n", ret);
 	ret = readl(adcio + ADC_SR);
-	printk(KERN_INFO "adc status in probe = 0x%X\n", ret);
+	printk(KERN_INFO "dc1046: adc status = 0x%X\n", ret);
+#endif
 
-	// Start conversion
+	// Start first conversion
 	writel(AT91C_ADC_START, adcio + ADC_CR);
 
 	return 0;
@@ -160,8 +177,8 @@ static int __exit adc_remove(struct platform_device *pdev)
 {
 
 	if (platform_get_drvdata(pdev)) {
-		printk(KERN_INFO "driver removed. OK.\n");
-	}else printk(KERN_INFO "driver don't removed. False.\n");
+		printk(KERN_INFO "dc1046: driver removed. OK.\n");
+	}else printk(KERN_INFO "dc1046: driver don't removed. False.\n");
 
 	return 0;
 }
@@ -180,11 +197,11 @@ static int __init tc1046_init(void)
 {
 	int ret;
 
+#ifdef DEBUG
 	printk(KERN_INFO "temper init\n");
+#endif
 
 	ret = platform_driver_probe(&adc_driver, adc_probe);
-
-	printk(KERN_INFO "temper after the probe %d\n", ret);
 
 	if (ret) {
 		// В случае когда девайс еще не добавлен
@@ -199,7 +216,10 @@ static void __exit tc1046_exit(void)
 {
 	unregister_chrdev(nmajor, "temper");
 	platform_driver_unregister(&adc_driver);
+
+#ifdef DEBUG
 	printk(KERN_INFO "device_closed\n");
+#endif
 }
 
 module_init(tc1046_init);
