@@ -44,6 +44,8 @@ static unsigned char __iomem *io_dat[4];
 static unsigned char realstate[32];		// реальное состояние и тики мигания светодиода
 static struct platform_device *lr_device;
 
+volatile static char fexit = 0;
+
 int nmajor;
 
 static int lr_open(struct inode *inode, struct file *file)
@@ -132,18 +134,20 @@ unsigned char leds, mask;
 	*io_dat[led2] = leds;
 
 	counter--;
-	mod_timer(&led_timer, jiffies + HZ/TICKSMAX);
+
+	if (!fexit)	mod_timer(&led_timer, jiffies + HZ/TICKSMAX);
 }
 
 static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 {
 	int i;
 	int ret;
-	ret = register_chrdev(127, "ledsrelays", &lr_fops);
+
+	nmajor = 127;
+	ret = register_chrdev(nmajor, "ledsrelays", &lr_fops);
 	if (ret < 0){
 		return ret;
 	}
-	nmajor = 127;
 
     lr_device = pdev;
 
@@ -179,11 +183,10 @@ static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 
 static int __exit lr_remove(struct platform_device *pdev)
 {
-	struct fb_info *info = platform_get_drvdata(pdev);
 
-	if (info) {
-		printk(KERN_INFO "fb removed. OK.\n");
-	}else printk(KERN_INFO "fb don't removed. False.\n");
+	if (platform_get_drvdata(pdev)) {
+		printk(KERN_INFO "lr removed. OK.\n");
+	}else printk(KERN_INFO "lr don't removed. False.\n");
 
 	return 0;
 }
@@ -214,6 +217,9 @@ static int __init lr_init(void)
 
 static void __exit lr_exit(void)
 {
+	fexit = 1;
+	del_timer_sync(&led_timer);
+
 	unregister_chrdev(nmajor, "ledsrelays");
 	platform_driver_unregister(&lr_driver);
 	printk(KERN_INFO "device_closed\n");
@@ -222,6 +228,6 @@ static void __exit lr_exit(void)
 module_init(lr_init);
 module_exit(lr_exit);
 
-MODULE_AUTHOR("alex AAV");
+MODULE_AUTHOR("Alex AVAlon");
 MODULE_SUPPORTED_DEVICE("ledsrelays");
 MODULE_LICENSE("GPL");
