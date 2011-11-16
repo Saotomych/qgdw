@@ -108,28 +108,25 @@ uint16_t asdu_map_read(asdu_map **m_list, const char *file_name, const char *app
 
 	map_file = fopen(file_name, "r");
 
-	if(map_file)
+	if(!map_file) return RES_NOT_FOUND;
+
+	map_num = 0;
+
+	while(fgets(r_buff, 255, map_file))
 	{
-		map_num = 0;
+		if(*r_buff == '#') continue;
 
-		while(fgets(r_buff, 255, map_file))
-		{
-			if(*r_buff == '#') continue;
+		if(num_base == DEC_BASE)
+			sscanf(r_buff, "%d %d %s", &proto_id, &base_id, name);
+		else
+			sscanf(r_buff, "%x %d %s", &proto_id, &base_id, name);
 
-			if(num_base == DEC_BASE)
-				sscanf(r_buff, "%d %d %s", &proto_id, &base_id, name);
-			else
-				sscanf(r_buff, "%x %d %s", &proto_id, &base_id, name);
+		asdu_add_map_item(m_list, proto_id, base_id, name, app_name, num_base);
 
-			asdu_add_map_item(m_list, proto_id, base_id, name, app_name, num_base);
-
-			map_num++;
-		}
+		map_num++;
 	}
-	else
-	{
-		return RES_UNKNOWN;
-	}
+
+	fclose(map_file);
 
 	if(map_num)
 		return RES_SUCCESS;
