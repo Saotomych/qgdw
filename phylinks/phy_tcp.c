@@ -141,6 +141,7 @@ int set_listen(struct phy_route *pr){
 int ret;
 	printf("Phylink TCP/IP: Listen for connect %s:%d\n", inet_ntoa(pr->sai.sin_addr), htons(pr->sai.sin_port));
 // Bind привязывает к локальному адресу
+	pr->sailist.sin_family = pr->sai.sin_family;
 	pr->sailist.sin_addr.s_addr = INADDR_ANY;
 	pr->sailist.sin_port = pr->sai.sin_port;
 	pr->lstsocdesc = pr->socdesc;
