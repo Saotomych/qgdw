@@ -300,21 +300,21 @@ char ascibuf[300];
 
 			// check if phy_route was found
 			if (!pr){
-				printf("Phy TTY: This connect not found\n");
+				printf("Phylink TTY: This connect not found\n");
 				offset += edh->len;
 				continue;
 			}
 
 			tai.buf = inoti_buf + offset;	// set pointer to begin data
 
-			printf("Phy TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
-			printf("Phy TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
+			printf("Phylink TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
+			printf("Phylink TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
 
 			switch(edh->sys_msg){
 			case EP_USER_DATA:	// Write data to socket
 					if(rdlen-offset >= edh->len) {
 						Hex2ASCII(tai.buf, ascibuf, edh->len);
-						printf("Phy TTY: Buffer: %s\n", ascibuf);
+						printf("Phylink TTY: Buffer: %s\n", ascibuf);
 
 //						ty = &tdev[pr->devindex];
 //						printf("Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
