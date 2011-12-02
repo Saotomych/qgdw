@@ -45,5 +45,6 @@ extern int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct);
 extern int mf_readbuffer(char *buf, int len, int *addr, int *direct);
 
 extern int mf_waitevent(char *buf, int len, int ms_delay);
+extern int mf_testrunningapp(char *name);
 
 #endif /* MULTIFIFO_H_ */

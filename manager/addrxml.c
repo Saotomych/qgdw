@@ -12,12 +12,17 @@
 #include "../common/multififo.h"
 #include "autoconfig.h"
 
-uint configstep;
 
 u16 usasdu[MAXEP];
 u08 maxfixasdu;
 
+char mac_adr[18] = {0};
+
 static u08 Encoding, EndScript;
+
+uint16_t actasdu = 100;
+uint16_t actmaster_inst = 0;
+uint16_t actslave_inst = 100;
 
 int ishex(char *p){
 	if ((*p >= '0') && (*p <='9')) return TRUE;
@@ -36,14 +41,60 @@ int i;
 	return FALSE;
 }
 
+int get_mac(char *file_name)
+{
+	int ret = -1;
+	char *macbuf, *p;
+	FILE *f;
+	struct stat fst;
+	uint32_t adrlen;
+
+	f = fopen(file_name, "r");
+	if (f){
+		// get size of setmacaddr file
+		stat(file_name, &fst);
+
+		macbuf = malloc(fst.st_size + 1);
+		adrlen = fread(macbuf, 1, (size_t) (fst.st_size), f);
+		macbuf[fst.st_size] = 0;
+	}
+	else
+	{
+		printf("Config Manager: \"%s\" file cannot be opened\n", file_name);
+		return ret;
+	}
+
+	fclose(f);
+
+	p = macbuf;
+
+	// Find, test & copy MAC to macbuf
+	while(*p != ':' && *p != '\0') p++;
+
+	if(p != '\0')
+	{
+		p -= 2;
+
+		if(ismac(p))
+		{
+			memcpy(mac_adr, p, 17);
+			ret = 0;
+		}
+	}
+
+	free(macbuf);
+
+	return ret;
+}
+
 void lowrecordinit (LOWREC *lr){
 	lr->sai.sin_addr.s_addr = 0;
 	lr->sai.sin_port = 0;
-	lr->addrdlt = 0;
+	lr->link_adr = 0;
 	lr->asdu = 0;
+	lr->host_type = HOST_SLAVE;
 	lr->connect = 0;
-	lr->copied = 0;
-	lr->ldinst = 0;
+	lr->lninst = 0;
 	lr->myep = 0;
 	lr->scen = 0;
 	lr->setspeed = 0;
@@ -54,52 +105,65 @@ void lowrecordinit (LOWREC *lr){
 
 // In data: dlt-address
 // Out data: string to file lowlevel.3.<speed> , where speed=9600,2400,1200
-// asdu -addr <dlt-address> -name "unitlink-dlt645" -port "ttyS3" -pars <speed>,8E1,NO
-// asdu - dynamic, dont equal with every ASDU from usasdu
+// asdu -addr <dlt-address> -name "unitlink-dlt645.phy_tty.ttyS3" -port <speed>,8E1,NO
+// asdu - dynamic, don't equal with any ASDU from usasdu
 void TagM100300(const char *pTag){
 char *p;
 LOWREC lr;
 
-	if (configstep == 3){
 		lowrecordinit(&lr);
 		p = strstr((char*) pTag, "dlt=");
 		if (p){
-			lr.addrdlt = atol(p+5);
+			//lr.addrdlt = atol(p+5);
+			sscanf(p+5, "%llu", &lr.link_adr);
 		}
 		lr.scen = DLT645;
+		lr.host_type = HOST_MASTER;
+		lr.lninst = actmaster_inst;
+		actmaster_inst++;
+		lr.asdu = actasdu;
+		actasdu++;
+
 		createlowrecord(&lr);
-	}
 }
 
 // In data: MAC-address
 // Out data: 3 strings to files lowlevel.2.<speed>, where speed=9600,2400,1200
-// asdu -addr 01 -port "ttyS4" -name "unitlink-m700" -pars <speed>,8E1,NO
-// asdu - dynamic, dont equal with every ASDU from usasdu
-char *macbuf;
+// asdu -addr 01 -name "unitlink-m700.phy_tty.ttyS4" -port <speed>,8E1,NO
+// asdu - dynamic, don't equal with any ASDU from usasdu
 void TagM500700(const char *pTag){
 LOWREC lr;
 char *p;
 
-	if (configstep == 2){
-		// Filter by MAC-address. This meter is one only.
+		// Filter by MAC-address. This meter is only one.
 		p = strstr((char*) pTag, "mac=");
 		if (p){
-			if (!strcmp(p, macbuf)){
+			if (strstr(p, mac_adr)){
 				lowrecordinit(&lr);
+				lr.link_adr = 1;
 				lr.scen = MX00;
+				lr.host_type = HOST_MASTER;
+				lr.lninst = actmaster_inst;
+				actmaster_inst++;
+				lr.asdu = actasdu;
+				actasdu++;
+
 				createlowrecord(&lr);
 			}
+			else
+			{
+				printf("Config Manager: MAC-addresses does not match\n");
+			}
 		}
-	}
 }
 
 // In data: ASDU IP-address port (default port = 2404)
 // Out data: string to file lowlevel.1
-// asdu -addr <IP-address> -name "unitlink-iec104" -port 2204 -mode CONNECT
+// asdu -addr <IP-address> -name "unitlink-iec104.phy_tty.<port>" -port CONNECT
 // or
 // In data: ASDU only
 // Out data: string to file lowlevel.1.<speed>, where speed=9600,2400,1200
-// asdu -name "unitlink-iec101" -port "ttyS3" -pars <speed>,8E1,NO
+// asdu -addr <asdu> -name "unitlink-iec101.phy_tty.ttyS3" -port <speed>,8E1,NO
 // every fixed ASDU add to usasdu[maxfixasdu]
 void TagKIPP(const char *pTag){
 char *p;
@@ -107,7 +171,47 @@ LOWREC lr;
 struct in_addr adr;
 char sadr[16], *ps = sadr;
 
-	if (configstep == 1){
+		lowrecordinit(&lr);
+		p = strstr((char*) pTag, "asdu=");
+		if (p){
+			lr.asdu = atoi(p+6);
+			lr.link_adr = lr.asdu;
+		}
+		else return;
+		p = strstr((char*) pTag, "ip=");
+		if (p){
+			// copy ip-address
+			p = p + 4;
+			while(*p != '"'){*ps=*p; ps++; p++;}
+			*ps = 0;
+			// set ip-address
+			inet_aton(sadr, &adr);
+			lr.sai.sin_addr.s_addr = adr.s_addr;
+			// set port
+			p = strstr((char*) pTag, "port=");
+			if (p){
+				lr.sai.sin_port = atoi(p+6);
+			}else{
+				lr.sai.sin_port = 2404;
+			}
+			lr.scen = IEC104;
+		}else lr.scen = IEC101;
+		lr.host_type = HOST_MASTER;
+		lr.lninst = actmaster_inst;
+		actmaster_inst++;
+
+		createlowrecord(&lr);
+}
+
+// In data: ASDU IP-address port (default port = 2404)
+// Out data: string to file lowlevel.1
+// asdu -addr <IP-address> -name "unitlink-iec104.phy_tty.<port>" -port LISTEN
+void TagSCADA(const char *pTag){
+char *p;
+LOWREC lr;
+struct in_addr adr;
+char sadr[16], *ps = sadr;
+
 		lowrecordinit(&lr);
 		p = strstr((char*) pTag, "asdu=");
 		if (p){
@@ -132,17 +236,20 @@ char sadr[16], *ps = sadr;
 			}
 			lr.scen = IEC104;
 		}else lr.scen = IEC101;
+		lr.host_type = HOST_SLAVE;
+		lr.lninst = actslave_inst;
+		actslave_inst++;
+
 		createlowrecord(&lr);
-	}
 }
 
 // ssd functions
 
-void TagSetSCL(const char *pTag){
+void TagSetHrdw(const char *pTag){
 	printf("Config Manager: Start ADDR file to parse\n");
 }
 
-void TagEndSCL(const char *pTag){
+void TagEndHrdw(const char *pTag){
 	EndScript=1;
 	printf("Config Manager: Stop ADDR file to parse\n");
 }
@@ -167,13 +274,14 @@ typedef struct _XML_Name{
 } XML_Name, *pXML_Name;
 
 static const XML_Name XTags[] = {
+  {"SCADA", TagSCADA},
   {"M100", TagM100300},
   {"M300", TagM100300},
   {"M500", TagM500700},
   {"M700", TagM500700},
   {"KIPP", TagKIPP},
-  {"Hardware", TagSetSCL},
-  {"/Hardware", TagEndSCL},
+  {"Hardware", TagSetHrdw},
+  {"/Hardware", TagEndHrdw},
   {"?xml", TagSetXml},
 };
 
@@ -210,45 +318,6 @@ const char *pS=XMLScript;
 
 void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
-FILE *f;
-struct stat fst;
-uint32_t adrlen, i;
 
-	// Read MAC-address
-	f = fopen("/etc/setmacaddr", "r");
-	if (f){
-		// Get size of main config file
-		if (stat("/etc/setmacaddr", &fst) == -1){
-			printf("IEC61850: Addr.cfg file not found\n");
-		}
-
-		macbuf = malloc(fst.st_size);
-		adrlen = fread(macbuf, 1, (size_t) (fst.st_size), f);
-		if (adrlen == fst.st_size){
-			// Find, test & copy MAC to macbuf
-			i = 0;
-			do{
-				while ((ishex(&macbuf[i]) == FALSE) && (i < adrlen)) i++;
-				if (ismac(&macbuf[i])){
-					memcpy(macbuf, &macbuf[i], 16);
-					macbuf[17] = 0;
-					break;
-				}
-				i++;
-			}while(i < adrlen);
-			if (i >= adrlen) macbuf[0] = 0;
-		}
-	}
-
-	configstep = 1;
 	if (pt) XMLParser(pt);
-
-	configstep = 2;
-	if (pt) XMLParser(pt);
-
-	configstep = 3;
-	if (pt) XMLParser(pt);
-
-	free(macbuf);
-
 }

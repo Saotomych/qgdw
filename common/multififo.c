@@ -188,7 +188,7 @@ int getframefalse(struct channel *ch){
 	return 0;
 }
 
-int testrunningapp(char *name){
+int mf_testrunningapp(char *name){
 char *par[3];
 char *env[1];
 char pidof[] = {"/bin/pidof"};
@@ -205,7 +205,7 @@ fd_set readset;
 
 		if (pipe(opipe) == -1)
 		{
-			printf("MFI %s: failed to create pipe", appname);
+			printf("MFI %s: failed to create pipe\n", appname);
 			return -1;
 		}
 		ret = fork();
@@ -888,7 +888,7 @@ char *par[2];
 	par[0] = chld_name;
 	par[1] = NULL;
 
-	ret = testrunningapp(chld_name);
+	ret = mf_testrunningapp(chld_name);
 
 	if(ret == -1) return -1;
 
@@ -922,7 +922,7 @@ char *par[2];
 		}
 		if (ep->cdcdn){
 			printf("MFI %s error: Endpoint with address = %d has down-channel already\n", appname, addr);
-			return -1;	// if down channel created already
+			//return -1;	// if down channel created already
 		}
 		ep->ready = 0;
 	}else{

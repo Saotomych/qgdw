@@ -327,6 +327,39 @@ int dlt645_recv_data(int len)
 }
 
 
+void dlt645_test_connect(uint16_t adr)
+{
+	int i;
+	uint32_t *data_ids_new = NULL;
+
+	for(i=0; i<MAXEP; i++)
+	{
+		if(!ep_exts[i]) continue;
+
+		data_ids_new = (uint32_t*) realloc((void*)ep_exts[i]->data_ids, sizeof(uint32_t) * (ep_exts[i]->data_ids_size + 1));
+
+		if(!data_ids_new) return;
+
+		ep_exts[i]->data_ids = data_ids_new;
+
+		ep_exts[i]->data_ids[ep_exts[i]->data_ids_size] = 0x04000401;
+		ep_exts[i]->data_ids_size++;
+
+	#ifdef _DEBUG
+		printf("%s: New DOBJ was added. Address = %d, dlt645_id = 0x%08x\n", APP_NAME, ep_exts[i]->adr, ep_exts[i]->data_ids[ep_exts[i]->data_ids_size-1]);
+	#endif
+	}
+
+#ifdef _DEBUG
+	printf("%s: Connection test started. Address = all\n", APP_NAME);
+#endif
+
+	// allow data collection
+	dcoll_stopped = 0;
+	dlt645_collect_data();
+}
+
+
 dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by)
 {
 	int i;
@@ -348,6 +381,30 @@ dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by)
 
 	return NULL;
 }
+
+
+int dlt645_get_ep_ext_idx(uint64_t adr, uint8_t get_by)
+{
+	int i;
+
+	for(i=0; i<MAXEP; i++)
+	{
+		if(ep_exts[i])
+		{
+			if(get_by == DLT645_ASDU_ADR)
+			{
+				if(ep_exts[i]->adr == adr) return i;
+			}
+			else
+			{
+				if(ep_exts[i]->adr_hex == adr) return i;
+			}
+		}
+	}
+
+	return -1;
+}
+
 
 
 dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr)
@@ -566,6 +623,7 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 {
 	dlt645_ep_ext* ep_ext = NULL;
 	frame_dobj *fr_do = NULL;
+	int ret;
 
 	ep_ext = dlt645_get_ep_ext(adr, DLT645_ASDU_ADR);
 
@@ -576,6 +634,14 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		// direction is from DIRUP to DIRDN
 		switch(sys_msg)
 		{
+		case EP_MSG_TEST_CONN:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+			dlt645_test_connect(ep_ext->adr);
+
+			break;
+
 		case EP_MSG_NEWDOBJ:
 			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
 
@@ -637,6 +703,14 @@ uint16_t dlt645_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
 #endif
+
+			// wait until child app is quit
+			for(;;)
+			{
+				ret = mf_testrunningapp(CHILD_APP_NAME);
+				if( ret == 0 || ret == -1 ) break;
+				usleep(100000);
+			}
 
 			appexit = 1;
 
@@ -787,11 +861,11 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 		return RES_INCORRECT;
 	}
 
-	// check if collection started and frame from correct address
-	if(!dcoll_stopped && timer_dcoll == 0 && adr != ep_exts[dcoll_ep_idx]->adr)
+	// check if frame chunk from correct address
+	if(adr != ep_exts[dcoll_ep_idx]->adr)
 	{
 #ifdef _DEBUG
-		printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
+		printf("%s: ERROR - Frame chunk in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
 #endif
 		return RES_INCORRECT;
 	}
@@ -834,8 +908,8 @@ uint16_t dlt645_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 		if(ep_ext)
 		{
-			// check if collection started and frame from correct address
-			if(!dcoll_stopped && timer_dcoll == 0 && ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
+			// check if frame from correct address
+			if(ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
 			{
 #ifdef _DEBUG
 				printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
@@ -1074,6 +1148,15 @@ uint16_t dlt645_read_data_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 		if(res == RES_SUCCESS)
 		{
 			dlt_asdu->adr = ep_ext->adr;
+
+			if(dlt_asdu->data->id == 0x04000401)
+			{
+				// send system message if it address info
+				res = dlt645_sys_msg_send(EP_MSG_DEV_ONLINE, ep_ext->adr, DIRUP, NULL, 0);
+#ifdef _DEBUG
+				if(res == RES_SUCCESS) printf("%s: System message EP_MSG_DEV_ONLINE sent. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+			}
 
 			res = dlt645_asdu_send(dlt_asdu, ep_ext->adr, DIRUP);
 		}

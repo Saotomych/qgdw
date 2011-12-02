@@ -1,132 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SCL xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.iec.ch/61850/2003/SCL">
-  <Header id="SCL for iec-104" nameStructure="IEDName">
-  </Header>
+  <Header id="SCL for iec-104" nameStructure="IEDName" />
   <Substation name="S12" desc="SPb">
     <VoltageLevel name="VL1">
       <Bay name="B1">
-        <LNode lnInst="99" lnClass="MMXU" iedName="scada"         ldInst="55555" lnType="MMXUa" />
-        <LNode lnInst="0"  lnClass="MMXU" iedName="m700.place001" ldInst="967"   lnType="MMXUa" />
-        <LNode lnInst="1"  lnClass="MMXU" iedName="m700.place001" ldInst="11111" lnType="MMXUa" />
-        <LNode lnInst="2"  lnClass="MMXU" iedName="m700.place001" ldInst="33333" lnType="MMXUa" />
+        <LNode lnInst="100" lnClass="MMXU" iedName="scada"         ldInst="55555" lnType="MMXUa" />
+        <LNode lnInst="0"   lnClass="MMXU" iedName="m700.place001" ldInst="967"   lnType="MMXUa" />
+        <LNode lnInst="1"   lnClass="MMXU" iedName="m700.place001" ldInst="100"   lnType="MMXUa" />
+        <LNode lnInst="2"   lnClass="MMXU" iedName="m700.place001" ldInst="101"   lnType="MMXUa" />
+        <LNode lnInst="3"   lnClass="MMXU" iedName="m700.place001" ldInst="102"   lnType="MMXUa" />
       </Bay>
     </VoltageLevel>
   </Substation>
-  <IED desc="Center" name="scada">
+  <IED name="scada" desc="Center">
     <AccessPoint name="AP1" desc="">
       <Server>
         <Authentication />
         <LDevice inst="55555" desc="unitlink-iec104">
-          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+          <LN0 lnClass="LLN0" lnType="LLN0a" />
         </LDevice>
       </Server>
     </AccessPoint>
   </IED>
-  <IED desc="Gallery, bay1" name="m700.place001">
-    <AccessPoint name="AP2" desc="">
+  <IED name="m700.place001" desc="Gallery, bay1">
+    <AccessPoint name="AP2">
       <Server>
         <Authentication />
         <LDevice inst="967" desc="unitlink-iec104">
-          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+          <LN0 lnClass="LLN0" lnType="LLN0a" />
         </LDevice>
-        <LDevice inst="11111" desc="unitlink-dlt645">
-          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+        <LDevice inst="100" desc="unitlink-m700">
+          <LN0 lnClass="LLN0" lnType="LLN0a" />
         </LDevice>
-        <LDevice inst="33333" desc="unitlink-m700">
-          <LN0 lnClass="LLN0" lnType="LLN0a" inst="" desc="" />
+        <LDevice inst="101" desc="unitlink-dlt645">
+          <LN0 lnClass="LLN0" lnType="LLN0a" />
+        </LDevice>
+        <LDevice inst="102" desc="unitlink-dlt645">
+          <LN0 lnClass="LLN0" lnType="LLN0a" />
         </LDevice>
       </Server>
     </AccessPoint>
   </IED>
   <DataTypeTemplates>
-    <LNodeType id="MMXUa" lnClass="MMXU">
-      <Text />
-      <DO asdupos="64" name="PhVphsA" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="65" name="PhVphsB" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="66" name="PhVphsC" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="67" name="APhsA" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="68" name="APhsB" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="69" name="APhsC" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="70" name="PPVphsAB" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="71" name="PPVphsCA" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="72" name="PPVphsBC" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="73" name="WPhsA" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="74" name="WPhsB" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="75" name="WPhsC" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="76" name="VArPhsA" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="77" name="VArPhsB" type="myPwr">
-        <Text />
-      </DO>
-      <DO asdupos="78" name="VArPhsC" type="myPwr">
-        <Text />
-      </DO>
-      <DO name="Health" type="myBeh">
-        <Text />
-      </DO>
+    <LNodeType id="LLN0a" lnClass="LLN0">
+      <DO name="Mod"      type="INC" />
+      <DO name="Beh"      type="INS" />
+      <DO name="Health"   type="INS" />
+      <DO name="NamPlt"   type="LPL_LLN0" />
     </LNodeType>
-    <DOType id="myBeh" cdc="INS">
-      <Text />
-      <DA name="stVal" bType="Enum" type="Beh" dchg="true" fc="ST">
-        <Text />
+    <LNodeType id="MMXUa" lnClass="MMXU">
+      <DO name="Mod"      type="INC" />
+      <DO name="Beh"      type="INS" />
+      <DO name="Health"   type="INS" />
+      <DO name="NamPlt"   type="LPL_MMXU" />
+      <DO name="PhVphsA"  type="MV" desc="0" />
+      <DO name="PhVphsB"  type="MV" desc="1" />
+      <DO name="PhVphsC"  type="MV" desc="2" />
+      <DO name="AphsA"    type="MV" desc="3" />
+      <DO name="AphsB"    type="MV" desc="4" />
+      <DO name="AphsC"    type="MV" desc="5" />
+      <DO name="PPVphsAB" type="MV" desc="6" />
+      <DO name="PPVphsCA" type="MV" desc="7" />
+      <DO name="PPVphsBC" type="MV" desc="8" />
+      <DO name="WphsA"    type="MV" desc="9" />
+      <DO name="WphsB"    type="MV" desc="10" />
+      <DO name="WphsC"    type="MV" desc="11" />
+      <DO name="VArphsA"  type="MV" desc="12" />
+      <DO name="VArphsB"  type="MV" desc="13" />
+      <DO name="VArphsC"  type="MV" desc="14" />
+    </LNodeType>
+    <DOType id="MV" cdc="MV">
+      <DA name="mag" fc="MX" bType="Struct"  type="AnalogueValue" dchg="true" />
+      <DA name="q"   fc="MX" bType="Quality" qchg="true" />
+      <DA name="t"   fc="MX" bType="Timestamp" />
+    </DOType>
+    <DOType id="LPL_MMXU" cdc="LPL">
+      <DA name="vendor" fc="DC" bType="VisString255" />
+      <DA name="swRev"  fc="DC" bType="VisString255" />
+      <DA name="d"      fc="DC" bType="VisString255" />
+    </DOType>
+    <DOType id="LPL_LLN0" cdc="LPL">
+      <DA name="vendor"    fc="DC" bType="VisString255" />
+      <DA name="swRev"     fc="DC" bType="VisString255" />
+      <DA name="d"         fc="DC" bType="VisString255" />
+      <DA name="configRev" fc="DC" bType="VisString255" />
+      <DA name="ldNs"      fc="EX" bType="VisString255">
+        <Val>IEC 61850-7-4:2003</Val>
       </DA>
     </DOType>
-    <DOType id="myPwr" cdc="INS">
-      <Text />
-      <DA name="stVal" bType="INT32" dchg="true" fc="ST">
-        <Text />
-      </DA>
+    <DOType id="INS" cdc="INS">
+      <DA name="stVal" fc="ST" bType="INT32"   dchg="true" />
+      <DA name="q"     fc="ST" bType="Quality" qchg="true" />
+      <DA name="t"     fc="ST" bType="Timestamp" />
     </DOType>
-    <DOType id="myMod" cdc="INC">
-      <Text />
-      <DA name="ctlVal" bType="Enum" type="Mod" fc="ST">
-        <Text />
-      </DA>
-      <DA name="stVal" bType="Enum" type="Mod" dchg="true" fc="ST">
-        <Text />
-      </DA>
-      <DA name="q" bType="Quality" dchg="true" fc="ST">
-        <Text />
-      </DA>
-      <DA name="t" bType="Timestamp" dchg="true" fc="ST">
-        <Text />
-      </DA>
+    <DOType id="INC" cdc="INC">
+      <DA name="stVal" fc="ST" bType="INT32"   dchg="true" />
+      <DA name="q"     fc="ST" bType="Quality" qchg="true" />
+      <DA name="t"     fc="ST" bType="Timestamp" />
     </DOType>
-    <EnumType id="Beh">
-      <Text />
-      <EnumVal ord="1">on</EnumVal>
-      <EnumVal ord="5">off</EnumVal>
-    </EnumType>
-    <EnumType id="Mod">
-      <Text />
-      <EnumVal ord="1">on</EnumVal>
-      <EnumVal ord="5">off</EnumVal>
-    </EnumType>
+    <DAType id="AnalogueValue">
+      <BDA name="f" bType="FLOAT32" />
+    </DAType>
   </DataTypeTemplates>
 </SCL>
-

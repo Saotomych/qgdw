@@ -65,6 +65,8 @@
 #define EP_MSG_GETDOBJ			14		/* get data object now - up2down */
 #define EP_MSG_DCOLL_START		15		/* start data collection - up2down */
 #define EP_MSG_DCOLL_STOP		16		/* stop data collection - up2down */
+#define EP_MSG_TEST_CONN		17		/* test device connection - up2down */
+#define EP_MSG_DEV_ONLINE		18		/* device is online - down2up */
 
 // Messages for initialize endpoints
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
@@ -77,6 +79,11 @@
 
 #define TRUE	1
 #define FALSE	0
+
+// unitlink list
+#define UNITLINK_IEC104			"unitlink-iec104"
+#define UNITLINK_M700			"unitlink-m700"
+#define UNITLINK_DLT645			"unitlink-dlt645"
 
 /*
  *

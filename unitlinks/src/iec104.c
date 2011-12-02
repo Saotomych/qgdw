@@ -510,7 +510,7 @@ uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len)
 {
-	int i;
+	int i, ret;
 	iec104_ep_ext* ep_ext = NULL;
 	frame_dobj *fr_do = NULL;
 
@@ -523,6 +523,13 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		// direction is from DIRUP to DIRDN
 		switch(sys_msg)
 		{
+		case EP_MSG_TEST_CONN:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+
+			break;
+
 		case EP_MSG_NEWDOBJ:
 
 			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
@@ -579,6 +586,14 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
 #endif
+
+			// wait until child app is quit
+			for(;;)
+			{
+				ret = mf_testrunningapp(CHILD_APP_NAME);
+				if( ret == 0 || ret == -1 ) break;
+				usleep(100000);
+			}
 
 			appexit = 1;
 
@@ -974,6 +989,8 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
 
+		iec104_sys_msg_send(EP_MSG_DEV_ONLINE, ep_ext->adr, DIRUP, NULL, 0);
+
 		ep_ext->u_cmd = APCI_U_STARTDT_ACT;
 
 		res = iec104_frame_u_send(APCI_U_STARTDT_CON, ep_ext, DIRDN);
@@ -995,6 +1012,8 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
+
+		iec104_sys_msg_send(EP_MSG_DEV_ONLINE, ep_ext->adr, DIRUP, NULL, 0);
 
 		ep_ext->u_cmd = APCI_U_STARTDT_CON;
 

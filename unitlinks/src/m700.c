@@ -311,6 +311,39 @@ int m700_recv_data(int len)
 }
 
 
+void m700_test_connect(uint16_t adr)
+{
+	int i;
+	uint32_t *data_ids_new = NULL;
+
+	for(i=0; i<MAXEP; i++)
+	{
+		if(!ep_exts[i]) continue;
+
+		data_ids_new = (uint32_t*) realloc((void*)ep_exts[i]->data_ids, sizeof(uint32_t) * (ep_exts[i]->data_ids_size + 1));
+
+		if(!data_ids_new) return;
+
+		ep_exts[i]->data_ids = data_ids_new;
+
+		ep_exts[i]->data_ids[ep_exts[i]->data_ids_size] = 0x37;
+		ep_exts[i]->data_ids_size++;
+
+	#ifdef _DEBUG
+		printf("%s: New DOBJ was added. Address = %d, m700_id = 0x%02x\n", APP_NAME, ep_exts[i]->adr, ep_exts[i]->data_ids[ep_exts[i]->data_ids_size-1]);
+	#endif
+	}
+
+#ifdef _DEBUG
+	printf("%s: Connection test started. Address = all\n", APP_NAME);
+#endif
+
+	// allow data collection
+	dcoll_stopped = 0;
+	m700_collect_data();
+}
+
+
 m700_ep_ext* m700_get_ep_ext(uint16_t adr, uint8_t get_by)
 {
 	int i;
@@ -331,6 +364,29 @@ m700_ep_ext* m700_get_ep_ext(uint16_t adr, uint8_t get_by)
 	}
 
 	return NULL;
+}
+
+
+int m700_get_ep_ext_idx(uint16_t adr, uint8_t get_by)
+{
+	int i;
+
+	for(i=0; i<MAXEP; i++)
+	{
+		if(ep_exts[i])
+		{
+			if(get_by == M700_ASDU_ADR)
+			{
+				if(ep_exts[i]->adr == adr) return i;
+			}
+			else
+			{
+				if(ep_exts[i]->adr_link == adr) return i;
+			}
+		}
+	}
+
+	return -1;
 }
 
 
@@ -554,6 +610,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 {
 	m700_ep_ext* ep_ext = NULL;
 	frame_dobj *fr_do = NULL;
+	int ret;
 
 	ep_ext = m700_get_ep_ext(adr, M700_ASDU_ADR);
 
@@ -564,6 +621,14 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 		// direction is from DIRUP to DIRDN
 		switch(sys_msg)
 		{
+		case EP_MSG_TEST_CONN:
+#ifdef _DEBUG
+			printf("%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+			m700_test_connect(ep_ext->adr);
+
+			break;
+
 		case EP_MSG_NEWDOBJ:
 			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
 
@@ -625,6 +690,14 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
 #endif
+
+			// wait until child app is quit
+			for(;;)
+			{
+				ret = mf_testrunningapp(CHILD_APP_NAME);
+				if( ret == 0 || ret == -1 ) break;
+				usleep(100000);
+			}
 
 			appexit = 1;
 
@@ -712,6 +785,9 @@ uint16_t m700_frame_send(m700_frame *m_fr, uint16_t adr, uint8_t dir)
 		m_fr->adr = ep_ext->adr_link;
 	}
 
+	// address request fix
+	if(m_fr->cmd == 0x37) m_fr->adr = 0xFF;
+
 	res = m700_frame_buff_build(&m_buff, &d_len, m_fr);
 
 	if(res == RES_SUCCESS)
@@ -768,11 +844,11 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 		return RES_INCORRECT;
 	}
 
-	// check if collection started and frame from correct address
-	if(!dcoll_stopped && timer_dcoll == 0 && adr != ep_exts[dcoll_ep_idx]->adr)
+	// check if frame chunk from correct address
+	if(adr != ep_exts[dcoll_ep_idx]->adr)
 	{
 #ifdef _DEBUG
-		printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
+		printf("%s: ERROR - Frame chunk in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
 #endif
 		return RES_INCORRECT;
 	}
@@ -815,8 +891,8 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 
 		if(ep_ext)
 		{
-			// check if collection started and frame from correct address
-			if(!dcoll_stopped && timer_dcoll == 0 && ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
+			// check if frame from correct address
+			if(ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
 			{
 #ifdef _DEBUG
 				printf("%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
@@ -989,6 +1065,15 @@ uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 		if(res == RES_SUCCESS)
 		{
 			m700_asdu->adr = ep_ext->adr;
+
+			if(m700_asdu->data->id == 0xB701)
+			{
+				// send system message if it address info
+				res = m700_sys_msg_send(EP_MSG_DEV_ONLINE, ep_ext->adr, DIRUP, NULL, 0);
+#ifdef _DEBUG
+				if(res == RES_SUCCESS) printf("%s: System message EP_MSG_DEV_ONLINE sent. Address = %d\n", APP_NAME, ep_ext->adr);
+#endif
+			}
 
 			res = m700_asdu_send(m700_asdu, ep_ext->adr, DIRUP);
 		}

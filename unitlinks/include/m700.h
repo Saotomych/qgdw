@@ -91,8 +91,12 @@ void m700_catch_alarm(int sig);
 
 int m700_recv_data(int len);
 
+void m700_test_connect(uint16_t adr);
+
 
 m700_ep_ext* m700_get_ep_ext(uint16_t adr, uint8_t get_by);
+
+int m700_get_ep_ext_idx(uint16_t adr, uint8_t get_by);
 
 m700_ep_ext* m700_add_ep_ext(uint16_t adr);
 void m700_init_ep_ext(m700_ep_ext* ep_ext);

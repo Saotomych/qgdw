@@ -107,7 +107,7 @@ int ret = 0;
 				if (!strcmp(dattr->attr.name, name)){
 					// Name yes. Detect btype and convert to INT
 					p1 = dattr->attr.btype;
-					if (strstr(p1, "INT32")) ret = 1;
+					if (strstr(p1, "Struct")) ret = 1;
 					else ret = -1;
 				}
 			}
@@ -277,7 +277,7 @@ DOBJ *adobj;
 
 		actasdutype = create_next_struct_in_list((LIST*) actasdutype, sizeof(VIRT_ASDU_TYPE));
 
-		printf("ASDU: new VIRT_ASDU_TYPE\n");
+		printf("ASDU: new VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
 		// Fill VIRT_ASDU_TYPE
 		actasdutype->mylntype = alnt;
@@ -287,21 +287,22 @@ DOBJ *adobj;
 		adobj = actasdutype->mylntype->lntype.pfdobj; // (DOBJ*) fdo.next;
 
 		while(adobj){
-			if ((adobj->dobj.options) &&
-				 (adobj->dobj.pmynodetype == &alnt->lntype)){
-					// creating new DATAMAP and filling
-					actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
-					// Fill ASDU_DATAMAP
-					actasdudm->mydobj = adobj;
-					actasdudm->scadaid = atoi(adobj->dobj.options);
-					if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
-						// find by DOType->DA.name = stVal => DOType->DA.btype
-						actasdudm->value_type = get_type_by_name("stVal", adobj->dobj.type);
-						printf("ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
-								adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
-					}else printf("ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
-			}else printf("ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
-
+			// check if DOBJ belongs to _LNODETYPE
+			if(adobj->dobj.pmynodetype == &alnt->lntype){
+				if (adobj->dobj.options){
+						// creating new DATAMAP and filling
+						actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
+						// Fill ASDU_DATAMAP
+						actasdudm->mydobj = adobj;
+						actasdudm->scadaid = atoi(adobj->dobj.options);
+						if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
+							// find by DOType->DA.name = mag => DOType->DA.btype
+							actasdudm->value_type = get_type_by_name("mag", adobj->dobj.type);
+							printf("ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
+									adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
+						}else printf("ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
+				}else printf("ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
+			}
 			// Next DOBJ
 			adobj = adobj->l.next;
 		}

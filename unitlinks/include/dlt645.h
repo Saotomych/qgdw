@@ -99,8 +99,12 @@ void dlt645_catch_alarm(int sig);
 
 int dlt645_recv_data(int len);
 
+void dlt645_test_connect(uint16_t adr);
+
 
 dlt645_ep_ext* dlt645_get_ep_ext(uint64_t adr, uint8_t get_by);
+
+int dlt645_get_ep_ext_idx(uint64_t adr, uint8_t get_by);
 
 dlt645_ep_ext* dlt645_add_ep_ext(uint16_t adr);
 void dlt645_init_ep_ext(dlt645_ep_ext* ep_ext);

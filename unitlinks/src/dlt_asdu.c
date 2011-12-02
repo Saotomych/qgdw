@@ -52,6 +52,9 @@ dlt_asdu_pb_tab[] = {
 	{ 0xFFFFFFFF,	0x03300D00,	3,	0,	0 },
 	{ 0xFFFFFFFF,	0x03300E00,	3,	0,	0 },
 
+	// D3 = 04 - meter parameters
+	{ 0xFFFFFFFF,	0x04000401,	6,	0,	0 },
+
 	// that's all folks
 	{ 0x00000000,	0x00000000,	0,	0 }
 };
@@ -467,6 +470,99 @@ uint16_t dlt_asdu_parse_event_log(unsigned char *buff, uint32_t buff_len, uint32
 }
 
 
+uint16_t dlt_asdu_parse_parameter(unsigned char *buff, uint32_t buff_len, uint32_t *offset, asdu *dlt_asdu)
+{
+	int i, pos;
+	uint32_t block_id;
+	uint8_t type_size, frc_size, start_id;
+	uint16_t res;
+
+	// check if it's data item or block
+	pos = dlt_asdu_check_data_block(buff, *offset);
+
+	res = dlt_asdu_find_type_params(buff_get_le_uint32(buff, *offset), &type_size, &frc_size, &start_id);
+
+	if(res != RES_SUCCESS) return res;
+
+	if(frc_size > 0)
+		dlt_asdu->type = 36;
+	else
+		dlt_asdu->type = 35;
+
+	// set to field fnc value cause of transmission - COT_Req = 5 (request or requested data by IEC101/104 specifications)
+	dlt_asdu->fnc = 5;
+
+	if(pos == -1)
+	{
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != type_size) return RES_INCORRECT;
+
+		dlt_asdu->size = 1;
+
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		dlt_asdu->data->id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		if(frc_size > 0)
+		{
+			dlt_asdu->data->value_type = ASDU_VAL_FLT;
+			dlt_asdu->data->value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+		}
+		else
+		{
+			dlt_asdu->data->value_type = ASDU_VAL_UINT;
+			dlt_asdu->data->value.ui = buff_bcd_get_le_uint(buff, *offset, type_size);
+		}
+		*offset += type_size;
+	}
+	else
+	{
+		// calculate number of items in block
+		dlt_asdu->size = (buff_len - *offset - 4) / type_size;
+
+		// check if buffer length is correct
+		if(buff_len - *offset - 4 != dlt_asdu->size*type_size) return RES_INCORRECT;
+
+		dlt_asdu->data = (data_unit*) calloc(dlt_asdu->size, sizeof(data_unit));
+
+		if(dlt_asdu->data == NULL)
+		{
+			dlt_asdu->size = 0;
+			return RES_MEM_ALLOC;
+		}
+
+		block_id = buff_get_le_uint32(buff, *offset);
+		*offset += 4;
+
+		for(i=0; i<dlt_asdu->size; i++)
+		{
+			dlt_asdu->data[i].id = dlt_asdu_build_data_unit_id(block_id, pos, i + start_id);
+
+			if(frc_size > 0)
+			{
+				dlt_asdu->data[i].value_type = ASDU_VAL_FLT;
+				dlt_asdu->data[i].value.f = buff_bcd_get_le_flt(buff, *offset, type_size, frc_size);
+			}
+			else
+			{
+				dlt_asdu->data->value_type = ASDU_VAL_UINT;
+				dlt_asdu->data->value.ui = buff_bcd_get_le_uint(buff, *offset, type_size);
+			}
+			*offset += type_size;
+		}
+	}
+
+	return RES_SUCCESS;
+}
+
+
 uint16_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_asdu)
 {
 	if(!buff || buff_len < DLT_ASDU_LEN_MIN) return RES_INCORRECT;
@@ -492,6 +588,11 @@ uint16_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_a
 		break;
 	case 0x03:
 		res = dlt_asdu_parse_event_log(buff, buff_len, &offset, dlt_asdu);
+
+		break;
+
+	case 0x04:
+		res = dlt_asdu_parse_parameter(buff, buff_len, &offset, dlt_asdu);
 
 		break;
 

@@ -173,7 +173,7 @@ char *key=0, *par=0;
 			else
 			if (strstr((char*) key, "type")) flastdo->dobj.type = par;
 			else
-			if (strstr((char*) key, "asdupos"))	flastdo->dobj.options = par;
+			if (strstr((char*) key, "desc")) flastdo->dobj.options = par;
 		}
 	}while(p);
 
