@@ -1095,7 +1095,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 		return RES_INCORRECT;
 	}
 
-	if(ep_ext->ar >= ep_ext->vr) return RES_INCORRECT;
+	if(ep_ext->ar == ep_ext->vr) return RES_INCORRECT;
 
 	uint16_t res;
 	apdu_frame *a_fr = NULL;
