@@ -225,6 +225,16 @@ int m700_recv_data(int len)
 
 	len = mf_readbuffer(buff, len, &adr, &dir);
 
+	if(len <= 0)
+	{
+#ifdef _DEBUG
+		printf("%s: ERROR - Data received with Length = %d! Something went wrong!\n", APP_NAME, len);
+#endif
+
+		free(buff);
+		return -1;
+	}
+
 #ifdef _DEBUG
 	printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN ? "DIRUP" : "DIRDN");
 #endif
@@ -250,10 +260,10 @@ int m700_recv_data(int len)
 		printf("%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
 #endif
 
-		if(len - offset < ep_header_in->len)
+		if(ep_header_in->len < 0 || len - offset < ep_header_in->len)
 		{
 #ifdef _DEBUG
-			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, sizeof(ep_data_header) + ep_header_in->len, len - offset);
+			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, ep_header_in->len, len - offset);
 #endif
 
 			free(buff);
@@ -856,7 +866,7 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	// copy next received chunk to the end of the recv_buffer
 	memcpy((void*)(recv_buff+recv_buff_len), (void*)buff, buff_len);
 	recv_buff_len += buff_len;
-
+/*
 #ifdef _DEBUG
 	printf("%s: Frame chunk in DIRUP received. Address = %d, Length = %d\n", APP_NAME, adr, recv_buff_len);
 
@@ -864,7 +874,7 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	hex2ascii(buff, c_buff, buff_len);
 	printf("%s: %s\n", APP_NAME, c_buff);
 #endif
-
+*/
 	offset = 0;
 
 	m_fr = m700_frame_create();
