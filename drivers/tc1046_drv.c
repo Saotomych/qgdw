@@ -34,7 +34,7 @@
 
 #include "AT91SAM9260_inc.h"
 
-#define DEBUG
+//#define DEBUG
 
 static struct resource *adcmem_rc;
 static struct resource *adcirq_rc;
@@ -202,6 +202,10 @@ int ret;
 	printk(KERN_INFO "tc1046: adc int set = 0x%X\n", ret);
 	ret = readl(adcio + ADC_CHSR);
 	printk(KERN_INFO "tc1046: adc channel status = 0x%X\n", ret);
+	ret = readl(adcio + ADC_SR);
+	printk(KERN_INFO "tc1046: adc status = 0x%X\n", ret);
+#else
+	printk(KERN_INFO "tc1046: OK\n");
 	ret = readl(adcio + ADC_SR);
 	printk(KERN_INFO "tc1046: adc status = 0x%X\n", ret);
 #endif
