@@ -20,9 +20,9 @@ char mac_adr[18] = {0};
 
 static u08 Encoding, EndScript;
 
-uint16_t actasdu = 100;
-uint16_t actmaster_inst = 0;
-uint16_t actslave_inst = 100;
+uint16_t actasdu = ASDU_START_INST;
+uint16_t actmaster_inst = MASTER_START_INST;
+uint16_t actslave_inst = SLAVE_START_INST;
 
 int ishex(char *p){
 	if ((*p >= '0') && (*p <='9')) return TRUE;

@@ -85,6 +85,11 @@
 #define UNITLINK_M700			"unitlink-m700"
 #define UNITLINK_DLT645			"unitlink-dlt645"
 
+// first value for lnInst and ldInst
+#define MASTER_START_INST		0
+#define SLAVE_START_INST		100
+#define ASDU_START_INST			100
+
 /*
  *
  * Structures

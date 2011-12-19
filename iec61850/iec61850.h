@@ -109,7 +109,7 @@ typedef struct _IED_LIST{
 	LIST l;
 	struct _IED{
 		char *name;
-		char *inst;
+		char *desc;
 	} ied;
 } IED;
 

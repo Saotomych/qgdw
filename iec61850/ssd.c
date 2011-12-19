@@ -8,8 +8,10 @@
 #include "../common/common.h"
 #include "iec61850.h"
 
-struct _LNODETYPE *actlnodetype;
-struct _DTYPE  *actdtype;
+struct _IED *actlied = NULL;
+struct _LDEVICE *actlldevice = NULL;
+struct _LNODETYPE *actlnodetype = NULL;
+struct _DTYPE  *actdtype = NULL;
 
 // Start points
 LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
@@ -84,12 +86,13 @@ char *key=0, *par=0;
 		if (p){
 			if (strstr((char*) key, "name")) flastied->ied.name = par;
 			else
-			if (strstr((char*) key, "inst")) flastied->ied.inst = par;
+			if (strstr((char*) key, "desc")) flastied->ied.desc = par;
 		}
 	}while(p);
 
-	printf("IEC61850: new IED: name=%s inst=%s\n", flastied->ied.name, flastied->ied.inst);
+	actlied = &(flastied->ied);
 
+	printf("IEC61850: new IED: name=%s desc=%s\n", flastied->ied.name, flastied->ied.desc);
 }
 
 void ssd_create_ld(const char *pTag){			// call parse ld
@@ -107,6 +110,10 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
+	flastld->ld.pmyied = actlied;
+
+	actlldevice = &(flastld->ld);
+
 	printf("IEC61850: new LDevice: inst=%s desc=%s\n", flastld->ld.inst, flastld->ld.desc);
 }
 
@@ -122,7 +129,7 @@ char *key=0, *par=0;
 		if (p){
 			if (strstr((char*) key, "lnClass")) flastln->ln.lnclass = par;
 			else
-			if (strstr((char*) key, "lnInst")) flastln->ln.lninst = par;
+			if (strstr((char*) key, "lnInst") || strstr((char*) key, "inst")) flastln->ln.lninst = par;
 			else
 			if (strstr((char*) key, "iedName")) flastln->ln.iedname = par;
 			else
@@ -131,6 +138,14 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "lnType")) flastln->ln.lntype = par;
 		}
 	}while(p);
+
+	flastln->ln.pmyld = actlldevice;
+
+	if(actlldevice) flastln->ln.ldinst = actlldevice->inst;
+
+	flastln->ln.pmyied = actlied;
+
+	if(actlied) flastln->ln.iedname = actlied->name;
 
 	printf("IEC61850: new LN: class=%s inst=%s iedname=%s ldinst=%s\n",
 			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);

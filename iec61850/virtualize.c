@@ -164,13 +164,6 @@ SCADA_ASDU *actscada;
 			pasdu = (asdu*) (buff + offset + sizeof(ep_data_header));
 			rdlen -= sizeof(asdu);
 
-			// find VIRT_ASDU
-			while ((sasdu) && sasdu->myln->ln.pmyld && atoi(sasdu->myln->ln.pmyld->inst) != edh->adr) sasdu = sasdu->l.next;
-			if (!sasdu){
-				printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
-				free(buff);
-				return 0;
-			}
 
 			printf("IEC61850: Values for ASDU = %d received\n", edh->adr);
 
@@ -195,17 +188,34 @@ SCADA_ASDU *actscada;
 					// TODO Find type of variable and convert type on fly
 
 					// Mapping id
-					pdm = sasdu->myasdutype->fdmap;
-					while ((pdm) && (pdm->meterid != pdu->id)) pdm = pdm->l.next;
+					pdm = (ASDU_DATAMAP*) &fdm;
+					while ((pdm) && (pdm->meterid != pdu->id))
+					{
+						pdm = pdm->l.next;
+					}
 					if (pdm){
 						// TODO Find type of variable & Convert type on fly
 						// Remap variable pdu->id -> id (for SCADA_ASDU)
-						pdu->id =  sasdu->baseoffset + pdm->scadaid;
-						memcpy(spdu, pdu, sizeof(data_unit));
-						spdu++;
-						psasdu->size++;
-						sedh->len += sizeof(data_unit);
-						printf("IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d. Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->time_tag);
+
+						// find VIRT_ASDU
+						while ( (sasdu) && sasdu->myln->ln.pmyld &&
+								!(atoi(sasdu->myln->ln.pmyld->inst) == edh->adr &&
+								strstr(pdm->mydobj->dobj.pmynodetype->id, sasdu->myln->ln.lntype)) )
+						{
+							sasdu = sasdu->l.next;
+						}
+
+						if(sasdu){
+							pdu->id =  sasdu->baseoffset + pdm->scadaid;
+							memcpy(spdu, pdu, sizeof(data_unit));
+							spdu++;
+							psasdu->size++;
+							sedh->len += sizeof(data_unit);
+							printf("IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+						}
+						else{
+							printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
+						}
 					}
 //					else{
 //						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
@@ -272,6 +282,7 @@ DOBJ *adobj;
 
 	// Create VIRT_ASDU_TYPE list
 	actasdutype = (VIRT_ASDU_TYPE*) &fasdutype;
+	actasdudm = (ASDU_DATAMAP*) &fdm;
 	alnt = (LNTYPE*) flntype.next;
 	while(alnt){
 
@@ -283,7 +294,6 @@ DOBJ *adobj;
 		actasdutype->mylntype = alnt;
 
 		// create ASDU_DATAMAP list
-		actasdudm = (ASDU_DATAMAP*) &fdm;
 		adobj = actasdutype->mylntype->lntype.pfdobj; // (DOBJ*) fdo.next;
 
 		while(adobj){
@@ -344,7 +354,8 @@ DOBJ *adobj;
 			actasdu->baseoffset = atoi(aln->ln.lninst) * IEC104_CHLENGHT;
 
 			// If 'scada', create SCADA_ASDU
-			if (strstr(actasdu->myln->ln.iedname, "scada")){
+//			if (strstr(actasdu->myln->ln.iedname, "scada")){
+			if (atoi(actasdu->myln->ln.lninst) >= SLAVE_START_INST && strstr(actasdu->myln->ln.lnclass, "MMXU")){
 				actscada = create_next_struct_in_list((LIST*) actscada, sizeof(SCADA_ASDU));
 				actscada->pscada = actasdu;
 			}

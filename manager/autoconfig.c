@@ -566,10 +566,6 @@ FILE* fdesc;
 
 	fclose(fdesc);
 
-	printf("Config Manager: Trying to read icdmap file...\n");
-
-	icd_map_read(MAP_FILE);
-
 	printf("Config Manager: Writing of ieclevel.icd file started...\n");
 
 	icd_full(ICD_FILE);

@@ -11,45 +11,74 @@ extern LOWREC *lrs[];
 extern uint32_t maxrec;
 extern char *unitlink_list[];
 
-dobj    *d_obj     = NULL;
-uint32_t d_obj_num = 0;
-
-dobj d_obj_def[] = {
-		{"PhVphsA",		0},
-		{"PhVphsB",		1},
-		{"PhVphsC",		2},
-		{"AphsA",		3},
-		{"AphsB",		4},
-		{"AphsC",		5},
-		{"PPVphsAB",	6},
-		{"PPVphsCA",	7},
-		{"PPVphsBC",	8},
-		{"WphsA",		8},
-		{"WphsB",		10},
-		{"WphsC",		11},
-		{"VArphsA",		12},
-		{"VArphsB",		13},
-		{"VArphsC",		14}
+lntype ln_type[] = {
+		{"LLN0a",	"LLN0",	"M700"},
+		{"MMXUa",	"MMXU",	"M700"},
+		{"MSQIa",	"MSQI",	"M700"},
+		{"MMTRa",	"MMTR",	"M700"},
+		{"MSTAa",	"MSTA",	"M700a"},
+		{"MSTAb",	"MSTA",	"M700b"},
+		{NULL,		NULL}
 };
-uint32_t d_obj_num_def = 15;
+
+
+dobj d_obj[] = {
+		{"MMXUa",	"TotW"},
+		{"MMXUa",	"TotVAr"},
+		{"MMXUa",	"TotVA"},
+		{"MMXUa",	"TotPF"},
+		{"MMXUa",	"Hz"},
+		{"MMXUa",	"PPVphsAB"},
+		{"MMXUa",	"PPVphsCA"},
+		{"MMXUa",	"PPVphsBC"},
+		{"MMXUa",	"PhVphsA"},
+		{"MMXUa",	"PhVphsB"},
+		{"MMXUa",	"PhVphsC"},
+		{"MMXUa",	"AphsA"},
+		{"MMXUa",	"AphsB"},
+		{"MMXUa",	"AphsC"},
+		{"MMXUa",	"WphsA"},
+		{"MMXUa",	"WphsB"},
+		{"MMXUa",	"WphsC"},
+		{"MMXUa",	"VArphsA"},
+		{"MMXUa",	"VArphsB"},
+		{"MMXUa",	"VArphsC"},
+		{"MMXUa",	"VAphsA"},
+		{"MMXUa",	"VAphsB"},
+		{"MMXUa",	"VAphsC"},
+		{"MMXUa",	"PFphsA"},
+		{"MMXUa",	"PFphsB"},
+		{"MMXUa",	"PFphsC"},
+		{"MMXUa",	"ZphsA"},
+		{"MMXUa",	"ZphsB"},
+		{"MMXUa",	"ZphsC"},
+		{"MSQIa",	"SeqAc1"},
+		{"MSQIa",	"SeqAc2"},
+		{"MSQIa",	"SeqAc3"},
+		{"MSQIa",	"SeqVc1"},
+		{"MSQIa",	"SeqVc2"},
+		{"MSQIa",	"SeqVc3"},
+		{"MMTRa",	"SupWh"},
+		{"MMTRa",	"DmdWh"},
+		{"MMTRa",	"SupVArh"},
+		{"MMTRa",	"DmdVArh"},
+		{"MSTAa",	"AvAmpsA"},
+		{"MSTAa",	"AvVoltsA"},
+		{"MSTAb",	"AvVoltsB"},
+		{NULL,		NULL}
+};
 
 
 void icd_full(char *fname)
 {
-	if(!d_obj)
-	{
-		printf("Config Manager: Default DOBJ list will be used.\n");
-
-		d_obj     = d_obj_def;
-		d_obj_num = d_obj_num_def;
-	}
-
 	FILE *fdesc = fopen(fname, "w");
 
 	icd_begin(fdesc, "SCL for iec-104", "IEDName");
-	icd_substation(fdesc, "S12", "SPb");
-	icd_ied_scada(fdesc, SCADA_NAME, SCADA_DESC);
-	icd_ied_meter(fdesc, METER_NAME, METER_DESC);
+
+//	icd_substation(fdesc, "S12", "SPb");
+	icd_ied(fdesc, IED_NAME, "Gallery, bay1");
+//	icd_ied_scada(fdesc, SCADA_NAME, SCADA_DESC);
+//	icd_ied_meter(fdesc, METER_NAME, METER_DESC);
 	icd_dtype_tmpl(fdesc);
 
 	icd_end(fdesc);
@@ -88,6 +117,35 @@ void icd_substation(FILE *fdesc, char *name, char *desc)
 }
 
 
+void icd_ied(FILE *fdesc, char *name, char *desc)
+{
+	int i, j;
+
+	fprintf(fdesc, "  <IED name=\"%s\" desc=\"%s\">\n", name, desc);
+	fprintf(fdesc, "    <AccessPoint name=\"AP2\">\n");
+	fprintf(fdesc, "      <Server>\n");
+	fprintf(fdesc, "      <Authentication />\n");
+
+	for(i=0; i<maxrec; i++)
+	{
+		if(lrs[i]->connect)
+		{
+			fprintf(fdesc, "        <LDevice inst=\"%d\" desc=\"%s\">\n", lrs[i]->asdu, unitlink_list[lrs[i]->scen]);
+			fprintf(fdesc, "          <LN0 lnClass=\"LLN0\" lnType=\"LLN0a\" />\n");
+			for(j=1; ln_type[j].id != NULL; j++)
+			{
+				fprintf(fdesc, "          <LN inst=\"%d\" lnClass=\"%s\" lnType=\"%s\" prefix=\"%s\" />\n", lrs[i]->lninst, ln_type[j].class, ln_type[j].id, ln_type[j].prefix);
+			}
+			fprintf(fdesc, "        </LDevice>\n");
+		}
+	}
+
+	fprintf(fdesc, "      </Server>\n");
+	fprintf(fdesc, "    </AccessPoint>\n");
+	fprintf(fdesc, "  </IED>\n");
+}
+
+
 void icd_ied_scada(FILE *fdesc, char *name, char *desc)
 {
 	int i;
@@ -102,7 +160,8 @@ void icd_ied_scada(FILE *fdesc, char *name, char *desc)
 		if(lrs[i]->host_type == HOST_SLAVE && lrs[i]->connect)
 		{
 			fprintf(fdesc, "        <LDevice inst=\"%d\" desc=\"%s\" />\n", lrs[i]->asdu, unitlink_list[lrs[i]->scen]);
-			fprintf(fdesc, "          <LN0 lnClass=\"LLN0\" lnType=\"LLN0a\" inst=\"\" desc=\"\" />\n");
+			fprintf(fdesc, "          <LN0 lnClass=\"LLN0\" lnType=\"LLN0a\" inst=\"\" />\n");
+			fprintf(fdesc, "          <LN inst=\"%d\" lnClass=\"MMXU\" lnType=\"MMXUa\" />\n", lrs[i]->lninst);
 			fprintf(fdesc, "        </LDevice>\n");
 		}
 	}
@@ -127,7 +186,8 @@ void icd_ied_meter(FILE *fdesc, char *name, char *desc)
 		if(lrs[i]->host_type == HOST_MASTER && lrs[i]->connect)
 		{
 			fprintf(fdesc, "        <LDevice inst=\"%d\" desc=\"%s\" />\n", lrs[i]->asdu, unitlink_list[lrs[i]->scen]);
-			fprintf(fdesc, "          <LN0 lnClass=\"LLN0\" lnType=\"LLN0a\" />\n");
+			fprintf(fdesc, "          <LN0 lnClass=\"LLN0\" lnType=\"LLN0a\" inst=\"\" />\n");
+			fprintf(fdesc, "          <LN inst=\"%d\" lnClass=\"MMXU\" lnType=\"MMXUa\" />\n", lrs[i]->lninst);
 			fprintf(fdesc, "        </LDevice>\n");
 		}
 	}
@@ -145,6 +205,7 @@ void icd_dtype_tmpl(FILE *fdesc)
 	icd_do_type(fdesc);
 
 	fprintf(fdesc, "    <DAType id=\"AnalogueValue\">\n");
+	fprintf(fdesc, "      <BDA name=\"i\" bType=\"INT32\" />\n");
 	fprintf(fdesc, "      <BDA name=\"f\" bType=\"FLOAT32\" />\n");
 	fprintf(fdesc, "    </DAType>\n");
 
@@ -154,27 +215,33 @@ void icd_dtype_tmpl(FILE *fdesc)
 
 void icd_lnode_type(FILE *fdesc)
 {
-	int i = 0;
+	int i, j;
 
-	fprintf(fdesc, "    <LNodeType id=\"MMXUa\" lnClass=\"MMXU\">\n");
-	fprintf(fdesc, "      <DO name=\"Mod\" type=\"INC\" />\n");
-	fprintf(fdesc, "      <DO name=\"Beh\" type=\"INS\" />\n");
-	fprintf(fdesc, "      <DO name=\"Health\" type=\"INS\" />\n");
-	fprintf(fdesc, "      <DO name=\"NamPlt\" type=\"LPL_MMXU\" />\n");
-
-	for(i=0; i<d_obj_num; i++)
+	for(i=0; ln_type[i].id != NULL; i++)
 	{
-		fprintf(fdesc, "      <DO name=\"%s\" type=\"MV\" desc=\"%d\" />\n", d_obj[i].name, d_obj[i].asdu_pos);
+		fprintf(fdesc, "    <LNodeType id=\"%s\" lnClass=\"%s\">\n", ln_type[i].id, ln_type[i].class);
+		fprintf(fdesc, "      <DO name=\"Mod\" type=\"INC\" />\n");
+		fprintf(fdesc, "      <DO name=\"Beh\" type=\"INS\" />\n");
+		fprintf(fdesc, "      <DO name=\"Health\" type=\"INS\" />\n");
+		if(strstr(ln_type[i].class, "LLN0"))
+		{
+			fprintf(fdesc, "      <DO name=\"NamPlt\" type=\"LPLlln0\" />\n");
+		}
+		else
+		{
+			fprintf(fdesc, "      <DO name=\"NamPlt\" type=\"LPLgeneral\" />\n");
+		}
+
+		for(j=0; d_obj[j].name != NULL; j++)
+		{
+			if(strstr(ln_type[i].id, d_obj[j].lntypeid))
+			{
+				fprintf(fdesc, "      <DO name=\"%s\" type=\"MV\" desc=\"%d\" />\n", d_obj[j].name, j+1);
+			}
+		}
+
+		fprintf(fdesc, "    </LNodeType>\n");
 	}
-
-	fprintf(fdesc, "    </LNodeType>\n");
-
-	fprintf(fdesc, "    <LNodeType id=\"LLN0a\" lnClass=\"LLN0\">\n");
-	fprintf(fdesc, "      <DO name=\"Mod\" type=\"INC\" />\n");
-	fprintf(fdesc, "      <DO name=\"Beh\" type=\"INS\" />\n");
-	fprintf(fdesc, "      <DO name=\"Health\" type=\"INS\" />\n");
-	fprintf(fdesc, "      <DO name=\"NamPlt\" type=\"LPL_LLN0\" />\n");
-	fprintf(fdesc, "    </LNodeType>\n");
 }
 
 
@@ -187,14 +254,14 @@ void icd_do_type(FILE *fdesc)
 	fprintf(fdesc, "    </DOType>\n");
 
 
-	fprintf(fdesc, "    <DOType id=\"LPL_MMXU\" cdc=\"LPL\">\n");
+	fprintf(fdesc, "    <DOType id=\"LPLgeneral\" cdc=\"LPL\">\n");
 	fprintf(fdesc, "      <DA name=\"vendor\" fc=\"DC\" bType=\"VisString255\" />\n");
 	fprintf(fdesc, "      <DA name=\"swRev\" fc=\"DC\" bType=\"VisString255\" />\n");
 	fprintf(fdesc, "      <DA name=\"d\" fc=\"DC\" bType=\"VisString255\" />\n");
 	fprintf(fdesc, "    </DOType>\n");
 
 
-	fprintf(fdesc, "    <DOType id=\"LPL_LLN0\" cdc=\"LPL\">\n");
+	fprintf(fdesc, "    <DOType id=\"LPLlln0\" cdc=\"LPL\">\n");
 	fprintf(fdesc, "      <DA name=\"vendor\" fc=\"DC\" bType=\"VisString255\" />\n");
 	fprintf(fdesc, "      <DA name=\"swRev\" fc=\"DC\" bType=\"VisString255\" />\n");
 	fprintf(fdesc, "      <DA name=\"d\" fc=\"DC\" bType=\"VisString255\" />\n");
@@ -223,58 +290,6 @@ void icd_do_type(FILE *fdesc)
 void icd_end(FILE *fdesc)
 {
 	fprintf(fdesc, "</SCL>\n");
-}
-
-
-int icd_add_dobj_item(uint32_t base_id, char *name)
-{
-	dobj *d_obj_new = NULL;
-
-	d_obj_new = (dobj*) realloc((void*) d_obj, sizeof(dobj)*(d_obj_num+1));
-
-	if(!d_obj_new) return -1;
-
-	d_obj = d_obj_new;
-
-	d_obj[d_obj_num].name = (char*) calloc(DOBJ_NAMESIZE, sizeof(char));
-
-	memcpy((void*)d_obj[d_obj_num].name, (void*)name, DOBJ_NAMESIZE);
-	d_obj[d_obj_num].asdu_pos = base_id;
-
-	printf("Config Manager: New DOBJ map was added. asdu_pos = %d, dobj_name = \"%s\"\n", d_obj[d_obj_num].asdu_pos, d_obj[d_obj_num].name);
-
-	d_obj_num++;
-
-	return 0;
-}
-
-
-void icd_map_read(const char *file_name)
-{
-	FILE *map_file = NULL;
-	char r_buff[256] = {0};
-	uint32_t map_num;
-	uint32_t base_id;
-	char name[DOBJ_NAMESIZE];
-
-	map_file = fopen(file_name, "r");
-
-	if(map_file)
-	{
-		map_num = 0;
-
-		while(fgets(r_buff, 255, map_file))
-		{
-			if(*r_buff == '#') continue;
-
-			sscanf(r_buff, "%d %s", &base_id, name);
-
-			icd_add_dobj_item(base_id, name);
-
-			map_num++;
-		}
-	}
-
 }
 
 
