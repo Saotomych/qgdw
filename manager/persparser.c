@@ -12,11 +12,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/mount.h>
+#include "../common/common.h"
 
 #define WIN		1
 #define DOS		2
-#define KOI8R	3
-#define UTF		4
 
 #define XMLLEN	0x400
 #define DATALEN	XMLLEN*16
@@ -24,10 +23,12 @@
 u08 env[XMLLEN];
 u08 sbuf[DATALEN];
 
-FILE fabout;
+FILE *fabout;
+
+int EndScript;
 
 int get_offset(const char *pTag){
-int offset;
+int offset = 0;
 char *pte, *pto;
 
 	pte = strstr(pTag, "/");
@@ -35,12 +36,16 @@ char *pte, *pto;
 	if (pte <= pto) return -1;
 
 	pto += 7;	// skip "offset="
-	while(*pto < '0') pto++;	// find begin offset digits
+	while(*pto != '"') pto++;	// find begin offset digits
+	pto++;
 	if (pte <= pto) return -1;
+	if (!pto) return -1;
 
-	offset = strtol(pto, pte, 10);
+	offset = atoi(pto);
 
 	if (offset > DATALEN) return -1;
+
+	printf("offset = %d\n", offset);
 
 	return offset;
 }
@@ -52,36 +57,40 @@ char *pte, *pto;
 	pte = strstr(pTag, "/");
 	pto = strstr(pTag, "length");
 	if (pte <= pto) return -1;
+	if (!pto) return -1;
 
 	pto += 7;	// skip "length="
-	while(*pto < '0') pto++;	// find begin offset digits
+	while(*pto != '"') pto++;	// find begin offset digits
+	pto++;
 	if (pte <= pto) return -1;
 
-	length = strtol(pto, pte, 10);
+	length = atoi(pto);
 
 	if (length > DATALEN) return -1;
+
+	printf("length = %d\n", length);
 
 	return length;
 }
 
 void create_sign(const char *pTag){
-int off = get_offset(pTag);
-int len = get_length(pTag);
-FILE fkey;
+uint off = get_offset(pTag);
+uint len = get_length(pTag);
+FILE *fkey;
 
 	fkey = fopen("/tmp/.ssh/ssh_host_key_rsa", "w+");
 	if (fkey == NULL) printf("Key file don't created\n");
 
 	fwrite((char*)"-----BEGIN RSA PRIVATE KEY-----\n", 1, 32, fkey);
 	fwrite(&sbuf[off], 1, len, fkey);
-	fwrite((char*)"-----END RSA PRIVATE KEY-----\n", 1, 30, fkey);
+	fwrite((char*)"\n-----END RSA PRIVATE KEY-----\n", 1, 30, fkey);
 	fclose(fkey);
 }
 
 void create_signpub(const char *pTag){
-int off = get_offset(pTag);
-int len = get_length(pTag);
-FILE fkey;
+uint off = get_offset(pTag);
+uint len = get_length(pTag);
+FILE *fkey;
 
 	fkey = fopen("/tmp/.ssh/authorized_keys", "w+");
 	if (fkey == NULL) printf("Keypub file don't created\n");
@@ -91,51 +100,53 @@ FILE fkey;
 }
 
 void create_env_var(const char *pTag){
-int off = get_offset(pTag);
+uint off = get_offset(pTag);
 int len = 0;
-char *pt;
-char *pval;
+u08 *pt;
 
 	pt = &sbuf[off];
-	while ((*pt != ' ') && (*pt != '=') && (*pt != 0xFF)){ pt++; len++;}	// Find length of variable name
-	if (*pt == 0xFF) return;	// Don't find value
-	*pt = 0;
-	pt++;
-	pval = pt;
-
 	while((*pt != 0xA) && (*pt) && (*pt != 0xFF)){ pt++; len++;}   // Find lenght of string
 	*pt = 0;
+	printf("set environment var %s\n", (char*) &sbuf[off]);
 
-	setenv(&sbuf[off], pval, 0);
-
+	len=putenv((char*) &sbuf[off]);
 }
 
 void create_string(const char *pTag){
-int off = get_offset(pTag);
-int len = 0;
-char *pt;
-char *pval;
+uint off = get_offset(pTag);
+uint len = 0;
+uchar *pt;
 
 	pt = &sbuf[off];
-	while((*pt != 0xA) && (*pt) && (*pt != 0xFF)){ pt++; len++;}   // Find lenght of string
+	while((*pt != 0xA) && (*pt) && (*pt != 0xFF)){
+		pt++; len++;
+	}   // Find lenght of string
 	*pt = 0xA;	// Set '\n' in end string
 	pt[1] = 0;  // End of string
 
-	fwrite(&sbuf[off], 1, strlen(&sbuf[off]), fabout);
+	fwrite(&sbuf[off], 1, strlen((char*) &sbuf[off]), fabout);
 
 }
 
 void TagSetXml(const char *pTag){
-  const char *pS=strstr(pTag,"encoding");
-  Encoding=WIN;
-  if (pS != NULL){
-    if (strstr(pTag,"Windows-1251")) Encoding=WIN;
-    if (strstr(pTag,"ASCII")) Encoding=DOS;
-    if (strstr(pTag,"KOI8-R")) Encoding=KOI8R;
-    if (strstr(pTag,"UTF")) Encoding=UTF;
-  }
+//  const char *pS=strstr(pTag,"encoding");
+//  Encoding=WIN;
+//  if (pS != NULL){
+//    if (strstr(pTag,"Windows-1251")) Encoding=WIN;
+//    if (strstr(pTag,"ASCII")) Encoding=DOS;
+//    if (strstr(pTag,"KOI8-R")) Encoding=KOI8R;
+//    if (strstr(pTag,"UTF")) Encoding=UTF;
+//  }
 }
 
+void no_func(const char *pTag){
+
+}
+
+void end_func(const char *pTag){
+	EndScript=1;
+	printf("Personalize ready\n");
+}
 
 typedef struct _XML_Name{
 	char *Name;
@@ -147,12 +158,14 @@ static const XML_Name XTags[] = {
   {"SIGNPUB", create_signpub},
   {"ENVAR", create_env_var},
   {"TEXT", create_string},
+  {"M700", no_func},
+  {"/M700", end_func},
   {"?xml", TagSetXml},
 };
 
 void OpenTag(const char *pS){
 const char *pT=pS;
-u08 s, i;
+unsigned char s, i;
 
   while(*pS < 'A') pS++;
   pS--;
@@ -183,8 +196,8 @@ const char *pS=XMLScript;
 
 }
 
-void XMLSelectSource(char *xml){
-char *pt = strstr(xml,"<?xml");
+void XMLSelectSource(u08 *xml){
+char *pt = strstr((char*)xml,"<?xml");
 
 	if (pt) XMLParser(pt);
 //	else XMLParser(DefaultConfig);
@@ -192,8 +205,7 @@ char *pt = strstr(xml,"<?xml");
 }
 
 int main(int argc, char * argv[]){
-FILE mtdf;
-int ienv=0, isbuf=0;
+FILE *mtdf;
 int rlen;
 
 	if (argc < 2) exit(1);
@@ -204,13 +216,15 @@ int rlen;
 	}
 
 	rlen = fread(env, 1, XMLLEN, mtdf);
+	env[rlen-1] = 0;
 
 	fseek(mtdf, XMLLEN, SEEK_SET);
 	rlen = fread(sbuf, 1, DATALEN, mtdf);
+	sbuf[rlen-1] = 0;
 	fclose(mtdf);
 
-	mkdir("/tmp/.ssh", 755);
-	mkdir("/tmp/about", 755);
+	mkdir("/tmp/.ssh", 766);
+	mkdir("/tmp/about", 766);
 	fabout = fopen("/tmp/about/about.me", "w+");
 
 	XMLSelectSource(env);

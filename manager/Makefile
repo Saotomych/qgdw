@@ -28,8 +28,9 @@ multififo.o: ../common/multififo.c
 
 rebuild: clean all
 
-all: manager
+all: manager persparser
 
 clean:
 	rm -f ../bin/manager $(OBJS_MGR)
+	rm -f ../bin/persparser $(OBJS_PP)
 
