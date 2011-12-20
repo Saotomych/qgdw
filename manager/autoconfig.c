@@ -2,7 +2,7 @@
  * autoconfig.c
  *
  *  Created on: 01.09.2011
- *      Author: Alex AVAlon
+ *      Author: Grigoriy Musiyaka
  */
 
 #include "autoconfig.h"

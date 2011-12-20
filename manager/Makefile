@@ -1,9 +1,16 @@
 -include ../common/common.mk
 
 OBJS_MGR = autoconfig.o addrxml.o icdxml.o multififo.o
+OBJS_PP = persparser.o
 CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 
+persparser: $(OBJS_PP)
+	$(CC) $(LDFLAGS) -o ../bin/persparser $(OBJS_PP)
+
+persparser.o: persparser.c
+	$(CC) $(CCFLAGS) persparser.c -o persparser.o
+	
 manager: $(OBJS_MGR)
 	$(CC) $(LDFLAGS) -o ../bin/manager $(OBJS_MGR)
 
