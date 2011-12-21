@@ -24,6 +24,7 @@ u08 env[XMLLEN];
 u08 sbuf[DATALEN];
 
 FILE *fabout;
+FILE *fsetvars;
 
 int EndScript;
 
@@ -109,7 +110,10 @@ u08 *pt;
 	*pt = 0;
 	printf("set environment var %s\n", (char*) &sbuf[off]);
 
-	len=putenv((char*) &sbuf[off]);
+//	len=putenv((char*) &sbuf[off]);
+	fwrite("export ", 1, 7, fsetvars);
+	fwrite(&sbuf[off], 1, strlen((char*) &sbuf[off]), fsetvars);
+	fwrite("\n", 1, 1, fsetvars);
 }
 
 void create_string(const char *pTag){
@@ -226,9 +230,12 @@ int rlen;
 	mkdir("/tmp/.ssh", 766);
 	mkdir("/tmp/about", 766);
 	fabout = fopen("/tmp/about/about.me", "w+");
+	fsetvars = fopen("/tmp/about/setenv.sh", "w+");
 
 	XMLSelectSource(env);
 
+	fclose(fsetvars);
+	fclose(fabout);
 	mount("/tmp/.ssh", "/root/.ssh", "ubi", 0, 0);
 
 	return 0;
