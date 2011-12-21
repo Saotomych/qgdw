@@ -105,6 +105,7 @@ uint16_t asdu_map_read(asdu_map **m_list, const char *file_name, const char *app
 	uint32_t map_num;
 	uint32_t proto_id, base_id;
 	char name[DOBJ_NAMESIZE];
+	int res;
 
 	map_file = fopen(file_name, "r");
 
@@ -114,12 +115,14 @@ uint16_t asdu_map_read(asdu_map **m_list, const char *file_name, const char *app
 
 	while(fgets(r_buff, 255, map_file))
 	{
-		if(*r_buff == '#') continue;
+		if(strstr(r_buff, "#")) continue;
 
 		if(num_base == DEC_BASE)
-			sscanf(r_buff, "%d %d %s", &proto_id, &base_id, name);
+			res = sscanf(r_buff, "%d %d %s", &proto_id, &base_id, name);
 		else
-			sscanf(r_buff, "%x %d %s", &proto_id, &base_id, name);
+			res = sscanf(r_buff, "%x %d %s", &proto_id, &base_id, name);
+
+		if(res < 2) continue;
 
 		asdu_add_map_item(m_list, proto_id, base_id, name, app_name, num_base);
 
