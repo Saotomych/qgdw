@@ -37,16 +37,16 @@ dlt_asdu_pb_tab[] = {
 	{ 0xFFFF0000,	0x02090000,	2,	2,	1 },
 	{ 0xFFFF0000,	0x020A0000,	2,	2,	1 },
 	{ 0xFFFF0000,	0x020B0000,	2,	2,	1 },
-	{ 0xFFFF00FF,	0x02080001,	3,	3,	0 },
-	{ 0xFFFF00FF,	0x02080002,	2,	2,	0 },
-	{ 0xFFFF00FF,	0x02080003,	3,	4,	0 },
-	{ 0xFFFF00FF,	0x02080004,	3,	4,	0 },
-	{ 0xFFFF00FF,	0x02080005,	3,	4,	0 },
-	{ 0xFFFF00FF,	0x02080006,	3,	4,	0 },
-	{ 0xFFFF00FF,	0x02080007,	2,	1,	0 },
-	{ 0xFFFF00FF,	0x02080008,	2,	2,	0 },
-	{ 0xFFFF00FF,	0x02080009,	2,	2,	0 },
-	{ 0xFFFF00FF,	0x0208000A,	4,	0,	0 },
+	{ 0xFFFF00FF,	0x02800001,	3,	3,	0 },
+	{ 0xFFFF00FF,	0x02800002,	2,	2,	0 },
+	{ 0xFFFF00FF,	0x02800003,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02800004,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02800005,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02800006,	3,	4,	0 },
+	{ 0xFFFF00FF,	0x02800007,	2,	1,	0 },
+	{ 0xFFFF00FF,	0x02800008,	2,	2,	0 },
+	{ 0xFFFF00FF,	0x02800009,	2,	2,	0 },
+	{ 0xFFFF00FF,	0x0280000A,	4,	0,	0 },
 
 	// D3 = 03 - events log
 	{ 0xFFFFFFFF,	0x03300D00,	3,	0,	0 },
@@ -603,9 +603,9 @@ uint16_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_a
 	}
 
 #ifdef _DEBUG
-	printf("%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size, dlt_asdu->attr & 0x01);
+	if(res == RES_SUCCESS) printf("%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size, dlt_asdu->attr & 0x01);
 #endif
 
-	return RES_SUCCESS;
+	return res;
 }
 
