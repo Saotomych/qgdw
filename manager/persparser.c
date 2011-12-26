@@ -84,7 +84,7 @@ FILE *fkey;
 
 	fwrite((char*)"-----BEGIN RSA PRIVATE KEY-----\n", 1, 32, fkey);
 	fwrite(&sbuf[off], 1, len, fkey);
-	fwrite((char*)"\n-----END RSA PRIVATE KEY-----\n", 1, 30, fkey);
+	fwrite((char*)"\n-----END RSA PRIVATE KEY-----\n", 1, 31, fkey);
 	fclose(fkey);
 }
 
