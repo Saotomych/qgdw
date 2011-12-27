@@ -108,7 +108,7 @@ uint16_t iec104_config_read(const char *file_name)
 
 		while(fgets(r_buff, 255, cfg_file))
 		{
-			if(*r_buff == '#') continue;
+			if(strstr(r_buff, "#")) continue;
 
 			prm = strstr(r_buff, "name");
 
@@ -191,14 +191,11 @@ void iec104_catch_alarm(int sig)
 
 				iec104_init_ep_ext(ep_exts[i]);
 
-				if(ep_exts[i]->host_type == IEC_HOST_MASTER)
-				{
-					iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
+				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-					printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
-				}
 			}
 
 			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t_t1)
@@ -242,14 +239,11 @@ void iec104_catch_alarm(int sig)
 
 				iec104_init_ep_ext(ep_exts[i]);
 
-				if(ep_exts[i]->host_type == IEC_HOST_MASTER)
-				{
-					iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
+				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-					printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
-				}
 			}
 		}
 	}
@@ -557,7 +551,10 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			printf("%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
-			iec104_comm_inter_send(ep_ext);
+			if(ep_ext->host_type == IEC_HOST_MASTER)
+			{
+				iec104_comm_inter_send(ep_ext);
+			}
 
 			break;
 
@@ -653,14 +650,11 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			iec104_init_ep_ext(ep_ext);
 
-			if(ep_ext->host_type == IEC_HOST_MASTER)
-			{
-				// increase re-connect counter
-				ep_ext->rc_cnt++;
+			// increase re-connect counter
+			ep_ext->rc_cnt++;
 
-				// start rc timer
-				ep_ext->timer_rc = time(NULL);
-			}
+			// start rc timer
+			ep_ext->timer_rc = time(NULL);
 
 			break;
 
@@ -671,14 +665,11 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			iec104_init_ep_ext(ep_ext);
 
-			if(ep_ext->host_type == IEC_HOST_MASTER)
-			{
-				// increase re-connect counter
-				ep_ext->rc_cnt++;
+			// increase re-connect counter
+			ep_ext->rc_cnt++;
 
-				// start rc timer
-				ep_ext->timer_rc = time(NULL);
-			}
+			// start rc timer
+			ep_ext->timer_rc = time(NULL);
 
 			break;
 

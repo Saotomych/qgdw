@@ -109,7 +109,7 @@ uint16_t m700_config_read(const char *file_name)
 	{
 		while( fgets(r_buff, 255, cfg_file) )
 		{
-			if(*r_buff == '#') continue;
+			if(strstr(r_buff, "#")) continue;
 
 			prm = strstr(r_buff, "name");
 
