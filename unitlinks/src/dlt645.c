@@ -1324,14 +1324,15 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 	uint32_t offset = 0;
 	time_t cur_time = time(NULL);
 
-	// start/reset sync timer
-	ep_ext->timer_sync = time(NULL);
-
 	// check request-response variables
 	if(timer_recv > 0 && difftime(cur_time, timer_recv) < t_recv)
 	{
 		return RES_INCORRECT;
 	}
+
+	// Disable data collection first
+	dcoll_stopped = 1;
+	timer_dcoll = 0;
 
 	d_fr = dlt_frame_create();
 
@@ -1366,6 +1367,13 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 
 		dlt_frame_destroy(&d_fr);
 	}
+
+	// start/reset sync timer
+	ep_ext->timer_sync = time(NULL);
+
+	// Enable data collection
+	dcoll_stopped = 0;
+	timer_dcoll = time(NULL);
 
 	return res;
 }

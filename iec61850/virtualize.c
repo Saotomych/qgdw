@@ -126,6 +126,22 @@ ep_data_header edh;
 	mf_toendpoint((char*) &edh, sizeof(ep_data_header), adr, DIRDN);
 }
 
+void start_collect_data()
+{
+	SCADA_CH *sch = (SCADA_CH *) fscadach.next;
+
+	//	Execute all low level application for devices by LDevice (SCADA_CH)
+	//sch = sch->l.next;
+	while(sch)
+	{
+		send_sys_msg(sch->ASDUaddr, EP_MSG_DCOLL_START);
+
+		printf("IEC61850: System message EP_MSG_DCOLL_START sent. Address = %d.\n", sch->ASDUaddr);
+
+		sch = sch->l.next;
+	}
+}
+
 int rcvdata(int len){
 char *buff, *sendbuff;
 int adr, dir, rdlen, fullrdlen;
@@ -288,6 +304,8 @@ DOBJ *adobj;
 
 		actasdutype = create_next_struct_in_list((LIST*) actasdutype, sizeof(VIRT_ASDU_TYPE));
 
+		actasdutype->fdmap = NULL;
+
 		printf("ASDU: new VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
 		// Fill VIRT_ASDU_TYPE
@@ -302,6 +320,10 @@ DOBJ *adobj;
 				if (adobj->dobj.options){
 						// creating new DATAMAP and filling
 						actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
+
+						// if point fdmap to first datamap found
+						if(actasdutype->fdmap == NULL) actasdutype->fdmap = actasdudm;
+
 						// Fill ASDU_DATAMAP
 						actasdudm->mydobj = adobj;
 						actasdudm->scadaid = atoi(adobj->dobj.options);
@@ -316,7 +338,6 @@ DOBJ *adobj;
 			// Next DOBJ
 			adobj = adobj->l.next;
 		}
-		if (fdm.next) actasdutype->fdmap = fdm.next;
 
 		printf("ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
@@ -394,40 +415,36 @@ DOBJ *adobj;
 void create_alldo(void){
 VIRT_ASDU *sasdu = (VIRT_ASDU *) &fasdu;
 ASDU_DATAMAP *pdm;
-DOBJ	*pdo;
 int adr;
 frame_dobj fr_do;
 
 	// Setup of unitlinks for getting DATA OBJECTS
-		// get VIRT_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
-		sasdu = ((VIRT_ASDU *) &fasdu)->l.next;
-		while(sasdu){
-			if(sasdu->myln->ln.pmyld) // check if pmyld is not NULL
-			{
-				adr = atoi(sasdu->myln->ln.pmyld->inst);
-				// find logical node type
-				pdm = sasdu->myasdutype->fdmap;
-				while (pdm){
-					// write datatypes by sys msg EP_MSG_NEWDOBJ
-					pdo = pdm->mydobj;
-					fr_do.edh.adr = adr;
-					fr_do.edh.len = sizeof(frame_dobj) - sizeof(ep_data_header);
-					fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
-					fr_do.id = pdm->meterid;
-					strcpy(fr_do.name, pdo->dobj.name);
+	// get VIRT_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
+	sasdu = ((VIRT_ASDU *) &fasdu)->l.next;
+	while(sasdu){
+		if(sasdu->myln->ln.pmyld) // check if pmyld is not NULL
+		{
+			adr = atoi(sasdu->myln->ln.pmyld->inst);
+			// find logical node type
+			pdm = sasdu->myasdutype->fdmap;
+			while (pdm && strstr(sasdu->myln->ln.lntype, pdm->mydobj->dobj.pmynodetype->id)){
+				// write datatypes by sys msg EP_MSG_NEWDOBJ
+				fr_do.edh.adr = adr;
+				fr_do.edh.len = sizeof(frame_dobj) - sizeof(ep_data_header);
+				fr_do.edh.sys_msg = EP_MSG_NEWDOBJ;
+				fr_do.id = pdm->meterid;
+				strcpy(fr_do.name, pdm->mydobj->dobj.name);
 
-					// write to endpoint
-					mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
-					usleep(5);	// delay for forming  next event
+				// write to endpoint
+				mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
+				usleep(5);	// delay for forming  next event
 
-					pdm = pdm->l.next;
-				}
-
-				send_sys_msg(adr, EP_MSG_DCOLL_START);
+				pdm = pdm->l.next;
 			}
-
-			sasdu = sasdu->l.next;
 		}
+
+		sasdu = sasdu->l.next;
+	}
 }
 
 int virt_start(char *appname){
@@ -480,9 +497,11 @@ char *p, *chld_app;
 		sleep(1);	// Delay for forming next level endpoint
 
 		sch = sch->l.next;
-	};
+	}
 
 	create_alldo();
+
+	start_collect_data();
 
 	return ret;
 }
