@@ -21,15 +21,24 @@
 #include <linux/timer.h>
 #include <linux/jiffies.h>
 #include <linux/reboot.h>
+#include <linux/syscalls.h>
 #include <asm/uaccess.h>
 #include <mach/at91sam9_smc.h>
 
-
 #define TICKSMAX		2
+#define REBOOT_TIME		10
 
 static struct platform_device *ewdt_device;
 volatile static char fexit = 0;
 int nmajor;
+
+// Application define dimension
+struct{
+	unsigned int apppid;
+	unsigned int time;
+} apptime[30];
+
+int appmax = 0;
 
 static int ewdt_open(struct inode *inode, struct file *file)
 {
@@ -54,9 +63,41 @@ static ssize_t ewdt_read(struct file *file, char __user *buffer, size_t length, 
 
 static ssize_t ewdt_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
 {
-unsigned char num;
+unsigned char num, i;
+unsigned int pid, cmd;
 
 	copy_from_user(&num, (const char __user *) buffer, 1);
+
+	pid = ((int)buffer[0]) | ((int) (buffer[1] << 8)) | ((int) (buffer[2] << 16)) | ((int) (buffer[3] << 24));
+	cmd = ((int)buffer[4]) | ((int) (buffer[5] << 8)) | ((int) (buffer[6] << 16)) | ((int) (buffer[7] << 24));
+
+	for(i=0; i < appmax; i++){
+		if (apptime[i].apppid == pid) break;
+	}
+
+	if (i == appmax){
+		// new application registered
+		if (appmax < (30-1)){
+			apptime[appmax].apppid = pid;
+			apptime[appmax].time = 0;
+			appmax++;
+		}
+	}
+
+	if (!cmd){
+		// reset application time
+		apptime[i].time = 0;
+	}
+
+	if ((cmd == 1) && (i < appmax)){
+		// application unregistered
+		if (appmax > 1){
+			apptime[i].apppid = apptime[appmax-1].apppid;
+			apptime[i].time = apptime[appmax-1].time;
+		}
+		if (appmax)	appmax--;
+	}
+
 
 #ifdef DEBUG
 	printk(KERN_INFO "file_write (0x%X)\n",file);
@@ -92,11 +133,26 @@ static struct file_operations ewdt_fops = {
 struct timer_list ewdt_timer;
 static unsigned char counter = TICKSMAX;
 void ewdt_timer_func(unsigned long data){
+int i;
 
-	if (!counter) counter = TICKSMAX;
+	// set reset_pin of wdt
+	at91_set_gpio_value(AT91_PIN_PC10, 1);
+
+	// add times and time test and delay for reset signal
+	if (!counter){
+		counter = TICKSMAX;
+
+		for(i=0; i < appmax; i++){
+			if (apptime[i].time > REBOOT_TIME) kernel_restart(LINUX_REBOOT_CMD_RESTART);
+			apptime[i].time++;
+		}
+	}
+
+	// reset reset_pin of wdt
+	at91_set_gpio_value(AT91_PIN_PC10, 0);
+
 	counter--;
-
-	if (!fexit)	mod_timer(&ewdt_timer, jiffies + HZ/TICKSMAX);
+	if (!fexit)	mod_timer(&ewdt_timer, jiffies + HZ);
 }
 
 static int ewdt_probe (struct platform_device *pdev)	// -- for platform devs
