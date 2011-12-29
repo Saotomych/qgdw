@@ -20,6 +20,8 @@
  *
  */
 
+//#define DEBUG
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -50,8 +52,9 @@ int nmajor;
 
 static int lr_open(struct inode *inode, struct file *file)
 {
+#ifdef DEBUG
 	printk(KERN_INFO "file_open (0x%X)\n",file);
-
+#endif
     return 0;
 }
 
@@ -62,7 +65,9 @@ static ssize_t lr_read(struct file *file, char __user *buffer, size_t length, lo
 
 	for (i=0; i < 32; i++) put_user(realstate[i], (char __user *) (buffer + i));
 
+#ifdef DEBUG
 	printk(KERN_INFO "file_read (0x%X)\n",file);
+#endif
 
 	return 32;
 }
@@ -83,21 +88,29 @@ unsigned char num, pos, i, rlen = 9;
 			data |= (tmpd ? mask : 0);
 			mask <<=1;
 		}
+
+#ifdef DEBUG
 		printk(KERN_INFO "file_write (0x%X); num 0x%X; data 0x%X; in_len %d; len %d\n",file, num, data, length, rlen);
+#endif
+
 		*io_dat[num] = data;
 
 	return length;
 }
 
 static int lr_flush (struct file *file, fl_owner_t id){
+#ifdef DEBUG
 	printk(KERN_INFO "file_flush (0x%X)\n",file);
+#endif
 
 	return 0;
 }
 
 static int lr_release(struct inode *inode, struct file *file)
 {
+#ifdef DEBUG
 	printk(KERN_INFO "file_release (0x%X)\n",file);
+#endif
 
 	return 0;
 }
@@ -157,7 +170,7 @@ static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 	lr_resources[rel1] = platform_get_resource(pdev, IORESOURCE_MEM, 2);
 	lr_resources[rel2] = platform_get_resource(pdev, IORESOURCE_MEM, 3);
 
-    printk(KERN_INFO "set i/o NCS5: 0x%lX; 0x%lX; 0x%lX; 0x%lX\n", lr_resources[led1], lr_resources[led2], lr_resources[rel1], lr_resources[rel2]);
+    printk(KERN_INFO "lr: set i/o NCS5: 0x%lX; 0x%lX; 0x%lX; 0x%lX\n", lr_resources[led1], lr_resources[led2], lr_resources[rel1], lr_resources[rel2]);
 
 	// Registration I/O mem for registers
 	io_dat[led1] = ioremap(lr_resources[led1]->start, 1);
@@ -176,7 +189,7 @@ static int lr_probe (struct platform_device *pdev)	// -- for platform devs
 	led_timer.function = led_timer_func;
 	add_timer(&led_timer);
 
-	printk(KERN_INFO "set virt i/o: 0x%lX; 0x%lX; 0x%lX; 0x%lX\n", io_dat[led1], io_dat[led2], io_dat[rel1], io_dat[rel2]);
+	printk(KERN_INFO "lr: set virt i/o: 0x%lX; 0x%lX; 0x%lX; 0x%lX\n", io_dat[led1], io_dat[led2], io_dat[rel1], io_dat[rel2]);
 
 	return 0;
 }
