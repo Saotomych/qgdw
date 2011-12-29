@@ -11,6 +11,8 @@
  */
 
 
+//#define DEBUG
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -33,8 +35,6 @@
 #include <mach/io.h>
 
 #include "AT91SAM9260_inc.h"
-
-//#define DEBUG
 
 static struct resource *adcmem_rc;
 static struct resource *adcirq_rc;
@@ -204,8 +204,8 @@ int ret;
 	printk(KERN_INFO "tc1046: adc channel status = 0x%X\n", ret);
 	ret = readl(adcio + ADC_SR);
 	printk(KERN_INFO "tc1046: adc status = 0x%X\n", ret);
+	printk(KERN_INFO "tc1046: probe OK\n");
 #else
-	printk(KERN_INFO "tc1046: OK\n");
 	ret = readl(adcio + ADC_SR);
 	printk(KERN_INFO "tc1046: adc status = 0x%X\n", ret);
 #endif
@@ -245,7 +245,7 @@ static int __init tc1046_init(void)
 	int ret;
 
 #ifdef DEBUG
-	printk(KERN_INFO "tc1046: init\n");
+	printk(KERN_INFO "tc1046: init...\n");
 #endif
 
 	ret = platform_driver_probe(&adc_driver, adc_probe);
@@ -257,7 +257,7 @@ static int __init tc1046_init(void)
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "tc1046: OK\n");
+	printk(KERN_INFO "tc1046: init OK\n");
 
 	return 0;
 }
