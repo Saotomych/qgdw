@@ -95,6 +95,8 @@ uint16_t iec104_config_read(const char *file_name);
 
 void iec104_catch_alarm(int sig);
 
+uint16_t iec104_reconnect(iec104_ep_ext *ep_ext);
+
 
 int iec104_recv_data(int len);
 

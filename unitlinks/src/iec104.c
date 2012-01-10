@@ -188,14 +188,10 @@ void iec104_catch_alarm(int sig)
 #ifdef _DEBUG
 				printf("%s: Timer t0 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
+				// stop timer
+				ep_exts[i]->timer_t0 = 0;
 
-				iec104_init_ep_ext(ep_exts[i]);
-
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
-
-#ifdef _DEBUG
-				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
-#endif
+				iec104_reconnect(ep_exts[i]);
 			}
 
 			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t_t1)
@@ -203,17 +199,10 @@ void iec104_catch_alarm(int sig)
 #ifdef _DEBUG
 				printf("%s: Timer t1 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
+				// stop timer
+				ep_exts[i]->timer_t1 = 0;
 
-				iec104_init_ep_ext(ep_exts[i]);
-
-				if(ep_exts[i]->host_type == IEC_HOST_MASTER)
-				{
-					iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
-
-#ifdef _DEBUG
-					printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
-#endif
-				}
+				iec104_reconnect(ep_exts[i]);
 			}
 
 			if(ep_exts[i]->timer_t2 > 0 && difftime(cur_time, ep_exts[i]->timer_t2) >= t_t2)
@@ -236,14 +225,10 @@ void iec104_catch_alarm(int sig)
 #ifdef _DEBUG
 				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
+				// stop timer
+				ep_exts[i]->timer_rc = 0;
 
-				iec104_init_ep_ext(ep_exts[i]);
-
-				iec104_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
-
-#ifdef _DEBUG
-				printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
-#endif
+				iec104_reconnect(ep_exts[i]);
 			}
 		}
 	}
@@ -251,6 +236,33 @@ void iec104_catch_alarm(int sig)
 	signal(sig, iec104_catch_alarm);
 
 	alarm(alarm_t);
+}
+
+
+uint16_t iec104_reconnect(iec104_ep_ext *ep_ext)
+{
+	uint16_t res;
+
+	res = iec104_sys_msg_send(EP_MSG_RECONNECT, ep_ext->adr, DIRDN, NULL, 0);
+
+	if(res == RES_SUCCESS)
+	{
+#ifdef _DEBUG
+		printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+#endif
+		// re-initialize end-point
+		iec104_init_ep_ext(ep_ext);
+
+		// increase re-connect counter
+		ep_ext->rc_cnt++;
+	}
+	else
+	{
+		// start rc timer
+		ep_ext->timer_rc = time(NULL);
+	}
+
+	return res;
 }
 
 
@@ -650,9 +662,6 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 			iec104_init_ep_ext(ep_ext);
 
-			// increase re-connect counter
-			ep_ext->rc_cnt++;
-
 			// start rc timer
 			ep_ext->timer_rc = time(NULL);
 
@@ -664,9 +673,6 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #endif
 
 			iec104_init_ep_ext(ep_ext);
-
-			// increase re-connect counter
-			ep_ext->rc_cnt++;
 
 			// start rc timer
 			ep_ext->timer_rc = time(NULL);
@@ -1091,7 +1097,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
 #ifdef _DEBUG
-		printf("%s: S-Format frame send rejected, TX is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+		printf("%s: S-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = %d\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
 #endif
 		return RES_INCORRECT;
 	}
@@ -1156,7 +1162,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
 #ifdef _DEBUG
-		printf("%s: I-Format frame send rejected, TX is not ready. Address = %d\n", APP_NAME, ep_ext->adr);
+		printf("%s: I-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = %d\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
 #endif
 		return RES_INCORRECT;
 	}
