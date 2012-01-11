@@ -244,10 +244,6 @@ static int __init tc1046_init(void)
 {
 	int ret;
 
-#ifdef DEBUG
-	printk(KERN_INFO "tc1046: init...\n");
-#endif
-
 	ret = platform_driver_probe(&adc_driver, adc_probe);
 
 	if (ret) {
