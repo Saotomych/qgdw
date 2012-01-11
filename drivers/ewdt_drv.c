@@ -25,7 +25,7 @@
 #include <mach/at91sam9_smc.h>
 
 #define TICKSMAX		2
-#define REBOOT_TIME		10
+#define REBOOT_TIME		5
 
 static struct platform_device *ewdt_device;
 volatile static char ewdt_fexit = 0;
@@ -137,7 +137,7 @@ unsigned int pid=0, cmd=0;
 
 static int ewdt_flush (struct file *file, fl_owner_t id){
 #ifdef DEBUG
-	printk(KERN_INFO "file_flush (0x%X)\n",file);
+	printk(KERN_INFO "ewdt: file_flush (0x%X)\n",file);
 #endif
 
 	return 0;
@@ -145,7 +145,7 @@ static int ewdt_flush (struct file *file, fl_owner_t id){
 
 static int ewdt_release(struct inode *inode, struct file *file){
 #ifdef DEBUG
-	printk(KERN_INFO "file_release (0x%X)\n",file);
+	printk(KERN_INFO "ewdt: file_release (0x%X)\n",file);
 #endif
 
 	return 0;
@@ -181,9 +181,9 @@ int i;
 				printk(KERN_INFO "ewdt: Restart must have here\n");
 				apptime[i].time=0;
 #endif
-				printk(KERN_CRIT "Initiating system reboot.\n");
+				printk(KERN_CRIT "ewdt: Initiating system reboot.\n");
 				emergency_restart();
-				printk(KERN_CRIT "Reboot didn't ?????\n");
+				printk(KERN_CRIT "ewdt: Reboot didn't ?????\n");
 			}
 			apptime[i].time++;
 		}
@@ -212,7 +212,7 @@ static int __init ewdt_init(void)
 	ewdt_timer.function = ewdt_timer_func;
 	add_timer(&ewdt_timer);
 
-	printk(KERN_INFO "Init end\n");
+	printk(KERN_INFO "external wdt: Init end\n");
 
 	return 0;
 }
@@ -223,13 +223,13 @@ static void __exit ewdt_exit(void)
 	del_timer_sync(&ewdt_timer);
 
 	unregister_chrdev(ewdt_nmajor, "ewdt");
-	printk(KERN_INFO "device_closed\n");
+	printk(KERN_INFO "external wdt: device_closed\n");
 }
 
 module_init(ewdt_init);
 module_exit(ewdt_exit);
 
 MODULE_AUTHOR("Alex AVAlon");
-MODULE_SUPPORTED_DEVICE("ledsrelays");
+MODULE_SUPPORTED_DEVICE("ewdt");
 MODULE_LICENSE("GPL");
 
