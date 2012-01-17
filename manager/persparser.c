@@ -33,7 +33,7 @@ int vars=0;
 int infos=0;
 
 char* get_name(const char *pTag){
-char *pte, *pto, *ptn;
+char *pto, *ptn;
 
 	pto = strstr(pTag, "Name");
 	if (pto == NULL) 	pto = strstr(pTag, "name");
@@ -43,7 +43,7 @@ char *pte, *pto, *ptn;
 	pto++;
 	ptn = pto;
 	while(*pto != '"') pto++;	// find begin offset digits
-	if (!pto) return -1;
+	if (!pto) return (char*) -1;
 	*pto = 0;	// End string of name
 
 	if (verbose) printf("- name = %s\n",ptn);
@@ -54,11 +54,11 @@ char *pte, *pto, *ptn;
 char *get_value(const char *pTag){
 char *ptn = 0, *pte = 0;
 	ptn = strstr(pTag, ">");
-	if (ptn == NULL) return -1;
+	if (ptn == NULL) return (char*) -1;
 	ptn++;
 	pte = strstr(pTag, "</");
-	if (pte == NULL) return -1;
-	if (pte <= ptn) return -1;
+	if (pte == NULL) return (char*) -1;
+	if (pte <= ptn) return (char*) -1;
 	*pte = 0;
 
 	if (verbose) printf("- value = %s\n",ptn);
@@ -151,8 +151,8 @@ char *vl = get_value(pTag);
 char *name = get_name(pTag);
 uint len;
 
-	if (vl == -1) return;
-	if (name == -1) return;
+	if (vl == (char*) -1) return;
+	if (name == (char*) -1) return;
 	len = strlen(vl);
 
 	*(vl+len) = 0;
@@ -173,8 +173,8 @@ char *vl = get_value(pTag);
 char *name = get_name(pTag);
 uint len;
 
-	if (vl == -1) return;
-	if (name == -1) return;
+	if (vl == (char*) -1) return;
+	if (name == (char*) -1) return;
 	len = strlen(vl);
 
 	*(vl+len) = 0;
