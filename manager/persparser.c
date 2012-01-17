@@ -17,139 +17,184 @@
 #define WIN		1
 #define DOS		2
 
-#define XMLLEN	0x400
-#define DATALEN	XMLLEN*16
+#define XMLLEN	0x1000
 
 u08 env[XMLLEN];
-u08 sbuf[DATALEN];
 
 FILE *fabout;
 FILE *fsetvars;
 
 int EndScript;
+int quiet, verbose;
 
-int get_offset(const char *pTag){
-int offset = 0;
-char *pte, *pto;
+// Statistics
+int signs=0;
+int vars=0;
+int infos=0;
 
-	pte = strstr(pTag, "/");
-	pto = strstr(pTag, "offset");
-	if (pte <= pto) return -1;
+char* get_name(const char *pTag){
+char *pte, *pto, *ptn;
 
-	pto += 7;	// skip "offset="
+	pto = strstr(pTag, "Name");
+	if (pto == NULL) 	pto = strstr(pTag, "name");
+
+	pto += 5;	// skip "name="
 	while(*pto != '"') pto++;	// find begin offset digits
 	pto++;
-	if (pte <= pto) return -1;
-	if (!pto) return -1;
-
-	offset = atoi(pto);
-
-	if (offset > DATALEN) return -1;
-
-	printf("offset = %d\n", offset);
-
-	return offset;
-}
-
-int get_length(const char *pTag){
-int length;
-char *pte, *pto;
-
-	pte = strstr(pTag, "/");
-	pto = strstr(pTag, "length");
-	if (pte <= pto) return -1;
-	if (!pto) return -1;
-
-	pto += 7;	// skip "length="
+	ptn = pto;
 	while(*pto != '"') pto++;	// find begin offset digits
-	pto++;
-	if (pte <= pto) return -1;
+	if (!pto) return -1;
+	*pto = 0;	// End string of name
 
-	length = atoi(pto);
+	if (verbose) printf("- name = %s\n",ptn);
 
-	if (length > DATALEN) return -1;
-
-	printf("length = %d\n", length);
-
-	return length;
+	return ptn;
 }
+
+char *get_value(const char *pTag){
+char *ptn = 0, *pte = 0;
+	ptn = strstr(pTag, ">");
+	if (ptn == NULL) return -1;
+	ptn++;
+	pte = strstr(pTag, "</");
+	if (pte == NULL) return -1;
+	if (pte <= ptn) return -1;
+	*pte = 0;
+
+	if (verbose) printf("- value = %s\n",ptn);
+
+	return ptn;
+}
+
+// Functions for sign
 
 void create_sign(const char *pTag){
-uint off = get_offset(pTag);
-uint len = get_length(pTag);
+uint len;
 FILE *fkey;
 
+	len = strlen(pTag);
+	if (len == -1) return;
+
 	fkey = fopen("/tmp/.ssh/ssh_host_key_rsa", "w+");
-	if (fkey == NULL) printf("Key file don't created\n");
+	if ((!quiet) &&	(fkey == NULL)){
+		printf("error: Key file don't created\n");
+		return;
+	}
 
 	fwrite((char*)"-----BEGIN RSA PRIVATE KEY-----\n", 1, 32, fkey);
-	fwrite(&sbuf[off], 1, len, fkey);
+	fwrite(pTag, 1, len, fkey);
 	fwrite((char*)"\n-----END RSA PRIVATE KEY-----\n", 1, 31, fkey);
 	fclose(fkey);
 }
 
 void create_signpub(const char *pTag){
-uint off = get_offset(pTag);
-uint len = get_length(pTag);
+uint len;
 FILE *fkey;
 
-	fkey = fopen("/tmp/.ssh/authorized_keys", "w+");
-	if (fkey == NULL) printf("Keypub file don't created\n");
+	len = strlen(pTag);
+	if (len == -1) return;
 
-	fwrite(&sbuf[off], 1, len, fkey);
+	fkey = fopen("/tmp/.ssh/authorized_keys", "w+");
+	if ((!quiet) && (fkey == NULL)){
+		printf("error: SSHpub file don't created\n");
+		return;
+	}
+
+	fwrite(pTag, 1, len, fkey);
 	fclose(fkey);
 }
 
+void create_signssl(const char *pTag){
+uint len;
+FILE *fkey;
+
+	len = strlen(pTag);
+	if (len == -1) return;
+
+	fkey = fopen("/tmp/.ssl/authorized_keys", "w+");
+	if ((!quiet) && (fkey == NULL)){
+		printf("error: SSLpub file don't created\n");
+		return;
+	}
+
+	fwrite(pTag, 1, len, fkey);
+	fclose(fkey);
+}
+
+// Functions of parser
+
+void create_key(const char *pTag){
+char *vl = get_value(pTag);
+char *name = get_name(pTag);
+
+	if (!strcmp(name,"SIGNSSL")){
+		if (!quiet) printf("settings: create pub ssl sign\n");
+		create_signssl(vl);
+		signs++;
+		return;
+	}
+	if (!strcmp(name,"SIGNPUB")){
+		if (!quiet) printf("settings: create pub ssh sign\n");
+		create_signpub(vl);
+		signs++;
+		return;
+	}
+	if (!strcmp(name,"SIGN")){
+		if (!quiet) printf("settings: create private ssh sign\n");
+		create_sign(vl);
+		signs++;
+	}
+}
+
 void create_env_var(const char *pTag){
-uint off = get_offset(pTag);
-int len = 0;
-u08 *pt;
+char *vl = get_value(pTag);
+char *name = get_name(pTag);
+uint len;
 
-	pt = &sbuf[off];
-	while((*pt != 0xA) && (*pt) && (*pt != 0xFF)){ pt++; len++;}   // Find lenght of string
-	*pt = 0;
-	printf("set environment var %s\n", (char*) &sbuf[off]);
+	if (vl == -1) return;
+	if (name == -1) return;
+	len = strlen(vl);
 
-//	len=putenv((char*) &sbuf[off]);
+	*(vl+len) = 0;
+	if (verbose) printf("settings: set environment var %s as %s\n", name, vl);
+
 	fwrite("export ", 1, 7, fsetvars);
-	fwrite(&sbuf[off], 1, strlen((char*) &sbuf[off]), fsetvars);
+	fwrite(name, 1, strlen(name), fsetvars);
+	fwrite("=", 1, 1, fsetvars);
+	fwrite(vl, 1, len, fsetvars);
 	fwrite("\n", 1, 1, fsetvars);
+
+	vars++;
+
 }
 
 void create_string(const char *pTag){
-uint off = get_offset(pTag);
-uint len = 0;
-uchar *pt;
+char *vl = get_value(pTag);
+char *name = get_name(pTag);
+uint len;
 
-	pt = &sbuf[off];
-	while((*pt != 0xA) && (*pt) && (*pt != 0xFF)){
-		pt++; len++;
-	}   // Find lenght of string
-	*pt = 0xA;	// Set '\n' in end string
-	pt[1] = 0;  // End of string
+	if (vl == -1) return;
+	if (name == -1) return;
+	len = strlen(vl);
 
-	fwrite(&sbuf[off], 1, strlen((char*) &sbuf[off]), fabout);
+	*(vl+len) = 0;
+	if (verbose) printf("settings: set info '%s': %s\n", name, vl);
+
+	fwrite(name, 1, strlen(name), fabout);
+	fwrite(": ", 1, 1, fabout);
+	fwrite(vl, 1, len, fabout);
+	fwrite("\n", 1, 1, fabout);
+
+	infos++;
 
 }
 
-void TagSetXml(const char *pTag){
-//  const char *pS=strstr(pTag,"encoding");
-//  Encoding=WIN;
-//  if (pS != NULL){
-//    if (strstr(pTag,"Windows-1251")) Encoding=WIN;
-//    if (strstr(pTag,"ASCII")) Encoding=DOS;
-//    if (strstr(pTag,"KOI8-R")) Encoding=KOI8R;
-//    if (strstr(pTag,"UTF")) Encoding=UTF;
-//  }
-}
-
-void no_func(const char *pTag){
-
+void bgn_func(const char *pTag){
+	EndScript=0;
 }
 
 void end_func(const char *pTag){
 	EndScript=1;
-	printf("Personalize ready\n");
 }
 
 typedef struct _XML_Name{
@@ -158,13 +203,11 @@ typedef struct _XML_Name{
 } XML_Name, *pXML_Name;
 
 static const XML_Name XTags[] = {
-  {"SIGN", create_sign},
-  {"SIGNPUB", create_signpub},
+  {"KEY", create_key},
   {"ENVAR", create_env_var},
   {"TEXT", create_string},
-  {"M700", no_func},
-  {"/M700", end_func},
-  {"?xml", TagSetXml},
+  {"EIS", bgn_func},
+  {"/EIS", end_func},
 };
 
 void OpenTag(const char *pS){
@@ -182,6 +225,7 @@ unsigned char s, i;
 
     }
     if ((XTags[i].Name[s] == 0) && (*pS <= 'A')){
+        if (verbose) printf("settings: new tag %s\n", XTags[i].Name);
     	XTags[i].Function(pS);
     	break;
     }
@@ -201,7 +245,7 @@ const char *pS=XMLScript;
 }
 
 void XMLSelectSource(u08 *xml){
-char *pt = strstr((char*)xml,"<?xml");
+char *pt = strstr((char*)xml,"<EIS");
 
 	if (pt) XMLParser(pt);
 //	else XMLParser(DefaultConfig);
@@ -210,10 +254,35 @@ char *pt = strstr((char*)xml,"<?xml");
 
 int main(int argc, char * argv[]){
 FILE *mtdf;
-int rlen;
+int rlen, i;
 
 	if (argc < 2) exit(1);
-	mtdf = fopen(argv[1], "r");
+
+	for(rlen = 1; rlen < (argc-1); rlen++){
+		if (argv[1][0] == '-'){
+			// Keys exist
+			i=1;
+			while(argv[rlen][i]){
+				switch(argv[rlen][i]){
+				case 'v':
+					// Verbose mode on
+					verbose = 1;
+					break;
+				case 'q':
+					// Quiet mode on
+					quiet = 1;
+					break;
+				}
+				i++;
+			}
+		}
+	}
+
+	if (verbose) quiet = 0; // verbose has priority
+
+	if (!quiet) printf("settings: start personal settings...\n");
+
+	mtdf = fopen(argv[argc-1], "r");
 	if (mtdf == NULL){
 		printf("File not found\n");
 		exit(2);
@@ -222,13 +291,11 @@ int rlen;
 	rlen = fread(env, 1, XMLLEN, mtdf);
 	env[rlen-1] = 0;
 
-	fseek(mtdf, XMLLEN, SEEK_SET);
-	rlen = fread(sbuf, 1, DATALEN, mtdf);
-	sbuf[rlen-1] = 0;
 	fclose(mtdf);
 
-	mkdir("/tmp/.ssh", 766);
-	mkdir("/tmp/about", 766);
+	mkdir("/tmp/.ssh", S_IRWXU);
+	mkdir("/tmp/.ssl", S_IRWXU);
+	mkdir("/tmp/about", S_IRWXU);
 	fabout = fopen("/tmp/about/about.me", "w+");
 	fsetvars = fopen("/tmp/about/setenv.sh", "w+");
 
@@ -237,6 +304,14 @@ int rlen;
 	fclose(fsetvars);
 	fclose(fabout);
 	mount("/tmp/.ssh", "/root/.ssh", "ubi", 0, 0);
+	mount("/tmp/.ssl", "/root/.ssl", "ubi", 0, 0);
+
+	if (!quiet){
+		printf("Personal settings ready:\n");
+		printf("- security signs: %d\n", signs);
+		printf("- environment variables: %d\n", vars);
+		printf("- informations strings: %d\n", infos);
+	}
 
 	return 0;
 }
