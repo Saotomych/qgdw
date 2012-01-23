@@ -27,7 +27,7 @@ if [ $adr -ne 0 ]
     then
 # no addr.cfg, exist *.icd, no *.cid
     echo "Manager has making ICD file. CID waiting."
-    echo put ../configs/ieclevel.icd $ID/cfgs/ieclevel.icd | sftp $UPDATE@$SFTP
+    echo put ../configs/ieclevel.icd dev/$ID/cfgs/ieclevel.icd | sftp $UPDATE@$SFTP
     crontab -u root /tmp/crontabs/getcid.cron
     exit 1
   fi
@@ -36,7 +36,7 @@ if [ $adr -ne 0 ]
   rm /rw/mx00/configs/*.icd
   rm /rw/mx00/configs/*.cid
 
-  sftp $UPDATE@$SFTP:$ID/cfgs/addr.cfg
+  sftp $UPDATE@$SFTP:dev/$ID/cfgs/addr.cfg
   stat addr.md5
   if [ $? -ne 0 ]
     then
@@ -79,7 +79,7 @@ if [ $icd -eq 0 ]
   then
 # exist *.icd, no *.cid
   echo "Manager has making ICD file. CID waiting."
-  echo put ../configs/ieclevel.icd $ID/cfgs/ieclevel.icd | sftp $UPDATE@$SFTP
+  echo put ../configs/ieclevel.icd dev/$ID/cfgs/ieclevel.icd | sftp $UPDATE@$SFTP
   crontab -u root /tmp/crontabs/getcid.cron
   exit 1
 fi

@@ -76,7 +76,7 @@ cd $sourcce
 echo Firmware update
 echo Download md5files firmware with ftp
 sftp $UPDATE@$SFTP:firmware/*.md5 $sourcce
-sftp $UPDATE@$SFTP:$ID/configs/m700env.0.md5 $sourcce
+sftp $UPDATE@$SFTP:dev/$ID/configs/m700env.0.md5 $sourcce
 
 sysreboot=0
 
@@ -89,7 +89,7 @@ case $? in
 1) 
     echo "found new version file"
     echo "download new version file m700env.0" >> $sourcce/update.log
-    sftp $UPDATE@$SFTP:$ID/configs/m700env.0 $sourcce
+    sftp $UPDATE@$SFTP:dev/$ID/configs/m700env.0 $sourcce
 	md5sum -c m700env.0.md5
 	if [ $? -eq 0 ]
 		then
@@ -239,7 +239,7 @@ rm -f $sourcce/rootfs.cramfs 2>&1 > /dev/null
 rm -f $sourcce/rootfs.cramfs.md5 2>&1 > /dev/null
 
 cd $home1
-echo "put $sourcce/update.log $ID/logs/update.log" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
+echo "put $sourcce/update.log dev/$ID/logs/update.log" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
 
 if [ $sysreboot -ne 0 ]
 	then

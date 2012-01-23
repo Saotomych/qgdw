@@ -1,4 +1,4 @@
-sftp $UPDATE@$SFTP:$ID/cfgs/ieclevel.cid /rw/mx00/configs
+sftp $UPDATE@$SFTP:dev/$ID/cfgs/ieclevel.cid /rw/mx00/configs
 stat /rw/mx00/configs/ieclevel.cid
 if [ $? -eq 0 ]
     then

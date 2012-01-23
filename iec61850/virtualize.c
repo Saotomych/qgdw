@@ -653,9 +653,10 @@ FILE *fmcfg;
 int clen, ret;
 struct stat fst;
 pid_t chldpid;
+char *pchld_app_end;
 
 SCADA_CH *sch = (SCADA_CH *) &fscadach;
-char *p, *chld_app;
+char *chld_app;
 //
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
@@ -687,9 +688,15 @@ char *p, *chld_app;
 		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
 		strcpy(chld_app, sch->myld->ld.desc);
 
-		p = chld_app;
-		while((*p != '.') && (*p)) p++;
-		*p = 0;
+		// By agreement with icd and ssd connection
+		// ld.desc = unitlink-name/dispather name - device type
+		// Unitlinks will starts as realname
+		pchld_app_end = strstr(chld_app, "/");
+		if (pchld_app_end) *pchld_app_end = 0;	// Makes Unitlink's name as zero-string
+//		pchld_app_end++;	// (in future) equals to beginning of text meter description for HMI
+
+		pchld_app_end = strstr(chld_app, ".");
+		if (pchld_app_end) *pchld_app_end = 0;
 
 		// New endpoint
 		mf_newendpoint(sch->ASDUaddr, chld_app,"/rw/mx00/unitlinks", 0);
