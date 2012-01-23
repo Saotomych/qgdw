@@ -8,6 +8,8 @@
  *
  */
 
+#include <linux/rtc.h>
+#include <sys/ioctl.h>
 #include <sys/time.h>
 #include "../common/common.h"
 #include "../common/multififo.h"
@@ -15,6 +17,21 @@
 #include "iec61850.h"
 
 #define VIRT_ASDU_MAXSIZE 	512
+#define RTC_DEV_NAME		"/dev/rtc1"
+#define TIME_DEV_L_LIMIT	5*60
+#define TIME_DEV_H_LIMIT	29*60
+
+/* Timer parameters */
+static uint8_t alarm_t = ALARM_PER;
+static time_t time_dev = 0;
+
+/* RTC precision adjustment variables and constants */
+static time_t time_adj = 0;
+static int p_adj = 0;
+
+#define ADJ_RESOLUTION		3050		// by the Epson RTC driver
+#define CLOCK_FREQ			32768		// by the Epson RTC driver
+#define ADJ_TIME_DIFF		6*3600		// 6 hours
 
 // DATA
 typedef struct _DATAMAP{
@@ -142,11 +159,200 @@ void start_collect_data()
 	}
 }
 
+int get_rtc_time(const char *dev_name, time_t *t_val)
+{
+	struct rtc_time rtc_tm;
+	struct tm time_tm;
+
+	int fd, res = 0;
+
+	fd = open(dev_name, O_RDONLY);
+
+	if (fd == -1) {
+		return fd;
+	}
+
+	res = ioctl(fd, RTC_RD_TIME, &rtc_tm);
+
+	if(res != -1) {
+		time_tm.tm_hour = rtc_tm.tm_hour;
+		time_tm.tm_min = rtc_tm.tm_min;
+		time_tm.tm_sec = rtc_tm.tm_sec;
+		time_tm.tm_mday = rtc_tm.tm_mday;
+		time_tm.tm_mon = rtc_tm.tm_mon;
+		time_tm.tm_year = rtc_tm.tm_year;
+
+		*t_val = mktime(&time_tm);
+	}
+
+	close(fd);
+
+	return res;
+}
+
+int set_rtc_time(const char *dev_name, time_t t_val)
+{
+	struct rtc_time rtc_tm;
+	struct tm *time_tm;
+
+	int fd, res = 0;
+
+	time_tm = localtime(&t_val);
+
+	if(!time_tm) return -1;
+
+	rtc_tm.tm_hour = time_tm->tm_hour;
+	rtc_tm.tm_min = time_tm->tm_min;
+	rtc_tm.tm_sec = time_tm->tm_sec;
+	rtc_tm.tm_mday = time_tm->tm_mday;
+	rtc_tm.tm_mon = time_tm->tm_mon;
+	rtc_tm.tm_year = time_tm->tm_year;
+
+	fd = open(dev_name, O_RDONLY);
+
+	if (fd == -1) {
+		return fd;
+	}
+
+	res = ioctl(fd, RTC_SET_TIME, &rtc_tm);
+
+	close(fd);
+
+	return res;
+}
+
+int get_rtc_adj(const char *dev_name, int *adj) {
+	int fd, res = 0;
+
+	fd = open(dev_name, O_RDONLY);
+
+	if (fd == -1) {
+		return fd;
+	}
+
+	res = ioctl(fd, RTC_PLL_GET, adj);
+
+	close(fd);
+
+	return res;
+}
+
+int set_rtc_adj(const char *dev_name, int adj) {
+	int fd, res = 0;
+
+	fd = open(dev_name, O_RDONLY);
+
+	if (fd == -1) {
+		return fd;
+	}
+
+	res = ioctl(fd, RTC_PLL_SET, &adj);
+
+	close(fd);
+
+	return res;
+}
+
+void catch_alarm(int sig)
+{
+	struct timeval cor_time;
+	time_t rtc_time, sys_time;
+	int res;
+
+	if(time_dev != 0)
+	{
+		sys_time = time(NULL);
+
+		res = get_rtc_time(RTC_DEV_NAME, &rtc_time);
+
+		time_dev = sys_time - rtc_time;
+
+		if(res != -1 && time_dev != 0)
+		{
+			if(time_dev > 0)
+			{
+				cor_time.tv_sec = sys_time - 1;
+				cor_time.tv_usec = 0;
+				settimeofday(&cor_time, NULL);
+				time_dev--;
+			}
+			else
+			{
+				cor_time.tv_sec = sys_time + 1;
+				cor_time.tv_usec = 0;
+				settimeofday(&cor_time, NULL);
+				time_dev++;
+			}
+		}
+	}
+
+	signal(sig, catch_alarm);
+
+	alarm(alarm_t);
+}
+
+int sync_time(time_t srv_time)
+{
+	struct timeval tv;
+	time_t sys_time, rtc_time, time_diff;
+	int res;
+
+	if(time_adj != 0 && srv_time - time_adj > ADJ_TIME_DIFF)
+	{
+		res = get_rtc_time(RTC_DEV_NAME, &rtc_time);
+
+		if(res == -1) return res;
+
+		// calculation of precision adjustment according to the RX8025 SA/NB application manual
+		p_adj += (int)( ( (float)(rtc_time - time_adj)/(float)(srv_time - time_adj)*(float)(CLOCK_FREQ) - (float)(CLOCK_FREQ) ) / (float)(CLOCK_FREQ) * (float)1000000  * (float)3050 ) * (-1);
+
+		res = set_rtc_adj(RTC_DEV_NAME, p_adj);
+
+		time_adj = srv_time;
+	}
+	else if(time_adj == 0)
+	{
+		time_adj = srv_time;
+	}
+
+	res = set_rtc_time(RTC_DEV_NAME, srv_time);
+
+	printf("IEC61850: RTC synchronization with master host %s.\n", res?"failed":"succeeded");
+
+	sys_time = time(NULL);
+
+	time_diff = sys_time - srv_time;
+
+	if(!time_diff || time_dev)
+		return res;
+	else
+	{
+		if(time_diff < 0) time_diff *= -1;
+
+		if(time_diff < TIME_DEV_L_LIMIT || time_diff > TIME_DEV_H_LIMIT)
+		{
+			tv.tv_sec  = srv_time;
+			tv.tv_usec = 0;
+
+			res = settimeofday(&tv, NULL);
+
+			printf("IEC61850: STC synchronization with master host %s. Time diff = %d.\n", res?"failed":"succeeded", (int)time_diff);
+		}
+		else
+		{
+			time_dev = sys_time - srv_time;
+
+			printf("IEC61850: Time adjusting started. time_dev = %d\n", (int)time_dev);
+		}
+	}
+
+	return res;
+}
+
 int rcvdata(int len){
 char *buff, *sendbuff;
 int adr, dir, rdlen, fullrdlen;
-int offset, res;
-struct timeval tv;
+int offset;
 ep_data_header *edh, *sedh;
 data_unit *pdu, *spdu;
 VIRT_ASDU *sasdu = (VIRT_ASDU*) fasdu.next;
@@ -262,12 +468,7 @@ SCADA_ASDU *actscada;
 			break;
 
 		case EP_MSG_TIME_SYNC:
-			tv.tv_sec  = *(time_t*)(buff + offset + sizeof(ep_data_header));
-			tv.tv_usec = 0;
-
-			res = settimeofday(&tv, NULL);
-
-			printf("IEC61850: Time synchronization with master host %s. Address = %d.\n", res?"failed":"succeeded", edh->adr);
+			sync_time( *(time_t*)(buff + offset + sizeof(ep_data_header)) );
 
 			break;
 		}

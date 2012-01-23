@@ -5,6 +5,7 @@
  *      Author: Alex AVAlon
  */
 
+#include <sys/time.h>
 #include "../common/common.h"
 #include "../common/multififo.h"
 #include "iec61850.h"
@@ -65,6 +66,9 @@ char buf[5];
 	}
 
 	printf("\n--- Low level applications ready --- \n\n");
+
+	signal(SIGALRM, catch_alarm);
+	alarm(ALARM_PER);
 
 	// Cycle data routing in rcv_data
 	do{

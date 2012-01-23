@@ -8,6 +8,8 @@
 #ifndef IEC61850_H_
 #define IEC61850_H_
 
+#define ALARM_PER		2  // must be >= 2 sec!!!
+
 struct _ATTR;
 struct _ATTR_LIST;
 struct _DTYPE;
@@ -139,6 +141,7 @@ extern LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 
 extern int virt_start(char *appname);
 extern void crossconnection(void);
+extern void catch_alarm(int sig);
 
 extern void ssd_create_ied(const char *pTag);			// call parse ied
 extern void ssd_create_ld(const char *pTag);			// call parse ld
