@@ -41,10 +41,11 @@ extern "C" {
 #define CHILD_APP_PATH 	"/rw/mx00/phyints"
 #define APP_CFG			"/rw/mx00/configs/lowlevel.cfg"
 #define APP_MAP			"/rw/mx00/configs/iec10Xmap.cfg"
-#define ALARM_PER		1
 
-#define IEC104_T_RC		10 	/* default re-connect period */
-#define IEC104_T_SYNC	300 /* default time sync period */
+#define ALARM_PER		1		/* timers check period (sec) */
+
+#define IEC104_T_RC		10 		/* default re-connect period (sec) */
+#define IEC104_T_SYNC	300 	/* default time sync period (sec) */
 
 /*
  *

@@ -1097,7 +1097,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
 #ifdef _DEBUG
-		printf("%s: S-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = %d\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
+		printf("%s: S-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = 0x%02X\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
 #endif
 		return RES_INCORRECT;
 	}
@@ -1162,7 +1162,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
 #ifdef _DEBUG
-		printf("%s: I-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = %d\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
+		printf("%s: I-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = 0x%02X\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
 #endif
 		return RES_INCORRECT;
 	}

@@ -20,7 +20,7 @@
 #define LLEVEL_FILE		"/rw/mx00/configs/lowlevel.cfg"
 #define ICD_FILE		"/rw/mx00/configs/ieclevel.ssd"
 #define MAP_FILE 		"/rw/mx00/configs/icdmap.cfg"
-#define MAC_FILE		"/etc/setmacaddr"
+#define MAC_FILE		"/tmp/about/setenv.sh"
 
 // Timer constants
 #define EP_INIT_TIME	2		/* delay for EP initialization */

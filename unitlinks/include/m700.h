@@ -39,16 +39,16 @@ extern "C" {
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
 #define APP_MAP					"/rw/mx00/configs/m700map.cfg"
 
-#define ALARM_PER				1		/* timers check period */
+#define ALARM_PER				1		/* timers check period (sec) */
 
-#define M700_T_RC				10 		/* default re-connect period */
+#define M700_T_RC				10 		/* default re-connect period (sec) */
 
 
-#define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
+#define RECV_TIMEOUT			3		/* default waiting timeout for full response from device (sec) */
 #define RECV_BUFF_SIZE			512		/* frame receive buffer size */
 
 
-#define DCOLL_PER				5		/* default data collection period */
+#define DCOLL_PER				60		/* default data collection period (sec) */
 
 
 #define M700_ASDU_ADR			0
