@@ -1320,6 +1320,7 @@ uint16_t dlt645_set_baudrate_recv(dlt_frame *d_fr, dlt645_ep_ext *ep_ext)
 uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 {
 	uint16_t res;
+	uint8_t dcoll_stopped_old, timer_dcoll_old;
 	dlt_frame *d_fr = NULL;
 	uint32_t offset = 0;
 	time_t cur_time = time(NULL);
@@ -1330,7 +1331,11 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 		return RES_INCORRECT;
 	}
 
-	// Disable data collection first
+	// Remember old states of data collection variables first
+	dcoll_stopped_old = dcoll_stopped;
+	timer_dcoll_old = timer_dcoll;
+
+	// Disable data collection
 	dcoll_stopped = 1;
 	timer_dcoll = 0;
 
@@ -1368,12 +1373,12 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 		dlt_frame_destroy(&d_fr);
 	}
 
+	// Restore data collection variables
+	dcoll_stopped = dcoll_stopped_old;
+	timer_dcoll = timer_dcoll_old;
+
 	// start/reset sync timer
 	ep_ext->timer_sync = time(NULL);
-
-	// Enable data collection
-	dcoll_stopped = 0;
-	timer_dcoll = time(NULL);
 
 	return res;
 }
