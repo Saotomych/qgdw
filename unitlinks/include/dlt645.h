@@ -40,17 +40,17 @@ extern "C" {
 #define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
 #define APP_MAP					"/rw/mx00/configs/dlt645map.cfg"
 
-#define ALARM_PER				1		/* timers check period */
+#define ALARM_PER				1		/* timers check period (sec) */
 
-#define DLT645_T_RC				10 		/* default re-connect period */
-#define DLT645_T_SYNC			300 /* default time sync period */
-
-
-#define RECV_TIMEOUT			3		/* default waiting timeout for full response from device */
-#define RECV_BUFF_SIZE			512		/* frame receive buffer size */
+#define DLT645_T_RC				10 		/* default re-connect period (sec) */
+#define DLT645_T_SYNC			300		/* default time sync period (sec) */
 
 
-#define DCOLL_PER				5		/* default data collection period */
+#define RECV_TIMEOUT			3		/* default waiting timeout for full response from device (sec) */
+#define RECV_BUFF_SIZE			512		/* frame receive buffer size (sec) */
+
+
+#define DCOLL_PER				60		/* default data collection period (sec) */
 
 
 #define DLT645_ASDU_ADR			0
