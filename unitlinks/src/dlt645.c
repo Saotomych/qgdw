@@ -1380,7 +1380,7 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 		{
 			// data collection was interrupted - let's make it continue
 			dcoll_stopped = 0;
-			timer_dcoll = time(NULL) - t_dcoll_p;
+			timer_dcoll = cur_time - t_dcoll_p;
 		}
 		else
 		{
@@ -1391,7 +1391,7 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 	}
 
 	// start/reset sync timer
-	ep_ext->timer_sync = time(NULL);
+	ep_ext->timer_sync = cur_time;
 
 	return res;
 }
