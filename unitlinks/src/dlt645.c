@@ -1373,9 +1373,22 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 		dlt_frame_destroy(&d_fr);
 	}
 
-	// Restore data collection variables
-	dcoll_stopped = dcoll_stopped_old;
-	timer_dcoll = timer_dcoll_old;
+	// Restore data collection variables if needed
+	if(!dcoll_stopped_old)
+	{
+		if(timer_dcoll_old == 0)
+		{
+			// data collection was interrupted - let's make it continue
+			dcoll_stopped = 0;
+			timer_dcoll = time(NULL) - t_dcoll_p;
+		}
+		else
+		{
+			// just continue waiting for the next data collection
+			dcoll_stopped = 0;
+			timer_dcoll = timer_dcoll_old;
+		}
+	}
 
 	// start/reset sync timer
 	ep_ext->timer_sync = time(NULL);
