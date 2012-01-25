@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "nano-X.h"
-#include "nanowm.h"
+#include <nano-X.h>
+#include <nanowm.h>
 #include <string.h>
 #include <signal.h>
 #include "menu.h"
@@ -18,6 +18,8 @@
 #define WHITE MWRGB( 255, 255, 255 )
 #define FGCOLOR BLACK
 #define BGCOLOR	WHITE
+
+int fnewmenu;
 
 void SetNewMenu(char *arg){
 
@@ -56,16 +58,16 @@ void event_menu()
 	//GR_WM_PROPERTIES props;
 
 	while (1) {
- 		//GR_EVENT event;
- 		//GrGetNextEvent(&event);
- 		//do_paint();
-
  		wm_handle_event(&event);
  		GrGetNextEvent(&event);
  				switch (event.type) {
 
  				case GR_EVENT_TYPE_EXPOSURE:
- 					factsetting[4].func(&event);
+ 					if (fnewmenu){
+ 						factsetting[4].func(&event);
+ 	 					printf("Exposure event\n");
+ 					}
+ 					fnewmenu = 0;
  					break;
 
  				case GR_EVENT_TYPE_KEY_DOWN:
@@ -76,6 +78,9 @@ void event_menu()
  					factsetting[6].func(&event);
 					break;
 
+				case GR_EVENT_TYPE_UPDATE:
+					printf("Window event update\n");
+					break;
 
  				case GR_EVENT_TYPE_CLOSE_REQ:
  					GrClose();
@@ -85,12 +90,16 @@ void event_menu()
 
  	GrClose();
  }
+
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv)
 {
   init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
   do_openfilemenu();
+
   draw_menu();
+
+  fnewmenu = 1;
   event_menu();
   return 0;
 }

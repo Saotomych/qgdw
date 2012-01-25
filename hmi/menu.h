@@ -11,6 +11,8 @@
 #include "hmi.h"
 #endif
 
+#define MENUSTEP	20
+
 typedef struct _item{
 	GR_WINDOW_ID main_window;
 	char *name_font;
@@ -21,11 +23,11 @@ typedef struct _item{
 
 typedef struct _menu{
 	GR_WINDOW_ID main_window;
-//	int *item_structure;
+	GR_FONT_ID	font;
 	item **pitems;
 	int num_item;   //текущий пункт меню
 	int start_item; //пункт начала вывода
-	//int last_item;  //пункт конца вывода
+	int count_item;        //number of item
 //  функции set
 
 }menu;
