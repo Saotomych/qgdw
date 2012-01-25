@@ -15,6 +15,8 @@ phylinks: Makefile force
 	cd phylinks; $(MAKE) -f Makefile all
 iec61850: Makefile force
 	cd iec61850; $(MAKE) -f Makefile all
+hmi: Makefile force
+	cd hmi; $(MAKE) -f Makefile all
 
 manager-clean: Makefile force
 	cd manager; $(MAKE) -f Makefile clean
@@ -26,5 +28,7 @@ phylinks-clean : Makefile force
 	cd phylinks; $(MAKE) -f Makefile clean
 iec61850-clean: Makefile force
 	cd iec61850; $(MAKE) -f Makefile clean
+hmi-clean: Makefile force
+	cd hmi; $(MAKE) -f Makefile clean
 
 force : ;
