@@ -11,6 +11,9 @@
 #include "hmi.h"
 #endif
 
+#define MENUFILE	1
+#define MENUMEM		2
+
 #define MENUSTEP	16
 
 typedef struct _item{
@@ -35,7 +38,7 @@ typedef struct _menu{
 }menu;
 
 extern int init_menu(fact *factsetting, int len);
-extern int do_openfilemenu();
+extern int do_openfilemenu(char *buf, int type);
 extern void draw_menu();
 extern void f1(void *arg);
 extern void f2(void *arg);

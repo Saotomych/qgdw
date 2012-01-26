@@ -11,8 +11,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+static char prev_item;		// pointer to item in main menu
+
+static char *ptxtmenu;     //указатель на массив пунктов меню
 static item **pitems;      //указатель на структуру пунктов
 static menu *num_menu;     //указатель на структуру меню
+
+char newmenu[40];			// For temporary operations
 
 #define MAIN_WIDTH 160     //параметры главного окна
 #define MAIN_HEIGHT 160
@@ -40,9 +45,7 @@ fact pfactsetting[] ={
 
 };
 //------------------------------------------------------------------------------------
-int do_openfilemenu()
-{
-	static char *ptxtmenu;     //указатель на массив пунктов меню
+int do_openfilemenu(char *buf, int type){
 	char *pitemtype;
 	char *ptxt;
 	FILE *fmcfg;               //file open
@@ -56,20 +59,34 @@ int do_openfilemenu()
 	char last_menuitem = 0;
 	char first_menuitem = 0;
 
-	if (stat("menus/item", &fst) == -1){
-		 		printf("IEC Virt: 'item' file not found\n");
-		 		return -1;
-		 	}
+			switch(type){
 
-		    ptxtmenu =  malloc(fst.st_size + 2);
-		 	fmcfg = fopen("menus/item", "r");
-		 	clen = fread((ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
-		 	if (!clen) return -1;
-		 	if (clen != fst.st_size) return -1;
+			case MENUFILE:
+
+							if (stat(buf, &fst) == -1){
+								printf("IEC Virt: 'item' file not found\n");
+								return -1;
+							}
+
+							ptxtmenu =  malloc(fst.st_size + 2);
+						 	fmcfg = fopen(buf, "r");
+						 	clen = fread((ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
+						 	if (!clen) return -1;
+						 	if (clen != fst.st_size) return -1;
+						 	break;
+
+			case MENUMEM:
+							clen = strlen(buf);
+						 	if (!clen) return -1;
+
+						 	ptxtmenu = malloc(clen + 2);
+						 	strcpy((ptxtmenu+1), buf);
+						 	break;
+			}
+
 
 		 	//Make ending 0 for string
 		 	ptxtmenu[clen+1] = 0;
-
 		 	//Make ending start 0
 		 	ptxtmenu[0] = 0;
 
@@ -178,18 +195,18 @@ void draw_menu()
 			GR_WM_PROPERTIES props;
 
 
-			num_menu->main_window = GrNewWindow(GR_ROOT_WINDOW_ID, MENUSTEP, MENUSTEP, MAIN_HEIGHT, MAIN_WIDTH, 1, WHITE, BLACK);
+			num_menu->main_window = GrNewWindow(GR_ROOT_WINDOW_ID, 0, 0, MAIN_HEIGHT, MAIN_WIDTH, 1, WHITE, BLACK);
    		    GrMapWindow(num_menu->main_window);
 
-			props.flags = GR_WM_FLAGS_PROPS | GR_WM_FLAGS_TITLE;
+			props.flags = GR_WM_FLAGS_PROPS;
 			props.props = GR_WM_PROPS_BORDER |
-					   GR_WM_PROPS_CAPTION |
-					   GR_WM_PROPS_CLOSEBOX;
-			props.title = "main window";
+					   GR_WM_PROPS_CAPTION;
+			props.title = "";
 
 			GrSetWMProperties(num_menu->main_window, &props);
 
 			GrGetWindowInfo(GR_ROOT_WINDOW_ID, &winfo);
+			GrSelectEvents(GR_ROOT_WINDOW_ID, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_DOWN);
 			GrSelectEvents(num_menu->main_window, winfo.eventmask | GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_KEY_DOWN);
 
 			//Paint on the screen windows of item
@@ -215,11 +232,26 @@ void draw_menu()
 			GrSetFontAttr(num_menu->font, GR_TFANTIALIAS | GR_TFKERNING, 0);
 }
 
+void destroy_menu()
+{
+int i;
+	for (i=0; i < num_menu->count_item; i++){
+		GrUnmapWindow(pitems[i]->main_window);
+		GrDestroyWindow(pitems[i]->main_window);
+		free(pitems[i]);
+		pitems[i] = 0;
+	}
+	GrUnmapWindow(num_menu->main_window);
+	GrDestroyWindow(num_menu->main_window);
+	free(num_menu);
+	num_menu = 0;
+	free(ptxtmenu);
+	ptxtmenu = 0;
+}
+
 //-------------------------------------------------------------------------------
 void f1(void *arg)
 {
-	//GR_EVENT *event = (GR_EVENT*) arg;
-	//int *pi = (int*) arg;
     int i;
 	for (i = num_menu->start_item; i < num_menu->count_item; i++)
 	{
@@ -232,14 +264,13 @@ void f1(void *arg)
 void f2(void *arg)
 {
     GR_EVENT *event = (GR_EVENT*) arg;
-    GR_WINDOW_INFO winfo;
     int i;
     int y;
 
 	switch(event->keystroke.ch)
 	{
 
-	case 0xf802:
+	case 0xf802:	// Key down
 					num_menu->num_item = pitems[num_menu->num_item]->prev_item;
 
 					if (num_menu->num_item < num_menu->start_item){
@@ -266,7 +297,7 @@ void f2(void *arg)
 
 					break;
 
-	case 0xf803:
+	case 0xf803:	// Key up
 					num_menu->num_item = pitems[num_menu->num_item]->next_item;
 
 					if ((((num_menu->num_item-num_menu->start_item) * MENUSTEP) >= (MAIN_HEIGHT - MENUSTEP)) ||
@@ -289,6 +320,28 @@ void f2(void *arg)
 					do_paint(pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
 
 					break;
+
+	case 0x0D:		// Key ENTER
+	case 0x20:
+					if (pitems[num_menu->num_item]->next_menu){
+						strcpy(newmenu, "menus/");
+						strcat(newmenu, pitems[num_menu->num_item]->next_menu);
+						prev_item = num_menu->num_item;
+						destroy_menu();
+						if (!do_openfilemenu(newmenu, MENUFILE)){
+							draw_menu();
+						}else exit (-1);
+					}
+					break;
+
+	case 0x1B:		// Key MENU / ESC
+					destroy_menu();
+					if (!do_openfilemenu("menus/item", MENUFILE)){
+						draw_menu();
+						num_menu->num_item = prev_item;
+					}
+					break;
+
 	}
 
 }

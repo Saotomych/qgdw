@@ -19,8 +19,6 @@
 #define FGCOLOR BLACK
 #define BGCOLOR	WHITE
 
-int fnewmenu;
-
 void SetNewMenu(char *arg){
 
 }
@@ -63,14 +61,14 @@ void mainloop()
  				switch (event.type) {
 
  				case GR_EVENT_TYPE_EXPOSURE:
- 					if (fnewmenu){
+ 					if (event.exposure.wid == GR_ROOT_WINDOW_ID){
+ 	 					printf ("Root exposure event 0x%04X\n", event.exposure.wid);
  						factsetting[4].func(&event);
- 	 					printf("Exposure event\n");
  					}
- 					fnewmenu = 0;
  					break;
 
  				case GR_EVENT_TYPE_KEY_DOWN:
+ 					printf ("Key down event 0x%04X\n", event.keystroke.ch);
  					factsetting[5].func(&event);
  					break;
 
@@ -95,9 +93,8 @@ void mainloop()
 int main(int argc, char **argv)
 {
   init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
-  do_openfilemenu();
+  do_openfilemenu("menus/item", MENUFILE);
   draw_menu();
-  fnewmenu = 1;
   mainloop();
   return 0;
 }
