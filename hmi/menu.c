@@ -107,6 +107,28 @@ int do_openfilemenu(char *buf, int type){
 	            ptxt[4] = 0;
 	            pitemtype = ptxt;
 	            ptxt += 5;
+	            while (*ptxt == ' ') ptxt++;
+
+	            // Parse RECTangle for item
+	            // X
+	            if (*ptxt != 'a') pitems[i]->bgnrect.x = atoi(ptxt);
+	            else pitems[i]->bgnrect.x = 0;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
+
+	            // Y
+	            if (*ptxt != 'a') pitems[i]->bgnrect.y = atoi(ptxt);
+	            else pitems[i]->bgnrect.y = pitems[i-1]->bgnrect.y + pitems[i-1]->bgnrect.height;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
+
+	            // W
+	            if (*ptxt != 'a') pitems[i]->bgnrect.width = atoi(ptxt);
+	            else pitems[i]->bgnrect.width = MAIN_WIDTH - pitems[i]->bgnrect.x;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
+
+	            // H
+	            if (*ptxt != 'a') pitems[i]->bgnrect.height = atoi(ptxt);
+	            else pitems[i]->bgnrect.height = MENUSTEP;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // Item type "MENU"
 	            if (!strcmp(pitemtype, "menu")){
@@ -126,12 +148,13 @@ int do_openfilemenu(char *buf, int type){
 		            }
 		            if (*ptxt == '~'){
 		               	*ptxt = 0;
-		            	pitems[i]->next_menu = ptxt+1;
+		            	pitems[i]->action = ptxt+1;
 		            	ptxt++;
 		            }
 		            last_menuitem = i;
 		            count_menu++;
 	            }
+	            // For fixed first menu point in items
 	            if (!count_menu){
 	            	last_menuitem++;
 	            	first_menuitem++;
@@ -152,7 +175,7 @@ int do_openfilemenu(char *buf, int type){
 	         num_menu->pitems = pitems;
 	         num_menu->num_item = first_menuitem;
 	         num_menu->first_item = first_menuitem;
-	         num_menu->start_item = 0;
+	         num_menu->start_item = first_menuitem;
 	         num_menu->count_item = count_item;
 
      return 0;
@@ -211,14 +234,18 @@ void draw_menu()
 
 			//Paint on the screen windows of item
 			int i;
-			int y2 = 0; //step item
+//			int y2 = 0; //step item
 
 			for (i=0; i < num_menu->count_item; i++)
 			{
 				main_window = &(num_menu->pitems[i]->main_window);
 
-				*main_window = GrNewWindow(num_menu->main_window, 0, y2, WIDTH, HEIGHT, 0, WHITE, WHITE);
-				y2 = y2+MENUSTEP;
+				*main_window = GrNewWindow(num_menu->main_window,
+										   num_menu->pitems[i]->bgnrect.x,
+										   num_menu->pitems[i]->bgnrect.y,
+										   num_menu->pitems[i]->bgnrect.width,
+										   num_menu->pitems[i]->bgnrect.height,
+										   0, WHITE, WHITE);
 
 				props.flags = 0;
 				props.props = 0;
@@ -230,6 +257,7 @@ void draw_menu()
 
 			num_menu->font = GrCreateFontEx(FONTNAME, FONT_HEIGHT, FONT_WIDTH, 0);
 			GrSetFontAttr(num_menu->font, GR_TFANTIALIAS | GR_TFKERNING, 0);
+
 }
 
 void destroy_menu()
@@ -253,70 +281,96 @@ int i;
 void f1(void *arg)
 {
     int i;
-	for (i = num_menu->start_item; i < num_menu->count_item; i++)
-	{
-		do_paint(pitems[i], FGCOLOR, BGCOLOR);
-    }
-	do_paint(pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
+
+	for (i = 0; i < num_menu->count_item; i++) do_paint(num_menu->pitems[i], FGCOLOR, BGCOLOR);
+	do_paint(num_menu->pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
+
 }
 //--------------------------------------------------------------------------------
 //keyup and keydown
 void f2(void *arg)
 {
     GR_EVENT *event = (GR_EVENT*) arg;
+    GR_WINDOW_INFO winfo;
     int i;
     int y;
 
 	switch(event->keystroke.ch)
 	{
 
-	case 0xf802:	// Key down
-					num_menu->num_item = pitems[num_menu->num_item]->prev_item;
+	case 0xf802:	// Key up
+					if (num_menu->num_item < pitems[num_menu->num_item]->prev_item){
+					   // will changing from begin to end menupoint
+					   for (i = num_menu->first_item; i < num_menu->count_item; i++){
+						   GrUnmapWindow(pitems[i]->main_window);
+					   }
+
+					   y = MAIN_HEIGHT;
+					   for (i = (num_menu->count_item - 1); i >= 0; i--){
+						   y -= num_menu->pitems[i]->bgnrect.height;
+						   if (y < num_menu->pitems[num_menu->first_item]->bgnrect.height) break;
+						   GrMapWindow(num_menu->pitems[i]->main_window);
+						   GrMoveWindow(num_menu->pitems[i]->main_window, num_menu->pitems[i]->bgnrect.x, y);
+					   }
+					   num_menu->start_item = i + 1;
+					}
+
+					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 
 					if (num_menu->num_item < num_menu->start_item){
-						y = num_menu->first_item * MENUSTEP;
+						GrMapWindow(num_menu->pitems[num_menu->num_item]->main_window);
+				    	GrMoveWindow(num_menu->pitems[num_menu->num_item]->main_window,
+				    			num_menu->pitems[num_menu->num_item]->bgnrect.x,
+								num_menu->pitems[num_menu->first_item]->bgnrect.y);
+				    	y = num_menu->pitems[num_menu->first_item]->bgnrect.y + num_menu->pitems[num_menu->first_item]->bgnrect.height;
+						for (i = num_menu->num_item + 1; i < num_menu->count_item; i++){
+							GrMapWindow(num_menu->pitems[i]->main_window);
+ 					    	GrMoveWindow(num_menu->pitems[i]->main_window,
+ 					    			num_menu->pitems[i]->bgnrect.x, y);
+ 					    	y += num_menu->pitems[num_menu->first_item + i - num_menu->num_item]->bgnrect.height;
+ 					    }
 						num_menu->start_item = num_menu->num_item;
-						for (i = num_menu->start_item; i < num_menu->count_item; i++){
-							GrMoveWindow(pitems[i]->main_window, 0, y);
-							y += MENUSTEP;
-						}
 					}
 
-					if  (num_menu->num_item == (num_menu->count_item - 1)){
-						y = num_menu->first_item * MENUSTEP;
-						num_menu->start_item = num_menu->num_item - (MAIN_HEIGHT/MENUSTEP - 1) + 1;
-						if (num_menu->start_item < num_menu->first_item) num_menu->start_item = num_menu->first_item;
-						for (i = num_menu->start_item; i < num_menu->count_item; i++){
-							GrMoveWindow(pitems[i]->main_window, 0, y);
-							y += MENUSTEP;
-						}
-					}
+					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
-					for (i = 0; i < num_menu->count_item; i++) do_paint(pitems[i], FGCOLOR, BGCOLOR);
+					for (i = num_menu->start_item; i < num_menu->count_item; i++) do_paint(pitems[i], FGCOLOR, BGCOLOR);
 					do_paint(pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
 
 					break;
 
-	case 0xf803:	// Key up
-					num_menu->num_item = pitems[num_menu->num_item]->next_item;
+	case 0xf803:	// Key down
 
-					if ((((num_menu->num_item-num_menu->start_item) * MENUSTEP) >= (MAIN_HEIGHT - MENUSTEP)) ||
-							(num_menu->num_item == num_menu->first_item)) {
-
-						y = num_menu->first_item * MENUSTEP;
-						num_menu->start_item = num_menu->num_item - (MAIN_HEIGHT/MENUSTEP - 1) + 1;
-						if (num_menu->start_item < num_menu->first_item) num_menu->start_item = num_menu->first_item;
-						for (i = num_menu->start_item; i < num_menu->count_item; i++){
-							GrMoveWindow(pitems[i]->main_window, 0, y);
-							y += MENUSTEP;
-						}
-						for (i = num_menu->first_item; i < num_menu->start_item; i++){
-							GrMoveWindow(pitems[i]->main_window, 0, y);
-							y += MENUSTEP;
+					if (num_menu->num_item > pitems[num_menu->num_item]->next_item){
+						// will changing from end to begin menupoint
+						num_menu->start_item = pitems[num_menu->num_item]->next_item;
+						for (i = num_menu->first_item; i < num_menu->count_item; i++){
+							GrMapWindow(pitems[i]->main_window);
+							GrMoveWindow(pitems[i]->main_window,
+										num_menu->pitems[i]->bgnrect.x,
+										num_menu->pitems[i]->bgnrect.y );
 						}
 					}
 
-					for (i = 0; i < num_menu->count_item; i++) do_paint(pitems[i], FGCOLOR, BGCOLOR);
+					i = pitems[num_menu->num_item]->next_item - num_menu->num_item; // temporary for difference start_item
+					num_menu->num_item = pitems[num_menu->num_item]->next_item;
+
+					if ((num_menu->pitems[num_menu->num_item]->bgnrect.y +
+							num_menu->pitems[num_menu->num_item]->bgnrect.height) >= MAIN_HEIGHT){
+
+							GrUnmapWindow(pitems[num_menu->start_item]->main_window);
+							num_menu->start_item += i;
+							for (i = num_menu->start_item; i < num_menu->count_item; i++){
+								GrGetWindowInfo(pitems[i]->main_window, &winfo);
+								GrMoveWindow(pitems[i]->main_window,
+											winfo.x,
+											winfo.y - num_menu->pitems[num_menu->start_item]->bgnrect.height );
+							}
+					}
+
+					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
+
+					for (i = num_menu->start_item; i < num_menu->count_item; i++) do_paint(pitems[i], FGCOLOR, BGCOLOR);
 					do_paint(pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
 
 					break;

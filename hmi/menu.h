@@ -14,13 +14,15 @@
 #define MENUFILE	1
 #define MENUMEM		2
 
-#define MENUSTEP	16
+#define MENUSTEP	32
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;
+	GR_RECT bgnrect;
 	char *name_font;
 	char *text;
 	char *next_menu;  //указатель на имя следующего подменю
+	char *action;
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
 }item;
