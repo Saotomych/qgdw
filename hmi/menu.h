@@ -11,7 +11,7 @@
 #include "hmi.h"
 #endif
 
-#define MENUSTEP	32
+#define MENUSTEP	16
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;

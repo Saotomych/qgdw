@@ -254,6 +254,7 @@ void f2(void *arg)
 					if  (num_menu->num_item == (num_menu->count_item - 1)){
 						y = num_menu->first_item * MENUSTEP;
 						num_menu->start_item = num_menu->num_item - (MAIN_HEIGHT/MENUSTEP - 1) + 1;
+						if (num_menu->start_item < num_menu->first_item) num_menu->start_item = num_menu->first_item;
 						for (i = num_menu->start_item; i < num_menu->count_item; i++){
 							GrMoveWindow(pitems[i]->main_window, 0, y);
 							y += MENUSTEP;
