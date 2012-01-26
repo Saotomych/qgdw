@@ -52,7 +52,7 @@ fact factsetting[] = {
 {"keyup", NULL},				//6
 };
 
-void event_menu()
+void mainloop()
 {
 	GR_EVENT event;
 	//GR_WM_PROPERTIES props;
@@ -96,11 +96,9 @@ int main(int argc, char **argv)
 {
   init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
   do_openfilemenu();
-
   draw_menu();
-
   fnewmenu = 1;
-  event_menu();
+  mainloop();
   return 0;
 }
 

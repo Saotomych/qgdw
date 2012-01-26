@@ -11,14 +11,15 @@
 #include "hmi.h"
 #endif
 
-#define MENUSTEP	20
+#define MENUSTEP	32
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;
 	char *name_font;
 	char *text;
-	char *next_menu;  //указатель на следующее меню
-
+	char *next_menu;  //указатель на имя следующего подменю
+	char next_item;		// index of next menu point
+	char prev_item;		// index of previous menu point
 }item;
 
 typedef struct _menu{
@@ -28,6 +29,7 @@ typedef struct _menu{
 	int num_item;   //текущий пункт меню
 	int start_item; //пункт начала вывода
 	int count_item;        //number of item
+	char first_item;	// index of first menu point
 //  функции set
 
 }menu;
