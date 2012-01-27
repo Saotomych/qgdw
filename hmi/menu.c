@@ -63,7 +63,7 @@ int do_openfilemenu(char *buf, int type){
 			case MENUFILE:
 
 							if (stat(buf, &fst) == -1){
-								printf("IEC Virt: 'item' file not found\n");
+								printf("IEC Virt: menufile not found\n");
 								return -1;
 							}
 
@@ -368,7 +368,7 @@ void f2(void *arg)
 	case 0x0D:		// Key ENTER
 	case 0x20:
 					if (num_menu->pitems[num_menu->num_item]->next_menu){
-						strcpy(newmenu, "menus/");
+						strcpy(newmenu, "../menus/");
 						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 						prev_item = num_menu->num_item;
 						destroy_menu();
@@ -380,7 +380,7 @@ void f2(void *arg)
 
 	case 0x1B:		// Key MENU / ESC
 					destroy_menu();
-					if (!do_openfilemenu("menus/item", MENUFILE)){
+					if (!do_openfilemenu("../menus/item", MENUFILE)){
 						draw_menu();
 						num_menu->num_item = prev_item;
 					}
