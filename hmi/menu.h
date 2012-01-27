@@ -32,6 +32,7 @@ typedef struct _menu{
 	GR_WINDOW_ID main_window;
 	GR_FONT_ID	font;
 	item **pitems;
+	char *ptxtmenu;     //указатель на массив пунктов меню
 	int num_item;   //текущий пункт меню
 	int start_item; //пункт начала вывода
 	int count_item;        //number of item

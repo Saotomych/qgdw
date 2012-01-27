@@ -13,7 +13,6 @@
 
 static char prev_item;		// pointer to item in main menu
 
-static char *ptxtmenu;     //указатель на массив пунктов меню
 static menu *num_menu;     //указатель на структуру меню
 
 char newmenu[40];			// For temporary operations
@@ -41,8 +40,8 @@ fact pfactsetting[] ={
 		{"doxpaint", f1},
 		{"keydown", f2},
 		{"keyup", f3},
-
 };
+
 //------------------------------------------------------------------------------------
 int do_openfilemenu(char *buf, int type){
 	char *pitemtype;
@@ -58,18 +57,21 @@ int do_openfilemenu(char *buf, int type){
 	char last_menuitem = 0;
 	char first_menuitem = 0;
 
-			switch(type){
+	 	 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
+
+    		switch(type){
 
 			case MENUFILE:
 
 							if (stat(buf, &fst) == -1){
 								printf("IEC Virt: menufile not found\n");
+								free(num_menu);
 								return -1;
 							}
 
-							ptxtmenu =  malloc(fst.st_size + 2);
+							num_menu->ptxtmenu =  malloc(fst.st_size + 2);
 						 	fmcfg = fopen(buf, "r");
-						 	clen = fread((ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
+						 	clen = fread((num_menu->ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
 						 	if (!clen) return -1;
 						 	if (clen != fst.st_size) return -1;
 						 	break;
@@ -78,28 +80,26 @@ int do_openfilemenu(char *buf, int type){
 							clen = strlen(buf);
 						 	if (!clen) return -1;
 
-						 	ptxtmenu = malloc(clen + 2);
-						 	strcpy((ptxtmenu+1), buf);
+						 	num_menu->ptxtmenu = malloc(clen + 2);
+						 	strcpy((num_menu->ptxtmenu+1), buf);
 						 	break;
 			}
 
 
 		 	//Make ending 0 for string
-		 	ptxtmenu[clen+1] = 0;
+		 	num_menu->ptxtmenu[clen+1] = 0;
 		 	//Make ending start 0
-		 	ptxtmenu[0] = 0;
+		 	num_menu->ptxtmenu[0] = 0;
 
 		 	for (i=1; i<clen; i++)
 	        {
-	        	if (ptxtmenu[i] == 0xD || ptxtmenu[i] == 0xA) ptxtmenu[i] = 0;
-	        	if ((ptxtmenu[i]) && (!ptxtmenu[i-1])) count_item++;
+	        	if (num_menu->ptxtmenu[i] == 0xD || num_menu->ptxtmenu[i] == 0xA) num_menu->ptxtmenu[i] = 0;
+	        	if ((num_menu->ptxtmenu[i]) && (!num_menu->ptxtmenu[i-1])) count_item++;
 	        }
 
-		 	 num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
-	         num_menu->pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
-	         num_menu->bgnmenuy = 0;
-
-	         ptxt = ptxtmenu;
+		 	num_menu->pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
+		 	ptxt = num_menu->ptxtmenu;
+	 	 	num_menu->bgnmenuy = 0;
 
 	         for (i = 0; i < count_item; i++)
 	         {
@@ -298,15 +298,13 @@ int i;
 	}
 	GrUnmapWindow(num_menu->main_window);
 	GrDestroyWindow(num_menu->main_window);
+	free(num_menu->ptxtmenu);
 	free(num_menu);
 	num_menu = 0;
-	free(ptxtmenu);
-	ptxtmenu = 0;
 }
 
 //-------------------------------------------------------------------------------
-void f1(void *arg)
-{
+void f1(void *arg){
     int i;
 
 	for (i = 0; i < num_menu->count_item; i++){
@@ -318,8 +316,7 @@ void f1(void *arg)
 }
 //--------------------------------------------------------------------------------
 //keyup and keydown
-void f2(void *arg)
-{
+void f2(void *arg){
     GR_EVENT *event = (GR_EVENT*) arg;
     int itemy, itemh;
 
