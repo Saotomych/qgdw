@@ -307,13 +307,14 @@ void f2(void *arg)
 
 					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
-					if ((num_menu->pitems[num_menu->num_item]->rect.y > (MAIN_HEIGHT-10)) ||
-						(num_menu->pitems[num_menu->num_item]->rect.y  < (num_menu->bgnmenuy - 10))){
+					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
 
-						stepy = num_menu->pitems[num_menu->num_item]->rect.y + num_menu->pitems[num_menu->num_item]->rect.height - MAIN_HEIGHT;
-						if (num_menu->num_item < num_menu->pitems[num_menu->num_item]->next_item){
-						 stepy -= (num_menu->bgnmenuy - num_menu->pitems[num_menu->num_item]->rect.y + stepy);
-						}
+					if ((itemy > (MAIN_HEIGHT-10)) || (itemy  < (num_menu->bgnmenuy - 10))){
+
+						stepy = itemy + itemh - MAIN_HEIGHT;
+						if (num_menu->num_item < num_menu->pitems[num_menu->num_item]->next_item)
+						   stepy = itemy - num_menu->bgnmenuy;
 
 						for (i = num_menu->first_item; i < num_menu->count_item; i++){
 							num_menu->pitems[i]->rect.y -= stepy;
