@@ -334,7 +334,7 @@ void f2(void *arg)
 
 					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
-					if ((num_menu->pitems[num_menu->num_item]->rect.y > (MAIN_HEIGHT-MENUSTEP)) ||
+					if ((num_menu->pitems[num_menu->num_item]->rect.y > (MAIN_HEIGHT-10)) ||
 						(num_menu->pitems[num_menu->num_item]->rect.y < 0)){
 
 						stepy = num_menu->pitems[num_menu->num_item]->rect.y + num_menu->pitems[num_menu->num_item]->rect.height - MAIN_HEIGHT;
