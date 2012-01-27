@@ -357,7 +357,7 @@ void f2(void *arg){
 	case 0x20:
 					prev_item = num_menu->num_item;
 					if (num_menu->pitems[num_menu->num_item]->next_menu){
-						strcpy(newmenu, "../menus/");
+						strcpy(newmenu, "menus/");
 						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 						destroy_menu();
 						if (!do_openfilemenu(newmenu, MENUFILE)){
@@ -368,7 +368,7 @@ void f2(void *arg){
 
 	case 0x1B:		// Key MENU / ESC
 					destroy_menu();
-					if (!do_openfilemenu("../menus/item", MENUFILE)){
+					if (!do_openfilemenu("menus/item", MENUFILE)){
 						draw_menu();
 						num_menu->num_item = prev_item;
 					}

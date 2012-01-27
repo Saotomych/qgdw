@@ -93,7 +93,7 @@ void mainloop()
 int main(int argc, char **argv)
 {
   init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
-  do_openfilemenu("../menus/item", MENUFILE);
+  do_openfilemenu("menus/item", MENUFILE);
   draw_menu();
   mainloop();
   return 0;
