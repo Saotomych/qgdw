@@ -14,7 +14,7 @@
 #define MENUFILE	1
 #define MENUMEM		2
 
-#define MENUSTEP	32
+#define MENUSTEP	24
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;

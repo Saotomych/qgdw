@@ -198,7 +198,7 @@ void do_paint(item *pitem, int fg, int bg)
 
 			GrSetGCFont(gc, num_menu->font);
 
-			GrText(*main_window, gc, 10, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
+			GrText(*main_window, gc, 3, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
 
 			GrDestroyGC(gc);
 }
@@ -234,7 +234,6 @@ void draw_menu()
 
 			//Paint on the screen windows of item
 			int i;
-//			int y2 = 0; //step item
 
 			for (i=0; i < num_menu->count_item; i++)
 			{
@@ -346,7 +345,8 @@ void f2(void *arg)
 
 						stepy = itemy + itemh - MAIN_HEIGHT;
 						if (num_menu->num_item == num_menu->first_item)
-							stepy = (itemh << 1) - MAIN_HEIGHT - num_menu->bgnmenuy;
+//							stepy = (itemh << 1) - MAIN_HEIGHT - num_menu->bgnmenuy;
+							stepy = itemy - num_menu->bgnmenuy;
 
 						for (i = num_menu->first_item; i < num_menu->count_item; i++){
 							num_menu->pitems[i]->rect.y -= stepy;
