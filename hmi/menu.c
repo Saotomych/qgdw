@@ -137,7 +137,7 @@ int do_openfilemenu(char *buf, int type){
 
 	            	num_menu->pitems[i]->prev_item = last_menuitem;
 	            	num_menu->pitems[i]->next_item = first_menuitem;
-	            	num_menu->pitems[last_menuitem]->next_item = i;
+	            	num_menu->pitems[(int)last_menuitem]->next_item = i;
 		            num_menu->pitems[i]->text = ptxt;
 
 		            while ((*ptxt) && ((*ptxt) != '>') && ((*ptxt) != '~')) ptxt++;
@@ -171,13 +171,13 @@ int do_openfilemenu(char *buf, int type){
 
 	         }
 
-	         num_menu->pitems[first_menuitem]->prev_item = last_menuitem;
+	         num_menu->pitems[(int) first_menuitem]->prev_item = last_menuitem;
 
 	         num_menu->num_item = first_menuitem;
 	         num_menu->first_item = first_menuitem;
 	         num_menu->start_item = first_menuitem;
 	         num_menu->count_item = count_item;
-	         num_menu->bgnmenuy = num_menu->pitems[num_menu->first_item]->rect.y;
+	         num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->first_item]->rect.y;
      return 0;
 }
 //------------------------------------------------------------------------------------
@@ -259,9 +259,37 @@ void draw_menu()
 
 }
 
+void redraw_menu(int type){
+int i;
+int stepy, y, itemy, itemh;
+
+	itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+	itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+	stepy = itemy + itemh - MAIN_HEIGHT;
+	if (!type){
+		if (num_menu->num_item == num_menu->first_item) stepy = itemy - num_menu->bgnmenuy;
+	}else{
+		if (num_menu->num_item < num_menu->pitems[num_menu->num_item]->next_item) stepy = itemy - num_menu->bgnmenuy;
+	}
+
+	for (i = num_menu->first_item; i < num_menu->count_item; i++){
+		num_menu->pitems[i]->rect.y -= stepy;
+		y = num_menu->pitems[i]->rect.y;
+		if ((y >= num_menu->bgnmenuy - 10) && (y < MAIN_HEIGHT)){
+			GrMoveWindow(num_menu->pitems[i]->main_window,
+					 num_menu->pitems[i]->rect.x,
+					 num_menu->pitems[i]->rect.y);
+			GrMapWindow(num_menu->pitems[i]->main_window);
+		}else GrUnmapWindow(num_menu->pitems[i]->main_window);
+
+	}
+}
+
 void destroy_menu()
 {
 int i;
+
 	for (i=0; i < num_menu->count_item; i++){
 		GrUnmapWindow(num_menu->pitems[i]->main_window);
 		GrDestroyWindow(num_menu->pitems[i]->main_window);
@@ -279,7 +307,7 @@ int i;
 //-------------------------------------------------------------------------------
 void f1(void *arg)
 {
-    int i, y;
+    int i;
 
 	for (i = 0; i < num_menu->count_item; i++){
 		do_paint(num_menu->pitems[i], FGCOLOR, BGCOLOR);
@@ -293,9 +321,7 @@ void f1(void *arg)
 void f2(void *arg)
 {
     GR_EVENT *event = (GR_EVENT*) arg;
-    GR_WINDOW_INFO winfo;
-    int i;
-    int stepy, y, itemy, itemh;
+    int itemy, itemh;
 
 	switch(event->keystroke.ch)
 	{
@@ -309,24 +335,7 @@ void f2(void *arg)
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
 
-					if ((itemy > (MAIN_HEIGHT-10)) || (itemy  < (num_menu->bgnmenuy - 10))){
-
-						stepy = itemy + itemh - MAIN_HEIGHT;
-						if (num_menu->num_item < num_menu->pitems[num_menu->num_item]->next_item)
-						   stepy = itemy - num_menu->bgnmenuy;
-
-						for (i = num_menu->first_item; i < num_menu->count_item; i++){
-							num_menu->pitems[i]->rect.y -= stepy;
-							y = num_menu->pitems[i]->rect.y;
-							if ((y >= num_menu->bgnmenuy - 10) && (y < MAIN_HEIGHT)){
-								GrMoveWindow(num_menu->pitems[i]->main_window,
-										 num_menu->pitems[i]->rect.x,
-										 num_menu->pitems[i]->rect.y);
-								GrMapWindow(num_menu->pitems[i]->main_window);
-							}else GrUnmapWindow(num_menu->pitems[i]->main_window);
-
-						}
-					}
+					if ((itemy > (MAIN_HEIGHT-10)) || (itemy  < (num_menu->bgnmenuy - 10))) redraw_menu(1);
 
 					f1(NULL);
 
@@ -341,25 +350,7 @@ void f2(void *arg)
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
 
-					if ((itemy > (MAIN_HEIGHT-10)) || (itemy < (num_menu->bgnmenuy - 10))){
-
-						stepy = itemy + itemh - MAIN_HEIGHT;
-						if (num_menu->num_item == num_menu->first_item)
-//							stepy = (itemh << 1) - MAIN_HEIGHT - num_menu->bgnmenuy;
-							stepy = itemy - num_menu->bgnmenuy;
-
-						for (i = num_menu->first_item; i < num_menu->count_item; i++){
-							num_menu->pitems[i]->rect.y -= stepy;
-							y = num_menu->pitems[i]->rect.y;
-							if ((y >= num_menu->bgnmenuy - 10) && (y < MAIN_HEIGHT)){
-								GrMoveWindow(num_menu->pitems[i]->main_window,
-										 num_menu->pitems[i]->rect.x,
-										 num_menu->pitems[i]->rect.y);
-								GrMapWindow(num_menu->pitems[i]->main_window);
-							}else GrUnmapWindow(num_menu->pitems[i]->main_window);
-
-						}
-					}
+					if ((itemy > (MAIN_HEIGHT-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
 
 					f1(NULL);
 
@@ -367,10 +358,10 @@ void f2(void *arg)
 
 	case 0x0D:		// Key ENTER
 	case 0x20:
+					prev_item = num_menu->num_item;
 					if (num_menu->pitems[num_menu->num_item]->next_menu){
 						strcpy(newmenu, "../menus/");
 						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
-						prev_item = num_menu->num_item;
 						destroy_menu();
 						if (!do_openfilemenu(newmenu, MENUFILE)){
 							draw_menu();
