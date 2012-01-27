@@ -14,7 +14,6 @@
 static char prev_item;		// pointer to item in main menu
 
 static char *ptxtmenu;     //указатель на массив пунктов меню
-static item **pitems;      //указатель на структуру пунктов
 static menu *num_menu;     //указатель на структуру меню
 
 char newmenu[40];			// For temporary operations
@@ -96,14 +95,17 @@ int do_openfilemenu(char *buf, int type){
 	        	if ((ptxtmenu[i]) && (!ptxtmenu[i-1])) count_item++;
 	        }
 
-	         pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
+		 	 num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
+	         num_menu->pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
+	         num_menu->bgnmenuy = 0;
+
 	         ptxt = ptxtmenu;
 
 	         for (i = 0; i < count_item; i++)
 	         {
 	            while (!(*ptxt)) ptxt++;
 
-	            pitems[i] = (item*) malloc(sizeof(item));
+	            num_menu->pitems[i] = (item*) malloc(sizeof(item));
 	            ptxt[4] = 0;
 	            pitemtype = ptxt;
 	            ptxt += 5;
@@ -111,44 +113,44 @@ int do_openfilemenu(char *buf, int type){
 
 	            // Parse RECTangle for item
 	            // X
-	            if (*ptxt != 'a') pitems[i]->bgnrect.x = atoi(ptxt);
-	            else pitems[i]->bgnrect.x = 0;
+	            if (*ptxt != 'a') num_menu->pitems[i]->rect.x = atoi(ptxt);
+	            else num_menu->pitems[i]->rect.x = 0;
 	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // Y
-	            if (*ptxt != 'a') pitems[i]->bgnrect.y = atoi(ptxt);
-	            else pitems[i]->bgnrect.y = pitems[i-1]->bgnrect.y + pitems[i-1]->bgnrect.height;
+	            if (*ptxt != 'a') num_menu->pitems[i]->rect.y = atoi(ptxt);
+	            else num_menu->pitems[i]->rect.y = num_menu->pitems[i-1]->rect.y + num_menu->pitems[i-1]->rect.height;
 	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // W
-	            if (*ptxt != 'a') pitems[i]->bgnrect.width = atoi(ptxt);
-	            else pitems[i]->bgnrect.width = MAIN_WIDTH - pitems[i]->bgnrect.x;
+	            if (*ptxt != 'a') num_menu->pitems[i]->rect.width = atoi(ptxt);
+	            else num_menu->pitems[i]->rect.width = MAIN_WIDTH - num_menu->pitems[i]->rect.x;
 	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // H
-	            if (*ptxt != 'a') pitems[i]->bgnrect.height = atoi(ptxt);
-	            else pitems[i]->bgnrect.height = MENUSTEP;
+	            if (*ptxt != 'a') num_menu->pitems[i]->rect.height = atoi(ptxt);
+	            else num_menu->pitems[i]->rect.height = MENUSTEP;
 	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // Item type "MENU"
 	            if (!strcmp(pitemtype, "menu")){
 
-	            	pitems[i]->prev_item = last_menuitem;
-	            	pitems[i]->next_item = first_menuitem;
-	            	pitems[last_menuitem]->next_item = i;
-		            pitems[i]->text = ptxt;
+	            	num_menu->pitems[i]->prev_item = last_menuitem;
+	            	num_menu->pitems[i]->next_item = first_menuitem;
+	            	num_menu->pitems[last_menuitem]->next_item = i;
+		            num_menu->pitems[i]->text = ptxt;
 
 		            while ((*ptxt) && ((*ptxt) != '>') && ((*ptxt) != '~')) ptxt++;
 
-		            pitems[i]->next_menu = 0;
+		            num_menu->pitems[i]->next_menu = 0;
 		            if (*ptxt == '>'){
 		            	*ptxt = 0;
-		            	pitems[i]->next_menu = ptxt+1;
+		            	num_menu->pitems[i]->next_menu = ptxt+1;
 		            	ptxt++;
 		            }
 		            if (*ptxt == '~'){
 		               	*ptxt = 0;
-		            	pitems[i]->action = ptxt+1;
+		               	num_menu->pitems[i]->action = ptxt+1;
 		            	ptxt++;
 		            }
 		            last_menuitem = i;
@@ -162,22 +164,20 @@ int do_openfilemenu(char *buf, int type){
 
 	            // Item type "TEXT"
 	            if (!strcmp(pitemtype, "text")){
-		            pitems[i]->text = ptxt;
+		            num_menu->pitems[i]->text = ptxt;
 	            }
 
 	            ptxt += strlen(ptxt);
 
 	         }
 
-	         pitems[first_menuitem]->prev_item = last_menuitem;
+	         num_menu->pitems[first_menuitem]->prev_item = last_menuitem;
 
-	         num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
-	         num_menu->pitems = pitems;
 	         num_menu->num_item = first_menuitem;
 	         num_menu->first_item = first_menuitem;
 	         num_menu->start_item = first_menuitem;
 	         num_menu->count_item = count_item;
-
+	         num_menu->bgnmenuy = num_menu->pitems[num_menu->first_item]->rect.y;
      return 0;
 }
 //------------------------------------------------------------------------------------
@@ -241,10 +241,10 @@ void draw_menu()
 				main_window = &(num_menu->pitems[i]->main_window);
 
 				*main_window = GrNewWindow(num_menu->main_window,
-										   num_menu->pitems[i]->bgnrect.x,
-										   num_menu->pitems[i]->bgnrect.y,
-										   num_menu->pitems[i]->bgnrect.width,
-										   num_menu->pitems[i]->bgnrect.height,
+										   num_menu->pitems[i]->rect.x,
+										   num_menu->pitems[i]->rect.y,
+										   num_menu->pitems[i]->rect.width,
+										   num_menu->pitems[i]->rect.height,
 										   0, WHITE, WHITE);
 
 				props.flags = 0;
@@ -264,10 +264,10 @@ void destroy_menu()
 {
 int i;
 	for (i=0; i < num_menu->count_item; i++){
-		GrUnmapWindow(pitems[i]->main_window);
-		GrDestroyWindow(pitems[i]->main_window);
-		free(pitems[i]);
-		pitems[i] = 0;
+		GrUnmapWindow(num_menu->pitems[i]->main_window);
+		GrDestroyWindow(num_menu->pitems[i]->main_window);
+		free(num_menu->pitems[i]);
+		num_menu->pitems[i] = 0;
 	}
 	GrUnmapWindow(num_menu->main_window);
 	GrDestroyWindow(num_menu->main_window);
@@ -280,9 +280,12 @@ int i;
 //-------------------------------------------------------------------------------
 void f1(void *arg)
 {
-    int i;
+    int i, y;
 
-	for (i = 0; i < num_menu->count_item; i++) do_paint(num_menu->pitems[i], FGCOLOR, BGCOLOR);
+	for (i = 0; i < num_menu->count_item; i++){
+		do_paint(num_menu->pitems[i], FGCOLOR, BGCOLOR);
+	}
+
 	do_paint(num_menu->pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
 
 }
@@ -293,93 +296,72 @@ void f2(void *arg)
     GR_EVENT *event = (GR_EVENT*) arg;
     GR_WINDOW_INFO winfo;
     int i;
-    int y;
+    int stepy, y;
 
 	switch(event->keystroke.ch)
 	{
 
 	case 0xf802:	// Key up
-					if (num_menu->num_item < pitems[num_menu->num_item]->prev_item){
-					   // will changing from begin to end menupoint
-					   for (i = num_menu->first_item; i < num_menu->count_item; i++){
-						   GrUnmapWindow(pitems[i]->main_window);
-					   }
-
-					   y = MAIN_HEIGHT;
-					   for (i = (num_menu->count_item - 1); i >= 0; i--){
-						   y -= num_menu->pitems[i]->bgnrect.height;
-						   if (y < num_menu->pitems[num_menu->first_item]->bgnrect.height) break;
-						   GrMapWindow(num_menu->pitems[i]->main_window);
-						   GrMoveWindow(num_menu->pitems[i]->main_window, num_menu->pitems[i]->bgnrect.x, y);
-					   }
-					   num_menu->start_item = i + 1;
-					}
 
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 
-					if (num_menu->num_item < num_menu->start_item){
-						GrMapWindow(num_menu->pitems[num_menu->num_item]->main_window);
-				    	GrMoveWindow(num_menu->pitems[num_menu->num_item]->main_window,
-				    			num_menu->pitems[num_menu->num_item]->bgnrect.x,
-								num_menu->pitems[num_menu->first_item]->bgnrect.y);
-				    	y = num_menu->pitems[num_menu->first_item]->bgnrect.y + num_menu->pitems[num_menu->first_item]->bgnrect.height;
-						for (i = num_menu->num_item + 1; i < num_menu->count_item; i++){
-							GrMapWindow(num_menu->pitems[i]->main_window);
- 					    	GrMoveWindow(num_menu->pitems[i]->main_window,
- 					    			num_menu->pitems[i]->bgnrect.x, y);
- 					    	y += num_menu->pitems[num_menu->first_item + i - num_menu->num_item]->bgnrect.height;
- 					    }
-						num_menu->start_item = num_menu->num_item;
-					}
-
 					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
-					for (i = num_menu->start_item; i < num_menu->count_item; i++) do_paint(pitems[i], FGCOLOR, BGCOLOR);
-					do_paint(pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
+					if ((num_menu->pitems[num_menu->num_item]->rect.y > (MAIN_HEIGHT-MENUSTEP)) ||
+						(num_menu->pitems[num_menu->num_item]->rect.y < 0)){
+
+						stepy = num_menu->pitems[num_menu->num_item]->rect.y - num_menu->bgnmenuy;
+						for (i = num_menu->first_item; i < num_menu->count_item; i++){
+							num_menu->pitems[i]->rect.y -= stepy;
+							y = num_menu->pitems[i]->rect.y;
+							if ((y >= num_menu->bgnmenuy) && (y < MAIN_HEIGHT)){
+								GrMoveWindow(num_menu->pitems[i]->main_window,
+										 num_menu->pitems[i]->rect.x,
+										 num_menu->pitems[i]->rect.y);
+								GrMapWindow(num_menu->pitems[i]->main_window);
+							}else GrUnmapWindow(num_menu->pitems[i]->main_window);
+
+						}
+					}
+
+					f1(NULL);
 
 					break;
 
 	case 0xf803:	// Key down
 
-					if (num_menu->num_item > pitems[num_menu->num_item]->next_item){
-						// will changing from end to begin menupoint
-						num_menu->start_item = pitems[num_menu->num_item]->next_item;
-						for (i = num_menu->first_item; i < num_menu->count_item; i++){
-							GrMapWindow(pitems[i]->main_window);
-							GrMoveWindow(pitems[i]->main_window,
-										num_menu->pitems[i]->bgnrect.x,
-										num_menu->pitems[i]->bgnrect.y );
-						}
-					}
-
-					i = pitems[num_menu->num_item]->next_item - num_menu->num_item; // temporary for difference start_item
-					num_menu->num_item = pitems[num_menu->num_item]->next_item;
-
-					if ((num_menu->pitems[num_menu->num_item]->bgnrect.y +
-							num_menu->pitems[num_menu->num_item]->bgnrect.height) >= MAIN_HEIGHT){
-
-							GrUnmapWindow(pitems[num_menu->start_item]->main_window);
-							num_menu->start_item += i;
-							for (i = num_menu->start_item; i < num_menu->count_item; i++){
-								GrGetWindowInfo(pitems[i]->main_window, &winfo);
-								GrMoveWindow(pitems[i]->main_window,
-											winfo.x,
-											winfo.y - num_menu->pitems[num_menu->start_item]->bgnrect.height );
-							}
-					}
+					num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
 
 					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
-					for (i = num_menu->start_item; i < num_menu->count_item; i++) do_paint(pitems[i], FGCOLOR, BGCOLOR);
-					do_paint(pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
+					if ((num_menu->pitems[num_menu->num_item]->rect.y > (MAIN_HEIGHT-MENUSTEP)) ||
+						(num_menu->pitems[num_menu->num_item]->rect.y < 0)){
+
+						stepy = num_menu->pitems[num_menu->num_item]->rect.y + num_menu->pitems[num_menu->num_item]->rect.height - MAIN_HEIGHT;
+						if (num_menu->num_item == num_menu->first_item)
+							stepy -= (num_menu->pitems[num_menu->num_item]->rect.y - num_menu->pitems[num_menu->num_item]->rect.height + num_menu->bgnmenuy);
+						for (i = num_menu->first_item; i < num_menu->count_item; i++){
+							num_menu->pitems[i]->rect.y -= stepy;
+							y = num_menu->pitems[i]->rect.y;
+							if ((y >= num_menu->bgnmenuy - 10) && (y < MAIN_HEIGHT)){
+								GrMoveWindow(num_menu->pitems[i]->main_window,
+										 num_menu->pitems[i]->rect.x,
+										 num_menu->pitems[i]->rect.y);
+								GrMapWindow(num_menu->pitems[i]->main_window);
+							}else GrUnmapWindow(num_menu->pitems[i]->main_window);
+
+						}
+					}
+
+					f1(NULL);
 
 					break;
 
 	case 0x0D:		// Key ENTER
 	case 0x20:
-					if (pitems[num_menu->num_item]->next_menu){
+					if (num_menu->pitems[num_menu->num_item]->next_menu){
 						strcpy(newmenu, "menus/");
-						strcat(newmenu, pitems[num_menu->num_item]->next_menu);
+						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 						prev_item = num_menu->num_item;
 						destroy_menu();
 						if (!do_openfilemenu(newmenu, MENUFILE)){

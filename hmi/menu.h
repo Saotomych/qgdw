@@ -18,6 +18,7 @@
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;
+	GR_RECT rect;
 	GR_RECT bgnrect;
 	char *name_font;
 	char *text;
@@ -34,6 +35,7 @@ typedef struct _menu{
 	int num_item;   //текущий пункт меню
 	int start_item; //пункт начала вывода
 	int count_item;        //number of item
+	int bgnmenuy;	// first y coord of 1th menu item
 	char first_item;	// index of first menu point
 //  функции set
 
