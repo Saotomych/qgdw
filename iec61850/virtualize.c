@@ -304,7 +304,7 @@ int sync_time(time_t srv_time)
 		if(res == -1) return res;
 
 		// calculation of precision adjustment according to the RX8025 SA/NB application manual
-		p_adj += (int)( ( (float)(rtc_time - time_adj)/(float)(srv_time - time_adj)*(float)(CLOCK_FREQ) - (float)(CLOCK_FREQ) ) / (float)(CLOCK_FREQ) * (float)1000000  * (float)3050 ) * (-1);
+		p_adj += (int)( ( (float)(rtc_time - time_adj)/(float)(srv_time - time_adj)*(float)(CLOCK_FREQ) - (float)(CLOCK_FREQ) ) / (float)(CLOCK_FREQ) * 1e9 ) * (-1);
 
 		res = set_rtc_adj(RTC_DEV_NAME, p_adj);
 
