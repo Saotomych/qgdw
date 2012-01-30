@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "nano-X.h"
-#include "nanowm.h"
+#include <nano-X.h>
+#include <nanowm.h>
 #include <string.h>
 #include <signal.h>
 #include "menu.h"
@@ -50,25 +50,25 @@ fact factsetting[] = {
 {"keyup", NULL},				//6
 };
 
-void event_menu()
+void mainloop()
 {
 	GR_EVENT event;
 	//GR_WM_PROPERTIES props;
 
 	while (1) {
- 		//GR_EVENT event;
- 		//GrGetNextEvent(&event);
- 		//do_paint();
-
  		wm_handle_event(&event);
  		GrGetNextEvent(&event);
  				switch (event.type) {
 
  				case GR_EVENT_TYPE_EXPOSURE:
- 					factsetting[4].func(&event);
+ 					if (event.exposure.wid == GR_ROOT_WINDOW_ID){
+ 	 					printf ("Root exposure event 0x%04X\n", event.exposure.wid);
+ 						factsetting[4].func(&event);
+ 					}
  					break;
 
  				case GR_EVENT_TYPE_KEY_DOWN:
+ 					printf ("Key down event 0x%04X\n", event.keystroke.ch);
  					factsetting[5].func(&event);
  					break;
 
@@ -76,6 +76,9 @@ void event_menu()
  					factsetting[6].func(&event);
 					break;
 
+				case GR_EVENT_TYPE_UPDATE:
+					printf("Window event update\n");
+					break;
 
  				case GR_EVENT_TYPE_CLOSE_REQ:
  					GrClose();
@@ -85,13 +88,14 @@ void event_menu()
 
  	GrClose();
  }
+
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv)
 {
   init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
-  do_openfilemenu();
+  do_openfilemenu("../menus/item", MENUFILE);
   draw_menu();
-  event_menu();
+  mainloop();
   return 0;
 }
 
