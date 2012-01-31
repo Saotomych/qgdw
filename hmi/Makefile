@@ -1,8 +1,15 @@
 -include ../common/common.mk
 
 OBJS += hmi.o menu.o multififo.o
-NANOINCLUDE = /home/alex/PRJS/nano-x.X11.x86/microwin/src/include
-NANOLIBS = /home/alex/PRJS/nano-x.X11.x86/microwin/src/libs
+
+NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
+NANOLIBS = ../../nano-x.X11.x86/microwin/src/libs
+
+ifeq ($(ARCH), arm)
+NANOINCLUDE = ../../nano-x.fb.uclibc.arm/microwin/src/include
+NANOLIBS = ../../nano-x.fb.uclibc.arm/microwin/src/libs
+endif
+
 CCFLAGS += -c -O0 -g3 -Wall -I $(NANOINCLUDE) -L $(NANOLIBS)
 LDFLAGS += -Wl -lnano-X
 
