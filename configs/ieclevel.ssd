@@ -1,105 +1,143 @@
-<?xml version="1.0" encoding="utf-8"?>
-<SCL xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.iec.ch/61850/2003/SCL">
-  <Header id="SCL for iec-104" nameStructure="IEDName" />
-  <Substation name="S12" desc="SPb">
-    <VoltageLevel name="VL1">
-      <Bay name="B1">
-        <LNode lnInst="100" lnClass="MMXU" iedName="scada"         ldInst="55555" lnType="MMXUa" />
-        <LNode lnInst="0"   lnClass="MMXU" iedName="m700.place001" ldInst="967"   lnType="MMXUa" />
-        <LNode lnInst="1"   lnClass="MMXU" iedName="m700.place001" ldInst="100"   lnType="MMXUa" />
-        <LNode lnInst="2"   lnClass="MMXU" iedName="m700.place001" ldInst="101"   lnType="MMXUa" />
-        <LNode lnInst="3"   lnClass="MMXU" iedName="m700.place001" ldInst="102"   lnType="MMXUa" />
-      </Bay>
-    </VoltageLevel>
-  </Substation>
-  <IED name="scada" desc="Center">
+<?xml version="1.0" encoding="UTF-8"?>
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
+  <Header id="M700" version="1.0" revision="1" toolID="" nameStructure="IEDName" />
+  <Communication>
+    <SubNetwork name="SUBNET" type="8-MMS">
+      <Text>Station bus</Text>
+      <BitRate unit="b/s" multiplier="M">10</BitRate>
+      <ConnectedAP iedName="TEMPLATE" apName="AP1">
+        <Address>
+          <P type="IP">0.0.0.0</P>
+          <P type="IP-SUBNET">0.0.0.0</P>
+          <P type="IP-GATEWAY">0.0.0.0</P>
+        </Address>
+      </ConnectedAP>
+    </SubNetwork>
+  </Communication>
+  <IED name="TEMPLATE" configVersion="1.0" desc="" manufacturer="" type="">           ////согласно табл. 9
+    <Services>
+
+
+
+
+
+
+    </Services>
     <AccessPoint name="AP1" desc="">
       <Server>
         <Authentication />
-        <LDevice inst="55555" desc="unitlink-iec104">
-          <LN0 lnClass="LLN0" lnType="LLN0a" />
+        <LDevice inst="KIPP-2M_1" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0_1" inst="" desc="" />
+          <LN lnClass="LPHD" lnType="LPHD_1" inst="1" prefix="" desc="" />
+          <LN lnClass="MMXU" lnType="MMXU_1" inst="1" prefix="" desc="" />
+        </LDevice>
+        <LDevice inst="KIPP-2M_2" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0_1" inst="" desc="" />
+          <LN lnClass="LPHD" lnType="LPHD_1" inst="1" prefix="" desc="" />
+          <LN lnClass="MMXU" lnType="MMXU_1" inst="1" prefix="" desc="" />
+        </LDevice>
+        <LDevice inst="M300_1" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0_1" inst="" desc="" />
+          <LN lnClass="LPHD" lnType="LPHD_1" inst="1" prefix="" desc="" />
+          <LN lnClass="MMXU" lnType="MMXU_1" inst="1" prefix="" desc="" />
+        </LDevice>
+        <LDevice inst="M300_2" desc="">
+          <LN0 lnClass="LLN0" lnType="LLN0_1" inst="" desc="" />
+          <LN lnClass="LPHD" lnType="LPHD_1" inst="1" prefix="" desc="" />
+          <LN lnClass="MMXU" lnType="MMXU_1" inst="1" prefix="" desc="" />
         </LDevice>
       </Server>
     </AccessPoint>
   </IED>
-  <IED name="m700.place001" desc="Gallery, bay1">
-    <AccessPoint name="AP2">
-      <Server>
-        <Authentication />
-        <LDevice inst="967" desc="unitlink-iec104">
-          <LN0 lnClass="LLN0" lnType="LLN0a" />
-        </LDevice>
-        <LDevice inst="100" desc="unitlink-m700">
-          <LN0 lnClass="LLN0" lnType="LLN0a" />
-        </LDevice>
-        <LDevice inst="101" desc="unitlink-dlt645">
-          <LN0 lnClass="LLN0" lnType="LLN0a" />
-        </LDevice>
-        <LDevice inst="102" desc="unitlink-dlt645">
-          <LN0 lnClass="LLN0" lnType="LLN0a" />
-        </LDevice>
-      </Server>
-    </AccessPoint>
-  </IED>
-  <DataTypeTemplates>
-    <LNodeType id="LLN0a" lnClass="LLN0">
-      <DO name="Mod"      type="INC" />
-      <DO name="Beh"      type="INS" />
-      <DO name="Health"   type="INS" />
-      <DO name="NamPlt"   type="LPL_LLN0" />
+
+
+<DataTypeTemplates>
+    <LNodeType id="LLN0_1" lnClass="LLN0">
+      <DO name="Mod" type="MD_Mod_M700_1" />
+      <DO name="Beh" type="MD_Beh_M700_1" />
+      <DO name="Health" type="MD_Health_M700_1" />
+      <DO name="NamPlt" type="MD_LPL_M700_1" />
     </LNodeType>
-    <LNodeType id="MMXUa" lnClass="MMXU">
-      <DO name="Mod"      type="INC" />
-      <DO name="Beh"      type="INS" />
-      <DO name="Health"   type="INS" />
-      <DO name="NamPlt"   type="LPL_MMXU" />
-      <DO name="PhVphsA"  type="MV" desc="0" />
-      <DO name="PhVphsB"  type="MV" desc="1" />
-      <DO name="PhVphsC"  type="MV" desc="2" />
-      <DO name="AphsA"    type="MV" desc="3" />
-      <DO name="AphsB"    type="MV" desc="4" />
-      <DO name="AphsC"    type="MV" desc="5" />
-      <DO name="PPVphsAB" type="MV" desc="6" />
-      <DO name="PPVphsCA" type="MV" desc="7" />
-      <DO name="PPVphsBC" type="MV" desc="8" />
-      <DO name="WphsA"    type="MV" desc="9" />
-      <DO name="WphsB"    type="MV" desc="10" />
-      <DO name="WphsC"    type="MV" desc="11" />
-      <DO name="VArphsA"  type="MV" desc="12" />
-      <DO name="VArphsB"  type="MV" desc="13" />
-      <DO name="VArphsC"  type="MV" desc="14" />
+    <LNodeType id="LPHD_1" lnClass="LPHD">
+      <DO name="PhyNam" type="MD_DPL_M700_1" />
+      <DO name="PhyHealth" type="MD_Health_M700_1" />
+      <DO name="Proxy" type="MD_SPS_M700_1" />
     </LNodeType>
-    <DOType id="MV" cdc="MV">
-      <DA name="mag" fc="MX" bType="Struct"  type="AnalogueValue" dchg="true" />
-      <DA name="q"   fc="MX" bType="Quality" qchg="true" />
-      <DA name="t"   fc="MX" bType="Timestamp" />
+    <LNodeType id="MMXU_1" lnClass="MMXU">
+      <DO name="Mod" type="Mod_M700_1" />
+      <DO name="Beh" type="Beh_M700_1" />
+      <DO name="Health" type="Health_M700_1" />
+      <DO name="NamPlt" type="LPL_M700_1" />
+      <DO name="PF" type="MD_WYE3_M700_1" />
+      <DO name="TotPF" type="MD_MV_M700_1" />
+      <DO name="Hz" type="MD_MV_M700_1" />
+      <DO name="A" type="MD_WYE1_M700_1" />
+      <DO name="VAr" type="MD_WYE3_M700_1" />
+      <DO name="TotVAr" type="MD_MV_M700_1" />
+      <DO name="VA" type="MD_WYE3_M700_1" />
+      <DO name="TotVA" type="MD_MV_M700_1" />
+      <DO name="PPV" type="MD_DEL_M700_1" />
+      <DO name="PhV" type="MD_WYE2_M700_1" />
+      <DO name="W" type="MD_WYE3_M700_1" />
+      <DO name="TotW" type="MD_MV_M700_1" />
+
+    </LNodeType>
+    <DOType id="MD_Mod_M700_1" cdc="INC">
+      <DA name="stVal" bType="Enum" type="Mod_1_M700_1" dchg="true" fc="ST" />
+      <DA name="q" bType="Quality" qchg="true" fc="ST" />
+      <DA name="t" bType="Timestamp" fc="ST" />
+      <DA name="ctlModel" bType="Enum" type="ctlModel_1_M700_1" fc="CF" />
     </DOType>
-    <DOType id="LPL_MMXU" cdc="LPL">
-      <DA name="vendor" fc="DC" bType="VisString255" />
-      <DA name="swRev"  fc="DC" bType="VisString255" />
-      <DA name="d"      fc="DC" bType="VisString255" />
+    <DOType id="MD_Beh_M700_1" cdc="INS">
+      <DA name="stVal" bType="Enum" type="Beh_1_M700_1" dchg="true" fc="ST" />
+      <DA name="q" bType="Quality" qchg="true" fc="ST" />
+      <DA name="t" bType="Timestamp" fc="ST" />
     </DOType>
-    <DOType id="LPL_LLN0" cdc="LPL">
-      <DA name="vendor"    fc="DC" bType="VisString255" />
-      <DA name="swRev"     fc="DC" bType="VisString255" />
-      <DA name="d"         fc="DC" bType="VisString255" />
-      <DA name="configRev" fc="DC" bType="VisString255" />
-      <DA name="ldNs"      fc="EX" bType="VisString255">
-        <Val>IEC 61850-7-4:2003</Val>
-      </DA>
+    <DOType id="MD_Health_M700_1" cdc="INS">
+      <DA name="stVal" bType="Enum" type="Health_1_M700_1" dchg="true" fc="ST" />
+      <DA name="q" bType="Quality" qchg="true" fc="ST" />
+      <DA name="t" bType="Timestamp" fc="ST" />
     </DOType>
-    <DOType id="INS" cdc="INS">
-      <DA name="stVal" fc="ST" bType="INT32"   dchg="true" />
-      <DA name="q"     fc="ST" bType="Quality" qchg="true" />
-      <DA name="t"     fc="ST" bType="Timestamp" />
+    <DOType id="MD_LPL_M700_1" cdc="LPL">
+      <DA name="vendor" bType="VisString255" fc="DC" />
+      <DA name="swRev" bType="VisString255" fc="DC" />
+      <DA name="d" bType="VisString255" fc="DC" />
+      <DA name="configRev" bType="VisString255" fc="DC" />
+      <DA name="ldNs" bType="VisString255" fc="EX" />
     </DOType>
-    <DOType id="INC" cdc="INC">
-      <DA name="stVal" fc="ST" bType="INT32"   dchg="true" />
-      <DA name="q"     fc="ST" bType="Quality" qchg="true" />
-      <DA name="t"     fc="ST" bType="Timestamp" />
+      <DOType id="MD_DPL_M700_1" cdc="DPL">
+      <DA name="vendor" bType="VisString255" fc="DC" />
+      <DA name="hwRev" bType="VisString255" fc="DC" />
+      <DA name="swRev" bType="VisString255" fc="DC" />
+      <DA name="serNum" bType="VisString255" fc="DC" />
+      <DA name="model" bType="VisString255" fc="DC" />
     </DOType>
-    <DAType id="AnalogueValue">
-      <BDA name="f" bType="FLOAT32" />
-    </DAType>
-  </DataTypeTemplates>
+    <DOType id="MD_SPS_M700_1" cdc="SPS">
+      <DA name="stVal" bType="BOOLEAN" dchg="true" fc="ST" />
+      <DA name="q" bType="Quality" qchg="true" fc="ST" />
+      <DA name="t" bType="Timestamp" fc="ST" />
+    </DOType>
+    <DOType id="MD_WYE1_M700_1" cdc="WYE">
+      <SDO name="phsA" type="MD_CMV_M700_1"/>
+      <SDO name="phsB" type="MD_CMV_M700_1"/>
+      <SDO name="phsC" type="MD_CMV_M700_1"/>
+      <SDO name="neut" type="MD_CMV_M700_1"/>
+    </DOType>
+    <DOType id="MD_WYE2_M700_1" cdc="WYE">
+      <SDO name="phsA" type="MD_CMV_M700_1"/>
+      <SDO name="phsB" type="MD_CMV_M700_1"/>
+      <SDO name="phsC" type="MD_CMV_M700_1"/>
+      <SDO name="neut" type="MD_CMV_M700_1"/>
+    </DOType>
+    <DOType id="MD_WYE2_M700_1" cdc="WYE">
+      <SDO name="phsA" type="MD_CMV_M700_1"/>
+      <SDO name="phsB" type="MD_CMV_M700_1"/>
+      <SDO name="phsC" type="MD_CMV_M700_1"/>
+    </DOType>
+    <DOType cdc="CMV" id="MD_CMV_M700_1">
+      <DA name="instCVal" bType="Enum" type="MD_Vector1_M700_1" fc="MX" />
+      <DA name="cVal" bType="Enum" type="MD_Vector1_M700_1" dchg="true" fc="MX" />
+      <DA name="q" bType="Quality" qchg="true" fc="MX" />
+      <DA name="t" bType="Timestamp" fc="MX" />
+
 </SCL>

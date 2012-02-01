@@ -4,13 +4,12 @@
  *  Created on: 16.12.2011
  *      Author: dmitry
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <nano-X.h>
 #include <nanowm.h>
-#include <string.h>
-#include <signal.h>
+#include "../common/common.h"
+#include "../common/varcontrol.h"
+#include "../common/multififo.h"
+#include "../common/iec61850.h"
 #include "menu.h"
 #include "hmi.h"
 
@@ -49,6 +48,8 @@ fact factsetting[] = {
 {"keydown", NULL},        		//5
 {"keyup", NULL},				//6
 };
+
+
 
 void mainloop()
 {
@@ -92,6 +93,17 @@ void mainloop()
 //---------------------------------------------------------------------------------
 int main(int argc, char **argv)
 {
+
+//---*** Init IEC61850 ***---//
+	// Parsing ssd, create virtualization structures from common iec61850 configuration
+	if (ssd_build()){
+		printf("IEC61850: SSD not found\n");
+		exit(1);
+	}
+	// Cross connection of IEC structures
+	crossconnection();
+
+//---*** Init visual control ***---//
   init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
   do_openfilemenu("menus/item", MENUFILE);
   draw_menu();

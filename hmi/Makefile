@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += hmi.o menu.o multififo.o
+OBJS += hmi.o menu.o multififo.o ssd.o xml.o
 
 NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
 NANOLIBS = ../../nano-x.X11.x86/microwin/src/libs
@@ -21,6 +21,10 @@ menu.o: menu.c
 	$(CC) $(CCFLAGS) menu.c -o menu.o
 multififo.o: ../common/multififo.c
 	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
+ssd.o: ../common/ssd.c
+	$(CC) $(CCFLAGS) ../common/ssd.c -o ssd.o
+xml.o: ../common/xml.c
+	$(CC) $(CCFLAGS) ../common/xml.c -o xml.o
 
 all: hmi
 

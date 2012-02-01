@@ -120,5 +120,10 @@ typedef struct frame_dobj {
 	char 			name[DOBJ_NAMESIZE];
 } __attribute__ ((packed)) frame_dobj;
 
+/* Just List */
+typedef struct _LIST{
+	void *next;
+	void *prev;
+} LIST;
 
 #endif /* COMMON_H_ */

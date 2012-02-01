@@ -5,26 +5,33 @@
  *      Author: Alex AVAlon
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "../common/common.h"
+#include "../common/multififo.h"
+#include "../common/asdu.h"
 #include "nano-X.h"
 #include "nanowm.h"
-#include <signal.h>
-#include <string.h>
 #include "menu.h"
-#include "hmi.h"
 #include "varcontrol.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
+static LIST *fdefvt   = {NULL, NULL};		// first  varrec
+static varrec *defvt;		// actual varrec
 
-vartable defvt[] = {
-		{"mac", NULL, NULL, 0},
-		{"ip", NULL, NULL, 0},
-};
+static LIST *fvarbook = {NULL, NULL};		// first varbook
+static varbook *actvb;		// actual varbook
 
-vartable *actvt[20];	// Max 20 variables may be book from applications
+static void* create_next_struct_in_list(LIST *plist, int size){
+LIST *newlist;
+	plist->next = malloc(size);
+	if (!plist->next){
+		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
+		exit(3);
+	}
+
+	newlist = plist->next;
+	newlist->prev = plist;
+	newlist->next = 0;
+	return newlist;
+}
 
 // Set callback function for variable changing events
 void vc_setcallback(){
@@ -32,10 +39,21 @@ void vc_setcallback(){
 }
 
 // Make memory allocation for all variables, read values and set pointers
-void vc_init(pvartable vt, int len){
+void vc_init(pvalue vt, int len){
+int i;
 
-	// Def Table init
-		// Parse full config files
+	// Create const var table
+	defvt = fdefvt;
+	for (i=0; i < len; i++){
+		defvt = create_next_struct_in_list(defvt->l, sizeof(varrec));
+		defvt->name = malloc(sizeof(fcdarec));
+		defvt->val = &vt[i];
+		defvt->name->fc = defvt->val->name;
+		defvt->prop = INTVAR | TRUEVALUE;
+		defvt->time = 0;
+	}
+
+	// Parse full config files
 
 		// Bring to conformity with all internal variables and config variables
 		// It's equal constant booking
@@ -45,14 +63,27 @@ void vc_init(pvartable vt, int len){
 
 }
 
-// To book concrete variable by synonym
-int vc_book(char *varsynonim){
+// To book concrete variable by name
+// Return pointer to value and her properties
+varrec *vc_addvarrec(char *varname){
+
+	// if APP - Find pointer in table
+
+	// if IED, LD - Set var as text
+
+	// if LN without DO/DA.name - Set var as text
+
+	// if LN has DO.name - book this variable
+
+	return NULL;
+}
+
+// To delete booking of concrete variable by name
+int vc_rmvarrec(char *varname){
 
 	return 0;
 }
 
-// To delete booking of concrete variable by synonym
-int vc_unbook(char *varsynonim){
+void vc_checkvars(){
 
-	return 0;
 }

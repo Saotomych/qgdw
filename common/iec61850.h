@@ -27,12 +27,6 @@ struct _IED_LIST;
 
 extern u08 Encoding;
 
-/* Just List */
-typedef struct _LIST{
-	void *next;
-	void *prev;
-} LIST;
-
 /* Attributes */
 typedef struct _ATTR_LIST{
 	LIST l;
@@ -139,6 +133,7 @@ typedef struct _iec_data_unit{
 
 extern LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 
+extern int ssd_build(void);
 extern int virt_start(char *appname);
 extern void crossconnection(void);
 extern void catch_alarm(int sig);

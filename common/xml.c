@@ -7,7 +7,7 @@
 */
 
 #include "../common/common.h"
-#include "iec61850.h"
+#include "../common/iec61850.h"
 
 u08 Encoding, EndScript;
 
