@@ -408,14 +408,14 @@ FILE *fssd;
 int ssdlen, ret = 0;
 struct stat fst;
  	// Get size of main config file
-	if (stat("/rw/mx00/configs/ieclevel.ssd", &fst) == -1){
+	if (stat("/rw/mx00/configs/ieclevel.cid", &fst) == -1){
 		printf("IEC61850: SCL file not found\n");
 	}
 
 	SCLfile = malloc(fst.st_size);
 
 	// Loading main config file
-	fssd = fopen("/rw/mx00/configs/ieclevel.ssd", "r");
+	fssd = fopen("/rw/mx00/configs/ieclevel.cid", "r");
 	ssdlen = fread(SCLfile, 1, (size_t) (fst.st_size), fssd);
 	if(!strstr(SCLfile, "</SCL>"))
 	{

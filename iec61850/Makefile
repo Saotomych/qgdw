@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += startiec.o virtualize.o ../common/ssd.o xml.o multififo.o
+OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o
 CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 

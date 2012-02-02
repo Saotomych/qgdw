@@ -49,8 +49,6 @@ fact factsetting[] = {
 {"keyup", NULL},				//6
 };
 
-
-
 void mainloop()
 {
 	GR_EVENT event;
