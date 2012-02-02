@@ -14,6 +14,11 @@
 #define INTVAR		0x020
 #define INTCONST	0x010
 
+// Types
+#define STRING		0
+#define INT32		1
+#define INT64		2
+
 // IEC struct
 typedef struct _FCDAREC{
 	// Name of variable as attributes FCDA
@@ -51,5 +56,9 @@ typedef struct _VARBOOK{
 	void *val;
 	int	prop;
 } varbook, *pvarbook;
+
+extern void vc_init(pvalue vt, int len);
+extern varrec *vc_addvarrec(char *varname);
+extern int vc_rmvarrec(char *varname);
 
 #endif /* VARCONTROL_H_ */

@@ -5,18 +5,15 @@
  *      Author: Alex AVAlon
  */
 
-#include "../common/common.h"
-#include "../common/multififo.h"
-#include "../common/asdu.h"
-#include "nano-X.h"
-#include "nanowm.h"
-#include "menu.h"
+#include "common.h"
+#include "multififo.h"
+#include "asdu.h"
 #include "varcontrol.h"
 
-static LIST *fdefvt   = {NULL, NULL};		// first  varrec
+static LIST fdefvt   = {NULL, NULL};		// first  varrec
 static varrec *defvt;		// actual varrec
 
-static LIST *fvarbook = {NULL, NULL};		// first varbook
+static LIST fvarbook = {NULL, NULL};		// first varbook
 static varbook *actvb;		// actual varbook
 
 static void* create_next_struct_in_list(LIST *plist, int size){
@@ -43,17 +40,16 @@ void vc_init(pvalue vt, int len){
 int i;
 
 	// Create const var table
-	defvt = fdefvt;
+	defvt = (varrec*) &fdefvt;
 	for (i=0; i < len; i++){
-		defvt = create_next_struct_in_list(defvt->l, sizeof(varrec));
+		defvt = create_next_struct_in_list((LIST*) &defvt->l, sizeof(varrec));
 		defvt->name = malloc(sizeof(fcdarec));
-		defvt->val = &vt[i];
-		defvt->name->fc = defvt->val->name;
+		defvt->val = vt[i];
+		defvt->name->fc = defvt->val.name;
 		defvt->prop = INTVAR | TRUEVALUE;
 		defvt->time = 0;
 	}
 
-	// Parse full config files
 
 		// Bring to conformity with all internal variables and config variables
 		// It's equal constant booking

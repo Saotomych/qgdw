@@ -8,6 +8,8 @@
 #ifndef IEC61850_H_
 #define IEC61850_H_
 
+#define IECCONFIG		"ieclevel.cid"
+
 #define ALARM_PER		2  // must be >= 2 sec!!!
 
 struct _ATTR;
@@ -133,7 +135,7 @@ typedef struct _iec_data_unit{
 
 extern LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 
-extern int cid_build(void);
+extern int cid_build(char *filename);
 extern int virt_start(char *appname);
 extern void crossconnection(void);
 extern void catch_alarm(int sig);

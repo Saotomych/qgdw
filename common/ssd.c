@@ -402,20 +402,20 @@ void crossconnection(){
 }
 
 // Create structures according to ieclevel.cid
-int cid_build(void){
+int cid_build(char *filename){
 char *SCLfile;
 FILE *fcid;
 int cidlen, ret = 0;
 struct stat fst;
  	// Get size of main config file
-	if (stat("/rw/mx00/configs/ieclevel.cid", &fst) == -1){
+	if (stat(filename, &fst) == -1){
 		printf("IEC61850: SCL file not found\n");
 	}
 
 	SCLfile = malloc(fst.st_size);
 
 	// Loading main config file
-	fcid = fopen("/rw/mx00/configs/ieclevel.cid", "r");
+	fcid = fopen(filename, "r");
 	cidlen = fread(SCLfile, 1, (size_t) (fst.st_size), fcid);
 	if(!strstr(SCLfile, "</SCL>"))
 	{

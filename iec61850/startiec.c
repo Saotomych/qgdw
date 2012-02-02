@@ -16,6 +16,7 @@ char prepath[] = {"/rw/mx00"};
 char pathul[] = {"unitlinks"};
 char pathphy[] = {"phyints"};
 char pathmain[] = {"mainapp"};
+char pathconfig[] = {"configs"};
 char mainlink[] = {"main"};
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
@@ -23,9 +24,16 @@ static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application
 int main(int argc, char * argv[]){
 pid_t chldpid;
 char buf[5];
+int lenname;
+char *cidname;
+
+	// Make config name
+	lenname = strlen(prepath) + strlen(pathconfig) + strlen(IECCONFIG) + 3;
+	cidname = malloc(lenname);
+	sprintf(cidname, "%s/%s/%s", prepath, pathconfig, IECCONFIG);
 
 	// Parsing cid, create virtualization structures from common iec61850 configuration
-	if (cid_build()){
+	if (cid_build(cidname)){
 		printf("IEC61850: cid file not found\n");
 		exit(1);
 	}
