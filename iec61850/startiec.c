@@ -24,9 +24,9 @@ int main(int argc, char * argv[]){
 pid_t chldpid;
 char buf[5];
 
-	// Parsing ssd, create virtualization structures from common iec61850 configuration
-	if (ssd_build()){
-		printf("IEC61850: SSD not found\n");
+	// Parsing cid, create virtualization structures from common iec61850 configuration
+	if (cid_build()){
+		printf("IEC61850: cid file not found\n");
 		exit(1);
 	}
 	// Cross connection of IEC structures

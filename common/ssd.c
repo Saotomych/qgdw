@@ -1,5 +1,5 @@
 /*
- * ssd.c
+ * cid.c
  *
  *  Created on: 13.07.2011
  *      Author: Alex AVAlon
@@ -74,7 +74,7 @@ int mode=0;
 
 // *** Tag structure working ***//
 
-void ssd_create_ied(const char *pTag){			// call parse ied
+void cid_create_ied(const char *pTag){			// call parse ied
 char *p;
 char *key=0, *par=0;
 
@@ -96,7 +96,7 @@ char *key=0, *par=0;
 	printf("IEC61850: new IED: name=%s desc=%s\n", flastied->ied.name, flastied->ied.desc);
 }
 
-void ssd_create_ld(const char *pTag){			// call parse ld
+void cid_create_ld(const char *pTag){			// call parse ld
 char *p;
 char *key=0, *par=0;
 	flastld = create_next_struct_in_list(&(flastld->l), sizeof(LDEVICE));
@@ -118,7 +118,7 @@ char *key=0, *par=0;
 	printf("IEC61850: new LDevice: inst=%s desc=%s\n", flastld->ld.inst, flastld->ld.desc);
 }
 
-void ssd_create_ln(const char *pTag){			// call parse ln
+void cid_create_ln(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
 	flastln = create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
@@ -152,7 +152,7 @@ char *key=0, *par=0;
 			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);
 }
 
-void ssd_create_lntype(const char *pTag){			// call parse ln
+void cid_create_lntype(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
 	flastlntype = create_next_struct_in_list(&(flastlntype->l), sizeof(LNTYPE));
@@ -175,7 +175,7 @@ char *key=0, *par=0;
 	printf("IEC61850: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
 
-void ssd_create_dobj(const char *pTag){			// call parse data
+void cid_create_dobj(const char *pTag){			// call parse data
 char *p;
 char *key=0, *par=0;
 	flastdo = create_next_struct_in_list(&(flastdo->l), sizeof(DOBJ));
@@ -200,7 +200,7 @@ char *key=0, *par=0;
 	printf("IEC61850: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
-void ssd_create_dobjtype(const char *pTag){		// call parse data_type
+void cid_create_dobjtype(const char *pTag){		// call parse data_type
 char *p;
 char *key=0, *par=0;
 	flastdtype = create_next_struct_in_list(&(flastdtype->l), sizeof(DTYPE));
@@ -223,7 +223,7 @@ char *key=0, *par=0;
 	printf("IEC61850: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
-void ssd_create_attr(const char *pTag){			// call parse attr
+void cid_create_attr(const char *pTag){			// call parse attr
 char *p;
 char *key=0, *par=0;
 	flastattr = create_next_struct_in_list(&(flastattr->l), sizeof(ATTR));
@@ -253,15 +253,15 @@ char *key=0, *par=0;
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 
-void ssd_create_enum(const char *pTag){			// call parse enum
+void cid_create_enum(const char *pTag){			// call parse enum
 
 }
 
-void ssd_create_enumval(const char *pTag){			// call parse enum
+void cid_create_enumval(const char *pTag){			// call parse enum
 
 }
 
-void ssd_create_subst(const char *pTag){			// call parse substation
+void cid_create_subst(const char *pTag){			// call parse substation
 
 }
 
@@ -401,11 +401,11 @@ void crossconnection(){
 
 }
 
-// Create structures according to ieclevel.ssd
-int ssd_build(void){
+// Create structures according to ieclevel.cid
+int cid_build(void){
 char *SCLfile;
-FILE *fssd;
-int ssdlen, ret = 0;
+FILE *fcid;
+int cidlen, ret = 0;
 struct stat fst;
  	// Get size of main config file
 	if (stat("/rw/mx00/configs/ieclevel.cid", &fst) == -1){
@@ -415,14 +415,14 @@ struct stat fst;
 	SCLfile = malloc(fst.st_size);
 
 	// Loading main config file
-	fssd = fopen("/rw/mx00/configs/ieclevel.cid", "r");
-	ssdlen = fread(SCLfile, 1, (size_t) (fst.st_size), fssd);
+	fcid = fopen("/rw/mx00/configs/ieclevel.cid", "r");
+	cidlen = fread(SCLfile, 1, (size_t) (fst.st_size), fcid);
 	if(!strstr(SCLfile, "</SCL>"))
 	{
 		printf("IEC61850: SCL is incomplete\n");
 		exit(1);
 	}
-	if (ssdlen == fst.st_size) XMLSelectSource(SCLfile);
+	if (cidlen == fst.st_size) XMLSelectSource(SCLfile);
 	else ret = -1;
 
 	return ret;
