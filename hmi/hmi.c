@@ -20,7 +20,21 @@
 
 LIST fldextinfo = {NULL, NULL};
 ldextinfo *actldei = (ldextinfo *) &fldextinfo;
-char *llfile;	// Buffer for lowlevel.cfg file
+
+// Defvalues included: m700env, about.me
+value defvalues[] = {
+		{"APP:LOCALIP", NULL, NULL, 0, 0},
+		{"APP:MAC", NULL, NULL, 0, 0},
+		{"APP:Type", NULL, NULL, 0, 0},
+		{"APP:UPDATE", NULL, NULL, 0, 0},
+		{"APP:UBI", NULL, NULL, 0, 0},
+		{"APP:SFTP", NULL, NULL, 0, 0},
+		{"APP:CRONSW", NULL, NULL, 0, 0},
+		{"APP:CRONCF", NULL, NULL, 0, 0},
+		{"APP:ManDate", NULL, NULL, 0, 0},
+		{"APP: Tester", NULL, NULL, 0, 0},
+		{"APP: SerNum", NULL, NULL, 0, 0},
+};
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
@@ -36,6 +50,59 @@ LIST *newlist;
 	return newlist;
 }
 
+int about_parser(char *faname){
+FILE *fl;
+char *p;
+char tbuf[200];
+int len = 1, i;
+
+// Loading main config file
+	fl = fopen(faname, "r");
+	if (fl == NULL) return -1;
+
+	while(len != EOF){
+		p = fgets(tbuf, 128, fl);
+		if (p == tbuf){
+			while(*p != '=') p++;
+			*p = 0;
+			for (i=0; i < (sizeof(defvalues)/sizeof(value)); i++){
+				if (strstr(defvalues[i].name, tbuf)) {
+					defvalues[i].val = malloc(strlen(p));
+					strcpy(defvalues[i].val, p);
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+void env_parser(void){
+char words[][16] = {
+		{"LOCALIP"},
+		{"MAC"},
+		{"Type"},
+		{"UPDATE"},
+		{"UBI"},
+		{"SFTP"},
+		{"CRONSW"},
+		{"CRONCF"},
+		{"\0"},
+};
+
+int i, j;
+
+	for (i=0; words[0][i] != 0; i++){
+		for(j=0; j < (sizeof(defvalues)/sizeof(value)); j++){
+			if (strstr(defvalues[j].name, &words[0][i])){
+				defvalues[j].val = getenv(&words[0][i]);
+				break;
+			}
+		}
+	}
+
+}
+
 int lowlevel_parser(char *fllname){
 char *p;
 int i, len = 1;
@@ -46,14 +113,15 @@ char words[][6] = {
 		{"-addr"},
 		{"-port"},
 		{"-name"},
-		{"-sync"}
+		{"-sync"},
+		{"\0"},
 };
 
 // Loading main config file
 	fl = fopen(fllname, "r");
 	if (fl == NULL) return -1;
 
-	while(len != EOF){
+	while(1){
 		p = fgets(tbuf, 128, fl);
 		if ((p == tbuf) && (*p >= '0')){
 			// if find new line
@@ -75,7 +143,7 @@ char words[][6] = {
 
 				// Find words in this line
 				p = actldei->llstring;
-				for (i = 0; i < 4; i++){
+				for (i = 0; words[0][i] != 0; i++){
 					p = strstr(actldei->llstring, &words[i][0]);
 					if (p){
 						p += 6;
@@ -96,7 +164,7 @@ char words[][6] = {
 				}
 
 			}
-		}
+		}else break;
 	}
 
 	return 0;
@@ -132,12 +200,6 @@ fact factsetting[] = {
 		{"doxpaint", NULL},						//4
 		{"keydown", NULL},   		     		//5
 		{"keyup", NULL},						//6
-};
-
-// Defvalues included: m700env, lowlevel.cfg
-value defvalues[] = {
-		{"APP:ip", NULL, NULL, 0, 0},
-		{"APP:mac", NULL, NULL, 0, 0},
 };
 
 void mainloop()
@@ -187,7 +249,6 @@ char pathmain[] = {"mainapp"};
 char pathconfig[] = {"configs"};
 char mainlink[] = {"main"};
 struct stat fst;
-FILE *fl;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
@@ -221,9 +282,15 @@ char *fname;
 	sprintf(fname, "%s/%s/%s", prepath, pathconfig, "lowlevel.cfg");
 	// Parse lowlevel config file
 	if (lowlevel_parser(fname)) printf("IEC61850: lowlevel file reading error\n");
+	free(fname);
 
-	// Loading environment, setup to defvalues
-		vc_init(defvalues, sizeof(defvalues) / sizeof (value));
+	// Setup environment
+	env_parser();
+	// Parse about config file
+	if (about_parser("/tmp/about/about.me")) printf("IEC61850: about.me file reading error\n");
+
+	// Register all variables in varcontroller
+	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
 //---*** Init visual control ***---//
 	init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
