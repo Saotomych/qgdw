@@ -1,15 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "nano-X.h"
-#include "nanowm.h"
-#include <signal.h>
-#include <string.h>
+
+
+#include <nano-X.h>
+#include <nanowm.h>
+#include "../common/common.h"
+#include "../common/varcontrol.h"
+#include "../common/multififo.h"
+#include "../common/iec61850.h"
 #include "menu.h"
 #include "hmi.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
 
 static char prev_item;		// pointer to item in main menu
 
@@ -171,7 +169,7 @@ int do_openfilemenu(char *buf, int type){
 	            if (p){
 	            	*p = 0;
 	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(p);
+	            	num_menu->pitems[i]->vr = vc_addvarrec(p, (LNODE*)fln.next);
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{
@@ -214,14 +212,14 @@ void do_paint(item *pitem, int fg, int bg)
 			if (pitem->vr) {
 //				if (pitem->vr->prop & ISTRUE)
 				if (pitem->vr->prop & INT32){
-					printf("%s%d%s", pitem->text, *((int*) (pitem->vr->val.val)), pitem->endtext);
+					printf("%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
 				if (pitem->vr->prop & INT32){
-					printf("%s%ld%s", pitem->text, *((long*) (pitem->vr->val.val)), pitem->endtext);
+					printf("%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
 				}
 				if (!(pitem->vr->prop & STRING)){
 					strcpy(wintext, pitem->text);
-					if (pitem->vr) strcat(wintext, (char*) pitem->vr->val.val);
+					if (pitem->vr) strcat(wintext, (char*) pitem->vr->val->val);
 					if (pitem->endtext) strcat(wintext, pitem->endtext);
 				}
 				GrText(*main_window, gc, 3, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);

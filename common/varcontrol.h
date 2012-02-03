@@ -8,6 +8,8 @@
 #ifndef VARCONTROL_H_
 #define VARCONTROL_H_
 
+#include "iec61850.h"
+
 #define BOOKING		0x100
 #define TRUEVALUE	0x080
 #define ISBOOKED	0x040
@@ -43,7 +45,7 @@ typedef struct _VALUE{
 typedef struct _VARREC{
 	LIST l;
 	fcdarec *name;	// Can see as pointer to pointer to full name already
-	value val;		// Values and types of variable
+	value *val;		// Values and types of variable
 	int prop;		// properties: const, var, booking, true value.
 	int time;		// time from last refresh value, usec
 } varrec, *pvarrec;
@@ -58,7 +60,7 @@ typedef struct _VARBOOK{
 } varbook, *pvarbook;
 
 extern void vc_init(pvalue vt, int len);
-extern varrec *vc_addvarrec(char *varname);
+extern varrec *vc_addvarrec(char *varname, LNODE *actln);
 extern int vc_rmvarrec(char *varname);
 
 #endif /* VARCONTROL_H_ */

@@ -6,6 +6,7 @@
  */
 
 #include "common.h"
+#include "iec61850.h"
 #include "multififo.h"
 #include "asdu.h"
 #include "varcontrol.h"
@@ -44,12 +45,11 @@ varrec *defvt;		// actual varrec
 	for (i=0; i < len; i++){
 		defvt = create_next_struct_in_list((LIST*) &defvt->l, sizeof(varrec));
 		defvt->name = malloc(sizeof(fcdarec));
-		defvt->val = vt[i];
-		defvt->name->fc = defvt->val.name;
+		defvt->val = &vt[i];
+		defvt->name->fc = defvt->val->name;
 		defvt->prop = INTVAR | TRUEVALUE;
 		defvt->time = 0;
 	}
-
 
 		// Bring to conformity with all internal variables and config variables
 		// It's equal constant booking
@@ -61,8 +61,11 @@ varrec *defvt;		// actual varrec
 
 // To book concrete variable by name
 // Return pointer to value and her properties
-varrec *vc_addvarrec(char *varname){
+varrec *vc_addvarrec(char *varname, LNODE *actln){
 varrec *vr;
+struct _IED *pied;
+struct _LDEVICE *pld;
+LNODE *pln = actln;
 char *p, i;
 char keywords[][10] = {
 		{"APP:"},
@@ -71,10 +74,14 @@ char keywords[][10] = {
 		{"LN:"},
 };
 
+	pld = pln->ln.pmyld;
+	pied = pln->ln.pmyied;
+
 	for (i=0; i < sizeof(keywords)/10; i++){
 		p = strstr(varname, keywords[i]);
 		if (p == varname){
 			switch(i){
+			// if APP - Find pointer in table
 			case 0: // APP:
 					vr = (varrec*) fdefvt.next;
 					while(vr){
@@ -83,11 +90,35 @@ char keywords[][10] = {
 					}
 					break;
 
+			// if IED, LD - Set const as text
 			case 1:	// IED:
+					pied = fied.next;
 			case 2: // LD
 					// Fill varrec as const of application
+					if (!pld) return NULL;
+					vr = malloc(sizeof(varrec));
+					vr->name = malloc(sizeof(fcdarec));
+					vr->val = malloc(sizeof(value));
+					vr->name->fc = varname;
 
+					// Set val if 'inst'
+					p = strstr(varname, "inst");
+					if (p) vr->val->val = pld->inst;
+					// Set val if 'desc'
+					p = strstr(varname, "desc");
+					if (p) vr->val->val = pld->desc;
+					// Set val if 'name'. 'name' is part of desc and define ld's engineering name
+					p = strstr(varname, "name");
+					if (p){
+						p = pld->desc;
+						while((*p!='/') && (*p)) p++;
+						vr->val->val = p;
+					}
+					return vr;
 					break;
+
+			// if LN without DO/DA.name - Set const of field as text
+			// if LN has DO.name - book this variable
 			case 3: // LN
 
 					// Create new varrec
@@ -103,13 +134,8 @@ char keywords[][10] = {
 		}
 	}
 
-	// if APP - Find pointer in table
 
-	// if IED, LD - Set const as text
 
-	// if LN without DO/DA.name - Set const of field as text
-
-	// if LN has DO.name - book this variable
 
 	return NULL;
 }
