@@ -68,11 +68,13 @@ varrec *defvt;		// actual varrec
 }
 
 // To book concrete variable by name
-// Return pointer to value and her properties
+// Input data: name of variable
+// Return pointer to value record and properties
 varrec *vc_addvarrec(char *varname, LNODE *actln){
 varrec *vr;
 struct _IED *pied;
 struct _LDEVICE *pld;
+DOBJ *pdo;
 LNODE *pln = actln;
 char *p, i;
 char keywords[][10] = {
@@ -137,9 +139,34 @@ char keywords[][10] = {
 			// if LN has DO.name - book this variable
 			case 3: // LN
 
+					// Find LN.field
+// TODO Make find LN.field in future
+//					inst="2"
+//					lnClass="MMXU"
+//					lnType="MMXUa"
+//					prefix="M700"
+
+					// Find DOBJ
+					pdo = pln->ln.pmytype->pfdobj;
+					p = strstr(varname, ".");
+					if (p){
+						p++;
+						while(pdo){
+							if (!strcmp(pdo->dobj.name, p)){
+								// TODO find pda for future IEC functions
+								break;
+							}
+							pdo = pdo->l.next;
+						}
+					}else return NULL;
+					if (!pdo) return NULL;
+
 					// Create new varrec
+					vr = create_varrec();
+					vr->name->fc = varname;
 
 					// Value or config const
+
 					// IF Value  =>  Book var in startiec and fill varrec as remote variable
 
 					// IF const  =>  Fill varrec as const of application

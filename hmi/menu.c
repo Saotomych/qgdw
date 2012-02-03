@@ -162,7 +162,8 @@ int do_openfilemenu(char *buf, int type){
 	            // Item type "TEXT"
 	            if (!strcmp(pitemtype, "text")){
 		            num_menu->pitems[i]->text = ptxt;
-		            if (i) num_menu->pitems[last_menuitem]->rect.height += num_menu->pitems[i]->rect.height;
+		            // menu item included in heigth all lower text field before next menu item
+		            if (i) num_menu->pitems[(int)last_menuitem]->rect.height += num_menu->pitems[i]->rect.height;
 	            }
 
 	            ptxt += strlen(ptxt);
