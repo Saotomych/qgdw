@@ -11,7 +11,6 @@
 #include "varcontrol.h"
 
 static LIST fdefvt   = {NULL, NULL};		// first  varrec
-static varrec *defvt;		// actual varrec
 
 static LIST fvarbook = {NULL, NULL};		// first varbook
 static varbook *actvb;		// actual varbook
@@ -38,6 +37,7 @@ void vc_setcallback(){
 // Make memory allocation for all variables, read values and set pointers
 void vc_init(pvalue vt, int len){
 int i;
+varrec *defvt;		// actual varrec
 
 	// Create const var table
 	defvt = (varrec*) &fdefvt;
@@ -62,12 +62,52 @@ int i;
 // To book concrete variable by name
 // Return pointer to value and her properties
 varrec *vc_addvarrec(char *varname){
+varrec *vr;
+char *p, i;
+char keywords[][10] = {
+		{"APP:"},
+		{"IED:"},
+		{"LD:"},
+		{"LN:"},
+};
+
+	for (i=0; i < sizeof(keywords)/10; i++){
+		p = strstr(varname, keywords[i]);
+		if (p == varname){
+			switch(i){
+			case 0: // APP:
+					vr = (varrec*) fdefvt.next;
+					while(vr){
+						if (!strcmp(vr->name->fc, varname)) return vr;
+						vr = vr->l.next;
+					}
+					break;
+
+			case 1:	// IED:
+			case 2: // LD
+					// Fill varrec as const of application
+
+					break;
+			case 3: // LN
+
+					// Create new varrec
+
+					// Value or config const
+					// IF Value  =>  Book var in startiec and fill varrec as remote variable
+
+					// IF const  =>  Fill varrec as const of application
+
+					break;
+
+			}
+		}
+	}
 
 	// if APP - Find pointer in table
 
-	// if IED, LD - Set var as text
+	// if IED, LD - Set const as text
 
-	// if LN without DO/DA.name - Set var as text
+	// if LN without DO/DA.name - Set const of field as text
 
 	// if LN has DO.name - book this variable
 

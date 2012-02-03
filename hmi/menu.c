@@ -28,9 +28,6 @@ char newmenu[40];			// For temporary operations
 
 #define BLACK MWRGB( 0  , 0  , 0   )
 #define WHITE MWRGB( 255, 255, 255 )
-#define BLUE  MWRGB( 0  , 0  , 128 )
-#define CIAN  MWRGB( 0  , 128, 128 )
-#define LTGREEN MWRGB( 0  , 255, 0 )
 
 #define FGCOLOR	BLACK
 #define BGCOLOR	WHITE
@@ -56,6 +53,8 @@ int do_openfilemenu(char *buf, int type){
 	int i;
 	char last_menuitem = 0;
 	char first_menuitem = 0;
+
+	char *p;
 
 	 	 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
 
@@ -167,6 +166,19 @@ int do_openfilemenu(char *buf, int type){
 		            num_menu->pitems[i]->text = ptxt;
 	            }
 
+	            // IF Fixed text is variable
+	            p = strstr(num_menu->pitems[i]->text, "&var:");
+	            if (p){
+	            	*p = 0;
+	            	p += 5;
+	            	num_menu->pitems[i]->vr = vc_addvarrec(p);
+	            	while ((*p != ' ') && (*p)) p++;
+	            	num_menu->pitems[i]->endtext = p;
+	            }else{
+	            	num_menu->pitems[i]->vr = NULL;
+	            	num_menu->pitems[i]->endtext = NULL;
+	            }
+
 	            ptxt += strlen(ptxt);
 
 	         }
@@ -181,6 +193,7 @@ int do_openfilemenu(char *buf, int type){
      return 0;
 }
 //------------------------------------------------------------------------------------
+static char wintext[40];
 void do_paint(item *pitem, int fg, int bg)
 {
 	        GR_GC_ID gc = GrNewGC();
@@ -198,7 +211,21 @@ void do_paint(item *pitem, int fg, int bg)
 
 			GrSetGCFont(gc, num_menu->font);
 
-			GrText(*main_window, gc, 3, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
+			if (pitem->vr) {
+//				if (pitem->vr->prop & ISTRUE)
+				if (pitem->vr->prop & INT32){
+					printf("%s%d%s", pitem->text, *((int*) (pitem->vr->val.val)), pitem->endtext);
+				}
+				if (pitem->vr->prop & INT32){
+					printf("%s%ld%s", pitem->text, *((long*) (pitem->vr->val.val)), pitem->endtext);
+				}
+				if (!(pitem->vr->prop & STRING)){
+					strcpy(wintext, pitem->text);
+					if (pitem->vr) strcat(wintext, (char*) pitem->vr->val.val);
+					if (pitem->endtext) strcat(wintext, pitem->endtext);
+				}
+				GrText(*main_window, gc, 3, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
+			}else GrText(*main_window, gc, 3, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
 
 			GrDestroyGC(gc);
 }

@@ -7,9 +7,9 @@
 #ifndef MENU_H_
 #define MENU_H_
 
-#ifndef HMI_H_
+#include "../common/common.h"
+#include "../common/varcontrol.h"
 #include "hmi.h"
-#endif
 
 #define MENUFILE	1
 #define MENUMEM		2
@@ -20,9 +20,11 @@ typedef struct _item{
 	GR_WINDOW_ID main_window;
 	GR_RECT rect;
 	GR_RECT bgnrect;
+	varrec *vr;			// pointer to variable of item
 	char *name_font;
-	char *text;
-	char *next_menu;  //указатель на имя следующего подменю
+	char *text;			// Start text of item
+	char *endtext;		// End text of item
+	char *next_menu;  	// pointer to next submenu
 	char *action;
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
@@ -32,7 +34,7 @@ typedef struct _menu{
 	GR_WINDOW_ID main_window;
 	GR_FONT_ID	font;
 	item **pitems;
-	char *ptxtmenu;     //указатель на массив пунктов меню
+	char *ptxtmenu;     // pointer to menu dimension of texts
 	int num_item;   //текущий пункт меню
 	int start_item; //пункт начала вывода
 	int count_item;        //number of item

@@ -32,8 +32,8 @@ value defvalues[] = {
 		{"APP:CRONSW", NULL, NULL, 0, 0},
 		{"APP:CRONCF", NULL, NULL, 0, 0},
 		{"APP:ManDate", NULL, NULL, 0, 0},
-		{"APP: Tester", NULL, NULL, 0, 0},
-		{"APP: SerNum", NULL, NULL, 0, 0},
+		{"APP:Tester", NULL, NULL, 0, 0},
+		{"APP:SerNum", NULL, NULL, 0, 0},
 };
 
 static void* create_next_struct_in_list(LIST *plist, int size){
@@ -52,27 +52,30 @@ LIST *newlist;
 
 int about_parser(char *faname){
 FILE *fl;
-char *p;
+char *p, *papp;
 char tbuf[200];
-int len = 1, i;
+int i;
 
 // Loading main config file
 	fl = fopen(faname, "r");
 	if (fl == NULL) return -1;
 
-	while(len != EOF){
+	do{
 		p = fgets(tbuf, 128, fl);
 		if (p == tbuf){
 			while(*p != '=') p++;
-			*p = 0;
+			*p = 0; p++;
 			for (i=0; i < (sizeof(defvalues)/sizeof(value)); i++){
-				if (strstr(defvalues[i].name, tbuf)) {
+				papp = defvalues[i].name + 4;
+				if (!strcmp(papp, tbuf)) {
 					defvalues[i].val = malloc(strlen(p));
+					p[strlen(p)-1] = 0;
 					strcpy(defvalues[i].val, p);
 				}
 			}
+			p = tbuf;
 		}
-	}
+	}while (p == tbuf);
 
 	return 0;
 }
@@ -91,16 +94,17 @@ char words[][16] = {
 };
 
 int i, j;
+char *papp;
 
-	for (i=0; words[0][i] != 0; i++){
+	for (i=0; words[i][0] != 0; i++){
 		for(j=0; j < (sizeof(defvalues)/sizeof(value)); j++){
-			if (strstr(defvalues[j].name, &words[0][i])){
-				defvalues[j].val = getenv(&words[0][i]);
+			papp = defvalues[j].name;
+			if (strstr(papp, &words[i][0])){
+				defvalues[j].val = getenv(&words[i][0]);
 				break;
 			}
 		}
 	}
-
 }
 
 int lowlevel_parser(char *fllname){
@@ -286,8 +290,13 @@ char *fname;
 
 	// Setup environment
 	env_parser();
+
+
 	// Parse about config file
 	if (about_parser("/tmp/about/about.me")) printf("IEC61850: about.me file reading error\n");
+
+	for(i=0; i < (sizeof(defvalues)/sizeof(value)); i++)
+		printf("%02d: %s=%s\n", i, defvalues[i].name, (char*) defvalues[i].val);
 
 	// Register all variables in varcontroller
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
