@@ -206,9 +206,15 @@ void asdu_map_ids(asdu_map **m_list, asdu *cur_asdu, const char *app_name, uint8
 		res_map = asdu_get_map_item(m_list, cur_asdu->data[i].id, PROTO_ID);
 
 		if(res_map)
+		{
 			cur_asdu->data[i].id = res_map->base_id;
+			memcpy((void*)cur_asdu->data[i].name, (void*)res_map->name, DOBJ_NAMESIZE);
+		}
 		else
+		{
 			cur_asdu->data[i].id = 0xFFFFFFFF;
+			cur_asdu->data[i].name[0] = 0;
+		}
 
 #ifdef _DEBUG
 		if(res_map)

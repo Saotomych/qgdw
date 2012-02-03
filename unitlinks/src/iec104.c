@@ -1315,8 +1315,7 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 	char *ep_buff = NULL;
 	ep_data_header ep_header;
 
-	// FIXME id mapping!!!
-	//asdu_map_ids(&map_list, iec_asdu, APP_NAME, DEC_BASE);
+	asdu_map_ids(&map_list, iec_asdu, APP_NAME, DEC_BASE);
 
 	res = asdu_to_byte(&a_buff, &a_len, iec_asdu);
 
