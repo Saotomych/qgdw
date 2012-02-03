@@ -164,6 +164,8 @@ int do_openfilemenu(char *buf, int type){
 		            num_menu->pitems[i]->text = ptxt;
 	            }
 
+	            ptxt += strlen(ptxt);
+
 	            // IF Fixed text is variable
 	            p = strstr(num_menu->pitems[i]->text, "&var:");
 	            if (p){
@@ -176,8 +178,6 @@ int do_openfilemenu(char *buf, int type){
 	            	num_menu->pitems[i]->vr = NULL;
 	            	num_menu->pitems[i]->endtext = NULL;
 	            }
-
-	            ptxt += strlen(ptxt);
 
 	         }
 
@@ -212,14 +212,17 @@ void do_paint(item *pitem, int fg, int bg)
 			if (pitem->vr) {
 //				if (pitem->vr->prop & ISTRUE)
 				if (pitem->vr->prop & INT32){
-					printf("%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
+					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
-				if (pitem->vr->prop & INT32){
-					printf("%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
+				if (pitem->vr->prop & INT64){
+					sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
 				}
 				if (!(pitem->vr->prop & STRING)){
 					strcpy(wintext, pitem->text);
-					if (pitem->vr) strcat(wintext, (char*) pitem->vr->val->val);
+					if (pitem->vr){
+						if (pitem->vr->val) strcat(wintext, (char*) pitem->vr->val->val);
+						else if (pitem->vr->val->defval) strcat(wintext, (char*) pitem->vr->val->defval);
+					}
 					if (pitem->endtext) strcat(wintext, pitem->endtext);
 				}
 				GrText(*main_window, gc, 3, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
@@ -352,7 +355,7 @@ void f2(void *arg){
 
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 
-					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
+//					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
@@ -367,7 +370,7 @@ void f2(void *arg){
 
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
 
-					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
+//					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
 
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;

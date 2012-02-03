@@ -16,6 +16,14 @@ static LIST fdefvt   = {NULL, NULL};		// first  varrec
 static LIST fvarbook = {NULL, NULL};		// first varbook
 static varbook *actvb;		// actual varbook
 
+static varrec* create_varrec(void){
+varrec *vr;
+	vr = malloc(sizeof(varrec));
+	vr->name = malloc(sizeof(fcdarec));
+	vr->val = malloc(sizeof(value));
+	return vr;
+}
+
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
 	plist->next = malloc(size);
@@ -92,13 +100,21 @@ char keywords[][10] = {
 
 			// if IED, LD - Set const as text
 			case 1:	// IED:
-					pied = fied.next;
+					if (!pied) return NULL;
+					vr = create_varrec();
+					vr->name->fc = varname;
+					p = strstr(varname, "name");
+					if (p) vr->val->val = pied->name;
+					// Set val if 'desc'
+					p = strstr(varname, "desc");
+					if (p) vr->val->val = pied->desc;
+					return vr;
+					break;
+
 			case 2: // LD
 					// Fill varrec as const of application
 					if (!pld) return NULL;
-					vr = malloc(sizeof(varrec));
-					vr->name = malloc(sizeof(fcdarec));
-					vr->val = malloc(sizeof(value));
+					vr = create_varrec();
 					vr->name->fc = varname;
 
 					// Set val if 'inst'

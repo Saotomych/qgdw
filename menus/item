@@ -4,6 +4,6 @@ menu 6 a a a Профиль нагрузки>eprofile
 menu 8 a a a Архив потребления>earch
 menu 10 a a a Энергия по тарифам>etarif
 menu 12 a a a Присоединение>connect
-menu 14 a a a Журнал>journal
+menu 14 a a a Журнал &var:IED:desc >journal
 menu 16 a a a О счетчике &var:LD:inst>meterabout
-menu 18 a a a &powstate~chpower
+menu 18 a a a &var:IED:name ~chpower

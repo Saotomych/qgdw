@@ -1,7 +1,7 @@
 text 15 0 a a О счетчике
 menu a a a a &aboutwin~chaboutwin
-text a a a a &devname
-text a a a a &ld.name
-text a a a a &mac
-text a a a a &address
-text a a a a &temper
+text a a a a ied.name=&var:IED:name
+text a a a a ld.inst=&var:LD:inst
+text a a a a mac=&var:APP:MAC
+text a a a a ip=&var:APP:LOCALIP
+text a a a a temper
