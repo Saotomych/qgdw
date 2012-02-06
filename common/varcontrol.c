@@ -120,6 +120,8 @@ char keywords[][10] = {
 					if (!pld) return NULL;
 					vr = create_varrec();
 					vr->name->fc = varname;
+					vr->val->name = varname;
+					vr->val->val = NULL;
 
 					// Set val if 'inst'
 					p = strstr(varname, "inst");
@@ -170,34 +172,41 @@ char keywords[][10] = {
 						}
 					}else return NULL;
 
-					// Find DOBJ as equal actual LN by type
-					pdo = pln->ln.pmytype->pfdobj;
-					while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
-					if (!pdo) return NULL;
-
-					// find ATTR (in pa) for future IEC functions
-					if (pa){
-						pda = pdo->dobj.pmytype->pfattr;
-						while((pda) && (strcmp(pa, pda->attr.name))) pda = pda->l.next;
-						if (!pda) return NULL;
-					}
-
 					// Create new varrec
 					vr = create_varrec();
 					vr->name->fc = varname;
+					vr->val->name = varname;
+					vr->val->val = NULL;
 
-					// Value or config const
+					// Find DOBJ as equal actual LN by type
 					if (ptag){
-						if (!strcmp(ptag, "value")){
-							// IF Value  =>  Book var in startiec and fill varrec as remote variable
-							// TODO Variable booking
-						}else{
+						pdo = pln->ln.pmytype->pfdobj;
+						while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
+						if (!pdo) return NULL;
+
+//						// find ATTR (in pa) for future IEC functions
+//						if (pa){
+//							pda = pdo->dobj.pmytype->pfattr;
+//							while((pda) && (strcmp(pa, pda->attr.name))) pda = pda->l.next;
+//							if (!pda) return NULL;
+//						}
+//
+//						if (!strcmp(ptag, "value")){
+//							// IF Value  =>  Book var in startiec and fill varrec as remote variable
+//							// TODO Variable booking
+//						}else{
+//							if (!strcmp(ptag, "desc")) vr->val->val = pdo->dobj.options;
+//							if (!strcmp(ptag, "name")) vr->val->val = pdo->dobj.name;
+//							if (!strcmp(ptag, "type")) vr->val->val = pdo->dobj.type;
+//						}
+					}else{
+						if (po){
 							// IF const  =>  Fill varrec as const of application
-							vr->val->name = varname;
-							vr->val->val = NULL;
-							if (!strcmp(ptag, "desc")) vr->val->val = pdo->dobj.options;
-							if (!strcmp(ptag, "name")) vr->val->val = pdo->dobj.name;
-							if (!strcmp(ptag, "type")) vr->val->val = pdo->dobj.type;
+							if (!strcmp(po, "inst")) vr->val->val = actln->ln.lninst;
+							if (!strcmp(po, "class")) vr->val->val = actln->ln.lnclass;
+							if (!strcmp(po, "type")) vr->val->val = actln->ln.lntype;
+							if (!strcmp(po, "prefix")) vr->val->val = actln->ln.prefix;
+							return vr;
 						}
 					}
 

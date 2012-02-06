@@ -129,6 +129,7 @@ int do_openfilemenu(char *buf, int type){
 	            // H
 	            if (*ptxt != 'a') num_menu->pitems[i]->rect.height = atoi(ptxt);
 	            else num_menu->pitems[i]->rect.height = MENUSTEP;
+	            num_menu->pitems[i]->ctrl_height = num_menu->pitems[i]->rect.height;
 	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // Item type "MENU"
@@ -174,7 +175,7 @@ int do_openfilemenu(char *buf, int type){
 	            if (!strcmp(pitemtype, "text")){
 		            num_menu->pitems[i]->text = ptxt;
 		            // menu item included in heigth all lower text field before next menu item
-		            if (i) num_menu->pitems[(int)last_menuitem]->rect.height += num_menu->pitems[i]->rect.height;
+		            if (i) num_menu->pitems[(int)last_menuitem]->ctrl_height += num_menu->pitems[i]->rect.height;
 	            }
 
 	            ptxt += strlen(ptxt);
@@ -307,7 +308,7 @@ int i;
 int stepy, y, itemy, itemh;
 
 	itemy = num_menu->pitems[num_menu->num_item]->rect.y;
-	itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+	itemh = num_menu->pitems[num_menu->num_item]->ctrl_height;
 
 	stepy = itemy + itemh - MAIN_HEIGHT;
 	if (!type){
@@ -453,22 +454,10 @@ void key_rised(void *arg)
 //int init_menu(fact *factsetting, int len)
 int init_menu()
 {
-//    int n, m;
+	actlnode = (LNODE*) (fln.next);
+	// Find first MMXU
+	while ((actlnode) && (strcmp(actlnode->ln.lnclass, "MMXU"))) actlnode = actlnode->l.next;
 
-    actlnode = (LNODE*) (fln.next);
-
-//	if (factsetting == 0) return 0;
-//
-//	for (m=0; m < (sizeof(pfactsetting) / sizeof(fact)); m++)
-//	{
-//		for (n=0; n<len; n++)
-//		{
-//			if (!strcmp(pfactsetting[m].action, factsetting[n].action)){
-//				factsetting[n].func = pfactsetting[m].func;
-//				break;
-//			}
-//		}
-//	}
-	return 0;
+    return 0;
 }
 //---------------------------------------------------------------------------------

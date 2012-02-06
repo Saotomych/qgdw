@@ -21,6 +21,7 @@ typedef struct _item{
 	GR_RECT rect;
 	GR_RECT bgnrect;
 	varrec *vr;			// pointer to variable of item
+	int  ctrl_height;	// Height of below control by this menu item
 	char *name_font;
 	char *text;			// Start text of item
 	char *endtext;		// End text of item

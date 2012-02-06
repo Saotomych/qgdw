@@ -137,6 +137,8 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "ldInst")) flastln->ln.ldinst = par;
 			else
 			if (strstr((char*) key, "lnType")) flastln->ln.lntype = par;
+			else
+			if (strstr((char*) key, "prefix")) flastln->ln.prefix = par;
 		}
 	}while(p);
 
