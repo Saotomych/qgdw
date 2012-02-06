@@ -187,24 +187,24 @@ void SetKeydown(char *arg){
 
 }
 
-void HintDraw(char *arg){
+void LNMenuDraw(char *arg){
 
 }
 
-void EnInfoDraw(char *arg){
+void ChNameLN(char *arg){
 
 }
 
 //Array of struct
-fact factsetting[] = {
-		{"mainmenu", (void*) SetMainMenu},      //0
-		{"newmenu", (void*) SetNewMenu},		//1
-		{"hint", (void*) HintDraw},				//2
-		{"energyinfo", (void*) EnInfoDraw},		//3
-		{"doxpaint", NULL},						//4
-		{"keydown", NULL},   		     		//5
-		{"keyup", NULL},						//6
-};
+//fact factsetting[] = {
+//		{"mainmenu", (void*) SetMainMenu},      //0
+//		{"newmenu", (void*) SetNewMenu},		//1
+//		{"lnmenu", (void*) LNMenuDraw},			//2
+//		{"changeln", (void*) ChNameLN},			//3
+//		{"doxpaint", NULL},						//4
+//		{"keydown", NULL},   		     		//5
+//		{"keyup", NULL},						//6
+//};
 
 void mainloop()
 {
@@ -219,17 +219,23 @@ void mainloop()
  				case GR_EVENT_TYPE_EXPOSURE:
  					if (event.exposure.wid == GR_ROOT_WINDOW_ID){
  	 					printf ("Root exposure event 0x%04X\n", event.exposure.wid);
- 						factsetting[4].func(&event);
+// 						factsetting[4].func(&event);
+ 	 					redraw_screen(&event);
  					}
  					break;
 
  				case GR_EVENT_TYPE_KEY_DOWN:
- 					printf ("Key down event 0x%04X\n", event.keystroke.ch);
- 					factsetting[5].func(&event);
+// 					printf ("Key down event 0x%04X\n", event.keystroke.ch);
+ 					// LEFT and RIGHT
+// 					if ((event.keystroke.ch == 0xF800) || (event.keystroke.ch == 0xF801)) factsetting[3].func(&event);
+// 					else
+// 					factsetting[5].func(&event);
+ 					key_pressed(&event);
  					break;
 
 				case GR_EVENT_TYPE_KEY_UP:
- 					factsetting[6].func(&event);
+// 					factsetting[6].func(&event);
+					key_rised(&event);
 					break;
 
 				case GR_EVENT_TYPE_UPDATE:
@@ -291,7 +297,6 @@ char *fname;
 	// Setup environment
 	env_parser();
 
-
 	// Parse about config file
 	if (about_parser("/tmp/about/about.me")) printf("IEC61850: about.me file reading error\n");
 
@@ -302,7 +307,8 @@ char *fname;
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
 //---*** Init visual control ***---//
-	init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
+//	init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
+	init_menu();
 	do_openfilemenu("menus/item", MENUFILE);
 	draw_menu();
 	mainloop();

@@ -9,6 +9,8 @@
 #include "menu.h"
 #include "hmi.h"
 
+static LNODE *actlnode;
+
 static char prev_item;		// pointer to item in main menu
 
 static menu *num_menu;     //указатель на структуру меню
@@ -32,9 +34,9 @@ char newmenu[40];			// For temporary operations
 #define FONTNAME "pcf/7x13.pcf.gz"
 
 fact pfactsetting[] ={
-		{"doxpaint", f1},
-		{"keydown", f2},
-		{"keyup", f3},
+		{"doxpaint", redraw_screen},
+		{"keydown", key_pressed},
+		{"keyup", key_rised},
 };
 
 //------------------------------------------------------------------------------------
@@ -138,6 +140,7 @@ int do_openfilemenu(char *buf, int type){
 		            num_menu->pitems[i]->text = ptxt;
 		            num_menu->pitems[i]->next_menu = 0;
 	               	num_menu->pitems[i]->action = 0;
+		            while ((*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
 		            do{
 			            while ((*ptxt != ' ') && (*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
 			            // Spase if border of field in parameters
@@ -181,7 +184,7 @@ int do_openfilemenu(char *buf, int type){
 	            if (p){
 	            	*p = 0;
 	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(p, (LNODE*)fln.next);
+	            	num_menu->pitems[i]->vr = vc_addvarrec(p, actlnode);
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{
@@ -241,6 +244,7 @@ void do_paint(item *pitem, int fg, int bg)
 			GrDestroyGC(gc);
 }
 //------------------------------------------------------------------------------------
+// Create subwindows for menu items and map all window
 void draw_menu()
 {
 		 if (GrOpen() < 0) {
@@ -297,6 +301,7 @@ void draw_menu()
 
 }
 
+// Draw only visible items and move items
 void redraw_menu(int type){
 int i;
 int stepy, y, itemy, itemh;
@@ -324,6 +329,7 @@ int stepy, y, itemy, itemh;
 	}
 }
 
+// Full delete menu from memory
 void destroy_menu()
 {
 int i;
@@ -342,7 +348,8 @@ int i;
 }
 
 //-------------------------------------------------------------------------------
-void f1(void *arg){
+// Draw all items and cursor position as last
+void redraw_screen(void *arg){
     int i;
 
 	for (i = 0; i < num_menu->count_item; i++){
@@ -352,14 +359,35 @@ void f1(void *arg){
 	do_paint(num_menu->pitems[num_menu->num_item], BGCOLOR, FGCOLOR);
 
 }
+
+void call_action(int direct, char *action){
+
+	// Find action in table and call action
+
+}
+
+void call_dynmenu(char *menuname){
+
+	// Find function of dynamic menu
+
+}
+
 //--------------------------------------------------------------------------------
 //keyup and keydown
-void f2(void *arg){
+void key_pressed(void *arg){
     GR_EVENT *event = (GR_EVENT*) arg;
     int itemy, itemh;
 
 	switch(event->keystroke.ch)
 	{
+
+	case 0xf800:	// Key left
+					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
+					break;
+
+	case 0xf801:	// Key right
+					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
+					break;
 
 	case 0xf802:	// Key up
 
@@ -372,7 +400,7 @@ void f2(void *arg){
 
 					if ((itemy > (MAIN_HEIGHT-10)) || (itemy  < (num_menu->bgnmenuy - 10))) redraw_menu(1);
 
-					f1(NULL);
+					redraw_screen(NULL);
 
 					break;
 
@@ -387,7 +415,7 @@ void f2(void *arg){
 
 					if ((itemy > (MAIN_HEIGHT-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
 
-					f1(NULL);
+					redraw_screen(NULL);
 
 					break;
 
@@ -400,7 +428,7 @@ void f2(void *arg){
 						destroy_menu();
 						if (!do_openfilemenu(newmenu, MENUFILE)){
 							draw_menu();
-						}else exit (-1);
+						}else call_dynmenu(num_menu->pitems[num_menu->num_item]->next_menu);
 					}
 					break;
 
@@ -416,28 +444,31 @@ void f2(void *arg){
 
 }
 //---------------------------------------------------------------------------------
-void f3(void *arg)
+void key_rised(void *arg)
 {
 
 }
 
 //---------------------------------------------------------------------------------
-int init_menu(fact *factsetting, int len)
+//int init_menu(fact *factsetting, int len)
+int init_menu()
 {
-    int n, m;
+//    int n, m;
 
-	if (factsetting == 0) return 0;
+    actlnode = (LNODE*) (fln.next);
 
-	for (m=0; m < (sizeof(pfactsetting) / sizeof(fact)); m++)
-	{
-		for (n=0; n<len; n++)
-		{
-			if (!strcmp(pfactsetting[m].action, factsetting[n].action)){
-				factsetting[n].func = pfactsetting[m].func;
-				break;
-			}
-		}
-	}
+//	if (factsetting == 0) return 0;
+//
+//	for (m=0; m < (sizeof(pfactsetting) / sizeof(fact)); m++)
+//	{
+//		for (n=0; n<len; n++)
+//		{
+//			if (!strcmp(pfactsetting[m].action, factsetting[n].action)){
+//				factsetting[n].func = pfactsetting[m].func;
+//				break;
+//			}
+//		}
+//	}
 	return 0;
 }
 //---------------------------------------------------------------------------------
