@@ -221,8 +221,8 @@ void do_paint(item *pitem, int fg, int bg)
 				}
 				if (!(pitem->vr->prop & STRING)){
 					strcpy(wintext, pitem->text);
-					if (pitem->vr){
-						if (pitem->vr->val) strcat(wintext, (char*) pitem->vr->val->val);
+					if ((pitem->vr) && (pitem->vr->val)){
+						if (pitem->vr->val->val) strcat(wintext, (char*) pitem->vr->val->val);
 						else if (pitem->vr->val->defval) strcat(wintext, (char*) pitem->vr->val->defval);
 					}
 					if (pitem->endtext) strcat(wintext, pitem->endtext);

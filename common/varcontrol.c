@@ -71,12 +71,14 @@ varrec *defvt;		// actual varrec
 // Input data: name of variable
 // Return pointer to value record and properties
 varrec *vc_addvarrec(char *varname, LNODE *actln){
+int i;
 varrec *vr;
 struct _IED *pied;
 struct _LDEVICE *pld;
 DOBJ *pdo;
+ATTR *pda;
 LNODE *pln = actln;
-char *p, i;
+char *p, *po=0, *pa=0, *ptag=0;
 char keywords[][10] = {
 		{"APP:"},
 		{"IED:"},
@@ -95,7 +97,10 @@ char keywords[][10] = {
 			case 0: // APP:
 					vr = (varrec*) fdefvt.next;
 					while(vr){
-						if (!strcmp(vr->name->fc, varname)) return vr;
+						if (!strcmp(vr->name->fc, varname)){
+
+							return vr;
+						}
 						vr = vr->l.next;
 					}
 					break;
@@ -146,30 +151,58 @@ char keywords[][10] = {
 //					lnType="MMXUa"
 //					prefix="M700"
 
-					// Find DOBJ
-					pdo = pln->ln.pmytype->pfdobj;
-					p = strstr(varname, ".");
+				// Find all fields: po, pa, ptag
+					p = strstr(varname, ":");
 					if (p){
-						p++;
-						while(pdo){
-							if (!strcmp(pdo->dobj.name, p)){
-								// TODO find pda for future IEC functions
-								break;
+						// Set po to data object
+						p++; po = p;
+						p = strstr(p, ".");
+						if (p){
+							// Data object found
+							// Set pa to data attribute as variant
+							*p = 0;	p++; pa = p;
+							p = strstr(p, ".");
+							if (p){
+								// Field for data attribute found
+								*p = 0;	p++; ptag = p;
+							}else{
+								// This field is tag
+								ptag = pa;
+								pa = NULL;
 							}
-							pdo = pdo->l.next;
 						}
 					}else return NULL;
+
+					// Find DOBJ as equal actual LN by type
+					pdo = pln->ln.pmytype->pfdobj;
+					while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
 					if (!pdo) return NULL;
+
+					// find ATTR (in pa) for future IEC functions
+					if (pa){
+						pda = pdo->dobj.pmytype->pfattr;
+						while((pda) && (strcmp(pa, pda->attr.name))) pda = pda->l.next;
+						if (!pda) return NULL;
+					}
 
 					// Create new varrec
 					vr = create_varrec();
 					vr->name->fc = varname;
 
 					// Value or config const
-
-					// IF Value  =>  Book var in startiec and fill varrec as remote variable
-
-					// IF const  =>  Fill varrec as const of application
+					if (ptag){
+						if (!strcmp(ptag, "value")){
+							// IF Value  =>  Book var in startiec and fill varrec as remote variable
+							// TODO Variable booking
+						}else{
+							// IF const  =>  Fill varrec as const of application
+							vr->val->name = varname;
+							vr->val->val = NULL;
+							if (!strcmp(ptag, "desc")) vr->val->val = pdo->dobj.options;
+							if (!strcmp(ptag, "name")) vr->val->val = pdo->dobj.name;
+							if (!strcmp(ptag, "type")) vr->val->val = pdo->dobj.type;
+						}
+					}
 
 					break;
 
