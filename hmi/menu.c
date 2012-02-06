@@ -136,20 +136,28 @@ int do_openfilemenu(char *buf, int type){
 	            	num_menu->pitems[i]->next_item = first_menuitem;
 	            	num_menu->pitems[(int)last_menuitem]->next_item = i;
 		            num_menu->pitems[i]->text = ptxt;
-
-		            while ((*ptxt) && ((*ptxt) != '>') && ((*ptxt) != '~')) ptxt++;
-
 		            num_menu->pitems[i]->next_menu = 0;
-		            if (*ptxt == '>'){
-		            	*ptxt = 0;
-		            	num_menu->pitems[i]->next_menu = ptxt+1;
-		            	ptxt++;
-		            }
-		            if (*ptxt == '~'){
-		               	*ptxt = 0;
-		               	num_menu->pitems[i]->action = ptxt+1;
-		            	ptxt++;
-		            }
+	               	num_menu->pitems[i]->action = 0;
+		            do{
+			            while ((*ptxt != ' ') && (*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
+			            // Spase if border of field in parameters
+			            if (*ptxt == ' '){
+			            	*ptxt = 0;
+			            	ptxt++;
+			            }
+		            	// Set next submenu
+			            if (*ptxt == '>'){
+			            	*ptxt = 0;
+			            	ptxt++;
+			            	num_menu->pitems[i]->next_menu = ptxt;
+			            }
+			            // Set next action for left & right keys
+			            if (*ptxt == '~'){
+			            	*ptxt = 0;
+			            	ptxt++;
+			               	num_menu->pitems[i]->action = ptxt;
+			            }
+		            }while (*ptxt);
 		            last_menuitem = i;
 		            count_menu++;
 	            }

@@ -97,10 +97,7 @@ char keywords[][10] = {
 			case 0: // APP:
 					vr = (varrec*) fdefvt.next;
 					while(vr){
-						if (!strcmp(vr->name->fc, varname)){
-
-							return vr;
-						}
+						if (!strcmp(vr->name->fc, varname))	return vr;
 						vr = vr->l.next;
 					}
 					break;
