@@ -250,6 +250,8 @@ void do_paint(item *pitem, int fg, int bg)
 // Create subwindows for menu items and map all window
 void draw_menu()
 {
+		if (!num_menu) return;
+
 		 if (GrOpen() < 0) {
 			 fprintf(stderr, "Cannot open graphics\n");
 			 exit(1);
@@ -380,9 +382,30 @@ void redraw_screen(void *arg){
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
 void call_dynmenu(char *menuname){
+char menutxt[1024];
+char *pmenu = menutxt;
+LNODE *pln;
+int x = MENUSTEP;
+int y = MENUSTEP/2;
 
 	// Find function of dynamic menu
+	if (!strcmp("menus/lnmenu", menuname)){
 
+		num_menu->bgnmenuy = MENUSTEP / 2;
+
+		pln = (LNODE*) fln.next;
+		while(pln){
+			if (!strcmp(pln->ln.lnclass, "MMXU")){
+				sprintf(pmenu, "menu %d %d a a %s.%s:%s\n", x, y, pln->ln.prefix, pln->ln.lnclass, pln->ln.lninst);
+				pmenu += strlen(pmenu);
+				x += 2;
+				y += MENUSTEP;
+			}
+			pln = pln->l.next;
+		}
+		do_openfilemenu(menutxt, MENUMEM);
+		draw_menu();
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -462,7 +485,7 @@ struct {
 						destroy_menu();
 						if (!do_openfilemenu(newmenu, MENUFILE)){
 							draw_menu();
-						}else call_dynmenu(num_menu->pitems[num_menu->num_item]->next_menu);
+						}else call_dynmenu(newmenu);
 					}
 					break;
 
