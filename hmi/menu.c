@@ -7,7 +7,6 @@
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
 #include "menu.h"
-#include "hmi.h"
 
 static LNODE *actlnode;
 
@@ -32,43 +31,6 @@ char newmenu[40];			// For temporary operations
 #define FGCOLOR	BLACK
 #define BGCOLOR	WHITE
 #define FONTNAME "pcf/7x13.pcf.gz"
-
-fact pfactsetting[] ={
-		{"doxpaint", redraw_screen},
-		{"keydown", key_pressed},
-		{"keyup", key_rised},
-};
-
-LNODE* next_ln(LNODE* pbln, char *filter){
-LNODE *pln = pbln;
-	if (pln->l.next){
-		do{
-			pln = pln->l.next;
-			if (!strcmp(pln->ln.lnclass, filter)){
-				pbln = pln;
-				break;
-			}
-		}while (pln->l.next);
-	}
-
-	return pbln;
-}
-
-LNODE* prev_ln(LNODE* pbln, char *filter){
-LNODE *pln = pbln;
-	if (pln->l.prev){
-		do{
-			if (pln->l.prev == &fln) break;
-			pln = pln->l.prev;
-			if (!strcmp(pln->ln.lnclass, filter)){
-				pbln = pln;
-				break;
-			}
-		}while (pln->l.prev);
-	}
-
-	return pbln;
-}
 
 //------------------------------------------------------------------------------------
 int do_openfilemenu(char *buf, int type){
@@ -401,12 +363,6 @@ void redraw_screen(void *arg){
 
 }
 
-void call_action(int direct, char *action){
-
-	// Find action in table and call action
-
-}
-
 void call_dynmenu(char *menuname){
 
 	// Find function of dynamic menu
@@ -416,25 +372,35 @@ void call_dynmenu(char *menuname){
 //--------------------------------------------------------------------------------
 //keyup and keydown
 void key_pressed(void *arg){
-    GR_EVENT *event = (GR_EVENT*) arg;
-    int itemy, itemh;
+GR_EVENT *event = (GR_EVENT*) arg;
+int itemy, itemh;
+struct {
+	LNODE *pln;
+	char  *lnclass;
+} parameters;
+
+	// Set of parameters for all variable menu and action functions
+	parameters.pln = actlnode;
+	parameters.lnclass = actlnode->ln.lnclass;
+	// Parameters Ready
 
 	switch(event->keystroke.ch)
 	{
 
 	case 0xf800:	// Key left
-//					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
-					actlnode = prev_ln(actlnode, "MMXU");
-					refresh_vars();
-					redraw_screen(NULL);
+					if (num_menu->pitems[num_menu->num_item]->action){
+						actlnode = (LNODE*) call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+						refresh_vars();
+						redraw_screen(NULL);
+					}
 					break;
 
 	case 0xf801:	// Key right
-//					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
-					actlnode = next_ln(actlnode, "MMXU");
-					refresh_vars();
-					redraw_screen(NULL);
-					break;
+					if (num_menu->pitems[num_menu->num_item]->action){
+						actlnode = (LNODE*) call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+						refresh_vars();
+						redraw_screen(NULL);
+					}break;
 
 	case 0xf802:	// Key up
 
@@ -500,9 +466,16 @@ void key_rised(void *arg)
 //int init_menu(fact *factsetting, int len)
 int init_menu()
 {
+struct {
+	LNODE *pln;
+	char  *filt;
+} listln;
+
 	actlnode = (LNODE*) (fln.next);
 	// Find first MMXU
-	actlnode = next_ln(actlnode, "MMXU");
+	listln.filt = (char*) "MMXU";
+	listln.pln = actlnode;
+	actlnode = (LNODE*) call_action(0xf801, "changeln", &listln);
 
     return 0;
 }

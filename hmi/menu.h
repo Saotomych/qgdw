@@ -53,6 +53,8 @@ extern void redraw_screen(void *arg);
 extern void key_pressed(void *arg);
 extern void key_rised(void *arg);
 
+extern int call_action(int direct, char *act, void *arg);
+
 //void SetNewMenu();
 //void SetMainMenu();
 //void HintDraw();

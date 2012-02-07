@@ -12,7 +12,7 @@
 
 typedef struct _fact{
    char *action;
-   void (*func)(void *arg);
+   int (*func)(void *arg);
 }fact, *pfact;
 
 // lowlevel.cfg information
