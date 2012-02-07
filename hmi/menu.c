@@ -39,6 +39,37 @@ fact pfactsetting[] ={
 		{"keyup", key_rised},
 };
 
+LNODE* next_ln(LNODE* pbln, char *filter){
+LNODE *pln = pbln;
+	if (pln->l.next){
+		do{
+			pln = pln->l.next;
+			if (!strcmp(pln->ln.lnclass, filter)){
+				pbln = pln;
+				break;
+			}
+		}while (pln->l.next);
+	}
+
+	return pbln;
+}
+
+LNODE* prev_ln(LNODE* pbln, char *filter){
+LNODE *pln = pbln;
+	if (pln->l.prev){
+		do{
+			if (pln->l.prev == &fln) break;
+			pln = pln->l.prev;
+			if (!strcmp(pln->ln.lnclass, filter)){
+				pbln = pln;
+				break;
+			}
+		}while (pln->l.prev);
+	}
+
+	return pbln;
+}
+
 //------------------------------------------------------------------------------------
 int do_openfilemenu(char *buf, int type){
 	char *pitemtype;
@@ -185,7 +216,7 @@ int do_openfilemenu(char *buf, int type){
 	            if (p){
 	            	*p = 0;
 	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(p, actlnode);
+	            	num_menu->pitems[i]->vr = vc_addvarrec(p, actlnode, NULL);
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{
@@ -348,6 +379,15 @@ int i;
 	num_menu = 0;
 }
 
+void refresh_vars(void){
+int i;
+	for (i = 0; i < num_menu->count_item; i++){
+		if (num_menu->pitems[i]->vr){
+			num_menu->pitems[i]->vr = vc_addvarrec(num_menu->pitems[i]->vr->name->fc, actlnode, num_menu->pitems[i]->vr);
+		}
+	}
+}
+
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
 void redraw_screen(void *arg){
@@ -383,11 +423,17 @@ void key_pressed(void *arg){
 	{
 
 	case 0xf800:	// Key left
-					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
+//					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
+					actlnode = prev_ln(actlnode, "MMXU");
+					refresh_vars();
+					redraw_screen(NULL);
 					break;
 
 	case 0xf801:	// Key right
-					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
+//					call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action);
+					actlnode = next_ln(actlnode, "MMXU");
+					refresh_vars();
+					redraw_screen(NULL);
 					break;
 
 	case 0xf802:	// Key up
@@ -456,7 +502,7 @@ int init_menu()
 {
 	actlnode = (LNODE*) (fln.next);
 	// Find first MMXU
-	//while ((actlnode) && (strcmp(actlnode->ln.lnclass, "MMXU"))) actlnode = actlnode->l.next;
+	actlnode = next_ln(actlnode, "MMXU");
 
     return 0;
 }

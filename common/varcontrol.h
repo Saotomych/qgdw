@@ -60,7 +60,8 @@ typedef struct _VARBOOK{
 } varbook, *pvarbook;
 
 extern void vc_init(pvalue vt, int len);
-extern varrec *vc_addvarrec(char *varname, LNODE *actln);
+//extern varrec *vc_addvarrec(char *varname, LNODE *actln);
+extern varrec *vc_addvarrec(char *varname, LNODE *actln, varrec *actvr);
 extern int vc_rmvarrec(char *varname);
 
 #endif /* VARCONTROL_H_ */

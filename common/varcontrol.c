@@ -76,7 +76,7 @@ varrec *defvt;		// actual varrec
 // To book concrete variable by name
 // Input data: name of variable
 // Return pointer to value record and properties
-varrec *vc_addvarrec(char *varname, LNODE *actln){
+varrec *vc_addvarrec(char *varname, LNODE *actln, varrec *actvr){
 int i;
 varrec *vr;
 struct _IED *pied;
@@ -111,7 +111,8 @@ char keywords[][10] = {
 			// if IED, LD - Set const as text
 			case 1:	// IED:
 					if (!pied) return NULL;
-					vr = create_varrec();
+					if (actvr) vr = actvr;
+					else vr = create_varrec();
 					vr->name->fc = varname;
 					p = strstr(varname, "name");
 					if (p) vr->val->val = pied->name;
@@ -124,7 +125,8 @@ char keywords[][10] = {
 			case 2: // LD
 					// Fill varrec as const of application
 					if (!pld) return NULL;
-					vr = create_varrec();
+					if (actvr) vr = actvr;
+					else vr = create_varrec();
 					vr->name->fc = varname;
 					vr->val->name = varname;
 					vr->val->val = NULL;
@@ -221,10 +223,6 @@ char keywords[][10] = {
 			}
 		}
 	}
-
-
-
-
 	return NULL;
 }
 
