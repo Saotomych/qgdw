@@ -1,4 +1,9 @@
-
+/*
+ * hmi.c
+ *
+ *  Created on: 16.12.2011
+ *      Author: dmitry & Alex AVAlon
+ */
 
 #include <nano-X.h>
 #include <nanowm.h>
@@ -33,21 +38,26 @@ char newmenu[40];			// For temporary operations
 #define FONTNAME "pcf/7x13.pcf.gz"
 
 //------------------------------------------------------------------------------------
+// Parser of menu files
+// It's making:
+// Create and initialize structure menu and structure array of items
+// Connect items to variables
+// Fill items by begin graphic information
+// In: file or string array with string as <type> <X> <Y> <Width> <Height> <Fix text with variables> <'>'submenu> <'~'action>
+// Out: num_menu pointer and all connected pointers are ready for next work
 int do_openfilemenu(char *buf, int type){
-	char *pitemtype;
-	char *ptxt;
-	FILE *fmcfg;               //file open
-	struct stat fst;
-	int clen;
+char *pitemtype;			// pointer to actual <type>
+char *ptxt;					// temporary text pointer
+FILE *fmcfg;               //file open
+struct stat fst;			// statistics of file
+int clen;					// lenght of file or array
+int count_item = 0;			// max number of items
+int count_menu = 0;			// max number of items as menu type
+char last_menuitem = 0;		// number of last item as menu type
+char first_menuitem = 0;	// number of first item as menu type
 
-	int count_item = 0;
-	int count_menu = 0;
-
-	int i;
-	char last_menuitem = 0;
-	char first_menuitem = 0;
-
-	char *p;
+int i;
+char *p;
 
 	 	 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
 
@@ -93,8 +103,7 @@ int do_openfilemenu(char *buf, int type){
 		 	ptxt = num_menu->ptxtmenu;
 	 	 	num_menu->bgnmenuy = 0;
 
-	         for (i = 0; i < count_item; i++)
-	         {
+	 	 	for (i = 0; i < count_item; i++){
 	            while (!(*ptxt)) ptxt++;
 
 	            num_menu->pitems[i] = (item*) malloc(sizeof(item));
@@ -189,7 +198,6 @@ int do_openfilemenu(char *buf, int type){
 	         }
 
 	         num_menu->pitems[(int) first_menuitem]->prev_item = last_menuitem;
-
 	         num_menu->num_item = first_menuitem;
 	         num_menu->first_item = first_menuitem;
 	         num_menu->start_item = first_menuitem;
@@ -198,6 +206,7 @@ int do_openfilemenu(char *buf, int type){
      return 0;
 }
 //------------------------------------------------------------------------------------
+// Function create new text in all windows
 static char wintext[40];
 void do_paint(item *pitem, int fg, int bg)
 {
@@ -295,6 +304,7 @@ void draw_menu()
 
 }
 
+//-------------------------------------------------------------------------------------------
 // Draw only visible items and move items
 void redraw_menu(int type){
 int i;
@@ -323,7 +333,8 @@ int stepy, y, itemy, itemh;
 	}
 }
 
-// Full delete menu from memory
+// -----------------------------------------------------------------------------------
+// Full delete menu (num_menu) from memory
 void destroy_menu()
 {
 int i;
@@ -341,6 +352,9 @@ int i;
 	num_menu = 0;
 }
 
+//-----------------------------------------------------------------------------------------------------------
+// Refresh all variables in all items of menu
+// Call after change global variables has synonym
 void refresh_vars(void){
 int i;
 	for (i = 0; i < num_menu->count_item; i++){
@@ -363,6 +377,8 @@ void redraw_screen(void *arg){
 
 }
 
+//-------------------------------------------------------------------------------
+// Form dynamic menu on base cycle string and draw on screen
 void call_dynmenu(char *menuname){
 
 	// Find function of dynamic menu
@@ -370,7 +386,11 @@ void call_dynmenu(char *menuname){
 }
 
 //--------------------------------------------------------------------------------
-//keyup and keydown
+// Key working function:
+// keyleft and keyright working through function set in action_fn.c file
+// keyup and key down working as cursor keys forever
+// ENTER it's enter to submenu forever or confirmation of changes forever
+// MENU it's return to previous menu without changes forever
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
 int itemy, itemh, ret;
@@ -407,6 +427,7 @@ struct {
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 
 //					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
+					//-------------------------------------------------------------------------------
 
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
@@ -456,7 +477,9 @@ struct {
 	}
 
 }
+
 //---------------------------------------------------------------------------------
+// After release of key
 void key_rised(void *arg)
 {
 

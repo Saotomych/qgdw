@@ -2,8 +2,9 @@
  * hmi.c
  *
  *  Created on: 16.12.2011
- *      Author: dmitry
+ *      Author: dmitry & Alex AVAlon
  */
+
 #include <nano-X.h>
 #include <nanowm.h>
 #include "../common/common.h"
@@ -21,6 +22,7 @@
 LIST fldextinfo = {NULL, NULL};
 ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
+// Synonyms for global variables
 // Defvalues included: m700env, about.me
 value defvalues[] = {
 		{"APP:LOCALIP", NULL, NULL, 0, 0},
@@ -50,6 +52,8 @@ LIST *newlist;
 	return newlist;
 }
 
+// ----------------------------------------------------------------------------------
+// Parser of file /tmp/about/about.me
 int about_parser(char *faname){
 FILE *fl;
 char *p, *papp;
@@ -80,6 +84,8 @@ int i;
 	return 0;
 }
 
+// ----------------------------------------------------------------------------------
+// Parser of file /tmp/about/setenv.sh
 void env_parser(void){
 char words[][16] = {
 		{"LOCALIP"},
@@ -107,6 +113,8 @@ char *papp;
 	}
 }
 
+// ----------------------------------------------------------------------------------
+// Parser of file /rw/mx00/configs/lowlevel.cfg
 int lowlevel_parser(char *fllname){
 char *p;
 int i, len = 1;
@@ -175,6 +183,7 @@ char words[][6] = {
 
 }
 
+// ----------------------------------------------------------------------------------
 void mainloop()
 {
 	GR_EVENT event;

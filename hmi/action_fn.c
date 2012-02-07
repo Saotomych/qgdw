@@ -2,8 +2,9 @@
  * action_fn.c
  *
  *  Created on: 06.02.2012
- *      Author: alex
+ *      Author: Alex AVAlon
  */
+
 #include "../common/common.h"
 #include "../common/iec61850.h"
 #include "hmi.h"
