@@ -10,27 +10,27 @@
 
 //---*** Set of action functions ***---//
 
-LNODE* next_ln(void *arg){
-LNODE *pbln = ((LNODE*) *((int*)arg));
-LNODE *pln = pbln;
+int next_ln(void *arg){
+LNODE **pbln = ((LNODE*) *((int*)arg));
+LNODE *pln = *pbln;
 char *filter = (char*)((int*)arg)[1];
 
     if (pln->l.next){
 		do{
 			pln = pln->l.next;
 			if (!strcmp(pln->ln.lnclass, filter)){
-				pbln = pln;
+				*pbln = pln;
 				break;
 			}
 		}while (pln->l.next);
 	}
 
-	return pbln;
+	return 0;
 }
 
-LNODE* prev_ln(void *arg){
-LNODE *pbln = ((LNODE*) *((int*)arg));
-LNODE *pln = pbln;
+int prev_ln(void *arg){
+LNODE **pbln = ((LNODE*) *((int*)arg));
+LNODE *pln = *pbln;
 char *filter = (char*)((int*)arg)[1];
 
 	if (pln->l.prev){
@@ -38,13 +38,13 @@ char *filter = (char*)((int*)arg)[1];
 			if (pln->l.prev == &fln) break;
 			pln = pln->l.prev;
 			if (!strcmp(pln->ln.lnclass, filter)){
-				pbln = pln;
+				*pbln = pln;
 				break;
 			}
 		}while (pln->l.prev);
 	}
 
-	return pbln;
+	return 0;
 }
 
 char* prev_type_ln(void *arg){
@@ -81,7 +81,7 @@ int i;
 				 }
 				 break;
 	case 0xf801:
-				 for (i=1; i < sizeof(actfactset) / sizeof(fact); i+=2){
+				 for (i=1; i < (sizeof(actfactset) / sizeof(fact) - 1); i+=2){
 					 if (!strcmp(actfactset[i].action, act)){
 						 return actfactset[i].func(arg);
 					 }

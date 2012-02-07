@@ -375,12 +375,12 @@ void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
 int itemy, itemh;
 struct {
-	LNODE *pln;
-	char  *lnclass;
+	LNODE *pln;			// Address of pointer of actlnode
+	char  *lnclass;		//
 } parameters;
 
 	// Set of parameters for all variable menu and action functions
-	parameters.pln = actlnode;
+	parameters.pln = (LNODE*) &actlnode;
 	parameters.lnclass = actlnode->ln.lnclass;
 	// Parameters Ready
 
@@ -389,7 +389,7 @@ struct {
 
 	case 0xf800:	// Key left
 					if (num_menu->pitems[num_menu->num_item]->action){
-						actlnode = (LNODE*) call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+						call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
 						refresh_vars();
 						redraw_screen(NULL);
 					}
@@ -397,7 +397,7 @@ struct {
 
 	case 0xf801:	// Key right
 					if (num_menu->pitems[num_menu->num_item]->action){
-						actlnode = (LNODE*) call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+						call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
 						refresh_vars();
 						redraw_screen(NULL);
 					}break;
@@ -474,8 +474,8 @@ struct {
 	actlnode = (LNODE*) (fln.next);
 	// Find first MMXU
 	listln.filt = (char*) "MMXU";
-	listln.pln = actlnode;
-	actlnode = (LNODE*) call_action(0xf801, "changeln", &listln);
+	listln.pln = &actlnode;
+	call_action(0xf801, "changeln", &listln);
 
     return 0;
 }
