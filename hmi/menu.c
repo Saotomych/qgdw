@@ -456,7 +456,7 @@ int init_menu()
 {
 	actlnode = (LNODE*) (fln.next);
 	// Find first MMXU
-	while ((actlnode) && (strcmp(actlnode->ln.lnclass, "MMXU"))) actlnode = actlnode->l.next;
+	//while ((actlnode) && (strcmp(actlnode->ln.lnclass, "MMXU"))) actlnode = actlnode->l.next;
 
     return 0;
 }

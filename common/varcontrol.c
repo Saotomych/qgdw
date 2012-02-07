@@ -19,8 +19,14 @@ static varbook *actvb;		// actual varbook
 static varrec* create_varrec(void){
 varrec *vr;
 	vr = malloc(sizeof(varrec));
+	if (vr) memset(vr, 0, sizeof(varrec));
+	else exit(1);
 	vr->name = malloc(sizeof(fcdarec));
+	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
+	else exit(1);
 	vr->val = malloc(sizeof(value));
+	if (vr->val) memset(vr->val, 0, sizeof(value));
+	else exit(1);
 	return vr;
 }
 
