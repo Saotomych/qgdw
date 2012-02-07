@@ -269,8 +269,10 @@ char *fname;
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
 //---*** Init visual control ***---//
-//	init_menu(factsetting, sizeof(factsetting) / sizeof(fact));
-	init_menu();
+	if (init_menu()){
+		printf("Configuration of LNODEs nor found\n");
+		exit(1);
+	}
 	do_openfilemenu("menus/item", MENUFILE);
 	draw_menu();
 	mainloop();

@@ -373,7 +373,7 @@ void call_dynmenu(char *menuname){
 //keyup and keydown
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
-int itemy, itemh;
+int itemy, itemh, ret;
 struct {
 	LNODE *pln;			// Address of pointer of actlnode
 	char  *lnclass;		//
@@ -389,7 +389,7 @@ struct {
 
 	case 0xf800:	// Key left
 					if (num_menu->pitems[num_menu->num_item]->action){
-						call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+						ret = call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
 						refresh_vars();
 						redraw_screen(NULL);
 					}
@@ -397,7 +397,7 @@ struct {
 
 	case 0xf801:	// Key right
 					if (num_menu->pitems[num_menu->num_item]->action){
-						call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+						ret = call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
 						refresh_vars();
 						redraw_screen(NULL);
 					}break;
@@ -470,6 +470,8 @@ struct {
 	LNODE *pln;
 	char  *filt;
 } listln;
+
+	if (!fln.next) return 1;
 
 	actlnode = (LNODE*) (fln.next);
 	// Find first MMXU
