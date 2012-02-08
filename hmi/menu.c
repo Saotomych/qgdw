@@ -396,7 +396,7 @@ int y = MENUSTEP/2;
 		pln = (LNODE*) fln.next;
 		while(pln){
 			if (!strcmp(pln->ln.lnclass, "MMXU")){
-				sprintf(pmenu, "menu %d %d a a %s.%s:%s\n", x, y, pln->ln.prefix, pln->ln.lnclass, pln->ln.lninst);
+				sprintf(pmenu, "menu %d %d a a %s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.lnclass, pln->ln.lninst);
 				pmenu += strlen(pmenu);
 				x += 2;
 				y += MENUSTEP;
