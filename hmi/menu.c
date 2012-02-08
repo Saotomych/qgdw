@@ -19,7 +19,10 @@ static char prev_item;		// pointer to item in main menu
 
 static menu *num_menu;     //указатель на структуру меню
 
-char newmenu[40];			// For temporary operations
+static char newmenu[40];			// For temporary operations
+
+static int *dynmenuvar;	// Variable for change by dynmenu; flag of dynmenu state
+static int *dynmenuvars[40];	// Pointers to variables according to the menu item
 
 #define MAIN_WIDTH 160     //параметры главного окна
 #define MAIN_HEIGHT 160
@@ -107,6 +110,7 @@ char *p;
 	            while (!(*ptxt)) ptxt++;
 
 	            num_menu->pitems[i] = (item*) malloc(sizeof(item));
+	            memset(num_menu->pitems[i], sizeof(item), 0);
 	            ptxt[4] = 0;
 	            pitemtype = ptxt;
 	            ptxt += 5;
@@ -143,6 +147,8 @@ char *p;
 		            num_menu->pitems[i]->text = ptxt;
 		            num_menu->pitems[i]->next_menu = 0;
 	               	num_menu->pitems[i]->action = 0;
+	               	if (dynmenuvar) num_menu->pitems[i]->dynmenuvar = dynmenuvars[count_menu];
+	               	else num_menu->pitems[i]->dynmenuvar = 0;
 		            while ((*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
 		            do{
 			            while ((*ptxt != ' ') && (*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
@@ -176,6 +182,11 @@ char *p;
 	            // Item type "TEXT"
 	            if (!strcmp(pitemtype, "text")){
 		            num_menu->pitems[i]->text = ptxt;
+	            	num_menu->pitems[i]->prev_item = first_menuitem;
+	            	num_menu->pitems[i]->next_item = first_menuitem;
+		            num_menu->pitems[i]->next_menu = 0;
+	               	num_menu->pitems[i]->action = 0;
+	               	num_menu->pitems[i]->dynmenuvar = 0;
 		            // menu item included in heigth all lower text field before next menu item
 		            if (i) num_menu->pitems[(int)last_menuitem]->ctrl_height += num_menu->pitems[i]->rect.height;
 	            }
@@ -381,17 +392,22 @@ void redraw_screen(void *arg){
 
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
+// Start dynamic menu
 void call_dynmenu(char *menuname){
 char menutxt[1024];
 char *pmenu = menutxt;
 LNODE *pln;
 int x = MENUSTEP;
 int y = MENUSTEP/2;
+int i = 0;
 
-	// Find function of dynamic menu
+	menutxt[0] = 0;
+
+	// Menu of LNODES
 	if (!strcmp("menus/lnmenu", menuname)){
 
 		num_menu->bgnmenuy = MENUSTEP / 2;
+		dynmenuvar = (int*) &actlnode;
 
 		pln = (LNODE*) fln.next;
 		while(pln){
@@ -400,12 +416,25 @@ int y = MENUSTEP/2;
 				pmenu += strlen(pmenu);
 				x += 2;
 				y += MENUSTEP;
+				// Set pointer to LNODE for the item in future
+				dynmenuvars[i] = (int*) pln; i++;
 			}
 			pln = pln->l.next;
 		}
-		do_openfilemenu(menutxt, MENUMEM);
-		draw_menu();
+		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu(menutxt, MENUMEM);
 	}
+
+	// Menu of LNODECLASSES
+
+	// Menu of Date
+
+	// Menu of Time
+
+	// Menu of Interval
+
+	// Menu of Tarif
+
+	draw_menu();
 }
 
 //--------------------------------------------------------------------------------
@@ -477,12 +506,19 @@ struct {
 					break;
 
 	case 0x0D:		// Key ENTER
-	case 0x20:
+	case 0x20:		// Dynamic menu change our variable
+					if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
+						// Set var into pointer dynmenuvar as value in actual item
+						*dynmenuvar = num_menu->pitems[num_menu->num_item]->dynmenuvar;
+					}
+
+					// Select new menu
 					prev_item = num_menu->num_item;
 					if (num_menu->pitems[num_menu->num_item]->next_menu){
 						strcpy(newmenu, "menus/");
 						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 						destroy_menu();
+						dynmenuvar = 0;
 						if (!do_openfilemenu(newmenu, MENUFILE)){
 							draw_menu();
 						}else call_dynmenu(newmenu);
@@ -510,8 +546,7 @@ void key_rised(void *arg)
 
 //---------------------------------------------------------------------------------
 //int init_menu(fact *factsetting, int len)
-int init_menu()
-{
+int init_menu(){
 struct {
 	LNODE *pln;
 	char  *filt;

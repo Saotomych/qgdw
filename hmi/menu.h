@@ -27,6 +27,7 @@ typedef struct _item{
 	char *endtext;		// End text of item
 	char *next_menu;  	// pointer to next submenu
 	char *action;
+	int  *dynmenuvar;	// Pointer to variable for select this item
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
 }item;
@@ -54,6 +55,7 @@ extern void key_pressed(void *arg);
 extern void key_rised(void *arg);
 
 extern int call_action(int direct, char *act, void *arg);
+//extern void call_dynmenu(char *menuname, void *arg);
 
 //void SetNewMenu();
 //void SetMainMenu();
