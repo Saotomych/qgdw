@@ -14,15 +14,23 @@
 #include "menu.h"
 
 static LNODE *actlnode;
-
 static char prev_item;		// pointer to item in main menu
-
 static menu *num_menu;     //указатель на структуру меню
+
 
 static char newmenu[40];			// For temporary operations
 
 static int *dynmenuvar;	// Variable for change by dynmenu; flag of dynmenu state
 static int *dynmenuvars[40];	// Pointers to variables according to the menu item
+
+static char *lnodefilter;		// Type of actual lnode
+static char *devtypetext;		// Text of device type
+
+struct {
+	LNODE *pln;			// Address of pointer of actlnode
+	char  *devtype;		// Pointer to lnodefilter
+	char  *devtypetext;
+} parameters;
 
 #define MAIN_WIDTH 160     //параметры главного окна
 #define MAIN_HEIGHT 160
@@ -39,6 +47,10 @@ static int *dynmenuvars[40];	// Pointers to variables according to the menu item
 #define FGCOLOR	BLACK
 #define BGCOLOR	WHITE
 #define FONTNAME "pcf/7x13.pcf.gz"
+
+static value defvalues[] = {
+		{"APP:ldtypetext", &devtypetext, "Тип не выбран", 0 ,0},
+};
 
 //------------------------------------------------------------------------------------
 // Parser of menu files
@@ -411,10 +423,9 @@ int i = 0;
 
 		pln = (LNODE*) fln.next;
 		while(pln){
-			if (!strcmp(pln->ln.lnclass, "MMXU")){
-				sprintf(pmenu, "menu %d %d a a %s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.lnclass, pln->ln.lninst);
+			if (!strcmp(pln->ln.lnclass, lnodefilter)){
+				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 				pmenu += strlen(pmenu);
-				x += 2;
 				y += MENUSTEP;
 				// Set pointer to LNODE for the item in future
 				dynmenuvars[i] = (int*) pln; i++;
@@ -446,15 +457,6 @@ int i = 0;
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
 int itemy, itemh, ret;
-struct {
-	LNODE *pln;			// Address of pointer of actlnode
-	char  *lnclass;		//
-} parameters;
-
-	// Set of parameters for all variable menu and action functions
-	parameters.pln = (LNODE*) &actlnode;
-	parameters.lnclass = actlnode->ln.lnclass;
-	// Parameters Ready
 
 	switch(event->keystroke.ch)
 	{
@@ -547,18 +549,18 @@ void key_rised(void *arg)
 //---------------------------------------------------------------------------------
 //int init_menu(fact *factsetting, int len)
 int init_menu(){
-struct {
-	LNODE *pln;
-	char  *filt;
-} listln;
 
 	if (!fln.next) return 1;
 
+	// Set of parameters for all variable menu and action functions
 	actlnode = (LNODE*) (fln.next);
-	// Find first MMXU
-	listln.filt = (char*) "MMXU";
-	listln.pln = &actlnode;
-	call_action(0xf801, "changeln", &listln);
+	parameters.pln = (LNODE*) &actlnode;
+	parameters.devtype = (char*) &lnodefilter;
+	parameters.devtypetext = (char*) &devtypetext;
+	// Parameters Ready
+
+	call_action(0xf801, "changetypeln", &parameters);
+	call_action(0xf801, "changeln", &parameters);
 
     return 0;
 }

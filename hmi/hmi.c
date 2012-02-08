@@ -19,12 +19,12 @@
 #define FGCOLOR BLACK
 #define BGCOLOR	WHITE
 
-LIST fldextinfo = {NULL, NULL};
-ldextinfo *actldei = (ldextinfo *) &fldextinfo;
+static LIST fldextinfo = {NULL, NULL};
+static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
 // Synonyms for global variables
 // Defvalues included: m700env, about.me
-value defvalues[] = {
+static value defvalues[] = {
 		{"APP:LOCALIP", NULL, NULL, 0, 0},
 		{"APP:MAC", NULL, NULL, 0, 0},
 		{"APP:Type", NULL, NULL, 0, 0},
