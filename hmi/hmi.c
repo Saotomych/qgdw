@@ -25,17 +25,18 @@ static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 // Synonyms for global variables
 // Defvalues included: m700env, about.me
 static value defvalues[] = {
-		{"APP:LOCALIP", NULL, NULL, 0, 0},
-		{"APP:MAC", NULL, NULL, 0, 0},
-		{"APP:Type", NULL, NULL, 0, 0},
-		{"APP:UPDATE", NULL, NULL, 0, 0},
-		{"APP:UBI", NULL, NULL, 0, 0},
-		{"APP:SFTP", NULL, NULL, 0, 0},
-		{"APP:CRONSW", NULL, NULL, 0, 0},
-		{"APP:CRONCF", NULL, NULL, 0, 0},
-		{"APP:ManDate", NULL, NULL, 0, 0},
-		{"APP:Tester", NULL, NULL, 0, 0},
-		{"APP:SerNum", NULL, NULL, 0, 0},
+		{"APP:LOCALIP", NULL, NULL, STRING, 0},
+		{"APP:MAC", NULL, NULL, STRING, 0},
+		{"APP:Type", NULL, NULL, STRING, 0},
+		{"APP:UPDATE", NULL, NULL, STRING, 0},
+		{"APP:UBI", NULL, NULL, STRING, 0},
+		{"APP:SFTP", NULL, NULL, STRING, 0},
+		{"APP:CRONSW", NULL, NULL, STRING, 0},
+		{"APP:CRONCF", NULL, NULL, STRING, 0},
+		{"APP:ManDate", NULL, NULL, STRING, 0},
+		{"APP:Tester", NULL, NULL, STRING, 0},
+		{"APP:SerNum", NULL, NULL, STRING, 0},
+		{"APP:ldtypetext", NULL, NULL, 0 ,0},
 };
 
 static void* create_next_struct_in_list(LIST *plist, int size){
@@ -75,6 +76,7 @@ int i;
 					defvalues[i].val = malloc(strlen(p));
 					p[strlen(p)-1] = 0;
 					strcpy(defvalues[i].val, p);
+					defvalues[i].idtype = INTVAR | TRUEVALUE | STRING;
 				}
 			}
 			p = tbuf;
@@ -107,6 +109,7 @@ char *papp;
 			papp = defvalues[j].name;
 			if (strstr(papp, &words[i][0])){
 				defvalues[j].val = getenv(&words[i][0]);
+				defvalues[j].idtype = INTVAR | TRUEVALUE | STRING;
 				break;
 			}
 		}
@@ -270,6 +273,9 @@ char *fname;
 
 	// Parse about config file
 	if (about_parser("/tmp/about/about.me")) printf("IEC61850: about.me file reading error\n");
+
+	// Parse vars from menu.c
+	menu_parser(defvalues, sizeof(defvalues) / sizeof (value));
 
 	for(i=0; i < (sizeof(defvalues)/sizeof(value)); i++)
 		printf("%02d: %s=%s\n", i, defvalues[i].name, (char*) defvalues[i].val);

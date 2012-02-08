@@ -61,7 +61,7 @@ varrec *defvt;		// actual varrec
 		defvt->name = malloc(sizeof(fcdarec));
 		defvt->val = &vt[i];
 		defvt->name->fc = defvt->val->name;
-		defvt->prop = INTVAR | TRUEVALUE;
+		defvt->prop = INTVAR | TRUEVALUE | vt->idtype;
 		defvt->time = 0;
 	}
 
@@ -103,7 +103,10 @@ char keywords[][10] = {
 			case 0: // APP:
 					vr = (varrec*) fdefvt.next;
 					while(vr){
-						if (!strcmp(vr->name->fc, varname))	return vr;
+						if (!strcmp(vr->name->fc, varname)){
+							vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;
+							return vr;
+						}
 						vr = vr->l.next;
 					}
 					break;
@@ -119,6 +122,7 @@ char keywords[][10] = {
 					// Set val if 'desc'
 					p = strstr(varname, "desc");
 					if (p) vr->val->val = pied->desc;
+					vr->prop = INTVAR | TRUEVALUE | STRING;
 					return vr;
 					break;
 
@@ -144,6 +148,7 @@ char keywords[][10] = {
 						while((*p!='/') && (*p)) p++;
 						vr->val->val = p;
 					}
+					vr->prop = INTVAR | TRUEVALUE | STRING;
 					return vr;
 					break;
 
@@ -185,6 +190,7 @@ char keywords[][10] = {
 					vr->name->fc = varname;
 					vr->val->name = varname;
 					vr->val->val = NULL;
+					vr->prop = INTVAR | TRUEVALUE | STRING;
 
 					// Find DOBJ as equal actual LN by type
 					if (ptag){

@@ -1,4 +1,4 @@
-text 2 0 a a &var:APP:ldtypetext~changetypeln >lntypemenu
+menu 2 0 a a &var:APP:ldtypetext~changetypeln >lntypemenu
 menu 4 20 58 a LN:&var:LN:prefix~changeln >lnmenu
 menu 62 20 30 a &var:LN:class~changetypeln >lntypemenu
 text 92 20 48 a &var:LN:inst

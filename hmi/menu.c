@@ -48,10 +48,9 @@ struct {
 #define BGCOLOR	WHITE
 #define FONTNAME "pcf/7x13.pcf.gz"
 
-static value defvalues[] = {
-		{"APP:ldtypetext", &devtypetext, "Тип не выбран", 0 ,0},
+value defvalues[] = {
+		{"APP:ldtypetext", &devtypetext, "Тип не выбран", PTRSTRING , STRING},
 };
-
 //------------------------------------------------------------------------------------
 // Parser of menu files
 // It's making:
@@ -253,10 +252,12 @@ void do_paint(item *pitem, int fg, int bg)
 				if (pitem->vr->prop & INT32){
 					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
+
 				if (pitem->vr->prop & INT64){
 					sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
 				}
-				if (!(pitem->vr->prop & STRING)){
+
+				if (pitem->vr->prop & STRING){
 					strcpy(wintext, pitem->text);
 					if ((pitem->vr) && (pitem->vr->val)){
 						if (pitem->vr->val->val) strcat(wintext, (char*) pitem->vr->val->val);
@@ -264,7 +265,18 @@ void do_paint(item *pitem, int fg, int bg)
 					}
 					if (pitem->endtext) strcat(wintext, pitem->endtext);
 				}
+
+				if (pitem->vr->prop & PTRSTRING){
+					strcpy(wintext, pitem->text);
+					if ((pitem->vr) && (pitem->vr->val)){
+						if (pitem->vr->val->val) strcat(wintext, (char*) *((int*) pitem->vr->val->val));
+						else if (pitem->vr->val->defval) strcat(wintext, (char*) pitem->vr->val->defval);
+					}
+					if (pitem->endtext) strcat(wintext, pitem->endtext);
+				}
+
 				GrText(*main_window, gc, 3, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
+
 			}else GrText(*main_window, gc, 3, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
 
 			GrDestroyGC(gc);
@@ -564,4 +576,16 @@ int init_menu(){
 
     return 0;
 }
+
+void menu_parser(pvalue vt, int len){
+int i, j;
+
+	for (i = 0; i < len; i++){
+		for (j = 0; j < sizeof(defvalues)/sizeof(value); j++){
+			if (!strcmp(vt[i].name, defvalues[j].name)) memcpy(&vt[i], &defvalues[j], sizeof(value));
+		}
+	}
+}
+
+
 //---------------------------------------------------------------------------------

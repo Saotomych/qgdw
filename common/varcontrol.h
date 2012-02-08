@@ -17,9 +17,12 @@
 #define INTCONST	0x010
 
 // Types
-#define STRING		0
-#define INT32		1
-#define INT64		2
+#define STRING		1
+#define INT32		2
+#define INT64		4
+#define PTRSTRING	8
+#define PTRINT32	0x10
+#define PTRINT64	0x20
 
 // IEC struct
 typedef struct _FCDAREC{
