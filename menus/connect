@@ -1,5 +1,5 @@
 text 0 0 a a Параметры &var:LD:desc
-menu 0 a a a &parswin~changeparswin
+text 0 a a a LN:&var:LN:prefix
 menu a a a a Мощность активная
 text a a a a Фаза А: 145 Вт
 text a a a a Фаза B: 150 Вт

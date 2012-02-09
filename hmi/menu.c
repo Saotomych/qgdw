@@ -199,7 +199,7 @@ char *p;
 	               	num_menu->pitems[i]->action = 0;
 	               	num_menu->pitems[i]->dynmenuvar = 0;
 		            // menu item included in heigth all lower text field before next menu item
-		            if (i) num_menu->pitems[(int)last_menuitem]->ctrl_height += num_menu->pitems[i]->rect.height;
+		            if (count_menu) num_menu->pitems[(int)last_menuitem]->ctrl_height += num_menu->pitems[i]->rect.height;
 	            }
 
 	            ptxt += strlen(ptxt);
@@ -357,7 +357,7 @@ int stepy, y, itemy, itemh;
 		if (num_menu->num_item < num_menu->pitems[num_menu->num_item]->next_item) stepy = itemy - num_menu->bgnmenuy;
 	}
 
-	for (i = num_menu->first_item; i < num_menu->count_item; i++){
+	for (i = num_menu->start_item; i < num_menu->count_item; i++){
 		num_menu->pitems[i]->rect.y -= stepy;
 		y = num_menu->pitems[i]->rect.y;
 		if ((y >= num_menu->bgnmenuy - 10) && (y < MAIN_HEIGHT)){
@@ -366,7 +366,6 @@ int stepy, y, itemy, itemh;
 					 num_menu->pitems[i]->rect.y);
 			GrMapWindow(num_menu->pitems[i]->main_window);
 		}else GrUnmapWindow(num_menu->pitems[i]->main_window);
-
 	}
 }
 
@@ -417,12 +416,12 @@ void redraw_screen(void *arg){
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
 // Start dynamic menu
+static char menutxt[1024];  // array for text of dynamic menu
 void call_dynmenu(char *menuname){
-char menutxt[1024];
 char *pmenu = menutxt;
 LNODE *pln;
 int x = MENUSTEP;
-int y = MENUSTEP/2;
+int y = 0;
 int i = 0;
 
 	menutxt[0] = 0;
@@ -430,10 +429,11 @@ int i = 0;
 	// Menu of LNODES
 	if (!strcmp("menus/lnmenu", menuname)){
 
-		num_menu->bgnmenuy = MENUSTEP / 2;
 		dynmenuvar = (int*) &actlnode;
-
-		pln = (LNODE*) fln.next;
+		pln = (LNODE*) fln.next; x = 0;
+		sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
+		pmenu += strlen(pmenu);
+		y += MENUSTEP; x = MENUSTEP;
 		while(pln){
 			if (!strcmp(pln->ln.lnclass, lnodefilter)){
 				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
@@ -444,11 +444,54 @@ int i = 0;
 			}
 			pln = pln->l.next;
 		}
-		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu(menutxt, MENUMEM);
+		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
 	}
 
-	// Menu of LNODECLASSES
+	// Menu of ALL LNODES FROM FILTER CLASSES
+	if (!strcmp("menus/lntypemenu", menuname)){
 
+		dynmenuvar = (int*) &actlnode;
+		pln = (LNODE*) fln.next; x = 0;
+		sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
+		pmenu += strlen(pmenu);
+		y += MENUSTEP; x = MENUSTEP;
+		while(pln){
+			if (!strcmp(pln->ln.lnclass, "MMXU")){
+				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+				pmenu += strlen(pmenu);
+				y += MENUSTEP;
+				// Set pointer to LNODE for the item in future
+				dynmenuvars[i] = (int*) pln; i++;
+			}
+			pln = pln->l.next;
+		}
+
+		pln = (LNODE*) fln.next;
+		while(pln){
+			if (!strcmp(pln->ln.lnclass, "MSQI")){
+				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+				pmenu += strlen(pmenu);
+				y += MENUSTEP;
+				// Set pointer to LNODE for the item in future
+				dynmenuvars[i] = (int*) pln; i++;
+			}
+			pln = pln->l.next;
+		}
+
+		pln = (LNODE*) fln.next;
+		while(pln){
+			if (!strcmp(pln->ln.lnclass, "MMTR")){
+				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+				pmenu += strlen(pmenu);
+				y += MENUSTEP;
+				// Set pointer to LNODE for the item in future
+				dynmenuvars[i] = (int*) pln; i++;
+			}
+			pln = pln->l.next;
+		}
+
+		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
+	}
 	// Menu of Date
 
 	// Menu of Time
@@ -464,7 +507,8 @@ int i = 0;
 // Key working function:
 // keyleft and keyright working through function set in action_fn.c file
 // keyup and key down working as cursor keys forever
-// ENTER it's enter to submenu forever or confirmation of changes forever
+// ENTER it's enter to submenu forever or confirmation of changes forever        num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->start_item]->rect.y;
+
 // MENU it's return to previous menu without changes forever
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
@@ -523,7 +567,11 @@ int itemy, itemh, ret;
 	case 0x20:		// Dynamic menu change our variable
 					if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
 						// Set var into pointer dynmenuvar as value in actual item
-						*dynmenuvar = num_menu->pitems[num_menu->num_item]->dynmenuvar;
+						*dynmenuvar = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+						// and refresh all values (temporary solution)
+						call_action(0xf801, "changetypeln", &parameters);
+						call_action(0xf800, "changetypeln", &parameters);
+						*dynmenuvar = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
 					}
 
 					// Select new menu
@@ -576,6 +624,7 @@ int init_menu(){
 
     return 0;
 }
+
 
 void menu_parser(pvalue vt, int len){
 int i, j;
