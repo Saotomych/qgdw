@@ -98,8 +98,23 @@ int x, y = 0;
 }
 
 // Menu of Date
+//struct tm {
+//               int tm_sec;         /* seconds */
+//               int tm_min;         /* minutes */
+//               int tm_hour;        /* hours */
+//               int tm_mday;        /* day of the month */
+//               int tm_mon;         /* month */
+//               int tm_year;        /* year */
+//               int tm_wday;        /* day of the week */
+//               int tm_yday;        /* day in the year */
+//               int tm_isdst;       /* daylight saving time */
+//           };
+
 char* ChangeDate(char *arg){
-char *ptxt;
+char *ptxt = menutxt;
+time_t **timel = (time_t**)(((int*)arg)[4]);
+struct tm **timetm = (struct tm**)(((int*)arg)[5]);
+
 
 	return ptxt;
 }
