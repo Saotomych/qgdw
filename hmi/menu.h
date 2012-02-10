@@ -49,8 +49,6 @@ typedef struct _menu{
 //extern int init_menu(fact *factsetting, int len);
 extern void menu_parser(pvalue vt, int len);
 extern int init_menu(void);
-extern int do_openfilemenu(char *buf, int type);
-extern void draw_menu();
 extern void redraw_screen(void *arg);
 extern void key_pressed(void *arg);
 extern void key_rised(void *arg);

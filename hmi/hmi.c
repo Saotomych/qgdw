@@ -286,8 +286,6 @@ char *fname;
 		printf("Configuration of LNODEs nor found\n");
 		exit(1);
 	}
-	do_openfilemenu("menus/item", MENUFILE);
-	draw_menu();
 	mainloop();
 
 	return 0;

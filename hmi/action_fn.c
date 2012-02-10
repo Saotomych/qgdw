@@ -66,7 +66,7 @@ static char lnclasses[][5] = {
 int prev_type_ln(void *arg){
 LNODE **pbln = ((LNODE**) *((int*)arg));
 LNODE *pln = *pbln;
-char **lntype = (char*)((int*)arg)[1];
+char **lntype = (char**)((int*)arg)[1];
 char **lntypetext = (char**) (((int*)arg)[2]);
 int i;
 

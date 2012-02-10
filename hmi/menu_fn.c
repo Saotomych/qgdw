@@ -47,7 +47,6 @@ char* ChangeLNType(char *arg){
 char *pmenu = menutxt;
 LNODE **pbln = ((LNODE**) *((int*)arg));
 LNODE *pln = *pbln;
-char **lnodefilter = (char**) ((int*)arg)[1];
 void **dynmenuvar = (void*)(((int*)arg)[3]);
 int i = 1; 	// Real parameters for dynmenu begin from 1
 int x, y = 0;
@@ -98,18 +97,21 @@ int x, y = 0;
 	return menutxt;
 }
 
+// Menu of Date
 char* ChangeDate(char *arg){
 char *ptxt;
 
 	return ptxt;
 }
 
+// Menu of Interval
 char* ChangeIntl(char *arg){
 char *ptxt;
 
 	return ptxt;
 }
 
+// Menu of Tarif
 char* ChangeTarif(char *arg){
 char *ptxt;
 
@@ -140,7 +142,7 @@ int i;
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
 			pmenu = 0;
-			pmenu = menufactset[i].func(arg);
+			pmenu = (char *) menufactset[i].func(arg);
 		}
 	}
 

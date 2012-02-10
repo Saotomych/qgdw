@@ -13,8 +13,8 @@
 
 static LIST fdefvt   = {NULL, NULL};		// first  varrec
 
-static LIST fvarbook = {NULL, NULL};		// first varbook
-static varbook *actvb;		// actual varbook
+static LIST fvarbook = {NULL, NULL};		// first varbook for future
+static varbook *actvb;						// actual varbook for future
 
 static varrec* create_varrec(void){
 varrec *vr;
@@ -82,7 +82,7 @@ varrec *vr;
 struct _IED *pied;
 struct _LDEVICE *pld;
 DOBJ *pdo;
-ATTR *pda;
+ATTR *pda;	// for future
 LNODE *pln = actln;
 char *p, *po=0, *pa=0, *ptag=0;
 char keywords[][10] = {

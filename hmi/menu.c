@@ -157,7 +157,7 @@ char *p;
             	num_menu->rect.height = MAIN_HEIGHT;
             }
 
-		 	num_menu->pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
+		 	num_menu->pitems = malloc(count_item * sizeof(item*));
 
 		 	for (i = 0; i < count_item; i++){
 	            while ((*ptxt) < ' ') ptxt++;
@@ -272,7 +272,7 @@ char *p;
 //------------------------------------------------------------------------------------
 // Function create new text in all windows
 static char wintext[40];
-void do_paint(item *pitem, int fg, int bg)
+static void do_paint(item *pitem, int fg, int bg)
 {
 	        GR_GC_ID gc = GrNewGC();
 			GR_WINDOW_ID *main_window = &(pitem->main_window);
@@ -325,7 +325,7 @@ void do_paint(item *pitem, int fg, int bg)
 }
 //------------------------------------------------------------------------------------
 // Create subwindows for menu items and map all window
-void draw_menu()
+static void draw_menu()
 {
 		if (!num_menu) return;
 
@@ -390,7 +390,7 @@ void draw_menu()
 
 //-------------------------------------------------------------------------------------------
 // Draw only visible items and move items
-void redraw_menu(int type){
+static void redraw_menu(int type){
 int i;
 int stepy, y, itemy, itemh;
 
@@ -418,7 +418,7 @@ int stepy, y, itemy, itemh;
 
 // -----------------------------------------------------------------------------------
 // Full delete menu (num_menu) from memory
-void destroy_menu()
+static void destroy_menu()
 {
 int i;
 
@@ -438,7 +438,7 @@ int i;
 //-----------------------------------------------------------------------------------------------------------
 // Refresh all variables in all items of menu
 // Call after change global variables has synonym
-void refresh_vars(void){
+static void refresh_vars(void){
 int i;
 	for (i = 0; i < num_menu->count_item; i++){
 		if (num_menu->pitems[i]->vr){
@@ -447,6 +447,20 @@ int i;
 	}
 }
 
+//-------------------------------------------------------------------------------
+// Form dynamic menu on base cycle string and draw on screen
+// Start dynamic menu
+static void call_dynmenu(char *menuname){
+char *pmenu;
+
+	pmenu = create_dynmenu(menuname, &parameters);
+	if (pmenu){
+		if (do_openfilemenu(pmenu, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
+	}
+	draw_menu();
+}
+
+//--------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
 void redraw_screen(void *arg){
@@ -460,34 +474,10 @@ void redraw_screen(void *arg){
 
 }
 
-//-------------------------------------------------------------------------------
-// Form dynamic menu on base cycle string and draw on screen
-// Start dynamic menu
-void call_dynmenu(char *menuname){
-char *pmenu;
-
-	pmenu = create_dynmenu(menuname, &parameters);
-	if (pmenu){
-		if (do_openfilemenu(pmenu, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
-	}
-	draw_menu();
-
-	// Menu of Date
-
-	// Menu of Time
-
-	// Menu of Interval
-
-	// Menu of Tarif
-
-}
-
-//--------------------------------------------------------------------------------
 // Key working function:
 // keyleft and keyright working through function set in action_fn.c file
 // keyup and key down working as cursor keys forever
-// ENTER it's enter to submenu forever or confirmation of changes forever        num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->start_item]->rect.y;
-
+// ENTER it's enter to submenu forever or confirmation of changes forever
 // MENU it's return to previous menu without changes forever
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
@@ -516,7 +506,6 @@ int itemy, itemh, ret;
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 
 //					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
-					//-------------------------------------------------------------------------------
 
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
@@ -570,7 +559,8 @@ int itemy, itemh, ret;
 					destroy_menu();
 					if (!do_openfilemenu("menus/item", MENUFILE)){
 						draw_menu();
-						num_menu->num_item = prev_item;
+						num_menu->num_item = prev_item;	draw_menu();
+
 					}
 					break;
 
@@ -592,6 +582,7 @@ struct tm *ttm;
 
 	if (!fln.next) return 1;
 
+	// Set actual time in vars
 	time_l = time(NULL);
 	ttm	= localtime(&time_l);
 	memcpy(&time_tm, ttm, sizeof(struct tm));
@@ -605,10 +596,15 @@ struct tm *ttm;
 	parameters.ptimel = &time_l;
 	parameters.ptimetm = &time_tm;
 	// Parameters Ready
+
 	// Set start LN
 	call_action(0xf801, "changetypeln", &parameters);
 	call_action(0xf801, "changeln", &parameters);
 	// Start LN ready
+
+	// Open first menu
+	do_openfilemenu("menus/item", MENUFILE);
+	draw_menu();
 
     return 0;
 }
