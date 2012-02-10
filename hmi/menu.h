@@ -35,6 +35,7 @@ typedef struct _item{
 typedef struct _menu{
 	GR_WINDOW_ID main_window;
 	GR_FONT_ID	font;
+	GR_RECT rect;
 	item **pitems;
 	char *ptxtmenu;     // pointer to menu dimension of texts
 	int num_item;   //текущий пункт меню

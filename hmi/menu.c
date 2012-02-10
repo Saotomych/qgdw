@@ -113,12 +113,46 @@ char *p;
 	        	if ((num_menu->ptxtmenu[i]) && (!num_menu->ptxtmenu[i-1])) count_item++;
 	        }
 
-		 	num_menu->pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
 		 	ptxt = num_menu->ptxtmenu;
 	 	 	num_menu->bgnmenuy = 0;
 
-	 	 	for (i = 0; i < count_item; i++){
-	            while (!(*ptxt)) ptxt++;
+	 	 	// Initialize RECT of main window
+            while (!(*ptxt)) ptxt++;
+            ptxt[4] = 0;
+            if (!strcmp(ptxt, "main")){
+            	count_item--;
+                ptxt += 5;
+	            // Parse RECTangle for item
+	            // X
+	            if (*ptxt != 'a') num_menu->rect.x = atoi(ptxt);
+	            else num_menu->rect.x = 0;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
+
+	            // Y
+	            if (*ptxt != 'a') num_menu->rect.y = atoi(ptxt);
+	            else num_menu->rect.y = 0;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
+
+	            // W
+	            if (*ptxt != 'a') num_menu->rect.width = atoi(ptxt);
+	            else num_menu->rect.width = MAIN_WIDTH;
+	            while (*ptxt != ' ') ptxt++; ptxt++;
+
+	            // H
+	            if (*ptxt != 'a') num_menu->rect.height = atoi(ptxt);
+	            else num_menu->rect.height = MAIN_HEIGHT;
+	            while (*ptxt > ' ') ptxt++; ptxt++;
+            }else{
+            	num_menu->rect.x = 0;
+            	num_menu->rect.y = 0;
+            	num_menu->rect.width = MAIN_WIDTH;
+            	num_menu->rect.height = MAIN_HEIGHT;
+            }
+
+		 	num_menu->pitems = malloc(count_item * sizeof(item*)); //возвращает указатель на первый байт области памяти структуры пунктов
+
+		 	for (i = 0; i < count_item; i++){
+	            while ((*ptxt) < ' ') ptxt++;
 
 	            num_menu->pitems[i] = (item*) malloc(sizeof(item));
 	            memset(num_menu->pitems[i], sizeof(item), 0);
@@ -140,7 +174,7 @@ char *p;
 
 	            // W
 	            if (*ptxt != 'a') num_menu->pitems[i]->rect.width = atoi(ptxt);
-	            else num_menu->pitems[i]->rect.width = MAIN_WIDTH - num_menu->pitems[i]->rect.x;
+	            else num_menu->pitems[i]->rect.width = num_menu->rect.width - num_menu->pitems[i]->rect.x;
 	            while (*ptxt != ' ') ptxt++; ptxt++;
 
 	            // H
@@ -300,7 +334,12 @@ void draw_menu()
 			GR_WM_PROPERTIES props;
 
 
-			num_menu->main_window = GrNewWindow(GR_ROOT_WINDOW_ID, 0, 0, MAIN_HEIGHT, MAIN_WIDTH, 1, WHITE, BLACK);
+			num_menu->main_window = GrNewWindow(GR_ROOT_WINDOW_ID,
+												num_menu->rect.x,
+												num_menu->rect.y,
+												num_menu->rect.width,
+												num_menu->rect.height,
+												1, WHITE, BLACK);
    		    GrMapWindow(num_menu->main_window);
 
 			props.flags = GR_WM_FLAGS_PROPS;
@@ -350,7 +389,7 @@ int stepy, y, itemy, itemh;
 	itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 	itemh = num_menu->pitems[num_menu->num_item]->ctrl_height;
 
-	stepy = itemy + itemh - MAIN_HEIGHT;
+	stepy = itemy + itemh - num_menu->rect.height;
 	if (!type){
 		if (num_menu->num_item == num_menu->first_item) stepy = itemy - num_menu->bgnmenuy;
 	}else{
@@ -360,7 +399,7 @@ int stepy, y, itemy, itemh;
 	for (i = num_menu->start_item; i < num_menu->count_item; i++){
 		num_menu->pitems[i]->rect.y -= stepy;
 		y = num_menu->pitems[i]->rect.y;
-		if ((y >= num_menu->bgnmenuy - 10) && (y < MAIN_HEIGHT)){
+		if ((y >= num_menu->bgnmenuy - 10) && (y < num_menu->rect.height)){
 			GrMoveWindow(num_menu->pitems[i]->main_window,
 					 num_menu->pitems[i]->rect.x,
 					 num_menu->pitems[i]->rect.y);
@@ -449,9 +488,10 @@ int i = 0;
 
 	// Menu of ALL LNODES FROM FILTER CLASSES
 	if (!strcmp("menus/lntypemenu", menuname)){
-
 		dynmenuvar = (int*) &actlnode;
 		pln = (LNODE*) fln.next; x = 0;
+		sprintf(pmenu, "main 40 10 120 150\n");
+		pmenu += strlen(pmenu);
 		sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 		pmenu += strlen(pmenu);
 		y += MENUSTEP; x = MENUSTEP;
@@ -542,7 +582,7 @@ int itemy, itemh, ret;
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
 
-					if ((itemy > (MAIN_HEIGHT-10)) || (itemy  < (num_menu->bgnmenuy - 10))) redraw_menu(1);
+					if ((itemy > (num_menu->rect.height-10)) || (itemy  < (num_menu->bgnmenuy - 10))) redraw_menu(1);
 
 					redraw_screen(NULL);
 
@@ -557,7 +597,7 @@ int itemy, itemh, ret;
 					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
 					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
 
-					if ((itemy > (MAIN_HEIGHT-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
+					if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
 
 					redraw_screen(NULL);
 
