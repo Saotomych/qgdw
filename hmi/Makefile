@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += hmi.o menu.o action_fn.o multififo.o ssd.o xml.o varcontrol.o 
+OBJS += hmi.o menu.o action_fn.o menu_fn.o multififo.o ssd.o xml.o varcontrol.o 
 
 NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
 NANOLIBS    = ../../nano-x.X11.x86/microwin/src/lib
@@ -29,6 +29,8 @@ varcontrol.o: ../common/varcontrol.c
 	$(CC) $(CCFLAGS) ../common/varcontrol.c -o varcontrol.o
 action_fn.o: action_fn.c
 	$(CC) $(CCFLAGS) action_fn.c -o action_fn.o
+menu_fn.o: menu_fn.c
+	$(CC) $(CCFLAGS) menu_fn.c -o menu_fn.o
 
 all: hmi
 

@@ -7,13 +7,12 @@
 #ifndef MENU_H_
 #define MENU_H_
 
-#include "../common/common.h"
 #include "../common/varcontrol.h"
-#include "hmi.h"
+#include <nano-X.h>
+#include <nanowm.h>
 
 #define MENUFILE	1
 #define MENUMEM		2
-
 #define MENUSTEP	16
 
 typedef struct _item{
@@ -30,7 +29,7 @@ typedef struct _item{
 	int  *dynmenuvar;	// Pointer to variable for select this item
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
-}item;
+} item;
 
 typedef struct _menu{
 	GR_WINDOW_ID main_window;
@@ -45,7 +44,7 @@ typedef struct _menu{
 	char first_item;	// index of first menu point
 //  функции set
 
-}menu;
+} menu;
 
 //extern int init_menu(fact *factsetting, int len);
 extern void menu_parser(pvalue vt, int len);
@@ -57,7 +56,7 @@ extern void key_pressed(void *arg);
 extern void key_rised(void *arg);
 
 extern int call_action(int direct, char *act, void *arg);
-//extern void call_dynmenu(char *menuname, void *arg);
+extern char* create_dynmenu(char *menuname, void *arg);
 
 //void SetNewMenu();
 //void SetMainMenu();

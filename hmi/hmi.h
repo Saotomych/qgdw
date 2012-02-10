@@ -8,7 +8,8 @@
 #ifndef HMI_H_
 #define HMI_H_
 
-#include "../common/common.h"
+#include <nano-X.h>
+#include <nanowm.h>
 
 typedef struct _fact{
    char *action;

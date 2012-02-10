@@ -5,14 +5,12 @@
  *      Author: dmitry & Alex AVAlon
  */
 
-#include <nano-X.h>
-#include <nanowm.h>
 #include "../common/common.h"
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
-#include "menu.h"
 #include "hmi.h"
+#include "menu.h"
 
 #define BLACK MWRGB( 0  , 0  , 0   )
 #define WHITE MWRGB( 255, 255, 255 )

@@ -14,6 +14,9 @@
 #include "menu.h"
 
 static LNODE *actlnode;
+static time_t acttime_l;
+static struct tm acttime_tm;
+
 static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
 
@@ -26,7 +29,7 @@ static int *dynmenuvars[40];	// Pointers to variables according to the menu item
 static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
 
-struct {
+struct _parameters{
 	LNODE *pln;			// Address of pointer of actlnode
 	char  *devtype;		// Pointer to lnodefilter
 	char  *devtypetext;
@@ -309,9 +312,9 @@ void do_paint(item *pitem, int fg, int bg)
 					if (pitem->endtext) strcat(wintext, pitem->endtext);
 				}
 
-				GrText(*main_window, gc, 3, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
+				GrText(*main_window, gc, 0, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
 
-			}else GrText(*main_window, gc, 3, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
+			}else GrText(*main_window, gc, 0, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
 
 			GrDestroyGC(gc);
 }
@@ -466,6 +469,13 @@ int i = 0;
 	menutxt[0] = 0;
 
 	// Menu of LNODES
+	pmenu = create_dynmenu(menuname, &parameters);
+	if (pmenu){
+		if (do_openfilemenu(pmenu, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
+	}
+	draw_menu();
+	return;
+
 	if (!strcmp("menus/lnmenu", menuname)){
 
 		dynmenuvar = (int*) &actlnode;
@@ -532,7 +542,11 @@ int i = 0;
 
 		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
 	}
+
 	// Menu of Date
+	if (!strcmp("menus/lntypemenu", menuname)){
+
+	}
 
 	// Menu of Time
 
@@ -665,7 +679,6 @@ int init_menu(){
     return 0;
 }
 
-
 void menu_parser(pvalue vt, int len){
 int i, j;
 
@@ -676,5 +689,5 @@ int i, j;
 	}
 }
 
-
 //---------------------------------------------------------------------------------
+
