@@ -14,8 +14,10 @@
 #include "menu.h"
 
 static LNODE *actlnode;
-static time_t acttime_l;
-static struct tm acttime_tm;
+static time_t time_l;
+static struct tm time_tm;
+
+static time_t acttime;
 
 static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
@@ -23,7 +25,7 @@ static menu *num_menu;     //указатель на структуру меню
 
 static char newmenu[40];			// For temporary operations
 
-static int *dynmenuvar;	// Variable for change by dynmenu; flag of dynmenu state
+//static int *dynmenuvar;	// Variable for change by dynmenu; flag of dynmenu state
 static int *dynmenuvars[40];	// Pointers to variables according to the menu item
 
 static char *lnodefilter;		// Type of actual lnode
@@ -32,7 +34,10 @@ static char *devtypetext;		// Text of device type
 struct _parameters{
 	LNODE *pln;			// Address of pointer of actlnode
 	char  *devtype;		// Pointer to lnodefilter
-	char  *devtypetext;
+	char  *devtypetext;	// Pointer to lnodefilter text description
+	int	  *dynmenuvars;	// Pointer to variable for changing by actual dynamic menu
+	time_t *ptimel;		// Pointer to time as time_t type
+	struct tm *ptimetm;	// Pointer to time as struct tm type
 } parameters;
 
 #define MAIN_WIDTH 160     //параметры главного окна
@@ -195,7 +200,7 @@ char *p;
 		            num_menu->pitems[i]->text = ptxt;
 		            num_menu->pitems[i]->next_menu = 0;
 	               	num_menu->pitems[i]->action = 0;
-	               	if (dynmenuvar) num_menu->pitems[i]->dynmenuvar = dynmenuvars[count_menu];
+	               	if (dynmenuvars[0]) num_menu->pitems[i]->dynmenuvar = dynmenuvars[count_menu+1];
 	               	else num_menu->pitems[i]->dynmenuvar = 0;
 		            while ((*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
 		            do{
@@ -476,29 +481,10 @@ int i = 0;
 	draw_menu();
 	return;
 
-	if (!strcmp("menus/lnmenu", menuname)){
-
-		dynmenuvar = (int*) &actlnode;
-		pln = (LNODE*) fln.next; x = 0;
-		sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
-		pmenu += strlen(pmenu);
-		y += MENUSTEP; x = MENUSTEP;
-		while(pln){
-			if (!strcmp(pln->ln.lnclass, lnodefilter)){
-				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-				pmenu += strlen(pmenu);
-				y += MENUSTEP;
-				// Set pointer to LNODE for the item in future
-				dynmenuvars[i] = (int*) pln; i++;
-			}
-			pln = pln->l.next;
-		}
-		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
-	}
 
 	// Menu of ALL LNODES FROM FILTER CLASSES
 	if (!strcmp("menus/lntypemenu", menuname)){
-		dynmenuvar = (int*) &actlnode;
+		dynmenuvars[0] = (int*) &actlnode;
 		pln = (LNODE*) fln.next; x = 0;
 		sprintf(pmenu, "main 40 10 120 150\n");
 		pmenu += strlen(pmenu);
@@ -544,9 +530,6 @@ int i = 0;
 	}
 
 	// Menu of Date
-	if (!strcmp("menus/lntypemenu", menuname)){
-
-	}
 
 	// Menu of Time
 
@@ -621,11 +604,11 @@ int itemy, itemh, ret;
 	case 0x20:		// Dynamic menu change our variable
 					if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
 						// Set var into pointer dynmenuvar as value in actual item
-						*dynmenuvar = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+						*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
 						// and refresh all values (temporary solution)
 						call_action(0xf801, "changetypeln", &parameters);
 						call_action(0xf800, "changetypeln", &parameters);
-						*dynmenuvar = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+						*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
 					}
 
 					// Select new menu
@@ -634,7 +617,7 @@ int itemy, itemh, ret;
 						strcpy(newmenu, "menus/");
 						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 						destroy_menu();
-						dynmenuvar = 0;
+						dynmenuvars[0] = 0;
 						if (!do_openfilemenu(newmenu, MENUFILE)){
 							draw_menu();
 						}else call_dynmenu(newmenu);
@@ -666,11 +649,16 @@ int init_menu(){
 
 	if (!fln.next) return 1;
 
+	time_l = time(NULL);
+
 	// Set of parameters for all variable menu and action functions
 	actlnode = (LNODE*) (fln.next);
 	parameters.pln = (LNODE*) &actlnode;
 	parameters.devtype = (char*) &lnodefilter;
 	parameters.devtypetext = (char*) &devtypetext;
+	parameters.dynmenuvars = dynmenuvars;
+	parameters.ptimel = &time_l;
+	parameters.ptimetm = localtime(&time_l);
 	// Parameters Ready
 
 	call_action(0xf801, "changetypeln", &parameters);
