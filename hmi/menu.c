@@ -463,71 +463,14 @@ void redraw_screen(void *arg){
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
 // Start dynamic menu
-static char menutxt[1024];  // array for text of dynamic menu
 void call_dynmenu(char *menuname){
-char *pmenu = menutxt;
-LNODE *pln;
-int x = MENUSTEP;
-int y = 0;
-int i = 0;
+char *pmenu;
 
-	menutxt[0] = 0;
-
-	// Menu of LNODES
 	pmenu = create_dynmenu(menuname, &parameters);
 	if (pmenu){
 		if (do_openfilemenu(pmenu, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
 	}
 	draw_menu();
-	return;
-
-
-	// Menu of ALL LNODES FROM FILTER CLASSES
-	if (!strcmp("menus/lntypemenu", menuname)){
-		dynmenuvars[0] = (int*) &actlnode;
-		pln = (LNODE*) fln.next; x = 0;
-		sprintf(pmenu, "main 40 10 120 150\n");
-		pmenu += strlen(pmenu);
-		sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
-		pmenu += strlen(pmenu);
-		y += MENUSTEP; x = MENUSTEP;
-		while(pln){
-			if (!strcmp(pln->ln.lnclass, "MMXU")){
-				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-				pmenu += strlen(pmenu);
-				y += MENUSTEP;
-				// Set pointer to LNODE for the item in future
-				dynmenuvars[i] = (int*) pln; i++;
-			}
-			pln = pln->l.next;
-		}
-
-		pln = (LNODE*) fln.next;
-		while(pln){
-			if (!strcmp(pln->ln.lnclass, "MSQI")){
-				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-				pmenu += strlen(pmenu);
-				y += MENUSTEP;
-				// Set pointer to LNODE for the item in future
-				dynmenuvars[i] = (int*) pln; i++;
-			}
-			pln = pln->l.next;
-		}
-
-		pln = (LNODE*) fln.next;
-		while(pln){
-			if (!strcmp(pln->ln.lnclass, "MMTR")){
-				sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-				pmenu += strlen(pmenu);
-				y += MENUSTEP;
-				// Set pointer to LNODE for the item in future
-				dynmenuvars[i] = (int*) pln; i++;
-			}
-			pln = pln->l.next;
-		}
-
-		if (do_openfilemenu(menutxt, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
-	}
 
 	// Menu of Date
 
@@ -537,7 +480,6 @@ int i = 0;
 
 	// Menu of Tarif
 
-	draw_menu();
 }
 
 //--------------------------------------------------------------------------------
