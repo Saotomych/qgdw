@@ -13,17 +13,6 @@ endif
 CCFLAGS += -c -O0 -g3 -Wall -I $(NANOINCLUDE)
 LDFLAGS += -Wl -L $(NANOLIBS) -lnano-X
 
-NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
-NANOLIBS    = ../../nano-x.X11.x86/microwin/src/lib
-
-ifeq ($(ARCH), arm)
-NANOINCLUDE = ../../nano-x.fb.uclibc.arm/microwin/src/include
-NANOLIBS    = ../../nano-x.fb.uclibc.arm/microwin/src/lib
-endif
-
-CCFLAGS += -c -O0 -g3 -Wall -I$(NANOINCLUDE)
-LDFLAGS += -Wl -L$(NANOLIBS) -lnano-X
- 
 hmi: $(OBJS)
 	$(CC) $(LDFLAGS) -o ../bin/hmi700 $(OBJS) -lnano-X
 hmi.o: hmi.c
