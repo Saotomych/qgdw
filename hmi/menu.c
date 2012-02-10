@@ -588,23 +588,27 @@ void key_rised(void *arg)
 //---------------------------------------------------------------------------------
 //int init_menu(fact *factsetting, int len)
 int init_menu(){
+struct tm *ttm;
 
 	if (!fln.next) return 1;
 
 	time_l = time(NULL);
+	ttm	= localtime(&time_l);
+	memcpy(&time_tm, ttm, sizeof(struct tm));
 
 	// Set of parameters for all variable menu and action functions
 	actlnode = (LNODE*) (fln.next);
 	parameters.pln = (LNODE*) &actlnode;
 	parameters.devtype = (char*) &lnodefilter;
 	parameters.devtypetext = (char*) &devtypetext;
-	parameters.dynmenuvars = dynmenuvars;
+	parameters.dynmenuvars = (int*) dynmenuvars;
 	parameters.ptimel = &time_l;
-	parameters.ptimetm = localtime(&time_l);
+	parameters.ptimetm = &time_tm;
 	// Parameters Ready
-
+	// Set start LN
 	call_action(0xf801, "changetypeln", &parameters);
 	call_action(0xf801, "changeln", &parameters);
+	// Start LN ready
 
     return 0;
 }
