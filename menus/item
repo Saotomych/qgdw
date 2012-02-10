@@ -1,9 +1,13 @@
-text 2 0 a a Главное меню
-menu 4 35 a a &devname~changename
+main 0 0 a a
+menu 2 0 a a &var:APP:ldtypetext~changetypeln >lntypemenu
+menu 4 20 58 a LN:&var:LN:prefix~changeln >lnmenu
+text 62 20 30 a &var:LN:class
+text 92 20 48 a &var:LN:inst
 menu 6 a a a Профиль нагрузки>eprofile
 menu 8 a a a Архив потребления>earch
 menu 10 a a a Энергия по тарифам>etarif
 menu 12 a a a Присоединение>connect
-menu 14 a a a Журнал>journal
-menu 16 a a a О счетчике>meterabout
-menu 18 a a a &powstate~chpower
+menu 14 a a a Журнал &var:IED:desc >journal
+menu 16 a a a Информация&var:LD:inst>meterabout
+menu 18 a a a &var:IED:name~chpower
+text 20 a a a Тестовый текст

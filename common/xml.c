@@ -7,7 +7,7 @@
 */
 
 #include "../common/common.h"
-#include "iec61850.h"
+#include "../common/iec61850.h"
 
 u08 Encoding, EndScript;
 
@@ -92,27 +92,27 @@ typedef struct _XML_Name{
 static const XML_Name XTags[] = {
   {"Header", TagSetHeader},
   {"/Header", TagEndHeader},
-  {"IED", ssd_create_ied},
+  {"IED", cid_create_ied},
   {"/IED", TagEndIED},
-  {"Substation", ssd_create_subst},
+  {"Substation", cid_create_subst},
   {"/Substation", TagEndSubs},
-  {"LDevice", ssd_create_ld},
+  {"LDevice", cid_create_ld},
   {"/LDevice", TagEndLD},
-  {"LN", ssd_create_ln},
+  {"LN", cid_create_ln},
   {"/LN", TagEndLN},
-//  {"LNode", ssd_create_ln},
+//  {"LNode", cid_create_ln},
 //  {"/LNode", TagEndLN},
-  {"LNodeType", ssd_create_lntype},
+  {"LNodeType", cid_create_lntype},
   {"/LNodeType", TagEndLNType},
-  {"DO", ssd_create_dobj},
+  {"DO", cid_create_dobj},
   {"/DO", TagEndDobj},
-  {"DOType", ssd_create_dobjtype},
+  {"DOType", cid_create_dobjtype},
   {"/DOType", TagEndDType},
-  {"DA", ssd_create_attr},
+  {"DA", cid_create_attr},
   {"/DA", TagEndAttr},
-  {"EnumType", ssd_create_enum},
+  {"EnumType", cid_create_enum},
   {"/EnumType", TagEndEnum},
-  {"EnumVal", ssd_create_enumval},
+  {"EnumVal", cid_create_enumval},
   {"/EnumVal", TagEndEnumVal},
   {"SCL", TagSetSCL},
   {"/SCL", TagEndSCL},

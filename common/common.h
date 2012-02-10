@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <termios.h> /* Объявления управления POSIX-терминалом */
 #include <fcntl.h>   /* Управление файлами */
+#include <time.h>
 
 #include <sys/queue.h>
 #include <sys/select.h>
@@ -67,6 +68,9 @@
 #define EP_MSG_DCOLL_STOP		16		/* stop data collection - up2down */
 #define EP_MSG_TEST_CONN		17		/* test device connection - up2down */
 #define EP_MSG_DEV_ONLINE		18		/* device is online - down2up */
+#define EP_MSG_BOOK				20		/* to book data for event - up2down */
+#define EP_MSG_UNBOOK			21		/* to delete data from event - up2down */
+#define EP_MSG_BOOKEVENT		22		/* event variable has changed - down2 up */
 
 // Messages for initialize endpoints
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
@@ -117,5 +121,10 @@ typedef struct frame_dobj {
 	char 			name[DOBJ_NAMESIZE];
 } __attribute__ ((packed)) frame_dobj;
 
+/* Just List */
+typedef struct _LIST{
+	void *next;
+	void *prev;
+} LIST;
 
 #endif /* COMMON_H_ */
