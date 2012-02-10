@@ -10,6 +10,35 @@
 #include "hmi.h"
 #include "menu.h"
 
+struct _mons{
+	char *meng;
+	char *mrus;
+	int	 mdays;
+} mons[12] = {
+		{"Jan", "Январь", 31},
+		{"Feb", "Февраль", 28},
+		{"Mar", "Март", 31},
+		{"Apr", "Апрель", 30},
+		{"May", "Май", 31},
+		{"Jun", "Июнь", 30},
+		{"Jul", "Июль", 31},
+		{"Aug", "Август", 31},
+		{"Sep", "Сентябрь", 30},
+		{"Oct", "Октябрь", 31},
+		{"Nov", "Ноябрь", 30},
+		{"Dec", "Декабрь", 31},
+};
+
+char *days[7] = {
+		{"ПН"},
+		{"ВТ"},
+		{"СР"},
+		{"ЧТ"},
+		{"ПТ"},
+		{"СБ"},
+		{"BC"},
+};
+
 char menutxt[1024];
 
 // Menu of LNODES
@@ -111,12 +140,52 @@ int x, y = 0;
 //           };
 
 char* ChangeDate(char *arg){
-char *ptxt = menutxt;
+char *pmenu = menutxt;
 time_t **timel = (time_t**)(((int*)arg)[4]);
-struct tm **timetm = (struct tm**)(((int*)arg)[5]);
+struct tm *timetm = (struct tm**)(((int*)arg)[5]);
+int i, x, y, maxday, wday, day;
 
+	wday = (timetm->tm_mday/7)*7-timetm->tm_mday+timetm->tm_wday;
+	maxday = mons[timetm->tm_mon].mdays;
+	// Correct for 'Visokosny' year
+	if ((timetm->tm_mon == 1) && (!(timetm->tm_year % 4))) maxday++;
 
-	return ptxt;
+    // Months and years
+	sprintf(pmenu, "main 10 0 140 120\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
+	pmenu += strlen(pmenu);
+
+	// Days of week
+	x = 2;
+	for (i = 0; i < 7; i++){
+		sprintf(pmenu, "text %d 16 20 a %s\n", x, days[i]);
+		pmenu += strlen(pmenu);
+		x += 20;
+	}
+
+	// Empty days of old month in offset of x
+	x = 20 * wday + 2; y = MENUSTEP * 2;
+	// Numbers to end of first line days
+	day = 1;
+	for (i = wday; i < 7; i++){
+		sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
+		pmenu += strlen(pmenu);
+		x += 20; day++;
+	}
+
+	// Numbers of other lines
+	while(day <= maxday){
+		x = 2;
+		y += MENUSTEP;
+		for (i = 0; (i < 7) && (day <= maxday); i++, day++){
+			sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
+			pmenu += strlen(pmenu);
+			x += 20;
+		}
+	}
+
+	return menutxt;
 }
 
 // Menu of Interval

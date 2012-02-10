@@ -46,24 +46,6 @@ typedef struct _menu{
 
 } menu;
 
-struct _mons{
-	char *meng;
-	char *mrus;
-} mons[12] = {
-		{"Jan", "Январь"},
-		{"Feb", "Февраль"},
-		{"Mar", "Март"},
-		{"Apr", "Апрель"},
-		{"May", "Май"},
-		{"Jun", "Июнь"},
-		{"Jul", "Июль"},
-		{"Aug", "Август"},
-		{"Sep", "Сентябрь"},
-		{"Oct", "Октябрь"},
-		{"Nov", "Ноябрь"},
-		{"Dec", "Декабрь"},
-};
-
 //extern int init_menu(fact *factsetting, int len);
 extern void menu_parser(pvalue vt, int len);
 extern int init_menu(void);

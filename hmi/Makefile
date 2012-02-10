@@ -10,8 +10,8 @@ NANOINCLUDE = ../../nano-x.fb.uclibc.arm/microwin/src/include
 NANOLIBS    = ../../nano-x.fb.uclibc.arm/microwin/src/lib
 endif
 
-CCFLAGS += -c -O0 -g3 -Wall -I$(NANOINCLUDE)
-LDFLAGS += -Wl -L$(NANOLIBS) -lnano-X
+CCFLAGS += -c -O0 -g3 -Wall -I $(NANOINCLUDE)
+LDFLAGS += -Wl -L $(NANOLIBS) -lnano-X
  
 hmi: $(OBJS)
 	$(CC) $(LDFLAGS) -o ../bin/hmi700 $(OBJS)
