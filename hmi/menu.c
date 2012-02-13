@@ -19,7 +19,7 @@ static struct tm time_tm;
 
 static time_t acttime;
 
-static char prev_item;		// pointer to item in main menu
+//static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
 
 
@@ -92,9 +92,9 @@ GR_WINDOW_INFO winfo;
 					if (pitem->endtext) strcat(wintext, pitem->endtext);
 				}
 
-				GrText(*main_window, gc, 0, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
+				GrText(*main_window, gc, 2, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
 
-			}else GrText(*main_window, gc, 0, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
+			}else GrText(*main_window, gc, 2, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
 
 			GrDestroyGC(gc);
 }
@@ -123,6 +123,7 @@ static void draw_menu()
 												num_menu->rect.width,
 												num_menu->rect.height,
 												1, WHITE, BLACK);
+
    		    GrMapWindow(num_menu->main_window);
 
 			props.flags = GR_WM_FLAGS_PROPS;
@@ -148,7 +149,7 @@ static void draw_menu()
 										   num_menu->pitems[i]->rect.y,
 										   num_menu->pitems[i]->rect.width,
 										   num_menu->pitems[i]->rect.height,
-										   0, WHITE, WHITE);
+										   0, BLACK, WHITE);
 
 				props.flags = GR_WM_FLAGS_PROPS;
 				props.props = GR_WM_PROPS_BORDER;
@@ -180,6 +181,7 @@ static void draw_menu()
 			num_menu->font = GrCreateFontEx(FONTNAME, FONT_HEIGHT, FONT_WIDTH, 0);
 			GrSetFontAttr(num_menu->font, GR_TFANTIALIAS | GR_TFKERNING, 0);
 
+			redraw_screen(NULL);
 }
 
 //-------------------------------------------------------------------------------------------
@@ -235,7 +237,6 @@ char *pmenu;
 		num_menu = do_openfilemenu(actlnode, pmenu, MENUMEM);
 		if (!num_menu) num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
 	}
-	draw_menu();
 }
 
 //-------------------------------------------------------------------------------
@@ -284,6 +285,7 @@ int itemy, itemh;
 }
 
 void default_enter(GR_EVENT *event){
+int dir = DIR_FORWARD;
 
 	if (dynmenuvars[num_menu->num_item]){
 		// Set var into pointer dynmenuvar as value in actual item
@@ -292,19 +294,20 @@ void default_enter(GR_EVENT *event){
 		call_action(0xf801, "changetypeln", &parameters);
 		call_action(0xf800, "changetypeln", &parameters);
 		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item];
+		// From dynamic menu - backward
+		dir = DIR_BACKWARD;
 	}
 
 	// Select new menu
-	prev_item = num_menu->num_item;
+//	prev_item = num_menu->num_item;
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(newmenu, "menus/");
 		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
-		destroy_menu();
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
-		num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
-		if (num_menu){
-			draw_menu();
-		}else call_dynmenu(newmenu);
+		if (dir == DIR_BACKWARD) num_menu = destroy_menu(dir);
+		if (dir == DIR_FORWARD)	num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
+		if (!num_menu) call_dynmenu(newmenu);
+		if (num_menu) draw_menu();
 	}
 }
 
@@ -355,12 +358,14 @@ GR_EVENT *event = (GR_EVENT*) arg;
 
 	case 0x1B:		// Key MENU / ESC
 					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
-					destroy_menu();
-					num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
-					if (num_menu){
-						draw_menu();
-						num_menu->num_item = prev_item;
-						draw_menu();
+					num_menu = destroy_menu(DIR_BACKWARD);
+					if (!num_menu){
+						num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
+						if (num_menu){
+//							draw_menu();
+//							num_menu->num_item = prev_item;
+							draw_menu();
+						}
 					}
 					break;
 

@@ -31,8 +31,13 @@
 #define BGCOLOR	WHITE
 #define FONTNAME "pcf/7x13.pcf.gz"
 
-#define MAXMENU 5
+#define MAXMENU 3
 #define MAXITEM 40
+
+#define DIR_FORWARD		1
+#define DIR_BACKWARD 	2
+#define DIR_SIDEFWD		3
+#define DIR_SIDEBKW		4
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;
@@ -79,8 +84,7 @@ extern int call_action(int direct, char *act, void *arg);
 extern char* create_dynmenu(char *menuname, void *arg);
 
 extern menu* do_openfilemenu(LNODE *actlnode, char *buf, int type);
-extern void destroy_menu(void);
-
+extern menu* destroy_menu(int direct);
 //void SetNewMenu();
 //void SetMainMenu();
 //void HintDraw();
