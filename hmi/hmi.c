@@ -134,9 +134,8 @@ char words[][6] = {
 	fl = fopen(fllname, "r");
 	if (fl == NULL) return -1;
 
-	while(1){
-		p = fgets(tbuf, 128, fl);
-		if ((p == tbuf) && (*p >= '0')){
+	do{	p = fgets(tbuf, 128, fl);
+		if ((p == tbuf) && (*p >= '0') && (*p <= '9')){
 			// if find new line
 			actldei = create_next_struct_in_list((LIST *) &actldei->l, sizeof(ldextinfo));
 			actldei->addr = NULL;
@@ -177,8 +176,8 @@ char words[][6] = {
 				}
 
 			}
-		}else break;
-	}
+		}
+	}while(!feof (fl));
 
 	return 0;
 
@@ -188,7 +187,7 @@ char words[][6] = {
 void mainloop()
 {
 	GR_EVENT event;
-	//GR_WM_PROPERTIES props;
+	//GR_WM_PROPERTIES props;ы
 
 	while (1) {
  		wm_handle_event(&event);
@@ -266,7 +265,7 @@ char *fname;
 	if (lowlevel_parser(fname)) printf("IEC61850: lowlevel file reading error\n");
 	free(fname);
 
-	// Setup environment
+	// Setup environment variables from device environment
 	env_parser();
 
 	// Parse about config file

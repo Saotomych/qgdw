@@ -59,6 +59,45 @@ struct _parameters{
 value defvalues[] = {
 		{"APP:ldtypetext", &devtypetext, "Тип не выбран", PTRSTRING , STRING},
 };
+
+//------------------------------------------------------------------------------------
+// Definition for function keys
+void default_left(GR_EVENT *event);
+void default_right(GR_EVENT *event);
+void default_up(GR_EVENT *event);
+void default_down(GR_EVENT *event);
+void default_enter(GR_EVENT *event);
+struct _kt {
+	char *funcname;
+	void (*func)();
+} keystable[] = {
+		{"null", (void*) -1},
+		{"defleft", default_left},
+		{"defright", default_right},
+		{"defup", default_up},
+		{"defdown", default_down},
+		{"defenter", default_enter},
+		{"", NULL},
+};
+
+void* find_keyname(char *p){
+int x = 0, kt = 0;
+char *bgnp = p;
+
+	while (keystable[kt].funcname[0]){
+		x = 0; p = bgnp;
+		while ((keystable[kt].funcname[x] == *p) && (*p)){
+			p++; x++;
+		}
+		if ((*p <= ' ') && (!keystable[kt].funcname[x])){
+			return keystable[kt].func;
+		}
+		kt++;
+	}
+
+	return NULL;
+}
+
 //------------------------------------------------------------------------------------
 // Parser of menu files
 // It's making:
@@ -155,6 +194,60 @@ char *p;
             	num_menu->rect.y = 0;
             	num_menu->rect.width = MAIN_WIDTH;
             	num_menu->rect.height = MAIN_HEIGHT;
+            }
+
+            // Initialize keys functions
+            num_menu->keyup = default_up;
+            num_menu->keydown = default_down;
+            num_menu->keyright = default_right;
+            num_menu->keyleft = default_left;
+            num_menu->keyenter = default_enter;
+            ptxt[4] = 0;
+            if (!strcmp(ptxt, "keys")){
+            	count_item--;
+            	ptxt += 5;
+            	p = strstr(ptxt, "up:");
+                if (p){
+                	p += 3;
+                	num_menu->keyup = find_keyname(p);
+                	if (num_menu->keyup == NULL) num_menu->keyup = default_up;
+                	if (num_menu->keyup == (void*) -1) num_menu->keyup = NULL;
+                }
+
+                p = strstr(ptxt, "down:");
+                if (p){
+                	p += 5;
+                	num_menu->keydown = find_keyname(p);
+                	if (num_menu->keydown == NULL) num_menu->keydown = default_down;
+                	if (num_menu->keydown == (void*) -1) num_menu->keydown = NULL;
+                }
+
+        		p = strstr(ptxt, "right:");
+                if (p){
+                	p += 6;
+                	num_menu->keyright = find_keyname(p);
+                	if (num_menu->keyright == NULL) num_menu->keyright = default_right;
+                	if (num_menu->keyright == (void*) -1) num_menu->keyright = NULL;
+                }
+
+        		p = strstr(ptxt, "left:");
+                if (p){
+                	p += 5;
+                	num_menu->keyleft = find_keyname(p);
+                	if (num_menu->keyleft == NULL) num_menu->keyleft = default_left;
+                	if (num_menu->keyleft == (void*) -1) num_menu->keyleft = NULL;
+                }
+
+                p = strstr(ptxt, "enter:");
+                if (p){
+                	p += 6;
+                	num_menu->keyenter = find_keyname(p);
+                	if (num_menu->keyenter == NULL) num_menu->keyenter = default_enter;
+                	if (num_menu->keyenter == (void*) -1) num_menu->keyenter = NULL;
+                }
+
+	            while (*ptxt >= ' ') ptxt++; ptxt++;
+
             }
 
 		 	num_menu->pitems = malloc(count_item * sizeof(item*));
@@ -272,11 +365,10 @@ char *p;
 //------------------------------------------------------------------------------------
 // Function create new text in all windows
 static char wintext[40];
-static void do_paint(item *pitem, int fg, int bg)
-{
-	        GR_GC_ID gc = GrNewGC();
-			GR_WINDOW_ID *main_window = &(pitem->main_window);
-			GR_WINDOW_INFO winfo;
+static void do_paint(item *pitem, int fg, int bg){
+GR_GC_ID gc = GrNewGC();
+GR_WINDOW_ID *main_window = &(pitem->main_window);
+GR_WINDOW_INFO winfo;
 
 			GrGetWindowInfo(*main_window, &winfo);
 
@@ -460,6 +552,75 @@ char *pmenu;
 	draw_menu();
 }
 
+//-------------------------------------------------------------------------------
+// Keys functions
+
+void default_left(GR_EVENT *event){
+	if (num_menu->pitems[num_menu->num_item]->action){
+		call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+		refresh_vars();
+		redraw_screen(NULL);
+	}
+}
+
+void default_right(GR_EVENT *event){
+	if (num_menu->pitems[num_menu->num_item]->action){
+		call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+		refresh_vars();
+		redraw_screen(NULL);
+	}
+}
+
+void default_up(GR_EVENT *event){
+int itemy, itemh;
+
+	num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
+	itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+	itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+	if ((itemy > (num_menu->rect.height-10)) || (itemy  < (num_menu->bgnmenuy - 10))) redraw_menu(1);
+
+	redraw_screen(NULL);
+
+}
+
+void default_down(GR_EVENT *event){
+int itemy, itemh;
+
+	num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
+	itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+	itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+	if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
+
+	redraw_screen(NULL);
+
+}
+
+void default_enter(GR_EVENT *event){
+
+	if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
+		// Set var into pointer dynmenuvar as value in actual item
+		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+		// and refresh all values (temporary solution)
+		call_action(0xf801, "changetypeln", &parameters);
+		call_action(0xf800, "changetypeln", &parameters);
+		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+	}
+
+	// Select new menu
+	prev_item = num_menu->num_item;
+	if (num_menu->pitems[num_menu->num_item]->next_menu){
+		strcpy(newmenu, "menus/");
+		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
+		destroy_menu();
+		dynmenuvars[0] = 0;
+		if (!do_openfilemenu(newmenu, MENUFILE)){
+			draw_menu();
+		}else call_dynmenu(newmenu);
+	}
+}
+
 //--------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
@@ -481,78 +642,29 @@ void redraw_screen(void *arg){
 // MENU it's return to previous menu without changes forever
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
-int itemy, itemh, ret;
 
 	switch(event->keystroke.ch)
 	{
 
 	case 0xf800:	// Key left
-					if (num_menu->pitems[num_menu->num_item]->action){
-						ret = call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
-						refresh_vars();
-						redraw_screen(NULL);
-					}
+					if (num_menu->keyleft) num_menu->keyleft((GR_EVENT*) arg);
 					break;
 
 	case 0xf801:	// Key right
-					if (num_menu->pitems[num_menu->num_item]->action){
-						ret = call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
-						refresh_vars();
-						redraw_screen(NULL);
-					}break;
+					if (num_menu->keyright) num_menu->keyright((GR_EVENT*) arg);
+					break;
 
 	case 0xf802:	// Key up
-
-					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
-
-//					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
-
-					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
-					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
-
-					if ((itemy > (num_menu->rect.height-10)) || (itemy  < (num_menu->bgnmenuy - 10))) redraw_menu(1);
-
-					redraw_screen(NULL);
-
+					if (num_menu->keyup) num_menu->keyup((GR_EVENT*) arg);
 					break;
 
 	case 0xf803:	// Key down
-
-					num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
-
-//					printf("start %d; num %d; count %d\n", num_menu->start_item, num_menu->num_item, num_menu->count_item);
-
-					itemy = num_menu->pitems[num_menu->num_item]->rect.y;
-					itemh = num_menu->pitems[num_menu->num_item]->rect.height;
-
-					if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
-
-					redraw_screen(NULL);
-
+					if (num_menu->keydown) num_menu->keydown((GR_EVENT*) arg);
 					break;
 
 	case 0x0D:		// Key ENTER
 	case 0x20:		// Dynamic menu change our variable
-					if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
-						// Set var into pointer dynmenuvar as value in actual item
-						*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
-						// and refresh all values (temporary solution)
-						call_action(0xf801, "changetypeln", &parameters);
-						call_action(0xf800, "changetypeln", &parameters);
-						*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
-					}
-
-					// Select new menu
-					prev_item = num_menu->num_item;
-					if (num_menu->pitems[num_menu->num_item]->next_menu){
-						strcpy(newmenu, "menus/");
-						strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
-						destroy_menu();
-						dynmenuvars[0] = 0;
-						if (!do_openfilemenu(newmenu, MENUFILE)){
-							draw_menu();
-						}else call_dynmenu(newmenu);
-					}
+					if (num_menu->keyenter) num_menu->keyenter((GR_EVENT*) arg);
 					break;
 
 	case 0x1B:		// Key MENU / ESC
@@ -599,7 +711,6 @@ struct tm *ttm;
 
 	// Set start LN
 	call_action(0xf801, "changetypeln", &parameters);
-	call_action(0xf801, "changeln", &parameters);
 	// Start LN ready
 
 	// Open first menu

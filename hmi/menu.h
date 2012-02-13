@@ -42,8 +42,12 @@ typedef struct _menu{
 	int count_item;        //number of item
 	int bgnmenuy;	// first y coord of 1th menu item
 	char first_item;	// index of first menu point
-//  функции set
-
+//  keys functions
+	void (*keyleft)();
+	void (*keyright)();
+	void (*keyup)();
+	void (*keydown)();
+	void (*keyenter)();
 } menu;
 
 //extern int init_menu(fact *factsetting, int len);

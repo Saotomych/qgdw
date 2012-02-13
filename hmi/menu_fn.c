@@ -10,7 +10,7 @@
 #include "hmi.h"
 #include "menu.h"
 
-struct _mons{
+static struct _mons{
 	char *meng;
 	char *mrus;
 	int	 mdays;
@@ -29,14 +29,14 @@ struct _mons{
 		{"Dec", "Декабрь", 31},
 };
 
-char *days[7] = {
-		{"ПН"},
-		{"ВТ"},
-		{"СР"},
-		{"ЧТ"},
-		{"ПТ"},
-		{"СБ"},
-		{"BC"},
+static char *days[7] = {
+		"ПН",
+		"ВТ",
+		"СР",
+		"ЧТ",
+		"ПТ",
+		"СБ",
+		"BC",
 };
 
 char menutxt[1024];
@@ -145,13 +145,15 @@ time_t **timel = (time_t**)(((int*)arg)[4]);
 struct tm *timetm = (struct tm**)(((int*)arg)[5]);
 int i, x, y, maxday, wday, day;
 
-	wday = (timetm->tm_mday/7)*7-timetm->tm_mday+timetm->tm_wday;
+	wday = (7 + timetm->tm_wday - (timetm->tm_mday % 7)) % 7;
 	maxday = mons[timetm->tm_mon].mdays;
 	// Correct for 'Visokosny' year
 	if ((timetm->tm_mon == 1) && (!(timetm->tm_year % 4))) maxday++;
 
     // Months and years
 	sprintf(pmenu, "main 10 0 140 120\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "keys up:null down:null right:defdown left:defup\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
 	pmenu += strlen(pmenu);
@@ -227,6 +229,7 @@ int i;
 		if (!strcmp(menufactset[i].action, pmenu)){
 			pmenu = 0;
 			pmenu = (char *) menufactset[i].func(arg);
+			break;
 		}
 	}
 
