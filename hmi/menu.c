@@ -303,11 +303,17 @@ int dir = DIR_FORWARD;
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(newmenu, "menus/");
 		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
+		if (dir == DIR_BACKWARD){
+			num_menu = destroy_menu(dir);
+			if (num_menu) refresh_vars();
+		}
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
-		if (dir == DIR_BACKWARD) num_menu = destroy_menu(dir);
-		if (dir == DIR_FORWARD)	num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
-		if (!num_menu) call_dynmenu(newmenu);
-		if (num_menu) draw_menu();
+		if (dir == DIR_FORWARD){
+			num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
+			if (num_menu) draw_menu();
+			else call_dynmenu(newmenu);
+			if (num_menu) draw_menu();
+		}
 	}
 }
 

@@ -54,7 +54,7 @@ int x, y = 0;
 	*dynmenuvar = pbln;
 
 	pln = (LNODE*) fln.next; x = 0;
-	sprintf(pmenu, "main 16 15 120 145\n");
+	sprintf(pmenu, "main 16 33 128 126\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
@@ -85,7 +85,7 @@ int x, y = 0;
 	*dynmenuvar = pbln;
 
 	pln = (LNODE*) fln.next; x = 2;
-	sprintf(pmenu, "main 16 15 120 145\n");
+	sprintf(pmenu, "main 16 15 128 145\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
