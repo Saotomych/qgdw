@@ -82,7 +82,7 @@ int x, y = 0;
 
 	*dynmenuvar = pbln;
 
-	pln = (LNODE*) fln.next; x = 0;
+	pln = (LNODE*) fln.next; x = 2;
 	sprintf(pmenu, "main 40 10 120 150\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);

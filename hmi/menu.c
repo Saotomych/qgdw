@@ -139,7 +139,26 @@ static void draw_menu()
 			//Paint on the screen windows of item
 			int i;
 
-			for (i=0; i < num_menu->count_item; i++)
+			for (i = 0; i < num_menu->start_item; i++)
+			{
+				main_window = &(num_menu->pitems[i]->main_window);
+
+				*main_window = GrNewWindow(num_menu->main_window,
+										   num_menu->pitems[i]->rect.x,
+										   num_menu->pitems[i]->rect.y,
+										   num_menu->pitems[i]->rect.width,
+										   num_menu->pitems[i]->rect.height,
+										   0, WHITE, WHITE);
+
+				props.flags = GR_WM_FLAGS_PROPS;
+				props.props = GR_WM_PROPS_BORDER;
+
+				GrSetWMProperties(*main_window, &props);
+				GrSelectEvents(*main_window, GR_EVENT_MASK_EXPOSURE);
+				GrMapWindow(*main_window);      //Make a window visible on the screen
+	        }
+
+			for (i = num_menu->start_item; i < num_menu->count_item; i++)
 			{
 				main_window = &(num_menu->pitems[i]->main_window);
 
@@ -189,6 +208,8 @@ int stepy, y, itemy, itemh;
 			GrMapWindow(num_menu->pitems[i]->main_window);
 		}else GrUnmapWindow(num_menu->pitems[i]->main_window);
 	}
+
+	for (i=0; i < num_menu->start_item; i++) GrRaiseWindow(num_menu->pitems[i]->main_window);
 }
 
 //-----------------------------------------------------------------------------------------------------------
@@ -273,15 +294,24 @@ void default_enter(GR_EVENT *event){
 //		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
 //	}
 
+	if (dynmenuvars[num_menu->num_item]){
+		// Set var into pointer dynmenuvar as value in actual item
+		*dynmenuvars[0] = dynmenuvars[num_menu->num_item];
+		// and refresh all values (temporary solution)
+		call_action(0xf801, "changetypeln", &parameters);
+		call_action(0xf800, "changetypeln", &parameters);
+		*dynmenuvars[0] = dynmenuvars[num_menu->num_item];
+	}
+
 	// Select new menu
 	prev_item = num_menu->num_item;
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(newmenu, "menus/");
 		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 		destroy_menu();
-//		dynmenuvars[0] = 0;
+		dynmenuvars[0] = 0;
 		num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
-		if (!num_menu){
+		if (num_menu){
 			draw_menu();
 		}else call_dynmenu(newmenu);
 	}
@@ -309,8 +339,7 @@ void redraw_screen(void *arg){
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
 
-	switch(event->keystroke.ch)
-	{
+	switch(event->keystroke.ch){
 
 	case 0xf800:	// Key left
 					if (num_menu->keyleft) num_menu->keyleft((GR_EVENT*) arg);
@@ -336,8 +365,8 @@ GR_EVENT *event = (GR_EVENT*) arg;
 	case 0x1B:		// Key MENU / ESC
 					destroy_menu();
 					num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
-					if (!num_menu){
-//						draw_menu();
+					if (num_menu){
+						draw_menu();
 						num_menu->num_item = prev_item;
 						draw_menu();
 					}

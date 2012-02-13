@@ -44,7 +44,6 @@ typedef struct _item{
 	char *endtext;		// End text of item
 	char *next_menu;  	// pointer to next submenu
 	char *action;
-	int  *dynmenuvar;	// Pointer to variable for select this item
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
 } item;
