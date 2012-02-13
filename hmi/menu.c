@@ -25,7 +25,6 @@ static menu *num_menu;     //указатель на структуру меню
 
 static char newmenu[40];			// For temporary operations
 
-//static int *dynmenuvar;	// Variable for change by dynmenu; flag of dynmenu state
 static int *dynmenuvars[40];	// Pointers to variables according to the menu item
 
 static char *lnodefilter;		// Type of actual lnode
@@ -40,328 +39,12 @@ struct _parameters{
 	struct tm *ptimetm;	// Pointer to time as struct tm type
 } parameters;
 
-#define MAIN_WIDTH 160     //параметры главного окна
-#define MAIN_HEIGHT 160
-
-#define WIDTH 160          //параметры окна пункта меню
-#define HEIGHT MENUSTEP
-
-#define FONT_WIDTH 7
-#define FONT_HEIGHT 13
-
-#define BLACK MWRGB( 0  , 0  , 0   )
-#define WHITE MWRGB( 255, 255, 255 )
-
-#define FGCOLOR	BLACK
-#define BGCOLOR	WHITE
-#define FONTNAME "pcf/7x13.pcf.gz"
 
 value defvalues[] = {
 		{"APP:ldtypetext", &devtypetext, "Тип не выбран", PTRSTRING , STRING},
 };
 
-//------------------------------------------------------------------------------------
-// Definition for function keys
-void default_left(GR_EVENT *event);
-void default_right(GR_EVENT *event);
-void default_up(GR_EVENT *event);
-void default_down(GR_EVENT *event);
-void default_enter(GR_EVENT *event);
-struct _kt {
-	char *funcname;
-	void (*func)();
-} keystable[] = {
-		{"null", (void*) -1},
-		{"defleft", default_left},
-		{"defright", default_right},
-		{"defup", default_up},
-		{"defdown", default_down},
-		{"defenter", default_enter},
-		{"", NULL},
-};
 
-void* find_keyname(char *p){
-int x = 0, kt = 0;
-char *bgnp = p;
-
-	while (keystable[kt].funcname[0]){
-		x = 0; p = bgnp;
-		while ((keystable[kt].funcname[x] == *p) && (*p)){
-			p++; x++;
-		}
-		if ((*p <= ' ') && (!keystable[kt].funcname[x])){
-			return keystable[kt].func;
-		}
-		kt++;
-	}
-
-	return NULL;
-}
-
-//------------------------------------------------------------------------------------
-// Parser of menu files
-// It's making:
-// Create and initialize structure menu and structure array of items
-// Connect items to variables
-// Fill items by begin graphic information
-// In: file or string array with string as <type> <X> <Y> <Width> <Height> <Fix text with variables> <'>'submenu> <'~'action>
-// Out: num_menu pointer and all connected pointers are ready for next work
-int do_openfilemenu(char *buf, int type){
-char *pitemtype;			// pointer to actual <type>
-char *ptxt;					// temporary text pointer
-FILE *fmcfg;               //file open
-struct stat fst;			// statistics of file
-int clen;					// lenght of file or array
-int count_item = 0;			// max number of items
-int count_menu = 0;			// max number of items as menu type
-char last_menuitem = 0;		// number of last item as menu type
-char first_menuitem = 0;	// number of first item as menu type
-
-int i;
-char *p;
-
-	 	 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
-
-    		switch(type){
-
-			case MENUFILE:
-
-							if (stat(buf, &fst) == -1){
-								printf("IEC Virt: menufile not found\n");
-								free(num_menu);
-								return -1;
-							}
-
-							num_menu->ptxtmenu =  malloc(fst.st_size + 2);
-						 	fmcfg = fopen(buf, "r");
-						 	clen = fread((num_menu->ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
-						 	if (!clen) return -1;
-						 	if (clen != fst.st_size) return -1;
-						 	break;
-
-			case MENUMEM:
-							clen = strlen(buf);
-						 	if (!clen) return -1;
-
-						 	num_menu->ptxtmenu = malloc(clen + 2);
-						 	strcpy((num_menu->ptxtmenu+1), buf);
-						 	break;
-			}
-
-
-		 	//Make ending 0 for string
-		 	num_menu->ptxtmenu[clen+1] = 0;
-		 	//Make ending start 0
-		 	num_menu->ptxtmenu[0] = 0;
-
-		 	for (i=1; i<clen; i++)
-	        {
-	        	if (num_menu->ptxtmenu[i] == 0xD || num_menu->ptxtmenu[i] == 0xA) num_menu->ptxtmenu[i] = 0;
-	        	if ((num_menu->ptxtmenu[i]) && (!num_menu->ptxtmenu[i-1])) count_item++;
-	        }
-
-		 	ptxt = num_menu->ptxtmenu;
-	 	 	num_menu->bgnmenuy = 0;
-
-	 	 	// Initialize RECT of main window
-            while (!(*ptxt)) ptxt++;
-            ptxt[4] = 0;
-            if (!strcmp(ptxt, "main")){
-            	count_item--;
-                ptxt += 5;
-	            // Parse RECTangle for item
-	            // X
-	            if (*ptxt != 'a') num_menu->rect.x = atoi(ptxt);
-	            else num_menu->rect.x = 0;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // Y
-	            if (*ptxt != 'a') num_menu->rect.y = atoi(ptxt);
-	            else num_menu->rect.y = 0;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // W
-	            if (*ptxt != 'a') num_menu->rect.width = atoi(ptxt);
-	            else num_menu->rect.width = MAIN_WIDTH;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // H
-	            if (*ptxt != 'a') num_menu->rect.height = atoi(ptxt);
-	            else num_menu->rect.height = MAIN_HEIGHT;
-	            while (*ptxt > ' ') ptxt++; ptxt++;
-            }else{
-            	num_menu->rect.x = 0;
-            	num_menu->rect.y = 0;
-            	num_menu->rect.width = MAIN_WIDTH;
-            	num_menu->rect.height = MAIN_HEIGHT;
-            }
-
-            // Initialize keys functions
-            num_menu->keyup = default_up;
-            num_menu->keydown = default_down;
-            num_menu->keyright = default_right;
-            num_menu->keyleft = default_left;
-            num_menu->keyenter = default_enter;
-            ptxt[4] = 0;
-            if (!strcmp(ptxt, "keys")){
-            	count_item--;
-            	ptxt += 5;
-            	p = strstr(ptxt, "up:");
-                if (p){
-                	p += 3;
-                	num_menu->keyup = find_keyname(p);
-                	if (num_menu->keyup == NULL) num_menu->keyup = default_up;
-                	if (num_menu->keyup == (void*) -1) num_menu->keyup = NULL;
-                }
-
-                p = strstr(ptxt, "down:");
-                if (p){
-                	p += 5;
-                	num_menu->keydown = find_keyname(p);
-                	if (num_menu->keydown == NULL) num_menu->keydown = default_down;
-                	if (num_menu->keydown == (void*) -1) num_menu->keydown = NULL;
-                }
-
-        		p = strstr(ptxt, "right:");
-                if (p){
-                	p += 6;
-                	num_menu->keyright = find_keyname(p);
-                	if (num_menu->keyright == NULL) num_menu->keyright = default_right;
-                	if (num_menu->keyright == (void*) -1) num_menu->keyright = NULL;
-                }
-
-        		p = strstr(ptxt, "left:");
-                if (p){
-                	p += 5;
-                	num_menu->keyleft = find_keyname(p);
-                	if (num_menu->keyleft == NULL) num_menu->keyleft = default_left;
-                	if (num_menu->keyleft == (void*) -1) num_menu->keyleft = NULL;
-                }
-
-                p = strstr(ptxt, "enter:");
-                if (p){
-                	p += 6;
-                	num_menu->keyenter = find_keyname(p);
-                	if (num_menu->keyenter == NULL) num_menu->keyenter = default_enter;
-                	if (num_menu->keyenter == (void*) -1) num_menu->keyenter = NULL;
-                }
-
-	            while (*ptxt >= ' ') ptxt++; ptxt++;
-
-            }
-
-		 	num_menu->pitems = malloc(count_item * sizeof(item*));
-
-		 	for (i = 0; i < count_item; i++){
-	            while ((*ptxt) < ' ') ptxt++;
-
-	            num_menu->pitems[i] = (item*) malloc(sizeof(item));
-	            memset(num_menu->pitems[i], sizeof(item), 0);
-	            ptxt[4] = 0;
-	            pitemtype = ptxt;
-	            ptxt += 5;
-	            while (*ptxt == ' ') ptxt++;
-
-	            // Parse RECTangle for item
-	            // X
-	            if (*ptxt != 'a') num_menu->pitems[i]->rect.x = atoi(ptxt);
-	            else num_menu->pitems[i]->rect.x = 0;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // Y
-	            if (*ptxt != 'a') num_menu->pitems[i]->rect.y = atoi(ptxt);
-	            else num_menu->pitems[i]->rect.y = num_menu->pitems[i-1]->rect.y + num_menu->pitems[i-1]->rect.height;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // W
-	            if (*ptxt != 'a') num_menu->pitems[i]->rect.width = atoi(ptxt);
-	            else num_menu->pitems[i]->rect.width = num_menu->rect.width - num_menu->pitems[i]->rect.x;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // H
-	            if (*ptxt != 'a') num_menu->pitems[i]->rect.height = atoi(ptxt);
-	            else num_menu->pitems[i]->rect.height = MENUSTEP;
-	            num_menu->pitems[i]->ctrl_height = num_menu->pitems[i]->rect.height;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
-
-	            // Item type "MENU"
-	            if (!strcmp(pitemtype, "menu")){
-
-	            	num_menu->pitems[i]->prev_item = last_menuitem;
-	            	num_menu->pitems[i]->next_item = first_menuitem;
-	            	num_menu->pitems[(int)last_menuitem]->next_item = i;
-		            num_menu->pitems[i]->text = ptxt;
-		            num_menu->pitems[i]->next_menu = 0;
-	               	num_menu->pitems[i]->action = 0;
-	               	if (dynmenuvars[0]) num_menu->pitems[i]->dynmenuvar = dynmenuvars[count_menu+1];
-	               	else num_menu->pitems[i]->dynmenuvar = 0;
-		            while ((*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
-		            do{
-			            while ((*ptxt != ' ') && (*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
-			            // Spase if border of field in parameters
-			            if (*ptxt == ' '){
-			            	*ptxt = 0;
-			            	ptxt++;
-			            }
-		            	// Set next submenu
-			            if (*ptxt == '>'){
-			            	*ptxt = 0;
-			            	ptxt++;
-			            	num_menu->pitems[i]->next_menu = ptxt;
-			            }
-			            // Set next action for left & right keys
-			            if (*ptxt == '~'){
-			            	*ptxt = 0;
-			            	ptxt++;
-			               	num_menu->pitems[i]->action = ptxt;
-			            }
-		            }while (*ptxt);
-		            last_menuitem = i;
-		            count_menu++;
-	            }
-	            // For fixed first menu point in items
-	            if (!count_menu){
-	            	last_menuitem++;
-	            	first_menuitem++;
-	            }
-
-	            // Item type "TEXT"
-	            if (!strcmp(pitemtype, "text")){
-		            num_menu->pitems[i]->text = ptxt;
-	            	num_menu->pitems[i]->prev_item = first_menuitem;
-	            	num_menu->pitems[i]->next_item = first_menuitem;
-		            num_menu->pitems[i]->next_menu = 0;
-	               	num_menu->pitems[i]->action = 0;
-	               	num_menu->pitems[i]->dynmenuvar = 0;
-		            // menu item included in heigth all lower text field before next menu item
-		            if (count_menu) num_menu->pitems[(int)last_menuitem]->ctrl_height += num_menu->pitems[i]->rect.height;
-	            }
-
-	            ptxt += strlen(ptxt);
-
-	            // IF Fixed text is variable
-	            p = strstr(num_menu->pitems[i]->text, "&var:");
-	            if (p){
-	            	*p = 0;
-	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(p, actlnode, NULL);
-	            	while ((*p != ' ') && (*p)) p++;
-	            	num_menu->pitems[i]->endtext = p;
-	            }else{
-	            	num_menu->pitems[i]->vr = NULL;
-	            	num_menu->pitems[i]->endtext = NULL;
-	            }
-
-	         }
-
-	         num_menu->pitems[(int) first_menuitem]->prev_item = last_menuitem;
-	         num_menu->num_item = first_menuitem;
-	         num_menu->first_item = first_menuitem;
-	         num_menu->start_item = first_menuitem;
-	         num_menu->count_item = count_item;
-	         num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->first_item]->rect.y;
-     return 0;
-}
 //------------------------------------------------------------------------------------
 // Function create new text in all windows
 static char wintext[40];
@@ -508,25 +191,6 @@ int stepy, y, itemy, itemh;
 	}
 }
 
-// -----------------------------------------------------------------------------------
-// Full delete menu (num_menu) from memory
-static void destroy_menu()
-{
-int i;
-
-	for (i=0; i < num_menu->count_item; i++){
-		GrUnmapWindow(num_menu->pitems[i]->main_window);
-		GrDestroyWindow(num_menu->pitems[i]->main_window);
-		free(num_menu->pitems[i]);
-		num_menu->pitems[i] = 0;
-	}
-	GrUnmapWindow(num_menu->main_window);
-	GrDestroyWindow(num_menu->main_window);
-	free(num_menu->ptxtmenu);
-	free(num_menu);
-	num_menu = 0;
-}
-
 //-----------------------------------------------------------------------------------------------------------
 // Refresh all variables in all items of menu
 // Call after change global variables has synonym
@@ -547,7 +211,8 @@ char *pmenu;
 
 	pmenu = create_dynmenu(menuname, &parameters);
 	if (pmenu){
-		if (do_openfilemenu(pmenu, MENUMEM)) do_openfilemenu("menus/item", MENUFILE);
+		num_menu = do_openfilemenu(actlnode, pmenu, MENUMEM);
+		if (!num_menu) num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
 	}
 	draw_menu();
 }
@@ -599,14 +264,14 @@ int itemy, itemh;
 
 void default_enter(GR_EVENT *event){
 
-	if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
-		// Set var into pointer dynmenuvar as value in actual item
-		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
-		// and refresh all values (temporary solution)
-		call_action(0xf801, "changetypeln", &parameters);
-		call_action(0xf800, "changetypeln", &parameters);
-		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
-	}
+//	if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
+//		// Set var into pointer dynmenuvar as value in actual item
+//		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+//		// and refresh all values (temporary solution)
+//		call_action(0xf801, "changetypeln", &parameters);
+//		call_action(0xf800, "changetypeln", &parameters);
+//		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
+//	}
 
 	// Select new menu
 	prev_item = num_menu->num_item;
@@ -614,8 +279,9 @@ void default_enter(GR_EVENT *event){
 		strcpy(newmenu, "menus/");
 		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 		destroy_menu();
-		dynmenuvars[0] = 0;
-		if (!do_openfilemenu(newmenu, MENUFILE)){
+//		dynmenuvars[0] = 0;
+		num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
+		if (!num_menu){
 			draw_menu();
 		}else call_dynmenu(newmenu);
 	}
@@ -669,10 +335,11 @@ GR_EVENT *event = (GR_EVENT*) arg;
 
 	case 0x1B:		// Key MENU / ESC
 					destroy_menu();
-					if (!do_openfilemenu("menus/item", MENUFILE)){
+					num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
+					if (!num_menu){
+//						draw_menu();
+						num_menu->num_item = prev_item;
 						draw_menu();
-						num_menu->num_item = prev_item;	draw_menu();
-
 					}
 					break;
 
@@ -714,7 +381,7 @@ struct tm *ttm;
 	// Start LN ready
 
 	// Open first menu
-	do_openfilemenu("menus/item", MENUFILE);
+	num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
 	draw_menu();
 
     return 0;

@@ -15,6 +15,24 @@
 #define MENUMEM		2
 #define MENUSTEP	16
 
+#define MAIN_WIDTH 160     //параметры главного окна
+#define MAIN_HEIGHT 160
+
+#define WIDTH 160          //параметры окна пункта меню
+#define HEIGHT MENUSTEP
+
+#define FONT_WIDTH 7
+#define FONT_HEIGHT 13
+
+#define BLACK MWRGB( 0  , 0  , 0   )
+#define WHITE MWRGB( 255, 255, 255 )
+
+#define FGCOLOR	BLACK
+#define BGCOLOR	WHITE
+#define FONTNAME "pcf/7x13.pcf.gz"
+
+#define MAXMENU 5
+
 typedef struct _item{
 	GR_WINDOW_ID main_window;
 	GR_RECT rect;
@@ -59,6 +77,9 @@ extern void key_rised(void *arg);
 
 extern int call_action(int direct, char *act, void *arg);
 extern char* create_dynmenu(char *menuname, void *arg);
+
+extern menu* do_openfilemenu(LNODE *actlnode, char *buf, int type);
+extern void destroy_menu(void);
 
 //void SetNewMenu();
 //void SetMainMenu();
