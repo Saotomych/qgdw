@@ -25,7 +25,7 @@ static menu *num_menu;     //указатель на структуру меню
 
 static char newmenu[40];			// For temporary operations
 
-static int *dynmenuvars[40];	// Pointers to variables according to the menu item
+static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu item
 
 static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
@@ -49,7 +49,7 @@ value defvalues[] = {
 // Function create new text in all windows
 static char wintext[40];
 static void do_paint(item *pitem, int fg, int bg){
-GR_GC_ID gc = GrNewGC();
+GR_GC_ID gc;
 GR_WINDOW_ID *main_window = &(pitem->main_window);
 GR_WINDOW_INFO winfo;
 
@@ -285,22 +285,13 @@ int itemy, itemh;
 
 void default_enter(GR_EVENT *event){
 
-//	if (num_menu->pitems[num_menu->num_item]->dynmenuvar){
-//		// Set var into pointer dynmenuvar as value in actual item
-//		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
-//		// and refresh all values (temporary solution)
-//		call_action(0xf801, "changetypeln", &parameters);
-//		call_action(0xf800, "changetypeln", &parameters);
-//		*dynmenuvars[0] = (int) num_menu->pitems[num_menu->num_item]->dynmenuvar;
-//	}
-
 	if (dynmenuvars[num_menu->num_item]){
 		// Set var into pointer dynmenuvar as value in actual item
-		*dynmenuvars[0] = dynmenuvars[num_menu->num_item];
+		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item];
 		// and refresh all values (temporary solution)
 		call_action(0xf801, "changetypeln", &parameters);
 		call_action(0xf800, "changetypeln", &parameters);
-		*dynmenuvars[0] = dynmenuvars[num_menu->num_item];
+		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item];
 	}
 
 	// Select new menu
@@ -309,7 +300,7 @@ void default_enter(GR_EVENT *event){
 		strcpy(newmenu, "menus/");
 		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
 		destroy_menu();
-		dynmenuvars[0] = 0;
+		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
 		if (num_menu){
 			draw_menu();
@@ -321,7 +312,7 @@ void default_enter(GR_EVENT *event){
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
 void redraw_screen(void *arg){
-    int i;
+int i;
 
 	for (i = 0; i < num_menu->count_item; i++){
 		do_paint(num_menu->pitems[i], FGCOLOR, BGCOLOR);
@@ -363,6 +354,7 @@ GR_EVENT *event = (GR_EVENT*) arg;
 					break;
 
 	case 0x1B:		// Key MENU / ESC
+					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 					destroy_menu();
 					num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
 					if (num_menu){

@@ -32,6 +32,7 @@
 #define FONTNAME "pcf/7x13.pcf.gz"
 
 #define MAXMENU 5
+#define MAXITEM 40
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;
