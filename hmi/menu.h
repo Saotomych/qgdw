@@ -81,14 +81,10 @@ extern void key_pressed(void *arg);
 extern void key_rised(void *arg);
 
 extern int call_action(int direct, char *act, void *arg);
-extern char* create_dynmenu(char *menuname, void *arg);
+extern char* create_menu(char *menuname, void *arg);
 
 extern menu* do_openfilemenu(LNODE *actlnode, char *buf, int type);
 extern menu* destroy_menu(int direct);
-//void SetNewMenu();
-//void SetMainMenu();
-//void HintDraw();
-//void EnInfoDraw();
 
 #endif
 

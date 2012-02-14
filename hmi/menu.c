@@ -14,14 +14,24 @@
 #include "menu.h"
 
 static LNODE *actlnode;
-static time_t time_l;
-static struct tm time_tm;
-
-static time_t acttime;
+static time_t maintime;		// Actual Time
+static time_t backtime;		// Backup Time for ESC from date menu and time menu
+static time_t time_l;		// Time for list setting
+static struct tm mtime_tm;	// Time for convert of time_l
+static struct tm jtime_tm;	// Time for convert of time_l
+static char *pmwday;				// Text for weekday, actual
+static char *pjwday;				// Text for weekday, journal
+static char *pmmon;				// Text for month, actual
+static char *pjmon;				// Text for month, journal
+static char mmon[3];				// Digit month as string for zero previous, actual
+static char jmon[3];				// Digit month as string for zero previous, journal
+static char mday[3];				// Digit day as string for zero previous, actual
+static char jday[3];				// Digit day as string for zero previous, journal
+static int myear;				// Year actual
+static int jyear;				// Year journal
 
 //static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
-
 
 static char newmenu[40];			// For temporary operations
 
@@ -40,6 +50,21 @@ struct _parameters{
 
 
 value defvalues[] = {
+		// Time variables
+		{"APP:year", &(mtime_tm.tm_year), "XXXX", INT32, STRING},
+		{"APP:mon", &(mtime_tm.tm_mon), "XX", INT32, STRING},
+		{"APP:day", &(mtime_tm.tm_mday), "XX", INT32, STRING},
+		{"APP:wday", &(mtime_tm.tm_wday), "XX", INT32, STRING},
+		{"APP:hour", &(mtime_tm.tm_hour), "XX", INT32, STRING},
+		{"APP:min", &(mtime_tm.tm_min), "XX", INT32, STRING},
+		{"APP:sec", &(mtime_tm.tm_sec), "XX", INT32, STRING},
+		{"APP:jyear", &(jtime_tm.tm_year), "XXXX", INT32, STRING},
+		{"APP:jmon", &(jtime_tm.tm_mon), "XX", INT32, STRING},
+		{"APP:jday", &(jtime_tm.tm_mday), "XX", INT32, STRING},
+		{"APP:jwday", &(jtime_tm.tm_wday), "XX", INT32, STRING},
+		{"APP:jhour", &(jtime_tm.tm_hour), "XX", INT32, STRING},
+		{"APP:jmin", &(jtime_tm.tm_min), "XX", INT32, STRING},
+		// IEC variables
 		{"APP:ldtypetext", &devtypetext, "Тип не выбран", PTRSTRING , STRING},
 };
 
@@ -373,7 +398,6 @@ int itemy, itemh, i;
 		destroy_menu(DIR_SIDEBKW);
 		call_dynmenu("date");
 		if (num_menu) draw_menu();
-
 	}else{
 		// Days
 		if (num_menu->pitems[num_menu->num_item]->rect.y ==
@@ -442,6 +466,13 @@ int itemy, itemh, i;
 
 		redraw_screen(NULL);
 	}
+
+}
+
+void date_enter(GR_EVENT *event){
+
+	num_menu = destroy_menu(DIR_BACKWARD);
+	if (num_menu) refresh_vars();
 
 }
 
@@ -526,8 +557,10 @@ struct tm *ttm;
 
 	// Set actual time in vars
 	time_l = time(NULL);
+	maintime = time(NULL);
 	ttm	= localtime(&time_l);
-	memcpy(&time_tm, ttm, sizeof(struct tm));
+	memcpy(&jtime_tm, ttm, sizeof(struct tm));
+	memcpy(&mtime_tm, ttm, sizeof(struct tm));
 
 	// Set of parameters for all variable menu and action functions
 	actlnode = (LNODE*) (fln.next);

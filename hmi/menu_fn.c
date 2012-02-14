@@ -155,7 +155,7 @@ int i, x, y, maxday, wday, day;
     // Months and years
 	sprintf(pmenu, "main 10 0 140 130\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys up:dateup down:datedown right:dateright left:dateleft\n");
+	sprintf(pmenu, "keys up:dateup down:datedown right:dateright left:dateleft enter:dateenter\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
 	pmenu += strlen(pmenu);
@@ -208,18 +208,18 @@ char *ptxt;
 
 // Array of structs "synonym to function"
 fact menufactset[] = {
-		{"lnmenu", (void*) ChangeLN},
-		{"lntypemenu", (void*) ChangeLNType},
-		{"date", (void*) ChangeDate},
-		{"interval", (void*) ChangeIntl},
-		{"tarif", (void*) ChangeTarif},
+		{"lnmenu", (void*) ChangeLN, NULL},
+		{"lntypemenu", (void*) ChangeLNType, NULL},
+		{"date", (void*) ChangeDate, NULL},
+		{"interval", (void*) ChangeIntl, NULL},
+		{"tarif", (void*) ChangeTarif, NULL},
 };
 
 //---*** External IP ***---//
 
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
-char* create_dynmenu(char *menuname, void *arg){
+char* create_menu(char *menuname, void *arg){
 char *pmenu;
 int i;
 
@@ -230,7 +230,7 @@ int i;
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
 			pmenu = 0;
-			pmenu = (char *) menufactset[i].func(arg);
+			pmenu = (char*) menufactset[i].proloque(arg);
 			break;
 		}
 	}
