@@ -94,11 +94,8 @@ menu *num_menu = allmenus[maxmenus];
 							num_menu->ptxtmenu =  malloc(fst.st_size + 2); // +2 it's first byte as return and last byte as return
 						 	fmcfg = fopen(buf, "r");
 						 	clen = fread((num_menu->ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
-						 	if (!clen){
-						 		free(num_menu);
-						 		return 0;
-						 	}
-						 	if (clen != fst.st_size){
+						 	if ((!clen) || (clen != fst.st_size)){
+						 		free(num_menu->ptxtmenu);
 						 		free(num_menu);
 						 		return 0;
 						 	}
@@ -349,6 +346,7 @@ menu *num_menu;
 
 	if (!maxmenus) return 0;
 	if (direct == DIR_FORWARD) return 0;	// Never closing lower window
+	if ((direct == DIR_BACKWARD) && (maxmenus == 1)) return allmenus[0];
 
 	num_menu = allmenus[maxmenus-1];
 

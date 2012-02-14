@@ -52,6 +52,7 @@ static void do_paint(item *pitem, int fg, int bg){
 GR_GC_ID gc;
 GR_WINDOW_ID *main_window = &(pitem->main_window);
 GR_WINDOW_INFO winfo;
+int len = sizeof(wintext) - 1;
 
 			GrGetWindowInfo(*main_window, &winfo);
 
@@ -75,21 +76,27 @@ GR_WINDOW_INFO winfo;
 				}
 
 				if (pitem->vr->prop & STRING){
-					strcpy(wintext, pitem->text);
+					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
+					len -= strlen(wintext);
 					if ((pitem->vr) && (pitem->vr->val)){
-						if (pitem->vr->val->val) strcat(wintext, (char*) pitem->vr->val->val);
-						else if (pitem->vr->val->defval) strcat(wintext, (char*) pitem->vr->val->defval);
+						if (pitem->vr->val->val) strncat(wintext, (char*) pitem->vr->val->val, len);
+						else if (pitem->vr->val->defval) strncat(wintext, (char*) pitem->vr->val->defval, len);
 					}
-					if (pitem->endtext) strcat(wintext, pitem->endtext);
+					len = sizeof(wintext) - 1 - strlen(wintext);
+					if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
+					wintext[sizeof(wintext) - 1] = 0;
 				}
 
 				if (pitem->vr->prop & PTRSTRING){
-					strcpy(wintext, pitem->text);
+					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
+					len -= strlen(wintext);
 					if ((pitem->vr) && (pitem->vr->val)){
-						if (pitem->vr->val->val) strcat(wintext, (char*) *((int*) pitem->vr->val->val));
-						else if (pitem->vr->val->defval) strcat(wintext, (char*) pitem->vr->val->defval);
+						if (pitem->vr->val->val) strncat(wintext, (char*) *((int*) pitem->vr->val->val), len);
+						else if (pitem->vr->val->defval) strncat(wintext, (char*) pitem->vr->val->defval, len);
 					}
-					if (pitem->endtext) strcat(wintext, pitem->endtext);
+					len = sizeof(wintext) - 1 - strlen(wintext);
+					if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
+					wintext[sizeof(wintext) - 1] = 0;
 				}
 
 				GrText(*main_window, gc, 2, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
@@ -149,7 +156,7 @@ static void draw_menu()
 										   num_menu->pitems[i]->rect.y,
 										   num_menu->pitems[i]->rect.width,
 										   num_menu->pitems[i]->rect.height,
-										   0, BLACK, WHITE);
+										   0, WHITE, WHITE);
 
 				props.flags = GR_WM_FLAGS_PROPS;
 				props.props = GR_WM_PROPS_BORDER;
@@ -287,13 +294,13 @@ int itemy, itemh;
 void default_enter(GR_EVENT *event){
 int dir = DIR_FORWARD;
 
-	if (dynmenuvars[num_menu->num_item]){
+	if (dynmenuvars[num_menu->num_item + 1]){
 		// Set var into pointer dynmenuvar as value in actual item
-		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item];
+		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
 		// and refresh all values (temporary solution)
 		call_action(0xf801, "changetypeln", &parameters);
 		call_action(0xf800, "changetypeln", &parameters);
-		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item];
+		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
 		// From dynamic menu - backward
 		dir = DIR_BACKWARD;
 	}
@@ -310,8 +317,7 @@ int dir = DIR_FORWARD;
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		if (dir == DIR_FORWARD){
 			num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
-			if (num_menu) draw_menu();
-			else call_dynmenu(newmenu);
+			if (!num_menu) call_dynmenu(newmenu);
 			if (num_menu) draw_menu();
 		}
 	}
@@ -338,6 +344,7 @@ int i;
 // MENU it's return to previous menu without changes forever
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
+int i;
 
 	switch(event->keystroke.ch){
 
@@ -372,6 +379,8 @@ GR_EVENT *event = (GR_EVENT*) arg;
 //							num_menu->num_item = prev_item;
 							draw_menu();
 						}
+					}else{
+						redraw_screen(NULL);
 					}
 					break;
 
