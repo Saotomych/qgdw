@@ -13,7 +13,8 @@
 #include "../common/iec61850.h"
 #include "menu.h"
 
-static LNODE *actlnode;
+LNODE *actlnode;			// Global variable, change in menu only
+
 static time_t maintime;		// Actual Time
 static time_t backtime;		// Backup Time for ESC from date menu and time menu
 static time_t time_l;		// Time for list setting
@@ -255,7 +256,7 @@ static void refresh_vars(void){
 int i;
 	for (i = 0; i < num_menu->count_item; i++){
 		if (num_menu->pitems[i]->vr){
-			num_menu->pitems[i]->vr = vc_addvarrec(num_menu->pitems[i]->vr->name->fc, actlnode, num_menu->pitems[i]->vr);
+			num_menu->pitems[i]->vr = vc_addvarrec(num_menu->pitems[i]->vr->name->fc, num_menu->pitems[i]->vr);
 		}
 	}
 }
@@ -266,11 +267,7 @@ int i;
 static void call_dynmenu(char *menuname){
 char *pmenu;
 
-	pmenu = create_menu(menuname, &parameters);
-	if (pmenu){
-		num_menu = do_openfilemenu(actlnode, pmenu, MENUMEM);
-		if (!num_menu) num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
-	}
+	num_menu = create_menu(menuname, &parameters);
 }
 
 //-------------------------------------------------------------------------------
@@ -343,8 +340,7 @@ int dir = DIR_FORWARD;
 		}
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		if (dir == DIR_FORWARD){
-			num_menu = do_openfilemenu(actlnode, newmenu, MENUFILE);
-			if (!num_menu) call_dynmenu(newmenu);
+			num_menu = create_menu(newmenu, &parameters);
 			if (num_menu) draw_menu();
 		}
 	}
@@ -529,12 +525,8 @@ int i;
 					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 					num_menu = destroy_menu(DIR_BACKWARD);
 					if (!num_menu){
-						num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
-						if (num_menu){
-//							draw_menu();
-//							num_menu->num_item = prev_item;
-							draw_menu();
-						}
+						num_menu = create_menu("menus/item", NULL);
+						if (num_menu) draw_menu();
 					}else{
 						redraw_screen(NULL);
 					}
@@ -584,8 +576,8 @@ struct tm *ttm;
 	// Start LN ready
 
 	// Open first menu
-	num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);
-	draw_menu();
+	num_menu = create_menu("menus/item", NULL);
+	if (num_menu) draw_menu();
 
     return 0;
 }

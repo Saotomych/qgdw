@@ -11,6 +11,8 @@
 #include "asdu.h"
 #include "varcontrol.h"
 
+extern LNODE *actlnode;
+
 static LIST fdefvt   = {NULL, NULL};		// first  varrec
 
 static LIST fvarbook = {NULL, NULL};		// first varbook for future
@@ -76,7 +78,8 @@ varrec *defvt;		// actual varrec
 // To book concrete variable by name
 // Input data: name of variable
 // Return pointer to value record and properties
-varrec *vc_addvarrec(char *varname, LNODE *actln, varrec *actvr){
+varrec *vc_addvarrec(char *varname, varrec *actvr){
+LNODE *actln = actlnode;
 int i;
 varrec *vr;
 struct _IED *pied;

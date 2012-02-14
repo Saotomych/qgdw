@@ -71,16 +71,14 @@ char *bgnp = p;
 // Fill items by begin graphic information
 // In: file or string array with string as <type> <X> <Y> <Width> <Height> <Fix text with variables> <'>'submenu> <'~'action>
 // Out: num_menu pointer and all connected pointers are ready for next work
-menu* do_openfilemenu(LNODE *actlnode, char *buf, int type){
+menu* do_openfilemenu(char *buf){
 char *pitemtype;			// pointer to actual <type>
 char *ptxt;					// temporary text pointer
-FILE *fmcfg;               //file open
-struct stat fst;			// statistics of file
-int clen;					// lenght of file or array
 int count_item = 0;			// max number of items
 int count_menu = 0;			// max number of items as menu type
 char last_menuitem = 0;		// number of last item as menu type
 char first_menuitem = 0;	// number of first item as menu type
+int clen;
 
 int i;
 char *p;
@@ -91,38 +89,14 @@ menu *num_menu = allmenus[maxmenus];
 
 			num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
 
-    		switch(type){
-
-			case MENUFILE:
-
-							if (stat(buf, &fst) == -1){
-								printf("IEC Virt: menufile not found\n");
-								free(num_menu);
-								return 0;
-							}
-
-							num_menu->ptxtmenu =  malloc(fst.st_size + 2); // +2 it's first byte as return and last byte as return
-						 	fmcfg = fopen(buf, "r");
-						 	clen = fread((num_menu->ptxtmenu+1), 1, (size_t) (fst.st_size), fmcfg);
-						 	if ((!clen) || (clen != fst.st_size)){
-						 		free(num_menu->ptxtmenu);
-						 		free(num_menu);
-						 		return 0;
-						 	}
-						 	break;
-
-			case MENUMEM:
-							clen = strlen(buf);
-						 	if (!clen){
-						 		free(num_menu);
-						 		return 0;
-						 	}
-
-						 	num_menu->ptxtmenu = malloc(clen + 2);
-						 	strcpy((num_menu->ptxtmenu+1), buf);
-						 	break;
+			clen = strlen(buf);
+			if (!clen){
+				free(num_menu);
+				return 0;
 			}
 
+			num_menu->ptxtmenu = malloc(clen + 2);
+			strcpy((num_menu->ptxtmenu+1), buf);
 
 		 	//Make ending 0 for string
 		 	num_menu->ptxtmenu[clen+1] = 0;
@@ -324,7 +298,7 @@ menu *num_menu = allmenus[maxmenus];
 	            if (p){
 	            	*p = 0;
 	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(p, actlnode, NULL);
+	            	num_menu->pitems[i]->vr = vc_addvarrec(p, NULL);
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{

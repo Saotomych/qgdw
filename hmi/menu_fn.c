@@ -10,6 +10,8 @@
 #include "hmi.h"
 #include "menu.h"
 
+extern menu* do_openfilemenu(char *buf);
+
 static struct _mons{
 	char *meng;
 	char *mrus;
@@ -219,10 +221,28 @@ fact menufactset[] = {
 
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
-char* create_menu(char *menuname, void *arg){
+
+menu* create_menu(char *menuname, void *arg){
+FILE *fmcfg;               //file open
+struct stat fst;			// statistics of file
+int clen;					// lenght of file or array
+
 char *pmenu;
+menu *psmenu;
 int i;
 
+	// Stat of file
+
+	if (stat(menuname, &fst) == -1){
+		printf("IEC Virt: menufile not found\n");
+	}
+
+	// Load file to static buffer
+ 	fmcfg = fopen(menuname, "r");
+ 	clen = fread(menutxt, 1, (size_t) (fst.st_size), fmcfg);
+	if ((!clen) || (clen != fst.st_size)) return 0;
+
+	// Find and run proloque
 	pmenu = strstr(menuname,"/");
 	if (pmenu) pmenu++;
 	else pmenu = menuname;
@@ -235,6 +255,12 @@ int i;
 		}
 	}
 
-	return pmenu;
+	// Create menu structures
+	if (pmenu){
+		psmenu = do_openfilemenu(pmenu);
+		if (!psmenu) psmenu = do_openfilemenu("menus/item");
+	}
+
+	return psmenu;
 }
 
