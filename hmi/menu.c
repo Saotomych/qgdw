@@ -23,10 +23,6 @@ static char *pmwday;				// Text for weekday, actual
 static char *pjwday;				// Text for weekday, journal
 static char *pmmon;				// Text for month, actual
 static char *pjmon;				// Text for month, journal
-static char mmon[3];				// Digit month as string for zero previous, actual
-static char jmon[3];				// Digit month as string for zero previous, journal
-static char mday[3];				// Digit day as string for zero previous, actual
-static char jday[3];				// Digit day as string for zero previous, journal
 static int myear;				// Year actual
 static int jyear;				// Year journal
 
@@ -40,6 +36,28 @@ static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu
 static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
 
+value defvalues[] = {
+		// Time variables
+		{"APP:year", 	&myear, 			"XXXX", 	INT32, 		STRING},
+		{"APP:montext", &pmmon, 			"XX", 		PTRSTRING, 	STRING},	// Month as full text
+		{"APP:mondig", 	&(mtime_tm.tm_mon), "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{"APP:day",  	&(mtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},	// Day as digit with zero
+		{"APP:wday", 	&pmwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text (2 symbols)
+		{"APP:hour", 	&(mtime_tm.tm_hour),"XX", 		INT32DIG2, 	STRING},
+		{"APP:min", 	&(mtime_tm.tm_min), "XX", 		INT32DIG2, 	STRING},
+		{"APP:sec", 	&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
+		{"APP:jyear", 	&jyear, 			"XXXX", 	INT32, 		STRING},
+		{"APP:jmontext",&pjmon, 			"XX", 		PTRSTRING, 	STRING},
+		{"APP:jmondig", &(jtime_tm.tm_mon), "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{"APP:jday", 	&(jtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},
+		{"APP:jwday", 	&pjwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text
+		{"APP:jhour", 	&(jtime_tm.tm_hour),"XX", 		INT32DIG2,	STRING},
+		{"APP:jmin", 	&(jtime_tm.tm_min), "XX", 		INT32DIG2,	STRING},
+		{"APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
+		// IEC variables
+		{"APP:ldtypetext", &devtypetext,  "Тип не выбран", PTRSTRING , STRING},
+};
+
 struct _parameters{
 	LNODE *pln;			// Address of pointer of actlnode
 	char  *devtype;		// Pointer to lnodefilter
@@ -47,27 +65,6 @@ struct _parameters{
 	int	  *dynmenuvars;	// Pointer to variable for changing by actual dynamic menu
 	time_t *ptimel;		// Pointer to time as time_t type
 } parameters;
-
-
-value defvalues[] = {
-		// Time variables
-		{"APP:year", &(mtime_tm.tm_year), "XXXX", INT32, STRING},
-		{"APP:mon", &(mtime_tm.tm_mon), "XX", INT32, STRING},
-		{"APP:day", &(mtime_tm.tm_mday), "XX", INT32, STRING},
-		{"APP:wday", &(mtime_tm.tm_wday), "XX", INT32, STRING},
-		{"APP:hour", &(mtime_tm.tm_hour), "XX", INT32, STRING},
-		{"APP:min", &(mtime_tm.tm_min), "XX", INT32, STRING},
-		{"APP:sec", &(mtime_tm.tm_sec), "XX", INT32, STRING},
-		{"APP:jyear", &(jtime_tm.tm_year), "XXXX", INT32, STRING},
-		{"APP:jmon", &(jtime_tm.tm_mon), "XX", INT32, STRING},
-		{"APP:jday", &(jtime_tm.tm_mday), "XX", INT32, STRING},
-		{"APP:jwday", &(jtime_tm.tm_wday), "XX", INT32, STRING},
-		{"APP:jhour", &(jtime_tm.tm_hour), "XX", INT32, STRING},
-		{"APP:jmin", &(jtime_tm.tm_min), "XX", INT32, STRING},
-		// IEC variables
-		{"APP:ldtypetext", &devtypetext, "Тип не выбран", PTRSTRING , STRING},
-};
-
 
 //------------------------------------------------------------------------------------
 // Function create new text in all windows
@@ -93,6 +90,10 @@ int len = sizeof(wintext) - 1;
 //				if (pitem->vr->prop & ISTRUE)
 				if (pitem->vr->prop & INT32){
 					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
+				}
+
+				if (pitem->vr->prop & INT32DIG2){
+					sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
 				if (pitem->vr->prop & INT64){
@@ -263,7 +264,7 @@ int i;
 static void call_dynmenu(char *menuname){
 char *pmenu;
 
-	pmenu = create_dynmenu(menuname, &parameters);
+	pmenu = create_menu(menuname, &parameters);
 	if (pmenu){
 		num_menu = do_openfilemenu(actlnode, pmenu, MENUMEM);
 		if (!num_menu) num_menu = do_openfilemenu(actlnode, "menus/item", MENUFILE);

@@ -36,18 +36,21 @@ static value defvalues[] = {
 		{"APP:SerNum", NULL, NULL, STRING, 0},
 		// Time variables
 		{"APP:year", NULL, NULL, 0, 0},
-		{"APP:mon", NULL, NULL, 0, 0},
+		{"APP:montext", NULL, NULL, 0, 0},
+		{"APP:mondig", NULL, NULL, 0, 0},
 		{"APP:day", NULL, NULL, 0, 0},
 		{"APP:wday", NULL, NULL, 0, 0},
 		{"APP:hour", NULL, NULL, 0, 0},
 		{"APP:min", NULL, NULL, 0, 0},
 		{"APP:sec", NULL, NULL, 0, 0},
 		{"APP:jyear", NULL, NULL, 0, 0},
-		{"APP:jmon", NULL, NULL, 0, 0},
+		{"APP:jmontext", NULL, NULL, 0, 0},
+		{"APP:jmondig", NULL, NULL, 0, 0},
 		{"APP:jday", NULL, NULL, 0, 0},
 		{"APP:jwday", NULL, NULL, 0, 0},
 		{"APP:jhour", NULL, NULL, 0, 0},
 		{"APP:jmin", NULL, NULL, 0, 0},
+		{"APP:jsec", NULL, NULL, 0, 0},
 		// IEC variables
 		{"APP:ldtypetext", NULL, NULL, 0 ,0},
 };

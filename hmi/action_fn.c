@@ -119,10 +119,10 @@ int i;
 
 // Array of structures "synonym to function"
 fact actfactset[] = {
-		{"changeln", (void*) prev_ln},      			// for left
-		{"changeln", (void*) next_ln},					// for right
-		{"changetypeln", (void*) prev_type_ln},			// for left
-		{"changetypeln", (void*) next_type_ln},			// for right
+		{"changeln", (void*) prev_ln, NULL},      			// for left
+		{"changeln", (void*) next_ln, NULL},					// for right
+		{"changetypeln", (void*) prev_type_ln, NULL},			// for left
+		{"changetypeln", (void*) next_type_ln, NULL},			// for right
 };
 
 //---*** External IP ***---//
@@ -134,14 +134,14 @@ int i;
 	case 0xf800:
 				 for (i=0; i < sizeof(actfactset) / sizeof(fact); i+=2){
 					if (!strcmp(actfactset[i].action, act)){
-						ret = actfactset[i].func(arg);
+						ret = actfactset[i].proloque(arg);
 					}
 				 }
 				 break;
 	case 0xf801:
 				 for (i=1; i < (sizeof(actfactset) / sizeof(fact)); i+=2){
 					 if (!strcmp(actfactset[i].action, act)){
-						 ret = actfactset[i].func(arg);
+						 ret = actfactset[i].proloque(arg);
 					 }
 				 }
 				 break;

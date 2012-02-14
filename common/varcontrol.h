@@ -19,6 +19,7 @@
 // Types
 #define STRING		1
 #define INT32		2
+#define INT32DIG2	3
 #define INT64		4
 #define PTRSTRING	8
 #define PTRINT32	0x10
