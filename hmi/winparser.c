@@ -21,6 +21,10 @@ extern void default_right(GR_EVENT *event);
 extern void default_up(GR_EVENT *event);
 extern void default_down(GR_EVENT *event);
 extern void default_enter(GR_EVENT *event);
+extern void date_left(GR_EVENT *event);
+extern void date_right(GR_EVENT *event);
+extern void date_up(GR_EVENT *event);
+extern void date_down(GR_EVENT *event);
 
 struct _kt {
 	char *funcname;
@@ -32,6 +36,10 @@ struct _kt {
 		{"defup", default_up},
 		{"defdown", default_down},
 		{"defenter", default_enter},
+		{"dateleft", date_left},
+		{"dateright", date_right},
+		{"dateup", date_up},
+		{"datedown", date_down},
 		{"", NULL},
 };
 

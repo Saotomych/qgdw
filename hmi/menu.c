@@ -36,7 +36,6 @@ struct _parameters{
 	char  *devtypetext;	// Pointer to lnodefilter text description
 	int	  *dynmenuvars;	// Pointer to variable for changing by actual dynamic menu
 	time_t *ptimel;		// Pointer to time as time_t type
-	struct tm *ptimetm;	// Pointer to time as struct tm type
 } parameters;
 
 
@@ -323,6 +322,129 @@ int dir = DIR_FORWARD;
 	}
 }
 
+void date_left(GR_EVENT *event){
+struct tm *ttm;
+int itemy, itemh, i;
+
+	if (!num_menu->num_item){
+		// Month
+		ttm	= localtime(&time_l);
+		if (ttm->tm_mon) ttm->tm_mon--;
+		else { ttm->tm_mon = 11; ttm->tm_year--;}
+		time_l = mktime(ttm);
+		destroy_menu(DIR_SIDEBKW);
+		call_dynmenu("date");
+		if (num_menu) draw_menu();
+
+	}else{
+		// Days
+		if (num_menu->pitems[num_menu->num_item]->rect.y ==
+			num_menu->pitems[num_menu->pitems[num_menu->num_item]->prev_item]->rect.y)
+					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
+		else{
+			for (i=0; i<6; i++){
+				if (num_menu->pitems[num_menu->num_item]->rect.y ==
+					num_menu->pitems[num_menu->pitems[num_menu->num_item]->next_item]->rect.y)
+						num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
+				else break;
+			}
+		}
+
+		itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+		itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+		if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
+
+		redraw_screen(NULL);
+	}
+
+}
+
+void date_right(GR_EVENT *event){
+struct tm *ttm;
+int itemy, itemh, i;
+
+	if (!num_menu->num_item){
+		// Month
+		ttm	= localtime(&time_l);
+		if (ttm->tm_mon < 11) ttm->tm_mon++;
+		else { ttm->tm_mon = 0; ttm->tm_year++;}
+		time_l = mktime(ttm);
+		destroy_menu(DIR_SIDEBKW);
+		call_dynmenu("date");
+		if (num_menu) draw_menu();
+
+	}else{
+		// Days
+		if (num_menu->pitems[num_menu->num_item]->rect.y ==
+			num_menu->pitems[num_menu->pitems[num_menu->num_item]->next_item]->rect.y)
+					num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
+		else{
+			for (i=0; i<6; i++){
+				if (num_menu->pitems[num_menu->num_item]->rect.y ==
+					num_menu->pitems[num_menu->pitems[num_menu->num_item]->prev_item]->rect.y)
+						num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
+				else break;
+			}
+		}
+
+		itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+		itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+		if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
+
+		redraw_screen(NULL);
+	}
+
+}
+
+void date_up(GR_EVENT *event){
+int itemy, itemh, i;
+	if (!num_menu->num_item){
+		// Month
+		default_up(event);
+	}else{
+		// For days
+		for (i=0; i<7; i++){
+			if (num_menu->num_item > num_menu->pitems[num_menu->num_item]->prev_item)
+					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
+			else
+					{num_menu->num_item = 0; break;}
+		}
+		itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+		itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+		if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
+
+		redraw_screen(NULL);
+
+	}
+}
+
+void date_down(GR_EVENT *event){
+int itemy, itemh, i;
+
+	if (!num_menu->num_item){
+		// Month
+		default_down(event);
+	}else{
+		// Days
+		for (i=0; i<7; i++){
+			if (num_menu->num_item < num_menu->pitems[num_menu->num_item]->next_item)
+					num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
+			else
+					{num_menu->num_item = 0; break;}
+		}
+		itemy = num_menu->pitems[num_menu->num_item]->rect.y;
+		itemh = num_menu->pitems[num_menu->num_item]->rect.height;
+
+		if ((itemy > (num_menu->rect.height-10)) || (itemy < (num_menu->bgnmenuy - 10))) redraw_menu(0);
+
+		redraw_screen(NULL);
+	}
+
+}
+
 //--------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
@@ -414,7 +536,6 @@ struct tm *ttm;
 	parameters.devtypetext = (char*) &devtypetext;
 	parameters.dynmenuvars = (int*) dynmenuvars;
 	parameters.ptimel = &time_l;
-	parameters.ptimetm = &time_tm;
 	// Parameters Ready
 
 	// Set start LN

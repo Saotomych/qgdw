@@ -144,7 +144,7 @@ int x, y = 0;
 char* ChangeDate(char *arg){
 char *pmenu = menutxt;
 time_t **timel = (time_t**)(((int*)arg)[4]);
-struct tm *timetm = (struct tm**)(((int*)arg)[5]);
+struct tm *timetm = localtime(timel);
 int i, x, y, maxday, wday, day;
 
 	wday = (7 + timetm->tm_wday - (timetm->tm_mday % 7)) % 7;
@@ -153,9 +153,9 @@ int i, x, y, maxday, wday, day;
 	if ((timetm->tm_mon == 1) && (!(timetm->tm_year % 4))) maxday++;
 
     // Months and years
-	sprintf(pmenu, "main 10 0 140 120\n");
+	sprintf(pmenu, "main 10 0 140 130\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys up:null down:null right:defdown left:defup\n");
+	sprintf(pmenu, "keys up:dateup down:datedown right:dateright left:dateleft\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
 	pmenu += strlen(pmenu);
