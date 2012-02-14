@@ -25,6 +25,8 @@ static char *pmmon;				// Text for month, actual
 static char *pjmon;				// Text for month, journal
 static int myear;				// Year actual
 static int jyear;				// Year journal
+static int m_mon;				// Month as digit = tm_mon + 1, actual
+static int j_mon;				// Month as digit, journal
 
 //static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
@@ -40,7 +42,7 @@ value defvalues[] = {
 		// Time variables
 		{"APP:year", 	&myear, 			"XXXX", 	INT32, 		STRING},
 		{"APP:montext", &pmmon, 			"XX", 		PTRSTRING, 	STRING},	// Month as full text
-		{"APP:mondig", 	&(mtime_tm.tm_mon), "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{"APP:mondig", 	&m_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
 		{"APP:day",  	&(mtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},	// Day as digit with zero
 		{"APP:wday", 	&pmwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text (2 symbols)
 		{"APP:hour", 	&(mtime_tm.tm_hour),"XX", 		INT32DIG2, 	STRING},
@@ -48,7 +50,7 @@ value defvalues[] = {
 		{"APP:sec", 	&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
 		{"APP:jyear", 	&jyear, 			"XXXX", 	INT32, 		STRING},
 		{"APP:jmontext",&pjmon, 			"XX", 		PTRSTRING, 	STRING},
-		{"APP:jmondig", &(jtime_tm.tm_mon), "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{"APP:jmondig", &j_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
 		{"APP:jday", 	&(jtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},
 		{"APP:jwday", 	&pjwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text
 		{"APP:jhour", 	&(jtime_tm.tm_hour),"XX", 		INT32DIG2,	STRING},
@@ -562,6 +564,11 @@ struct tm *ttm;
 	ttm	= localtime(&time_l);
 	memcpy(&jtime_tm, ttm, sizeof(struct tm));
 	memcpy(&mtime_tm, ttm, sizeof(struct tm));
+	jyear = 1900 + jtime_tm.tm_year;
+	myear = 1900 + mtime_tm.tm_year;
+	j_mon = jtime_tm.tm_mon + 1;
+	m_mon = mtime_tm.tm_mon + 1;
+
 
 	// Set of parameters for all variable menu and action functions
 	actlnode = (LNODE*) (fln.next);
