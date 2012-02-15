@@ -83,6 +83,8 @@ int clen;
 int i;
 char *p;
 
+char servsyms[] = {" >~"};
+
 menu *num_menu = allmenus[maxmenus];
 
 			if ((maxmenus) >= MAXMENU) return num_menu;
@@ -122,23 +124,26 @@ menu *num_menu = allmenus[maxmenus];
 	            // X
 	            if (*ptxt != 'a') num_menu->rect.x = atoi(ptxt);
 	            else num_menu->rect.x = 0;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+//	            while (*ptxt != ' ') ptxt++; ptxt++;
+		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // Y
 	            if (*ptxt != 'a') num_menu->rect.y = atoi(ptxt);
 	            else num_menu->rect.y = 0;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+//	            while (*ptxt != ' ') ptxt++; ptxt++;
+		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // W
 	            if (*ptxt != 'a') num_menu->rect.width = atoi(ptxt);
 	            else num_menu->rect.width = MAIN_WIDTH;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+//	            while (*ptxt != ' ') ptxt++; ptxt++;
+		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // H
 	            if (*ptxt != 'a') num_menu->rect.height = atoi(ptxt);
 	            else num_menu->rect.height = MAIN_HEIGHT;
-	            while (*ptxt > ' ') ptxt++; ptxt++;
-            }else{
+	            ptxt += strcspn(ptxt, servsyms) + 1;
+          }else{
             	num_menu->rect.x = 0;
             	num_menu->rect.y = 0;
             	num_menu->rect.width = MAIN_WIDTH;
@@ -195,7 +200,7 @@ menu *num_menu = allmenus[maxmenus];
                 	if (num_menu->keyenter == (void*) -1) num_menu->keyenter = NULL;
                 }
 
-	            while (*ptxt >= ' ') ptxt++; ptxt++;
+	            ptxt += strcspn(ptxt, servsyms) + 1;
 
             }
 
@@ -210,29 +215,29 @@ menu *num_menu = allmenus[maxmenus];
 	            ptxt[4] = 0;
 	            pitemtype = ptxt;
 	            ptxt += 5;
-	            while (*ptxt == ' ') ptxt++;
+	            while ((*ptxt) < ' ') ptxt++;
 
 	            // Parse RECTangle for item
 	            // X
 	            if (*ptxt != 'a') num_menu->pitems[i]->rect.x = atoi(ptxt);
 	            else num_menu->pitems[i]->rect.x = 0;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // Y
 	            if (*ptxt != 'a') num_menu->pitems[i]->rect.y = atoi(ptxt);
 	            else num_menu->pitems[i]->rect.y = num_menu->pitems[i-1]->rect.y + num_menu->pitems[i-1]->rect.height;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+  		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // W
 	            if (*ptxt != 'a') num_menu->pitems[i]->rect.width = atoi(ptxt);
 	            else num_menu->pitems[i]->rect.width = num_menu->rect.width - num_menu->pitems[i]->rect.x;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // H
 	            if (*ptxt != 'a') num_menu->pitems[i]->rect.height = atoi(ptxt);
 	            else num_menu->pitems[i]->rect.height = MENUSTEP;
 	            num_menu->pitems[i]->ctrl_height = num_menu->pitems[i]->rect.height;
-	            while (*ptxt != ' ') ptxt++; ptxt++;
+		 		ptxt = strchr(ptxt, ' ') + 1;
 
 	            // Item type "MENU"
 	            if (!strcmp(pitemtype, "menu")){
@@ -243,27 +248,27 @@ menu *num_menu = allmenus[maxmenus];
 		            num_menu->pitems[i]->text = ptxt;
 		            num_menu->pitems[i]->next_menu = 0;
 	               	num_menu->pitems[i]->action = 0;
-		            while ((*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
+	               	p = strpbrk(ptxt, servsyms); if (p) ptxt = p;
 		            do{
-			            while ((*ptxt != ' ') && (*ptxt) && (*ptxt != '>') && (*ptxt != '~')) ptxt++;
+		               	p = strpbrk(ptxt, servsyms);  if (p) ptxt = p;
 			            // Spase if border of field in parameters
-			            if (*ptxt == ' '){
+			            if (*ptxt == servsyms[0]){
 			            	*ptxt = 0;
 			            	ptxt++;
 			            }
 		            	// Set next submenu
-			            if (*ptxt == '>'){
+			            if (*ptxt == servsyms[1]){
 			            	*ptxt = 0;
 			            	ptxt++;
 			            	num_menu->pitems[i]->next_menu = ptxt;
 			            }
 			            // Set next action for left & right keys
-			            if (*ptxt == '~'){
+			            if (*ptxt == servsyms[2]){
 			            	*ptxt = 0;
 			            	ptxt++;
 			               	num_menu->pitems[i]->action = ptxt;
 			            }
-		            }while (*ptxt);
+		            }while (p);
 		            last_menuitem = i;
 		            count_menu++;
 	            }

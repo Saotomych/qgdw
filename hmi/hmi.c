@@ -292,8 +292,8 @@ char *fname;
 	// Parse vars from menu.c
 	menu_parser(defvalues, sizeof(defvalues) / sizeof (value));
 
-	for(i=0; i < (sizeof(defvalues)/sizeof(value)); i++)
-		printf("%02d: %s=%s\n", i, defvalues[i].name, (char*) defvalues[i].val);
+//	for(i=0; i < (sizeof(defvalues)/sizeof(value)); i++)
+//		printf("%02d: %s=%s\n", i, defvalues[i].name, (char*) defvalues[i].val);
 
 	// Register all variables in varcontroller
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));

@@ -227,37 +227,34 @@ FILE *fmcfg;               //file open
 struct stat fst;			// statistics of file
 int clen;					// lenght of file or array
 
-char *pmenu;
+char *pmenu, *txtmenu;
 menu *psmenu;
 int i;
 
-	// Stat of file
-
+	// Stat of file, for get size of file
 	if (stat(menuname, &fst) == -1){
 		printf("IEC Virt: menufile not found\n");
+	}else{
+		// Load file to static buffer
+		fmcfg = fopen(menuname, "r");
+		clen = fread(menutxt, 1, (size_t) (fst.st_size), fmcfg);
 	}
-
-	// Load file to static buffer
- 	fmcfg = fopen(menuname, "r");
- 	clen = fread(menutxt, 1, (size_t) (fst.st_size), fmcfg);
-	if ((!clen) || (clen != fst.st_size)) return 0;
 
 	// Find and run proloque
 	pmenu = strstr(menuname,"/");
 	if (pmenu) pmenu++;
-	else pmenu = menuname;
+	txtmenu = menutxt;
 
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
-			pmenu = 0;
-			pmenu = (char*) menufactset[i].proloque(arg);
+			txtmenu = (char*) menufactset[i].proloque(arg);
 			break;
 		}
 	}
 
 	// Create menu structures
-	if (pmenu){
-		psmenu = do_openfilemenu(pmenu);
+	if (*txtmenu){
+		psmenu = do_openfilemenu(txtmenu);
 		if (!psmenu) psmenu = do_openfilemenu("menus/item");
 	}
 
