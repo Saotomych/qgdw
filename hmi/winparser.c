@@ -248,22 +248,23 @@ menu *num_menu = allmenus[maxmenus];
 		            num_menu->pitems[i]->text = ptxt;
 		            num_menu->pitems[i]->next_menu = 0;
 	               	num_menu->pitems[i]->action = 0;
-	               	p = strpbrk(ptxt, servsyms); if (p) ptxt = p;
+	               	p = strpbrk(ptxt, &servsyms[1]); if (p) ptxt = p;
 		            do{
 		               	p = strpbrk(ptxt, servsyms);  if (p) ptxt = p;
 			            // Spase if border of field in parameters
 			            if (*ptxt == servsyms[0]){
+			            	// End of variable definition
 			            	*ptxt = 0;
 			            	ptxt++;
 			            }
-		            	// Set next submenu
 			            if (*ptxt == servsyms[1]){
+			            	// Set next submenu
 			            	*ptxt = 0;
 			            	ptxt++;
 			            	num_menu->pitems[i]->next_menu = ptxt;
 			            }
-			            // Set next action for left & right keys
 			            if (*ptxt == servsyms[2]){
+				            // Set next action for left & right keys
 			            	*ptxt = 0;
 			            	ptxt++;
 			               	num_menu->pitems[i]->action = ptxt;

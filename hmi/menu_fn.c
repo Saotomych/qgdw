@@ -41,7 +41,7 @@ static char *days[7] = {
 		"BC",
 };
 
-char menutxt[1024];
+char menutxt[8192];
 
 // Menu of LNODES
 char* ChangeLN(char *arg){
@@ -238,6 +238,7 @@ int i;
 		// Load file to static buffer
 		fmcfg = fopen(menuname, "r");
 		clen = fread(menutxt, 1, (size_t) (fst.st_size), fmcfg);
+		menutxt[fst.st_size] = 0;
 	}
 
 	// Find and run proloque
