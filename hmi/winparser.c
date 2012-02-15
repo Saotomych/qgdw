@@ -200,7 +200,7 @@ menu *num_menu = allmenus[maxmenus];
                 	if (num_menu->keyenter == (void*) -1) num_menu->keyenter = NULL;
                 }
 
-	            ptxt += strcspn(ptxt, servsyms) + 1;
+                while (*ptxt >= ' ') ptxt++; ptxt++;
 
             }
 
@@ -250,13 +250,13 @@ menu *num_menu = allmenus[maxmenus];
 	               	num_menu->pitems[i]->action = 0;
 	               	p = strpbrk(ptxt, &servsyms[1]); if (p) ptxt = p;
 		            do{
-		               	p = strpbrk(ptxt, servsyms);  if (p) ptxt = p;
+		               	p = strpbrk(ptxt, &servsyms[1]);  if (p) ptxt = p;
 			            // Spase if border of field in parameters
-			            if (*ptxt == servsyms[0]){
-			            	// End of variable definition
-			            	*ptxt = 0;
-			            	ptxt++;
-			            }
+//			            if (*ptxt == servsyms[0]){
+//			            	// End of variable definition
+//			            	*ptxt = 0;
+//			            	ptxt++;
+//			            }
 			            if (*ptxt == servsyms[1]){
 			            	// Set next submenu
 			            	*ptxt = 0;

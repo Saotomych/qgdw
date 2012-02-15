@@ -244,6 +244,7 @@ int i;
 	// Find and run proloque
 	pmenu = strstr(menuname,"/");
 	if (pmenu) pmenu++;
+	else pmenu = menuname;
 	txtmenu = menutxt;
 
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
