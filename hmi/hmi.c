@@ -22,37 +22,38 @@ static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
 // Synonyms for global variables
 // Defvalues included: m700env, about.me
-static value defvalues[] = {
-		{"APP:LOCALIP", NULL, NULL, STRING, 0},
-		{"APP:MAC", NULL, NULL, STRING, 0},
-		{"APP:Type", NULL, NULL, STRING, 0},
-		{"APP:UPDATE", NULL, NULL, STRING, 0},
-		{"APP:UBI", NULL, NULL, STRING, 0},
-		{"APP:SFTP", NULL, NULL, STRING, 0},
-		{"APP:CRONSW", NULL, NULL, STRING, 0},
-		{"APP:CRONCF", NULL, NULL, STRING, 0},
-		{"APP:ManDate", NULL, NULL, STRING, 0},
-		{"APP:Tester", NULL, NULL, STRING, 0},
-		{"APP:SerNum", NULL, NULL, STRING, 0},
+value defvalues[] = {
+		{0, "APP:LOCALIP", NULL, NULL, STRING, 0},
+		{0, "APP:MAC", NULL, NULL, STRING, 0},
+		{0, "APP:Type", NULL, NULL, STRING, 0},
+		{0, "APP:UPDATE", NULL, NULL, STRING, 0},
+		{0, "APP:UBI", NULL, NULL, STRING, 0},
+		{0, "APP:SFTP", NULL, NULL, STRING, 0},
+		{0, "APP:CRONSW", NULL, NULL, STRING, 0},
+		{0, "APP:CRONCF", NULL, NULL, STRING, 0},
+		{0, "APP:ManDate", NULL, NULL, STRING, 0},
+		{0, "APP:Tester", NULL, NULL, STRING, 0},
+		{0, "APP:SerNum", NULL, NULL, STRING, 0},
 		// Time variables
-		{"APP:year", NULL, NULL, 0, 0},
-		{"APP:montext", NULL, NULL, 0, 0},
-		{"APP:mondig", NULL, NULL, 0, 0},
-		{"APP:day", NULL, NULL, 0, 0},
-		{"APP:wday", NULL, NULL, 0, 0},
-		{"APP:hour", NULL, NULL, 0, 0},
-		{"APP:min", NULL, NULL, 0, 0},
-		{"APP:sec", NULL, NULL, 0, 0},
-		{"APP:jyear", NULL, NULL, 0, 0},
-		{"APP:jmontext", NULL, NULL, 0, 0},
-		{"APP:jmondig", NULL, NULL, 0, 0},
-		{"APP:jday", NULL, NULL, 0, 0},
-		{"APP:jwday", NULL, NULL, 0, 0},
-		{"APP:jhour", NULL, NULL, 0, 0},
-		{"APP:jmin", NULL, NULL, 0, 0},
-		{"APP:jsec", NULL, NULL, 0, 0},
+		{0, "APP:year", NULL, NULL, 0, 0},
+		{0, "APP:montext", NULL, NULL, 0, 0},
+		{0, "APP:mondig", NULL, NULL, 0, 0},
+		{0, "APP:day", NULL, NULL, 0, 0},
+		{0, "APP:wday", NULL, NULL, 0, 0},
+		{0, "APP:hour", NULL, NULL, 0, 0},
+		{0, "APP:min", NULL, NULL, 0, 0},
+		{0, "APP:sec", NULL, NULL, 0, 0},
+		{0, "APP:jyear", NULL, NULL, 0, 0},
+		{0, "APP:jmontext", NULL, NULL, 0, 0},
+		{0, "APP:jmondig", NULL, NULL, 0, 0},
+		{0, "APP:jday", NULL, NULL, 0, 0},
+		{0, "APP:jwday", NULL, NULL, 0, 0},
+		{0, "APP:jhour", NULL, NULL, 0, 0},
+		{0, "APP:jmin", NULL, NULL, 0, 0},
+		{0, "APP:jsec", NULL, NULL, 0, 0},
 		// IEC variables
-		{"APP:ldtypetext", NULL, NULL, 0 ,0},
+		{0, "APP:ldtypetext", NULL, NULL, 0 ,0},
+		{0, NULL, NULL, NULL, 0, 0},
 };
 
 static void* create_next_struct_in_list(LIST *plist, int size){
@@ -87,12 +88,14 @@ int i;
 			while(*p != '=') p++;
 			*p = 0; p++;
 			for (i=0; i < (sizeof(defvalues)/sizeof(value)); i++){
-				papp = defvalues[i].name + 4;
-				if (!strcmp(papp, tbuf)) {
-					defvalues[i].val = malloc(strlen(p));
-					p[strlen(p)-1] = 0;
-					strcpy(defvalues[i].val, p);
-					defvalues[i].idtype = INTVAR | TRUEVALUE | STRING;
+				if (defvalues[i].name){
+					papp = defvalues[i].name + 4;
+					if (!strcmp(papp, tbuf)) {
+						defvalues[i].val = malloc(strlen(p));
+						p[strlen(p)-1] = 0;
+						strcpy(defvalues[i].val, p);
+						defvalues[i].idtype = INTVAR | TRUEVALUE | STRING;
+					}
 				}
 			}
 			p = tbuf;
@@ -292,11 +295,11 @@ char *fname;
 	// Parse vars from menu.c
 	menu_parser(defvalues, sizeof(defvalues) / sizeof (value));
 
-//	for(i=0; i < (sizeof(defvalues)/sizeof(value)); i++)
-//		printf("%02d: %s=%s\n", i, defvalues[i].name, (char*) defvalues[i].val);
+	// Initialize defvalues indexer
+	for(i=0; i < (sizeof(defvalues)/sizeof(value) - 1); i++) defvalues[i].idx = i;
 
 	// Register all variables in varcontroller
-	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
+//	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
 //---*** Init visual control ***---//
 	if (init_menu()){

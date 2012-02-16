@@ -10,6 +10,8 @@
 
 #include "iec61850.h"
 
+#define IECARG_BASE	0x1000
+
 #define BOOKING		0x100
 #define TRUEVALUE	0x080
 #define ISBOOKED	0x040
@@ -25,6 +27,13 @@
 #define PTRINT64	0x20
 #define INT32DIG2	0x40
 
+// IEC Types for varrec
+#define PTRIED		1
+#define PTRLD		2
+#define PTRLN		3
+#define PTRDO		4
+#define PTRDA		5
+
 // IEC struct
 typedef struct _FCDAREC{
 	// Name of variable as attributes FCDA
@@ -38,6 +47,7 @@ typedef struct _FCDAREC{
 } fcdarec, *pfcdarec;
 
 typedef struct _VALUE{
+	int	idx;		// Index of value in defvalues
 	char *name;		// full name of variable
 	void *val;		// pointer to value
 	void *defval;	// pointer to default value (if exists), using if val == NULL or value not true
@@ -50,6 +60,13 @@ typedef struct _VARREC{
 	LIST l;
 	fcdarec *name;	// Can see as pointer to pointer to full name already
 	value *val;		// Values and types of variable
+	union{ // Local variable for temporary operations
+		int   *pint;
+		char  *pchar;
+		int   uint;
+		long  ulong;
+	} localval;
+	int iarg;
 	int prop;		// properties: const, var, booking, true value.
 	int time;		// time from last refresh value, usec
 } varrec, *pvarrec;
@@ -65,7 +82,10 @@ typedef struct _VARBOOK{
 
 extern void vc_init(pvalue vt, int len);
 //extern varrec *vc_addvarrec(char *varname, LNODE *actln);
-extern varrec *vc_addvarrec(char *varname, varrec *actvr);
-extern int vc_rmvarrec(char *varname);
+//extern varrec *vc_addvarrec(char *varname, varrec *actvr);
+//extern varrec *vc_addvarrec(char *varname, varrec *actvr, value **defvr);
+extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
+//extern int vc_rmvarrec(char *varname);
+extern int vc_destroyvarreclist();
 
 #endif /* VARCONTROL_H_ */

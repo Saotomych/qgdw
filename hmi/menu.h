@@ -7,6 +7,7 @@
 #ifndef MENU_H_
 #define MENU_H_
 
+#include "../common/common.h"
 #include "../common/varcontrol.h"
 #include <nano-X.h>
 #include <nanowm.h>
@@ -71,17 +72,20 @@ typedef struct _menu{
 	void (*keyup)();
 	void (*keydown)();
 	void (*keyenter)();
+	LIST fvarrec;		// Pointer to LIST first varrec in list all varrec for this menu
 } menu;
 
-//extern int init_menu(fact *factsetting, int len);
+extern int *args;
+extern value defvalues[];
+
 extern void menu_parser(pvalue vt, int len);
 extern int init_menu(void);
 extern void redraw_screen(void *arg);
 extern void key_pressed(void *arg);
 extern void key_rised(void *arg);
 
-extern int call_action(int direct, char *act, void *arg);
-extern menu* create_menu(char *menuname, void *arg);
+extern int call_action(int direct, menu *actmenu);
+extern menu* create_menu(char *menuname);
 extern menu* destroy_menu(int direct);
 
 #endif

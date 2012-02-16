@@ -39,35 +39,37 @@ static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu
 static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
 
-value defvalues[] = {
+static value menuvalues[] = {
 		// Time variables
-		{"APP:year", 	&myear, 			"XXXX", 	INT32, 		STRING},
-		{"APP:montext", &pmmon, 			"XX", 		PTRSTRING, 	STRING},	// Month as full text
-		{"APP:mondig", 	&m_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
-		{"APP:day",  	&(mtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},	// Day as digit with zero
-		{"APP:wday", 	&pmwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text (2 symbols)
-		{"APP:hour", 	&(mtime_tm.tm_hour),"XX", 		INT32DIG2, 	STRING},
-		{"APP:min", 	&(mtime_tm.tm_min), "XX", 		INT32DIG2, 	STRING},
-		{"APP:sec", 	&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
-		{"APP:jyear", 	&jyear, 			"XXXX", 	INT32, 		STRING},
-		{"APP:jmontext",&pjmon, 			"XX", 		PTRSTRING, 	STRING},
-		{"APP:jmondig", &j_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
-		{"APP:jday", 	&(jtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},
-		{"APP:jwday", 	&pjwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text
-		{"APP:jhour", 	&(jtime_tm.tm_hour),"XX", 		INT32DIG2,	STRING},
-		{"APP:jmin", 	&(jtime_tm.tm_min), "XX", 		INT32DIG2,	STRING},
-		{"APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
+		{0, "APP:year", 	&myear, 			"XXXX", 	INT32, 		STRING},
+		{0, "APP:montext", &pmmon, 			"XX", 		PTRSTRING, 	STRING},	// Month as full text
+		{0, "APP:mondig", 	&m_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{0, "APP:day",  	&(mtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},	// Day as digit with zero
+		{0, "APP:wday", 	&pmwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text (2 symbols)
+		{0, "APP:hour", 	&(mtime_tm.tm_hour),"XX", 		INT32DIG2, 	STRING},
+		{0, "APP:min", 	&(mtime_tm.tm_min), "XX", 		INT32DIG2, 	STRING},
+		{0, "APP:sec", 	&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
+		{0, "APP:jyear", 	&jyear, 			"XXXX", 	INT32, 		STRING},
+		{0, "APP:jmontext",&pjmon, 			"XX", 		PTRSTRING, 	STRING},
+		{0, "APP:jmondig", &j_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{0, "APP:jday", 	&(jtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},
+		{0, "APP:jwday", 	&pjwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text
+		{0, "APP:jhour", 	&(jtime_tm.tm_hour),"XX", 		INT32DIG2,	STRING},
+		{0, "APP:jmin", 	&(jtime_tm.tm_min), "XX", 		INT32DIG2,	STRING},
+		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
-		{"APP:ldtypetext", &devtypetext,  "Тип не выбран", PTRSTRING , STRING},
+		{0, "APP:ldtypetext", &devtypetext,  "Тип не выбран", PTRSTRING , STRING},
 };
 
-struct _parameters{
-	LNODE *pln;			// Address of pointer of actlnode
-	char  *devtype;		// Pointer to lnodefilter
-	char  *devtypetext;	// Pointer to lnodefilter text description
-	int	  *dynmenuvars;	// Pointer to variable for changing by actual dynamic menu
-	time_t *ptimel;		// Pointer to time as time_t type
-} parameters;
+//struct _parameters{
+//	LNODE *pln;			// Address of pointer of actlnode
+//	char  *devtype;		// Pointer to lnodefilter
+//	char  *devtypetext;	// Pointer to lnodefilter text description
+//	int	  *dynmenuvars;	// Pointer to variable for changing by actual dynamic menu
+//	time_t *ptimel;		// Pointer to time as time_t type
+//} parameters;
+
+int *args;
 
 //------------------------------------------------------------------------------------
 // Function create new text in all windows
@@ -119,7 +121,8 @@ int len = sizeof(wintext) - 1;
 					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
 					len -= strlen(wintext);
 					if ((pitem->vr) && (pitem->vr->val)){
-						if (pitem->vr->val->val) strncat(wintext, (char*) *((int*) pitem->vr->val->val), len);
+						if ((pitem->vr->val->val) && (*((int*) pitem->vr->val->val)))
+							strncat(wintext, (char*) *((int*) pitem->vr->val->val), len);
 						else if (pitem->vr->val->defval) strncat(wintext, (char*) pitem->vr->val->defval, len);
 					}
 					len = sizeof(wintext) - 1 - strlen(wintext);
@@ -254,11 +257,11 @@ int stepy, y, itemy, itemh;
 // Call after change global variables has synonym
 static void refresh_vars(void){
 int i;
-	for (i = 0; i < num_menu->count_item; i++){
-		if (num_menu->pitems[i]->vr){
-			num_menu->pitems[i]->vr = vc_addvarrec(num_menu->pitems[i]->vr->name->fc, num_menu->pitems[i]->vr);
-		}
-	}
+//	for (i = 0; i < num_menu->count_item; i++){
+//		if (num_menu->pitems[i]->vr){
+//			num_menu->pitems[i]->vr = vc_addvarrec(num_menu->pitems[i]->vr->name->fc, num_menu->pitems[i]->vr);
+//		}
+//	}
 }
 
 //-------------------------------------------------------------------------------
@@ -267,7 +270,7 @@ int i;
 static void call_dynmenu(char *menuname){
 char *pmenu;
 
-	num_menu = create_menu(menuname, &parameters);
+	num_menu = create_menu(menuname);
 }
 
 //-------------------------------------------------------------------------------
@@ -275,7 +278,7 @@ char *pmenu;
 
 void default_left(GR_EVENT *event){
 	if (num_menu->pitems[num_menu->num_item]->action){
-		call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+		call_action(event->keystroke.ch, num_menu);
 		refresh_vars();
 		redraw_screen(NULL);
 	}
@@ -283,7 +286,7 @@ void default_left(GR_EVENT *event){
 
 void default_right(GR_EVENT *event){
 	if (num_menu->pitems[num_menu->num_item]->action){
-		call_action(event->keystroke.ch, num_menu->pitems[num_menu->num_item]->action, &parameters);
+		call_action(event->keystroke.ch, num_menu);
 		refresh_vars();
 		redraw_screen(NULL);
 	}
@@ -318,16 +321,16 @@ int itemy, itemh;
 void default_enter(GR_EVENT *event){
 int dir = DIR_FORWARD;
 
-	if (dynmenuvars[num_menu->num_item + 1]){
-		// Set var into pointer dynmenuvar as value in actual item
-		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
-		// and refresh all values (temporary solution)
-		call_action(0xf801, "changetypeln", &parameters);
-		call_action(0xf800, "changetypeln", &parameters);
-		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
-		// From dynamic menu - backward
-		dir = DIR_BACKWARD;
-	}
+//	if (dynmenuvars[num_menu->num_item + 1]){
+//		// Set var into pointer dynmenuvar as value in actual item
+//		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
+//		// and refresh all values (temporary solution)
+//		call_action(0xf801, "changetypeln", &parameters);
+//		call_action(0xf800, "changetypeln", &parameters);
+//		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
+//		// From dynamic menu - backward
+//		dir = DIR_BACKWARD;
+//	}
 
 	// Select new menu
 //	prev_item = num_menu->num_item;
@@ -340,7 +343,7 @@ int dir = DIR_FORWARD;
 		}
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		if (dir == DIR_FORWARD){
-			num_menu = create_menu(newmenu, &parameters);
+			num_menu = create_menu(newmenu);
 			if (num_menu) draw_menu();
 		}
 	}
@@ -525,7 +528,7 @@ int i;
 					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 					num_menu = destroy_menu(DIR_BACKWARD);
 					if (!num_menu){
-						num_menu = create_menu("menus/item", NULL);
+						num_menu = create_menu("menus/item");
 						if (num_menu) draw_menu();
 					}else{
 						redraw_screen(NULL);
@@ -562,21 +565,21 @@ struct tm *ttm;
 	m_mon = mtime_tm.tm_mon + 1;
 
 
-	// Set of parameters for all variable menu and action functions
+//	// Set of parameters for all variable menu and action functions
 	actlnode = (LNODE*) (fln.next);
-	parameters.pln = (LNODE*) &actlnode;
-	parameters.devtype = (char*) &lnodefilter;
-	parameters.devtypetext = (char*) &devtypetext;
-	parameters.dynmenuvars = (int*) dynmenuvars;
-	parameters.ptimel = &time_l;
-	// Parameters Ready
+//	parameters.pln = (LNODE*) &actlnode;
+//	parameters.devtype = (char*) &lnodefilter;
+//	parameters.devtypetext = (char*) &devtypetext;
+//	parameters.dynmenuvars = (int*) dynmenuvars;
+//	parameters.ptimel = &time_l;
+//	// Parameters Ready
 
 	// Set start LN
-	call_action(0xf801, "changetypeln", &parameters);
+//	call_action(0xf801, "changetypeln", &parameters);
 	// Start LN ready
 
 	// Open first menu
-	num_menu = create_menu("menus/item", NULL);
+	num_menu = create_menu("menus/item");
 	if (num_menu) draw_menu();
 
     return 0;
@@ -586,10 +589,12 @@ void menu_parser(pvalue vt, int len){
 int i, j;
 
 	for (i = 0; i < len; i++){
-		for (j = 0; j < sizeof(defvalues)/sizeof(value); j++){
-			if (!strcmp(vt[i].name, defvalues[j].name)) memcpy(&vt[i], &defvalues[j], sizeof(value));
+		for (j = 0; j < sizeof(menuvalues)/sizeof(value); j++){
+			if (vt[i].name)
+				if (!strcmp(vt[i].name, menuvalues[j].name)) memcpy(&vt[i], &menuvalues[j], sizeof(value));
 		}
 	}
+
 }
 
 //---------------------------------------------------------------------------------

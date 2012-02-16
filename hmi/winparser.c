@@ -14,6 +14,8 @@
 static menu *allmenus[MAXMENU];
 static int maxmenus = 0;
 
+extern LNODE *actlnode;
+
 //------------------------------------------------------------------------------------
 // Definition for function keys
 extern void default_left(GR_EVENT *event);
@@ -86,6 +88,8 @@ char *p;
 char servsyms[] = {" >~"};
 
 menu *num_menu = allmenus[maxmenus];
+varrec *nextvarrec;
+
 
 			if ((maxmenus) >= MAXMENU) return num_menu;
 
@@ -206,6 +210,7 @@ menu *num_menu = allmenus[maxmenus];
 
 		 	if (count_item > MAXITEM) count_item = MAXITEM;
 		 	num_menu->pitems = malloc(count_item * sizeof(item*));
+		 	nextvarrec = (varrec*) &(num_menu->fvarrec);
 
 		 	for (i = 0; i < count_item; i++){
 	            while ((*ptxt) < ' ') ptxt++;
@@ -304,14 +309,14 @@ menu *num_menu = allmenus[maxmenus];
 	            if (p){
 	            	*p = 0;
 	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(p, NULL);
+	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, nextvarrec, defvalues);
+	            	nextvarrec = num_menu->pitems[i]->vr;
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{
 	            	num_menu->pitems[i]->vr = NULL;
 	            	num_menu->pitems[i]->endtext = NULL;
 	            }
-
 	         }
 
 	         num_menu->pitems[(int) first_menuitem]->prev_item = last_menuitem;
@@ -321,11 +326,10 @@ menu *num_menu = allmenus[maxmenus];
 	         num_menu->count_item = count_item;
 	         num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->first_item]->rect.y;
 
-
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
 
-	         return num_menu;
+   	 	 	 return num_menu;
 }
 
 // -----------------------------------------------------------------------------------

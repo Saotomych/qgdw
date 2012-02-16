@@ -9,6 +9,8 @@
 #include "../common/iec61850.h"
 #include "hmi.h"
 
+// Convert indexes of arguments to indexes of defvalue variables
+
 //---*** Set of action functions ***---//
 // Function change pointer (arg[0]) to pointer of next LNODE with equal class
 int next_ln(void *arg){
@@ -62,6 +64,7 @@ static char lnclasses[][5] = {
 		{"MSQI"},
 		{"MMTR"},
 };
+
 // Function change pointer (arg[0]) to pointer of first LNODE with next class in array of classes
 int prev_type_ln(void *arg){
 LNODE **pbln = ((LNODE**) *((int*)arg));
@@ -126,22 +129,24 @@ fact actfactset[] = {
 };
 
 //---*** External IP ***---//
-int call_action(int direct, char *act, void *arg){
+int call_action(int direct, menu *actmenu){
 int ret = 0;
 int i;
+char *act = actmenu->pitems[actmenu->num_item]->action;
+
 	// Separate keys and call action
 	switch(direct){
 	case 0xf800:
 				 for (i=0; i < sizeof(actfactset) / sizeof(fact); i+=2){
 					if (!strcmp(actfactset[i].action, act)){
-						ret = actfactset[i].proloque(arg);
+						ret = actfactset[i].proloque(actmenu);
 					}
 				 }
 				 break;
 	case 0xf801:
 				 for (i=1; i < (sizeof(actfactset) / sizeof(fact)); i+=2){
 					 if (!strcmp(actfactset[i].action, act)){
-						 ret = actfactset[i].proloque(arg);
+						 ret = actfactset[i].proloque(actmenu);
 					 }
 				 }
 				 break;

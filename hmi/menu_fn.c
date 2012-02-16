@@ -222,7 +222,7 @@ fact menufactset[] = {
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
 
-menu* create_menu(char *menuname, void *arg){
+menu* create_menu(char *menuname){
 FILE *fmcfg;               //file open
 struct stat fst;			// statistics of file
 int clen;					// lenght of file or array
@@ -249,7 +249,7 @@ int i;
 
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
-			txtmenu = (char*) menufactset[i].proloque(arg);
+			txtmenu = (char*) menufactset[i].proloque(NULL);
 			break;
 		}
 	}
