@@ -44,25 +44,9 @@ int l;
 //---*** Set of action functions ***---//
 // Function change pointer of LNODE to pointer of next LNODE with equal class by filter
 int next_ln(void *arg){
-// arg parser variables
-//int idxs[] = {IECBASE + PTRLN};
-//varrec *actvr;
-// working parser
 LNODE **pbln = (LNODE**) &actlnode;
-LNODE *pln;
-char *filter;
-
-	// Argument parser
-//	actvr = get_argindex(NULL, idxs, 1);
-//	while(actvr){
-//		if (actvr->val->idx == idxs[0]){
-//			pbln = (LNODE**) &actvr->myln;
-//			break;
-//		}
-//		actvr = get_argindex(NULL, idxs, 1);
-//	}
-	pln = *pbln;
-	filter = pln->ln.lnclass;
+LNODE *pln = *pbln;
+char *filter = pln->ln.lnclass;
 
 	// Function body
     if (pln->l.next){
@@ -80,25 +64,9 @@ char *filter;
 
 // Function change pointer (arg[0]) to pointer of previous LNODE with equal class
 int prev_ln(void *arg){
-// arg parser variables
-//int idxs[] = {IECBASE + PTRLN};
-//varrec *actvr;
-// working parser
-LNODE **pbln;
-LNODE *pln;
-char *filter;
-
-	// Argument parser
-//	actvr = get_argindex(NULL, idxs, 1);
-//	while(actvr){
-//		if (actvr->val->idx == idxs[0]){
-//			pbln = (LNODE**) ((int*)arg)[actvr->iarg];
-//			break;
-//		}
-//		actvr = get_argindex(NULL, idxs, 1);
-//	}
-	pln = *pbln;
-	filter = pln->ln.lnclass;
+LNODE **pbln = (LNODE**) &actlnode;
+LNODE *pln = *pbln;
+char *filter = pln->ln.lnclass;
 
 	// Function body
 	if (pln->l.prev){
@@ -220,25 +188,20 @@ char *act = actmenu->pitems[actmenu->num_item]->action;
 
 	for (i = 0; i < actmenu->count_item; i++){
 		if (actmenu->pitems[i]->vr){
-#define LNlnclass		6
-#define LNlninst		7
-#define LNlntype		8
-#define LNprefix		9
 			if (actmenu->pitems[i]->vr->val->idx & IECBASE){
 				idx = actmenu->pitems[i]->vr->val->idx - IECBASE;
-				if (idx == IEDdesc) actmenu->pitems[i]->vr->val = actlnode->ln.pmyied->desc;
-				if (idx == IEDname) actmenu->pitems[i]->vr->val = actlnode->ln.pmyied->name;
-				if (idx == LDinst) actmenu->pitems[i]->vr->val = actlnode->ln.pmyld->inst;
-				if (idx == LDname) actmenu->pitems[i]->vr->val = strchr(actlnode->ln.pmyld->inst, '/') + 1;
-				if (idx == LDdesc) actmenu->pitems[i]->vr->val = actlnode->ln.pmyld->desc;
-				if (idx == LNlnclass) actmenu->pitems[i]->vr->val = actlnode->ln.lnclass;
-				if (idx == LNlninst) actmenu->pitems[i]->vr->val = actlnode->ln.lninst;
-				if (idx == LNlntype) actmenu->pitems[i]->vr->val = actlnode->ln.lntype;
-				if (idx == LNprefix) actmenu->pitems[i]->vr->val = actlnode->ln.prefix;
+				if (idx == IEDdesc) actmenu->pitems[i]->vr->val->val = (char*) actlnode->ln.pmyied->desc;
+				if (idx == IEDname) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyied->name;
+				if (idx == LDinst) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyld->inst;
+				if (idx == LDname) actmenu->pitems[i]->vr->val->val = strchr(actlnode->ln.pmyld->inst, '/') + 1;
+				if (idx == LDdesc) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyld->desc;
+				if (idx == LNlnclass) actmenu->pitems[i]->vr->val->val = actlnode->ln.lnclass;
+				if (idx == LNlninst) actmenu->pitems[i]->vr->val->val = actlnode->ln.lninst;
+				if (idx == LNlntype) actmenu->pitems[i]->vr->val->val = actlnode->ln.lntype;
+				if (idx == LNprefix) actmenu->pitems[i]->vr->val->val = actlnode->ln.prefix;
 			}
 		}
 	}
-
 
 	return ret;
 }
