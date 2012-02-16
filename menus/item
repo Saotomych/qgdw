@@ -1,6 +1,6 @@
 main 0 0 a a
-menu 2 0 a a &var:APP:ldtypetext~changetypeln >lntypemenu
-menu 4 20 58 a LN:&var:LN:prefix~changeln >lnmenu
+menu 2 0 a a &var:APP:ldtypetext~changetypeln>lntypemenu
+menu 4 20 58 a LN:&var:LN:prefix~changeln>lnmenu
 text 62 20 30 a &var:LN:class
 text 92 20 48 a &var:LN:inst
 menu 6 a a a Профиль нагрузки>eprofile

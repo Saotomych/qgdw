@@ -10,7 +10,6 @@
 
 #include "iec61850.h"
 
-#define IECARG_BASE	0x1000
 
 #define BOOKING		0x100
 #define TRUEVALUE	0x080
@@ -28,11 +27,21 @@
 #define INT32DIG2	0x40
 
 // IEC Types for varrec
-#define PTRIED		1
-#define PTRLD		2
-#define PTRLN		3
-#define PTRDO		4
-#define PTRDA		5
+#define IECBASE		0x1000
+#define IEDdesc			1
+#define IEDname			2
+#define LDinst			3
+#define LDname			4
+#define LDdesc			5
+#define LNlnclass		6
+#define LNlninst		7
+#define LNlntype		8
+#define LNprefix		9
+#define DOdesc			10
+#define DOname			11
+#define DOtype			12
+#define DOvalue			13
+#define DA				14
 
 // IEC struct
 typedef struct _FCDAREC{

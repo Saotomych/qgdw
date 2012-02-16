@@ -97,7 +97,7 @@ static varrec* newiecvarrec(varrec *vr){
 		vr->val->idtype = STRING;
 		vr->val->iddeftype = 0;
 		vr->val->defval = 0;
-		vr->val->idx = IECARG_BASE;
+		vr->val->idx = IECBASE;
 		vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;
 		return vr;
 	}else{
@@ -166,17 +166,19 @@ char keywords[][10] = {
 						// Register new value in varrec LIST
 						vr = create_next_struct_in_list(&actvr->l, sizeof(varrec));
 						if (newiecvarrec(vr)){
-							vr->val->idx += PTRIED;
 							vr->name->fc = varname;
 							vr->val->name = varname;
 							// Value initialize
 							vr->val->val = pied->desc;	// IED.desc as default
+							vr->val->idx = IECBASE + IEDdesc;
 							p = strstr(varname, ".name"); // Find IED.name
-							if (p) vr->val->val = pied->name;
+							if (p){
+								vr->val->idx = IECBASE + IEDname;
+								vr->val->val = pied->name;
+							}
 							vr->localval.uint = *((uint*)(vr->val->val));
 							return vr;
 						}else{
-							free(vr);
 							actvr->l.next = NULL;
 							return NULL;
 						}
@@ -190,12 +192,12 @@ char keywords[][10] = {
 						// Register new value in varrec LIST
 						vr = create_next_struct_in_list(&actvr->l, sizeof(varrec));
 						if (newiecvarrec(vr)){
-							vr->val->idx += PTRLD;
 							vr->name->fc = varname;
 							vr->val->name = varname;
 							// Value initialize
 							// Set val if 'inst'
 							vr->val->val = pld->inst;	// LD.inst as default
+							vr->val->idx = IECBASE + LDinst;
 							// Set val if 'desc'
 							p = strstr(varname, "desc");
 							if (p) vr->val->val = pld->desc;
@@ -208,7 +210,6 @@ char keywords[][10] = {
 							}
 							return vr;
 						}else{
-							free(vr);
 							actvr->l.next = NULL;
 							return NULL;
 						}
@@ -257,7 +258,7 @@ char keywords[][10] = {
 							// Value initialize
 							// Find DOBJ as equal actual LN by type
 							if (ptag){
-								vr->val->idx += PTRDO;
+								vr->val->idx = IECBASE + DOdesc;
 								pdo = pln->ln.pmytype->pfdobj;
 								while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
 								if (!pdo) return NULL;
@@ -279,12 +280,21 @@ char keywords[][10] = {
 		//						}
 							}else{
 								if (po){
-									vr->val->idx += PTRLN;
 									// IF const  =>  Fill varrec as const of application
 									vr->val->val = actln->ln.lnclass;		// LN.class as default
-									if (!strcmp(po, "inst")) vr->val->val = actln->ln.lninst;
-									if (!strcmp(po, "type")) vr->val->val = actln->ln.lntype;
-									if (!strcmp(po, "prefix")) vr->val->val = actln->ln.prefix;
+									vr->val->idx = IECBASE + LNlnclass;
+									if (!strcmp(po, "inst")){
+										vr->val->val = actln->ln.lninst;
+										vr->val->idx = IECBASE + LNlninst;
+									}
+									if (!strcmp(po, "type")){
+										vr->val->val = actln->ln.lntype;
+										vr->val->idx = IECBASE + LNlntype;
+									}
+									if (!strcmp(po, "prefix")){
+										vr->val->val = actln->ln.prefix;
+										vr->val->idx = IECBASE + LNprefix;
+									}
 									vr->localval.uint = ((uint*)(vr->val->val));
 									return vr;
 								}
@@ -292,7 +302,6 @@ char keywords[][10] = {
 
 							return vr;
 						}else{
-							free(vr);
 							actvr->l.next = NULL;
 							return NULL;
 						}

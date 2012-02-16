@@ -59,6 +59,7 @@ static value menuvalues[] = {
 		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
 		{0, "APP:ldtypetext", &devtypetext,  "Тип не выбран", PTRSTRING , STRING},
+		{0, "APP:filter", &lnodefilter, NULL, PTRSTRING, NULL},
 };
 
 //struct _parameters{
@@ -257,11 +258,6 @@ int stepy, y, itemy, itemh;
 // Call after change global variables has synonym
 static void refresh_vars(void){
 int i;
-//	for (i = 0; i < num_menu->count_item; i++){
-//		if (num_menu->pitems[i]->vr){
-//			num_menu->pitems[i]->vr = vc_addvarrec(num_menu->pitems[i]->vr->name->fc, num_menu->pitems[i]->vr);
-//		}
-//	}
 }
 
 //-------------------------------------------------------------------------------
@@ -566,7 +562,11 @@ struct tm *ttm;
 
 
 //	// Set of parameters for all variable menu and action functions
-	actlnode = (LNODE*) (fln.next);
+	actlnode = setdef_lnode(0);					// Try set Telemetering / MMXU
+	if (!actlnode) actlnode = setdef_lnode(1);	// Try set Telesignal
+	if (!actlnode) actlnode = setdef_lnode(2);	// Try set Telecontrol
+	if (!actlnode) exit(1);
+
 //	parameters.pln = (LNODE*) &actlnode;
 //	parameters.devtype = (char*) &lnodefilter;
 //	parameters.devtypetext = (char*) &devtypetext;
