@@ -16,7 +16,8 @@
 LNODE *actlnode;			// Global variable, change in menu only
 
 time_t maintime;		// Actual Time
-//time_t jourtime;		// Time for journal setting
+time_t jourtime;		// Time for journal setting
+time_t tmptime;			// Time for setting process
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
@@ -254,29 +255,12 @@ int stepy, y, itemy, itemh;
 	for (i=0; i < num_menu->start_item; i++) GrRaiseWindow(num_menu->pitems[i]->main_window);
 }
 
-//-----------------------------------------------------------------------------------------------------------
-// Refresh all variables in all items of menu
-// Call after change global variables has synonym
-static void refresh_vars(void){
-int i;
-}
-
-//-------------------------------------------------------------------------------
-// Form dynamic menu on base cycle string and draw on screen
-// Start dynamic menu
-static void call_dynmenu(char *menuname){
-char *pmenu;
-
-	num_menu = create_menu(menuname);
-}
-
 //-------------------------------------------------------------------------------
 // Keys functions
 
 void default_left(GR_EVENT *event){
 	if (num_menu->pitems[num_menu->num_item]->action){
 		call_action(event->keystroke.ch, num_menu);
-		refresh_vars();
 		redraw_screen(NULL);
 	}
 }
@@ -284,7 +268,6 @@ void default_left(GR_EVENT *event){
 void default_right(GR_EVENT *event){
 	if (num_menu->pitems[num_menu->num_item]->action){
 		call_action(event->keystroke.ch, num_menu);
-		refresh_vars();
 		redraw_screen(NULL);
 	}
 }
@@ -318,25 +301,12 @@ int itemy, itemh;
 void default_enter(GR_EVENT *event){
 int dir = DIR_FORWARD;
 
-//	if (dynmenuvars[num_menu->num_item + 1]){
-//		// Set var into pointer dynmenuvar as value in actual item
-//		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
-//		// and refresh all values (temporary solution)
-//		call_action(0xf801, "changetypeln", &parameters);
-//		call_action(0xf800, "changetypeln", &parameters);
-//		*dynmenuvars[0] = (int) dynmenuvars[num_menu->num_item + 1];
-//		// From dynamic menu - backward
-//		dir = DIR_BACKWARD;
-//	}
-
 	// Select new menu
-//	prev_item = num_menu->num_item;
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(tmpstring, "menus/");
 		strcat(tmpstring, num_menu->pitems[num_menu->num_item]->next_menu);
 		if (dir == DIR_BACKWARD){
 			num_menu = destroy_menu(dir);
-			if (num_menu) refresh_vars();
 		}
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		if (dir == DIR_FORWARD){
@@ -352,12 +322,12 @@ int itemy, itemh, i;
 
 	if (!num_menu->num_item){
 		// Month
-		ttm	= localtime(&maintime);
+		ttm	= localtime(&tmptime);
 		if (ttm->tm_mon) ttm->tm_mon--;
 		else { ttm->tm_mon = 11; ttm->tm_year--;}
-		maintime = mktime(ttm);
+		tmptime = mktime(ttm);
 		destroy_menu(DIR_SIDEBKW);
-		call_dynmenu("date");
+		num_menu = create_menu("date");
 		if (num_menu) draw_menu();
 
 	}else{
@@ -390,12 +360,12 @@ int itemy, itemh, i;
 
 	if (!num_menu->num_item){
 		// Month
-		ttm	= localtime(&maintime);
+		ttm	= localtime(&tmptime);
 		if (ttm->tm_mon < 11) ttm->tm_mon++;
 		else { ttm->tm_mon = 0; ttm->tm_year++;}
-		maintime = mktime(ttm);
+		tmptime = mktime(ttm);
 		destroy_menu(DIR_SIDEBKW);
-		call_dynmenu("date");
+		num_menu = create_menu("date");
 		if (num_menu) draw_menu();
 	}else{
 		// Days
@@ -472,7 +442,7 @@ void date_enter(GR_EVENT *event){
 struct tm *ttm;
 int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 
-	ttm	= localtime(&maintime);
+	ttm	= localtime(&tmptime);
 	ttm->tm_mday = day;
 	memcpy(&mtime_tm, ttm, sizeof(struct tm));
 	myear = 1900 + mtime_tm.tm_year;
@@ -480,6 +450,11 @@ int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 
 	num_menu = destroy_menu(DIR_BACKWARD);
 	redraw_screen(NULL);
+
+}
+
+void time_enter(GR_EVENT *event){
+
 
 }
 
@@ -524,6 +499,17 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 }
 
 void setjournaldate(GR_EVENT *event){
+struct tm *ttm;
+int day = atoi(num_menu->pitems[num_menu->num_item]->text);
+
+	ttm	= localtime(&tmptime);
+	ttm->tm_mday = day;
+	memcpy(&jtime_tm, ttm, sizeof(struct tm));
+	myear = 1900 + jtime_tm.tm_year;
+	m_mon = jtime_tm.tm_mon + 1;
+
+	num_menu = destroy_menu(DIR_BACKWARD);
+	redraw_screen(NULL);
 
 }
 
@@ -607,7 +593,7 @@ struct tm *ttm;
 	if (!fln.next) return 1;
 
 	// Set actual time in vars
-//	jourtime = time(NULL);
+	jourtime = time(NULL);
 	maintime = time(NULL);
 	ttm	= localtime(&maintime);
 	memcpy(&jtime_tm, ttm, sizeof(struct tm));

@@ -1,6 +1,6 @@
 main 1 1 159 159
 text 20 0 a 20 Профиль нагрузки
-menu 0 20 60 a Дата>date~chintl
+menu 0 20 60 a Дата>jourdate~chintl
 text 60 20 15 a &var:APP:day
 text 75 20 22 a .&var:APP:mondig
 text 97 20 43 a .&var:APP:year

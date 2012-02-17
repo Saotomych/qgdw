@@ -14,6 +14,7 @@ extern menu* do_openfilemenu(char *buf);
 extern LNODE *actlnode;
 extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
+extern time_t tmptime;		// Time for journal setting
 
 static struct _mons{
 	char *meng;
@@ -134,7 +135,7 @@ int x, y = 0;
 
 char* ChangeDate(char *arg){
 char *pmenu = menutxt;
-time_t *timel = &maintime;
+time_t *timel = &tmptime;
 struct tm *timetm = localtime(timel);
 int i, x, y, maxday, wday, day;
 
@@ -183,6 +184,16 @@ int i, x, y, maxday, wday, day;
 	return menutxt;
 }
 
+char* ChangeDateMain(char *arg){
+	tmptime = maintime;
+	return ChangeDate(arg);
+}
+
+char* ChangeDateJour(char *arg){
+	tmptime = jourtime;
+	return ChangeDate(arg);
+}
+
 // Menu of Interval
 char* ChangeIntl(char *arg){
 char *ptxt;
@@ -201,7 +212,9 @@ char *ptxt;
 fact menufactset[] = {
 		{"lnmenu", (void*) ChangeLN, NULL},
 		{"lntypemenu", (void*) ChangeLNType, NULL},
-		{"date", (void*) ChangeDate, NULL},
+		{"date", (void*) ChangeDate, NULL},					// For temporary operations with date
+		{"maindate", (void*) ChangeDateMain, NULL},			// Initial operation by main date
+		{"jourdate", (void*) ChangeDateJour, NULL},			// Initial operation by journal date
 		{"interval", (void*) ChangeIntl, NULL},
 		{"tarif", (void*) ChangeTarif, NULL},
 };
