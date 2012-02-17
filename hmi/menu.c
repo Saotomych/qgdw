@@ -473,8 +473,10 @@ struct tm *ttm;
 int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 
 	ttm	= localtime(&maintime);
-	ttm->tm_mday = day - 1;
-	memcpy(&jtime_tm, ttm, sizeof(struct tm));
+	ttm->tm_mday = day;
+	memcpy(&mtime_tm, ttm, sizeof(struct tm));
+	myear = 1900 + mtime_tm.tm_year;
+	m_mon = mtime_tm.tm_mon + 1;
 
 	num_menu = destroy_menu(DIR_BACKWARD);
 	redraw_screen(NULL);
