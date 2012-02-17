@@ -310,7 +310,7 @@ varrec *nextvarrec;
 	            	*p = 0;
 	            	p += 5;
 	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, nextvarrec, defvalues);
-	            	nextvarrec = num_menu->pitems[i]->vr;
+	            	if (num_menu->pitems[i]->vr) nextvarrec = num_menu->pitems[i]->vr;
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{

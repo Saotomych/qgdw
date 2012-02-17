@@ -226,7 +226,7 @@ LNODE *ln = (LNODE*) &fln.next;
 				if (actmenu) refreshvars(actmenu);
 				return ln;
 			}
-		}else if (!actmenu) return ln;
+		}
 		ln = ln->l.next;
 	}
 

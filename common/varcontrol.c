@@ -171,7 +171,7 @@ char keywords[][10] = {
 							// Value initialize
 							vr->val->val = pied->desc;	// IED.desc as default
 							vr->val->idx = IECBASE + IEDdesc;
-							p = strstr(varname, ".name"); // Find IED.name
+							p = strstr(varname, "name"); // Find IED.name
 							if (p){
 								vr->val->idx = IECBASE + IEDname;
 								vr->val->val = pied->name;

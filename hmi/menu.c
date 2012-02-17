@@ -564,8 +564,9 @@ struct tm *ttm;
 //	call_action(0xf801, "changetypeln", &parameters);
 	// Start LN ready
 
-	// Set of parameters for all variable menu and action functions
-	actlnode = setdef_lnode(0, NULL);					// Try set first LLN0
+	// First actual LNODE init
+	actlnode = (LNODE*) fln.next;					// Try set first LLN0
+	if (!actlnode) exit(1);
 
 	// Open first menu
 	num_menu = create_menu("menus/item");
