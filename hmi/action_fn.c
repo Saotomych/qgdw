@@ -199,6 +199,12 @@ char *act = actmenu->pitems[actmenu->num_item]->action;
 				if (idx == LNlninst) actmenu->pitems[i]->vr->val->val = actlnode->ln.lninst;
 				if (idx == LNlntype) actmenu->pitems[i]->vr->val->val = actlnode->ln.lntype;
 				if (idx == LNprefix) actmenu->pitems[i]->vr->val->val = actlnode->ln.prefix;
+			}else{
+				idx = actmenu->pitems[i]->vr->val->idx;
+				if (idx == 27){
+					// Type text change
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = lntypes[0];
+				}
 			}
 		}
 	}
