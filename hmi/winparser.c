@@ -100,13 +100,13 @@ varrec *nextvarrec;
 
 			if ((maxmenus) >= MAXMENU) return num_menu;
 
-			num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
-
-			num_menu->ptxtmenu = buf;
-
 			//Make start 0
-		 	num_menu->ptxtmenu[0] = 0;
-		 	clen = strlen(num_menu->ptxtmenu + 1);
+			buf[0] = 0;
+		 	clen = strlen(buf + 1) + 2;
+
+		 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
+
+			num_menu->ptxtmenu = realloc(buf, clen);
 
 		 	for (i=1; i<clen; i++)
 	        {
@@ -333,9 +333,9 @@ varrec *nextvarrec;
 
 // -----------------------------------------------------------------------------------
 // Full delete menu (num_menu) from memory
-menu* destroy_menu(int direct){
+menu* destroy_menu(menu *actmenu, int direct){
 int i;
-menu *num_menu;
+menu* num_menu;
 
 	if (!maxmenus) return 0;
 	if (direct == DIR_FORWARD) return 0;	// Never closing lower window
@@ -343,20 +343,28 @@ menu *num_menu;
 
 	num_menu = allmenus[maxmenus-1];
 
+	if (actmenu != num_menu){
+		printf("HMI error: Detect damaged menu order\n");
+		exit(2);
+	}
+
 	for (i=0; i < num_menu->count_item; i++){
 		GrUnmapWindow(num_menu->pitems[i]->main_window);
 		GrDestroyWindow(num_menu->pitems[i]->main_window);
-		if (num_menu->pitems[i]->vr){
-			if (num_menu->pitems[i]->vr->iarg & IECBASE) free(num_menu->pitems[i]->vr->val);
-			free(num_menu->pitems[i]->vr);
-		}
-		free(num_menu->pitems[i]);
-		num_menu->pitems[i] = 0;
+//		if (num_menu->pitems[i]->vr){
+//			if (num_menu->pitems[i]->vr->iarg & IECBASE){
+//				free(num_menu->pitems[i]->vr->val);
+//				free(num_menu->pitems[i]->vr->name);
+//			}
+//			free(num_menu->pitems[i]->vr);
+//		}
+//		free(num_menu->pitems[i]);
+//		num_menu->pitems[i] = 0;
 	}
 	GrUnmapWindow(num_menu->main_window);
 	GrDestroyWindow(num_menu->main_window);
-	free(num_menu->ptxtmenu);
-	free(num_menu);
+//	free(num_menu->ptxtmenu);
+//	free(num_menu);
 
 	maxmenus--;
 	allmenus[maxmenus] = 0;

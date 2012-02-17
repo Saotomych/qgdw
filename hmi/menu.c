@@ -260,7 +260,7 @@ int ret;
 		ret = call_action(event->keystroke.ch, num_menu);
 		if (ret){
 			ret -= REMAKEMENU;
-			num_menu = destroy_menu(DIR_SIDEBKW);
+			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
 				num_menu = create_menu(lnmenunames[ret]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
@@ -276,7 +276,7 @@ int ret;
 		ret = call_action(event->keystroke.ch, num_menu);
 		if (ret){
 			ret -= REMAKEMENU;
-			num_menu = destroy_menu(DIR_SIDEBKW);
+			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
 				num_menu = create_menu(lnmenunames[ret]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
@@ -334,7 +334,7 @@ int itemy, itemh, i;
 		if (ttm->tm_mon) ttm->tm_mon--;
 		else { ttm->tm_mon = 11; ttm->tm_year--;}
 		tmptime = mktime(ttm);
-		destroy_menu(DIR_SIDEBKW);
+		destroy_menu(num_menu, DIR_SIDEBKW);
 		num_menu = create_menu("date");
 		if (num_menu) draw_menu();
 
@@ -372,7 +372,7 @@ int itemy, itemh, i;
 		if (ttm->tm_mon < 11) ttm->tm_mon++;
 		else { ttm->tm_mon = 0; ttm->tm_year++;}
 		tmptime = mktime(ttm);
-		destroy_menu(DIR_SIDEBKW);
+		destroy_menu(num_menu, DIR_SIDEBKW);
 		num_menu = create_menu("date");
 		if (num_menu) draw_menu();
 	}else{
@@ -456,7 +456,7 @@ int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 	myear = 1900 + mtime_tm.tm_year;
 	m_mon = mtime_tm.tm_mon + 1;
 
-	num_menu = destroy_menu(DIR_BACKWARD);
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	redraw_screen(NULL);
 
 }
@@ -480,7 +480,7 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	}
 
 	// Return to previous menu
-	num_menu = destroy_menu(DIR_BACKWARD);
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	// Refresh menu by new values
 	call_action(NODIRECT, num_menu);		// Refresh variables
 }
@@ -501,7 +501,7 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	}
 
 	// Return to previous menu
-	num_menu = destroy_menu(DIR_BACKWARD);
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	// Refresh menu by new values
 	call_action(NODIRECT, num_menu);		// Refresh variables
 }
@@ -516,7 +516,7 @@ int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 	myear = 1900 + jtime_tm.tm_year;
 	m_mon = jtime_tm.tm_mon + 1;
 
-	num_menu = destroy_menu(DIR_BACKWARD);
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	redraw_screen(NULL);
 
 }
@@ -573,7 +573,7 @@ int i;
 
 	case 0x1B:		// Key MENU / ESC
 					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
-					num_menu = destroy_menu(DIR_BACKWARD);
+					num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 					if (!num_menu){
 						num_menu = create_menu("menus/item");
 						if (num_menu) draw_menu();

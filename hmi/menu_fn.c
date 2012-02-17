@@ -243,6 +243,7 @@ char *pmenu, *txtmenu;
 menu *psmenu;
 int i;
 
+	// It's memory part will be realloc after the txtmenu building and malloc for new menu structure
 	txtmenu = malloc(2048);
 	txtmenu[0] = 0;
 
@@ -269,12 +270,9 @@ int i;
 	}
 
 	// Create menu structures
-	if (*(txtmenu+1)){
-		psmenu = do_openfilemenu(txtmenu);
-		if (!psmenu) psmenu = do_openfilemenu("menus/item");
-	}
+	psmenu = do_openfilemenu(txtmenu);
 
-//	free(txtmenu);
+	//	txtmenu set as menu.ptxtmenu and free in destroy_menu
 
 	return psmenu;
 }

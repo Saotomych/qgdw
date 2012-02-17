@@ -92,7 +92,7 @@ extern int call_action(int direct, menu *actmenu);
 LNODE* setdef_lnode(int lnclass, menu *actmenu);
 
 extern menu* create_menu(char *menuname);
-extern menu* destroy_menu(int direct);
+extern menu* destroy_menu(menu *menu, int direct);
 
 #endif
 
