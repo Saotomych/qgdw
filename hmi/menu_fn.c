@@ -12,6 +12,8 @@
 
 extern menu* do_openfilemenu(char *buf);
 extern LNODE *actlnode;
+extern time_t maintime;		// Actual Time
+extern time_t jourtime;		// Time for journal setting
 
 static struct _mons{
 	char *meng;
@@ -132,7 +134,7 @@ int x, y = 0;
 
 char* ChangeDate(char *arg){
 char *pmenu = menutxt;
-time_t **timel = (time_t**)(((int*)arg)[4]);
+time_t *timel = &maintime;
 struct tm *timetm = localtime(timel);
 int i, x, y, maxday, wday, day;
 

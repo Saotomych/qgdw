@@ -15,11 +15,12 @@
 
 LNODE *actlnode;			// Global variable, change in menu only
 
-static time_t maintime;		// Actual Time
-static time_t backtime;		// Backup Time for ESC from date menu and time menu
-static time_t time_l;		// Time for list setting
+time_t maintime;		// Actual Time
+//time_t jourtime;		// Time for journal setting
+
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
+
 static char *pmwday;				// Text for weekday, actual
 static char *pjwday;				// Text for weekday, journal
 static char *pmmon;				// Text for month, actual
@@ -351,10 +352,10 @@ int itemy, itemh, i;
 
 	if (!num_menu->num_item){
 		// Month
-		ttm	= localtime(&time_l);
+		ttm	= localtime(&maintime);
 		if (ttm->tm_mon) ttm->tm_mon--;
 		else { ttm->tm_mon = 11; ttm->tm_year--;}
-		time_l = mktime(ttm);
+		maintime = mktime(ttm);
 		destroy_menu(DIR_SIDEBKW);
 		call_dynmenu("date");
 		if (num_menu) draw_menu();
@@ -389,10 +390,10 @@ int itemy, itemh, i;
 
 	if (!num_menu->num_item){
 		// Month
-		ttm	= localtime(&time_l);
+		ttm	= localtime(&maintime);
 		if (ttm->tm_mon < 11) ttm->tm_mon++;
 		else { ttm->tm_mon = 0; ttm->tm_year++;}
-		time_l = mktime(ttm);
+		maintime = mktime(ttm);
 		destroy_menu(DIR_SIDEBKW);
 		call_dynmenu("date");
 		if (num_menu) draw_menu();
@@ -468,9 +469,15 @@ int itemy, itemh, i;
 }
 
 void date_enter(GR_EVENT *event){
+struct tm *ttm;
+int day = atoi(num_menu->pitems[num_menu->num_item]->text);
+
+	ttm	= localtime(&maintime);
+	ttm->tm_mday = day - 1;
+	memcpy(&jtime_tm, ttm, sizeof(struct tm));
 
 	num_menu = destroy_menu(DIR_BACKWARD);
-	if (num_menu) refresh_vars();
+	redraw_screen(NULL);
 
 }
 
@@ -512,6 +519,14 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	num_menu = destroy_menu(DIR_BACKWARD);
 	// Refresh menu by new values
 	call_action(NODIRECT, num_menu);		// Refresh variables
+}
+
+void setjournaldate(GR_EVENT *event){
+
+}
+
+void setjournaltime(GR_EVENT *event){
+
 }
 
 //--------------------------------------------------------------------------------
@@ -590,9 +605,9 @@ struct tm *ttm;
 	if (!fln.next) return 1;
 
 	// Set actual time in vars
-	time_l = time(NULL);
+//	jourtime = time(NULL);
 	maintime = time(NULL);
-	ttm	= localtime(&time_l);
+	ttm	= localtime(&maintime);
 	memcpy(&jtime_tm, ttm, sizeof(struct tm));
 	memcpy(&mtime_tm, ttm, sizeof(struct tm));
 	jyear = 1900 + jtime_tm.tm_year;

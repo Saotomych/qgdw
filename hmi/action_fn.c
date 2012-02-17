@@ -42,6 +42,7 @@ int i, idx, j;
 				if (idx == LNprefix) actmenu->pitems[i]->vr->val->val = actlnode->ln.prefix;
 			}else{
 				idx = actmenu->pitems[i]->vr->val->idx;
+				// Set text of type LN
 				if (idx == 27){
 					// Type text change
 					for (j = 0; j < 3; j++){

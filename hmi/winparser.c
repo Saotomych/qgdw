@@ -30,6 +30,8 @@ extern void date_down(GR_EVENT *event);
 extern void date_enter(GR_EVENT *event);
 extern void setlnbytype(GR_EVENT *event);
 extern void setlnbyclass(GR_EVENT *event);
+extern void setjournaldate(GR_EVENT *event);
+extern void setjournaltime(GR_EVENT *event);
 
 struct _kt {
 	char *funcname;
@@ -48,6 +50,8 @@ struct _kt {
 		{"dateenter", date_enter},
 		{"setlnbytype", setlnbytype},
 		{"setlnbyclass", setlnbyclass},
+		{"setjournaldate", setjournaldate},
+		{"setjournaltime", setjournaltime},
 		{"", NULL},
 };
 
