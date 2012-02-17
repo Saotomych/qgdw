@@ -35,6 +35,7 @@
 #define MAXMENU 3
 #define MAXITEM 40
 
+#define NODIRECT		0
 #define DIR_FORWARD		1
 #define DIR_BACKWARD 	2
 #define DIR_SIDEFWD		3

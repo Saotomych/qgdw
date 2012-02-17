@@ -32,7 +32,7 @@ static int j_mon;				// Month as digit, journal
 //static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
 
-static char newmenu[40];			// For temporary operations
+static char tmpstring[100];			// For temporary operations
 
 static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu item
 
@@ -331,15 +331,15 @@ int dir = DIR_FORWARD;
 	// Select new menu
 //	prev_item = num_menu->num_item;
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
-		strcpy(newmenu, "menus/");
-		strcat(newmenu, num_menu->pitems[num_menu->num_item]->next_menu);
+		strcpy(tmpstring, "menus/");
+		strcat(tmpstring, num_menu->pitems[num_menu->num_item]->next_menu);
 		if (dir == DIR_BACKWARD){
 			num_menu = destroy_menu(dir);
 			if (num_menu) refresh_vars();
 		}
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		if (dir == DIR_FORWARD){
-			num_menu = create_menu(newmenu);
+			num_menu = create_menu(tmpstring);
 			if (num_menu) draw_menu();
 		}
 	}
@@ -472,6 +472,25 @@ void date_enter(GR_EVENT *event){
 	num_menu = destroy_menu(DIR_BACKWARD);
 	if (num_menu) refresh_vars();
 
+}
+
+void setlnbytype(GR_EVENT *event){
+LNODE *pln = (LNODE*) fln.next;
+char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
+
+	while(pln){
+		sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+		if (!strcmp(itemtext, tmpstring)){
+			actlnode = pln;
+			break;
+		}
+		pln = pln->l.next;
+	}
+
+	// Return to previous menu
+	num_menu = destroy_menu(DIR_BACKWARD);
+	// Refresh menu by new values
+	call_action(NODIRECT, num_menu);		// Refresh variables
 }
 
 //--------------------------------------------------------------------------------

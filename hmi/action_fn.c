@@ -142,7 +142,7 @@ int i;
 
 	pln = (LNODE*) fln.next;
 	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
-	if (pln) actlnode = pln;
+	if (pln) *pbln = pln;
 
 	return 0;
 }
@@ -163,7 +163,7 @@ int i;
 
 	pln = (LNODE*) fln.next;
 	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
-	if (pln) actlnode = pln;
+	if (pln) *pbln = pln;
 
 	return 0;
 }

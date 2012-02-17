@@ -11,6 +11,7 @@
 #include "menu.h"
 
 extern menu* do_openfilemenu(char *buf);
+extern LNODE *actlnode;
 
 static struct _mons{
 	char *meng;
@@ -78,27 +79,24 @@ int x, y = 0;
 // Menu of ALL LNODES FROM FILTER CLASSES
 char* ChangeLNType(char *arg){
 char *pmenu = menutxt;
-LNODE **pbln = ((LNODE**) *((int*)arg));
+LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
-void **dynmenuvar = (void*)(((int*)arg)[3]);
 int i = 1; 	// Real parameters for dynmenu begin from 1
 int x, y = 0;
 
-	*dynmenuvar = pbln;
-
 	pln = (LNODE*) fln.next; x = 2;
 	sprintf(pmenu, "main 16 15 128 145\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "keys enter:setlnbytype\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP; x = MENUSTEP;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, "MMXU")){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
-			// Set pointer to LNODE for the item in future
-			dynmenuvar[i] = (int*) pln; i++;
 		}
 		pln = pln->l.next;
 	}
@@ -106,11 +104,9 @@ int x, y = 0;
 	pln = (LNODE*) fln.next;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, "MSQI")){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
-			// Set pointer to LNODE for the item in future
-			dynmenuvar[i] = (int*) pln; i++;
 		}
 		pln = pln->l.next;
 	}
@@ -118,11 +114,9 @@ int x, y = 0;
 	pln = (LNODE*) fln.next;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, "MMTR")){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
-			// Set pointer to LNODE for the item in future
-			dynmenuvar[i] = (int*) pln; i++;
 		}
 		pln = pln->l.next;
 	}
