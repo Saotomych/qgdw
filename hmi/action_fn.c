@@ -26,7 +26,7 @@ static char lnclasses[][5] = {
 };
 
 static void refreshvars(menu *actmenu){
-int i, idx;
+int i, idx, j;
 	for (i = 0; i < actmenu->count_item; i++){
 		if (actmenu->pitems[i]->vr){
 			if (actmenu->pitems[i]->vr->val->idx & IECBASE){
@@ -44,7 +44,10 @@ int i, idx;
 				idx = actmenu->pitems[i]->vr->val->idx;
 				if (idx == 27){
 					// Type text change
-					*((int*)(actmenu->pitems[i]->vr->val->val)) = lntypes[0];
+					for (j = 0; j < 3; j++){
+						if (!strcmp(lnclasses[j], actlnode->ln.lnclass)) break;
+					}
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = lntypes[j];
 				}
 			}
 		}
@@ -120,15 +123,14 @@ char *filter = pln->ln.lnclass;
 		}while (pln->l.prev);
 	}
 
-	return 1;
+	return 0;
 }
 
 // Function change pointer (arg[0]) to pointer of first LNODE with next class in array of classes
 int prev_type_ln(void *arg){
-LNODE **pbln = ((LNODE**) *((int*)arg));
+LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
-char **lntype = (char**)((int*)arg)[1];
-char **lntypetext = (char**) (((int*)arg)[2]);
+char *lntype;
 int i;
 
 	for (i = 0; i < 3; i++){
@@ -136,26 +138,20 @@ int i;
 	}
 	if (i) i--;
 	else i = 2;
+	lntype = lnclasses[i];
 
 	pln = (LNODE*) fln.next;
-	while ((strcmp(lnclasses[i], pln->ln.lnclass)) && (pln)) pln = pln->l.next;
+	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
+	if (pln) actlnode = pln;
 
-	if (pln){
-		*pbln = pln;
-		*lntype = lnclasses[i];
-		*lntypetext = lntypes[i];
-		return 0;
-	}
-
-	return 1;
+	return 0;
 }
 
 // Function change pointer (arg[0]) to pointer of first LNODE with previous class in array of classes
 int next_type_ln(void *arg){
-LNODE **pbln = ((LNODE**) *((int*)arg));
+LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
-char **lntype = (char**) (((int*)arg)[1]);
-char **lntypetext = (char**) (((int*)arg)[2]);
+char *lntype;
 int i;
 
 	for (i = 0; i < 3; i++){
@@ -163,19 +159,13 @@ int i;
 	}
 	i++;
 	if (i >= 3) i = 0;
+	lntype = lnclasses[i];
 
 	pln = (LNODE*) fln.next;
-	while ((strcmp(lnclasses[i], pln->ln.lnclass)) && (pln))
-		pln = pln->l.next;
+	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
+	if (pln) actlnode = pln;
 
-	if (pln){
-		*pbln = pln;
-		*lntype = lnclasses[i];
-		*lntypetext = lntypes[i];
-		return 0;
-	}
-
-	return 1;
+	return 0;
 }
 
 // Array of structures "synonym to function"
