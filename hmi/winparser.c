@@ -29,6 +29,7 @@ extern void date_up(GR_EVENT *event);
 extern void date_down(GR_EVENT *event);
 extern void date_enter(GR_EVENT *event);
 extern void setlnbytype(GR_EVENT *event);
+extern void setlnbyclass(GR_EVENT *event);
 
 struct _kt {
 	char *funcname;
@@ -46,6 +47,7 @@ struct _kt {
 		{"datedown", date_down},
 		{"dateenter", date_enter},
 		{"setlnbytype", setlnbytype},
+		{"setlnbyclass", setlnbyclass},
 		{"", NULL},
 };
 

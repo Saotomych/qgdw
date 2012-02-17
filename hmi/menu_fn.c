@@ -47,28 +47,23 @@ char menutxt[8192];
 // Menu of LNODES
 char* ChangeLN(char *arg){
 char *pmenu = menutxt;
-LNODE **pbln = ((LNODE**) *((int*)arg));
-LNODE *pln = *pbln;
-char **lnodefilter = (char**) ((int*)arg)[1];
-void **dynmenuvar = (void*)(((int*)arg)[3]);
-int i = 1; 	// Real parameters for dynmenu begin from 1
+LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
-
-	*dynmenuvar = pbln;
+char *lnodefilter = (char*) pln->ln.lnclass;
 
 	pln = (LNODE*) fln.next; x = 0;
 	sprintf(pmenu, "main 16 33 128 126\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "keys enter:setlnbyclass\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP; x = MENUSTEP;
 	while(pln){
-		if (!strcmp(pln->ln.lnclass, *lnodefilter)){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s >item ~changetypeln\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+		if (!strcmp(pln->ln.lnclass, lnodefilter)){
+			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
-			// Set pointer to LNODE for the item in future
-			dynmenuvar[i] = (int*) pln; i++;
 		}
 		pln = pln->l.next;
 	}
@@ -79,9 +74,7 @@ int x, y = 0;
 // Menu of ALL LNODES FROM FILTER CLASSES
 char* ChangeLNType(char *arg){
 char *pmenu = menutxt;
-LNODE **pbln =  (LNODE**) &actlnode;
-LNODE *pln = *pbln;
-int i = 1; 	// Real parameters for dynmenu begin from 1
+LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
 
 	pln = (LNODE*) fln.next; x = 2;

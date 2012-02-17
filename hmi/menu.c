@@ -493,6 +493,27 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	call_action(NODIRECT, num_menu);		// Refresh variables
 }
 
+void setlnbyclass(GR_EVENT *event){
+LNODE *pln = (LNODE*) fln.next;
+char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
+
+	while(pln){
+		if (!strcmp(pln->ln.lnclass, actlnode->ln.lnclass)){
+			sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			if (!strcmp(itemtext, tmpstring)){
+				actlnode = pln;
+				break;
+			}
+		}
+		pln = pln->l.next;
+	}
+
+	// Return to previous menu
+	num_menu = destroy_menu(DIR_BACKWARD);
+	// Refresh menu by new values
+	call_action(NODIRECT, num_menu);		// Refresh variables
+}
+
 //--------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
