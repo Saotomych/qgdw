@@ -560,26 +560,22 @@ struct tm *ttm;
 	j_mon = jtime_tm.tm_mon + 1;
 	m_mon = mtime_tm.tm_mon + 1;
 
-
-//	// Set of parameters for all variable menu and action functions
-	actlnode = setdef_lnode(0);					// Try set Telemetering / MMXU
-	if (!actlnode) actlnode = setdef_lnode(1);	// Try set Telesignal
-	if (!actlnode) actlnode = setdef_lnode(2);	// Try set Telecontrol
-	if (!actlnode) exit(1);
-
-//	parameters.pln = (LNODE*) &actlnode;
-//	parameters.devtype = (char*) &lnodefilter;
-//	parameters.devtypetext = (char*) &devtypetext;
-//	parameters.dynmenuvars = (int*) dynmenuvars;
-//	parameters.ptimel = &time_l;
-//	// Parameters Ready
-
 	// Set start LN
 //	call_action(0xf801, "changetypeln", &parameters);
 	// Start LN ready
 
+	// Set of parameters for all variable menu and action functions
+	actlnode = setdef_lnode(0, NULL);					// Try set first LLN0
+
 	// Open first menu
 	num_menu = create_menu("menus/item");
+
+	// Set of parameters for all variable menu and action functions
+	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
+	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
+	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
+	if (!actlnode) exit(1);
+
 	if (num_menu) draw_menu();
 
     return 0;

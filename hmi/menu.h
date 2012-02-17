@@ -85,7 +85,8 @@ extern void key_pressed(void *arg);
 extern void key_rised(void *arg);
 
 extern int call_action(int direct, menu *actmenu);
-LNODE* setdef_lnode(int lnclass);
+//LNODE* setdef_lnode(int lnclass);
+LNODE* setdef_lnode(int lnclass, menu *actmenu);
 
 extern menu* create_menu(char *menuname);
 extern menu* destroy_menu(int direct);

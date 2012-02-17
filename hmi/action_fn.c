@@ -11,6 +11,46 @@
 
 extern LNODE *actlnode;
 
+// Values for change visible lnode types
+// For indication
+static char lntypes[][50] = {
+		{"Телеизмерения"},
+		{"Телесигнализация"},
+		{"Телеуправление"},
+};
+// For filter
+static char lnclasses[][5] = {
+		{"MMXU"},
+		{"MSQI"},
+		{"MMTR"},
+};
+
+static void refreshvars(menu *actmenu){
+int i, idx;
+	for (i = 0; i < actmenu->count_item; i++){
+		if (actmenu->pitems[i]->vr){
+			if (actmenu->pitems[i]->vr->val->idx & IECBASE){
+				idx = actmenu->pitems[i]->vr->val->idx - IECBASE;
+				if (idx == IEDdesc) actmenu->pitems[i]->vr->val->val = (char*) actlnode->ln.pmyied->desc;
+				if (idx == IEDname) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyied->name;
+				if (idx == LDinst) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyld->inst;
+				if (idx == LDname) actmenu->pitems[i]->vr->val->val = strchr(actlnode->ln.pmyld->inst, '/') + 1;
+				if (idx == LDdesc) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyld->desc;
+				if (idx == LNlnclass) actmenu->pitems[i]->vr->val->val = actlnode->ln.lnclass;
+				if (idx == LNlninst) actmenu->pitems[i]->vr->val->val = actlnode->ln.lninst;
+				if (idx == LNlntype) actmenu->pitems[i]->vr->val->val = actlnode->ln.lntype;
+				if (idx == LNprefix) actmenu->pitems[i]->vr->val->val = actlnode->ln.prefix;
+			}else{
+				idx = actmenu->pitems[i]->vr->val->idx;
+				if (idx == 27){
+					// Type text change
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = lntypes[0];
+				}
+			}
+		}
+	}
+}
+
 // Var parser: converts indexes of arguments to indexes of defvalue variables
 // Input: pointer to varrec for begin initialize actvr, ptr to array of defvalue indexes for vars, lenght of array
 // Return pointer to value, NULL for end of list
@@ -83,20 +123,6 @@ char *filter = pln->ln.lnclass;
 	return 1;
 }
 
-// Values for change visible lnode types
-// For indication
-static char lntypes[][50] = {
-		{"Телеизмерения"},
-		{"Телесигнализация"},
-		{"Телеуправление"},
-};
-// For filter
-static char lnclasses[][5] = {
-		{"MMXU"},
-		{"MSQI"},
-		{"MMTR"},
-};
-
 // Function change pointer (arg[0]) to pointer of first LNODE with next class in array of classes
 int prev_type_ln(void *arg){
 LNODE **pbln = ((LNODE**) *((int*)arg));
@@ -163,7 +189,7 @@ fact actfactset[] = {
 //---*** External IP ***---//
 int call_action(int direct, menu *actmenu){
 int ret = 0;
-int i, idx;
+int i;
 char *act = actmenu->pitems[actmenu->num_item]->action;
 
 	get_argindex((varrec*) actmenu->fvarrec.next, 0, 0);	// Set first varrec to var parser
@@ -186,39 +212,24 @@ char *act = actmenu->pitems[actmenu->num_item]->action;
 				 break;
 	}
 
-	for (i = 0; i < actmenu->count_item; i++){
-		if (actmenu->pitems[i]->vr){
-			if (actmenu->pitems[i]->vr->val->idx & IECBASE){
-				idx = actmenu->pitems[i]->vr->val->idx - IECBASE;
-				if (idx == IEDdesc) actmenu->pitems[i]->vr->val->val = (char*) actlnode->ln.pmyied->desc;
-				if (idx == IEDname) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyied->name;
-				if (idx == LDinst) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyld->inst;
-				if (idx == LDname) actmenu->pitems[i]->vr->val->val = strchr(actlnode->ln.pmyld->inst, '/') + 1;
-				if (idx == LDdesc) actmenu->pitems[i]->vr->val->val = actlnode->ln.pmyld->desc;
-				if (idx == LNlnclass) actmenu->pitems[i]->vr->val->val = actlnode->ln.lnclass;
-				if (idx == LNlninst) actmenu->pitems[i]->vr->val->val = actlnode->ln.lninst;
-				if (idx == LNlntype) actmenu->pitems[i]->vr->val->val = actlnode->ln.lntype;
-				if (idx == LNprefix) actmenu->pitems[i]->vr->val->val = actlnode->ln.prefix;
-			}else{
-				idx = actmenu->pitems[i]->vr->val->idx;
-				if (idx == 27){
-					// Type text change
-					*((int*)(actmenu->pitems[i]->vr->val->val)) = lntypes[0];
-				}
-			}
-		}
-	}
+	refreshvars(actmenu);
 
 	return ret;
 }
 
-LNODE* setdef_lnode(int lnclass){
+LNODE* setdef_lnode(int lnclass, menu *actmenu){
 LNODE *ln = (LNODE*) &fln.next;
 	while (ln){
-		if (ln->ln.lnclass)
-			if (!strcmp(ln->ln.lnclass, lnclasses[lnclass])) return ln;
+		if (ln->ln.lnclass){
+			if (!strcmp(ln->ln.lnclass, lnclasses[lnclass])){
+				actlnode = ln;
+				if (actmenu) refreshvars(actmenu);
+				return ln;
+			}
+		}else if (!actmenu) return ln;
 		ln = ln->l.next;
 	}
+
 	return   NULL;
 }
 
