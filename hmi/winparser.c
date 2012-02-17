@@ -98,24 +98,15 @@ char servsyms[] = {" >~"};
 menu *num_menu = allmenus[maxmenus];
 varrec *nextvarrec;
 
-
 			if ((maxmenus) >= MAXMENU) return num_menu;
 
 			num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
 
-			clen = strlen(buf);
-			if (!clen){
-				free(num_menu);
-				return 0;
-			}
+			num_menu->ptxtmenu = buf;
 
-			num_menu->ptxtmenu = malloc(clen + 2);
-			strcpy((num_menu->ptxtmenu+1), buf);
-
-		 	//Make ending 0 for string
-		 	num_menu->ptxtmenu[clen+1] = 0;
-		 	//Make ending start 0
+			//Make start 0
 		 	num_menu->ptxtmenu[0] = 0;
+		 	clen = strlen(num_menu->ptxtmenu + 1);
 
 		 	for (i=1; i<clen; i++)
 	        {
@@ -355,6 +346,10 @@ menu *num_menu;
 	for (i=0; i < num_menu->count_item; i++){
 		GrUnmapWindow(num_menu->pitems[i]->main_window);
 		GrDestroyWindow(num_menu->pitems[i]->main_window);
+		if (num_menu->pitems[i]->vr){
+			if (num_menu->pitems[i]->vr->iarg & IECBASE) free(num_menu->pitems[i]->vr->val);
+			free(num_menu->pitems[i]->vr);
+		}
 		free(num_menu->pitems[i]);
 		num_menu->pitems[i] = 0;
 	}

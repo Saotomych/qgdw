@@ -45,11 +45,12 @@ static char *days[7] = {
 		"BC",
 };
 
-char menutxt[8192];
+//char menutxt[8192];
 
 // Menu of LNODES
 char* ChangeLN(char *arg){
-char *pmenu = menutxt;
+char *txtmenu = arg;
+char *pmenu = arg;
 LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
 char *lnodefilter = (char*) pln->ln.lnclass;
@@ -71,12 +72,15 @@ char *lnodefilter = (char*) pln->ln.lnclass;
 		pln = pln->l.next;
 	}
 
-	return menutxt;
+	*pmenu = 0;
+
+	return txtmenu;
 }
 
 // Menu of ALL LNODES FROM FILTER CLASSES
 char* ChangeLNType(char *arg){
-char *pmenu = menutxt;
+char *txtmenu = arg;
+char *pmenu = arg;
 LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
 
@@ -117,7 +121,9 @@ int x, y = 0;
 		pln = pln->l.next;
 	}
 
-	return menutxt;
+	*pmenu = 0;
+
+	return txtmenu;
 }
 
 // Menu of Date
@@ -134,7 +140,8 @@ int x, y = 0;
 //           };
 
 char* ChangeDate(char *arg){
-char *pmenu = menutxt;
+char txtmenu = arg;
+char *pmenu = arg;
 time_t *timel = &tmptime;
 struct tm *timetm = localtime(timel);
 int i, x, y, maxday, wday, day;
@@ -151,6 +158,7 @@ int i, x, y, maxday, wday, day;
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
 	pmenu += strlen(pmenu);
+
 
 	// Days of week
 	x = 2;
@@ -181,7 +189,9 @@ int i, x, y, maxday, wday, day;
 		}
 	}
 
-	return menutxt;
+	*pmenu = 0;
+
+	return txtmenu;
 }
 
 char* ChangeDateMain(char *arg){
@@ -233,34 +243,38 @@ char *pmenu, *txtmenu;
 menu *psmenu;
 int i;
 
+	txtmenu = malloc(2048);
+	txtmenu[0] = 0;
+
 	// Stat of file, for get size of file
 	if (stat(menuname, &fst) == -1){
 		printf("IEC Virt: menufile not found\n");
 	}else{
 		// Load file to static buffer
 		fmcfg = fopen(menuname, "r");
-		clen = fread(menutxt, 1, (size_t) (fst.st_size), fmcfg);
-		menutxt[fst.st_size] = 0;
+		clen = fread(txtmenu + 1, 1, (size_t) (fst.st_size), fmcfg);
+		txtmenu[fst.st_size] = 0;
 	}
 
 	// Find and run proloque
 	pmenu = strstr(menuname,"/");
 	if (pmenu) pmenu++;
 	else pmenu = menuname;
-	txtmenu = menutxt;
 
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
-			txtmenu = (char*) menufactset[i].proloque(NULL);
+			(char*) menufactset[i].proloque(txtmenu + strlen(txtmenu) + 1);
 			break;
 		}
 	}
 
 	// Create menu structures
-	if (*txtmenu){
+	if (*(txtmenu+1)){
 		psmenu = do_openfilemenu(txtmenu);
 		if (!psmenu) psmenu = do_openfilemenu("menus/item");
 	}
+
+//	free(txtmenu);
 
 	return psmenu;
 }

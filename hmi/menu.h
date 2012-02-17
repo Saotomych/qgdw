@@ -32,8 +32,10 @@
 #define BGCOLOR	WHITE
 #define FONTNAME "pcf/7x13.pcf.gz"
 
-#define MAXMENU 3
+#define MAXMENU 5
 #define MAXITEM 40
+
+#define REMAKEMENU		100
 
 #define NODIRECT		0
 #define DIR_FORWARD		1

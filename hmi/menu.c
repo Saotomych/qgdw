@@ -41,6 +41,12 @@ static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu
 static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
 
+static char lnmenunames[][16] = {
+		{"menus/itemti"},
+		{"menus/itemts"},
+		{"menus/itemtu"},
+};
+
 static value menuvalues[] = {
 		// Time variables
 		{0, "APP:year", 	&myear, 			"XXXX", 	INT32, 		STRING},
@@ -63,16 +69,6 @@ static value menuvalues[] = {
 		{0, "APP:ldtypetext", &devtypetext,  "Тип не выбран", PTRSTRING , STRING},
 		{0, "APP:filter", &lnodefilter, NULL, PTRSTRING, NULL},
 };
-
-//struct _parameters{
-//	LNODE *pln;			// Address of pointer of actlnode
-//	char  *devtype;		// Pointer to lnodefilter
-//	char  *devtypetext;	// Pointer to lnodefilter text description
-//	int	  *dynmenuvars;	// Pointer to variable for changing by actual dynamic menu
-//	time_t *ptimel;		// Pointer to time as time_t type
-//} parameters;
-
-int *args;
 
 //------------------------------------------------------------------------------------
 // Function create new text in all windows
@@ -259,16 +255,34 @@ int stepy, y, itemy, itemh;
 // Keys functions
 
 void default_left(GR_EVENT *event){
+int ret;
 	if (num_menu->pitems[num_menu->num_item]->action){
-		call_action(event->keystroke.ch, num_menu);
-		redraw_screen(NULL);
+		ret = call_action(event->keystroke.ch, num_menu);
+		if (ret){
+			ret -= REMAKEMENU;
+			num_menu = destroy_menu(DIR_SIDEBKW);
+			if (!num_menu){
+				num_menu = create_menu(lnmenunames[ret]);
+				call_action(NODIRECT, num_menu);		// Refresh variables
+			}
+			if (num_menu) draw_menu();
+		}else redraw_screen(NULL);
 	}
 }
 
 void default_right(GR_EVENT *event){
+int ret;
 	if (num_menu->pitems[num_menu->num_item]->action){
-		call_action(event->keystroke.ch, num_menu);
-		redraw_screen(NULL);
+		ret = call_action(event->keystroke.ch, num_menu);
+		if (ret){
+			ret -= REMAKEMENU;
+			num_menu = destroy_menu(DIR_SIDEBKW);
+			if (!num_menu){
+				num_menu = create_menu(lnmenunames[ret]);
+				call_action(NODIRECT, num_menu);		// Refresh variables
+			}
+			if (num_menu) draw_menu();
+		}else redraw_screen(NULL);
 	}
 }
 
@@ -299,20 +313,14 @@ int itemy, itemh;
 }
 
 void default_enter(GR_EVENT *event){
-int dir = DIR_FORWARD;
-
 	// Select new menu
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(tmpstring, "menus/");
 		strcat(tmpstring, num_menu->pitems[num_menu->num_item]->next_menu);
-		if (dir == DIR_BACKWARD){
-			num_menu = destroy_menu(dir);
-		}
 		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
-		if (dir == DIR_FORWARD){
-			num_menu = create_menu(tmpstring);
-			if (num_menu) draw_menu();
-		}
+		num_menu = create_menu(tmpstring);
+		call_action(NODIRECT, num_menu);		// Refresh variables
+		if (num_menu) draw_menu();
 	}
 }
 
@@ -612,7 +620,7 @@ struct tm *ttm;
 	if (!actlnode) exit(1);
 
 	// Open first menu
-	num_menu = create_menu("menus/item");
+	num_menu = create_menu("menus/itemti");
 
 	// Set of parameters for all variable menu and action functions
 	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU

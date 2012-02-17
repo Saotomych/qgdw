@@ -145,7 +145,7 @@ int i;
 	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
 	if (pln) *pbln = pln;
 
-	return 0;
+	return REMAKEMENU + i;
 }
 
 // Function change pointer (arg[0]) to pointer of first LNODE with previous class in array of classes
@@ -166,7 +166,10 @@ int i;
 	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
 	if (pln) *pbln = pln;
 
-	return 0;
+//	destroy_menu(DIR_SIDEBKW);
+//	num_menu = create_menu(lnmenunames[i]);
+
+	return REMAKEMENU + i;
 }
 
 // Array of structures "synonym to function"
