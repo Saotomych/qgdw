@@ -104,7 +104,7 @@ uint16_t asdu_map_read(asdu_map **m_list, const char *file_name, const char *app
 	char r_buff[256] = {0};
 	uint32_t map_num;
 	uint32_t proto_id, base_id;
-	char name[DOBJ_NAMESIZE];
+	char name[DOBJ_NAMESIZE] = {0};
 	int res;
 
 	map_file = fopen(file_name, "r");
@@ -140,7 +140,7 @@ uint16_t asdu_map_read(asdu_map **m_list, const char *file_name, const char *app
 
 uint16_t asdu_add_map_item(asdu_map **m_list, uint32_t proto_id, uint32_t base_id, const char *name, const char *app_name, uint8_t num_base)
 {
-	asdu_map *last_map, *new_map;
+	asdu_map *last_map = NULL, *new_map = NULL;
 
 	new_map = (asdu_map*) malloc(sizeof(asdu_map));
 
@@ -178,7 +178,7 @@ uint16_t asdu_add_map_item(asdu_map **m_list, uint32_t proto_id, uint32_t base_i
 
 asdu_map *asdu_get_map_item(asdu_map **m_list, uint32_t id, uint8_t get_by)
 {
-	asdu_map *res_map;
+	asdu_map *res_map = NULL;
 
 	res_map = *m_list;
 
@@ -199,7 +199,7 @@ void asdu_map_ids(asdu_map **m_list, asdu *cur_asdu, const char *app_name, uint8
 	if(!cur_asdu) return;
 
 	int i;
-	asdu_map *res_map;
+	asdu_map *res_map = NULL;
 
 	for(i=0; i<cur_asdu->size; i++)
 	{

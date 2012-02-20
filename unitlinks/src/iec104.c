@@ -384,10 +384,10 @@ uint16_t iec104_get_dobj_item(iec104_ep_ext* ep_ext, uint32_t iec104_id)
 
 int iec104_recv_data(int len)
 {
-	char *buff;
+	char *buff = NULL;
 	int adr, dir;
 	uint32_t offset;
-	ep_data_header *ep_header_in;
+	ep_data_header *ep_header_in = NULL;
 
 	buff = (char*) malloc(len);
 

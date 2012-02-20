@@ -232,10 +232,10 @@ void dlt645_catch_alarm(int sig)
 
 int dlt645_recv_data(int len)
 {
-	char *buff;
+	char *buff = NULL;
 	int adr, dir;
 	uint32_t offset;
-	ep_data_header *ep_header_in;
+	ep_data_header *ep_header_in = NULL;
 
 	buff = (char*) malloc(len);
 
