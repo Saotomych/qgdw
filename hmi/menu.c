@@ -36,7 +36,7 @@ static menu *num_menu;     //указатель на структуру меню
 
 static char tmpstring[100];			// For temporary operations
 
-static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu item
+//static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu item
 
 static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
@@ -317,7 +317,7 @@ void default_enter(GR_EVENT *event){
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(tmpstring, "menus/");
 		strcat(tmpstring, num_menu->pitems[num_menu->num_item]->next_menu);
-		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
+//		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		num_menu = create_menu(tmpstring);
 		call_action(NODIRECT, num_menu);		// Refresh variables
 		if (num_menu) draw_menu();
@@ -572,7 +572,8 @@ int i;
 					break;
 
 	case 0x1B:		// Key MENU / ESC
-					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
+//					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
+					GrDestroyFont(num_menu->font);
 					num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 					if (!num_menu){
 						num_menu = create_menu("menus/item");

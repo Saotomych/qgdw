@@ -22,9 +22,6 @@ static varrec *lastvr;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
-
-	printf("Precreate list 0x%04X\n", plist);
-
 	plist->next = malloc(size);
 	if (!plist->next){
 		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
