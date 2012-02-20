@@ -55,11 +55,11 @@ static value menuvalues[] = {
 		{0, "APP:day",  	&(mtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},	// Day as digit with zero
 		{0, "APP:wday", 	&pmwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text (2 symbols)
 		{0, "APP:hour", 	&(mtime_tm.tm_hour),"XX", 		INT32DIG2, 	STRING},
-		{0, "APP:min", 	&(mtime_tm.tm_min), "XX", 		INT32DIG2, 	STRING},
-		{0, "APP:sec", 	&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
+		{0, "APP:min", 		&(mtime_tm.tm_min), "XX", 		INT32DIG2, 	STRING},
+		{0, "APP:sec", 		&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
 		{0, "APP:jyear", 	&jyear, 			"XXXX", 	INT32, 		STRING},
-		{0, "APP:jmontext",&pjmon, 			"XX", 		PTRSTRING, 	STRING},
-		{0, "APP:jmondig", &j_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{0, "APP:jmontext",	&pjmon, 			"XX", 		PTRSTRING, 	STRING},
+		{0, "APP:jmondig", 	&j_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
 		{0, "APP:jday", 	&(jtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},
 		{0, "APP:jwday", 	&pjwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text
 		{0, "APP:jhour", 	&(jtime_tm.tm_hour),"XX", 		INT32DIG2,	STRING},
@@ -572,8 +572,6 @@ int i;
 					break;
 
 	case 0x1B:		// Key MENU / ESC
-//					memset(dynmenuvars, 0, MAXITEM * sizeof(int));
-					GrDestroyFont(num_menu->font);
 					num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 					if (!num_menu){
 						num_menu = create_menu("menus/item");

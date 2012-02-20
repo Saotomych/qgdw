@@ -339,6 +339,7 @@ varrec *prevvr;
 		free(vr);
 		vr = prevvr;
 		lastvr = vr;
+		varrec_number--;
 	}
 
 	vr->l.next = NULL;

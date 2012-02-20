@@ -250,6 +250,7 @@ int i;
 	if (stat(menuname, &fst)){
 		printf("IEC Virt: menufile not found\n");
 		txtmenu = malloc(4096);
+		txtmenu[0] = 0;
 	}else{
 		if (S_ISREG(S_IFREG)){
 			// Load file to static buffer

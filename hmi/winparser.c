@@ -105,6 +105,7 @@ menu *num_menu = allmenus[maxmenus];
 		 	clen = strlen(buf + 1) + 2;
 
 		 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
+		 	memset(num_menu, 0, sizeof(menu));
 
 			num_menu->ptxtmenu = buf;
 
@@ -356,6 +357,7 @@ menu* num_menu;
 	}
 
 	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
+	GrDestroyFont(num_menu->font);
 
 	for (i=0; i < num_menu->count_item; i++){
 		GrUnmapWindow(num_menu->pitems[i]->main_window);

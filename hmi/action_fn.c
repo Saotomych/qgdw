@@ -172,12 +172,33 @@ int i;
 	return REMAKEMENU + i;
 }
 
+int next_day(void *arg){
+time_t time = *((int*) arg);
+
+//		localtime(&maintime);
+
+	return time;
+}
+
+int prev_day(void *arg){
+
+}
+
+int next_jourday(void *arg){
+//	jourtime = next_day(jourtime);
+
+	return 0;
+}
+
+int prev_jourday(void *arg){
+
+}
+
 // Array of structures "synonym to function"
 fact actfactset[] = {
-		{"changeln", (void*) prev_ln, NULL},      			// for left
-		{"changeln", (void*) next_ln, NULL},					// for right
-		{"changetypeln", (void*) prev_type_ln, NULL},			// for left
-		{"changetypeln", (void*) next_type_ln, NULL},			// for right
+		{"changeln", (void*) prev_ln, (void*) next_ln},
+		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
+		{"change1day", (void*) next_jourday, (void*) prev_jourday},
 };
 
 //---*** External IP ***---//
@@ -191,16 +212,16 @@ char *act = actmenu->pitems[actmenu->num_item]->action;
 	// Separate keys and call action
 	switch(direct){
 	case 0xf800:
-				 for (i=0; i < sizeof(actfactset) / sizeof(fact); i+=2){
+				 for (i=0; i < sizeof(actfactset) / sizeof(fact); i++){
 					if (!strcmp(actfactset[i].action, act)){
 						ret = actfactset[i].proloque(actmenu);
 					}
 				 }
 				 break;
 	case 0xf801:
-				 for (i=1; i < (sizeof(actfactset) / sizeof(fact)); i+=2){
+				 for (i=0; i < (sizeof(actfactset) / sizeof(fact)); i++){
 					 if (!strcmp(actfactset[i].action, act)){
-						 ret = actfactset[i].proloque(actmenu);
+						 ret = actfactset[i].epiloque(actmenu);
 					 }
 				 }
 				 break;
