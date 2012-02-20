@@ -69,12 +69,6 @@ typedef struct _VARREC{
 	LIST l;
 	fcdarec *name;	// Can see as pointer to pointer to full name already
 	value *val;		// Values and types of variable
-	union{ // Local variable for temporary operations
-		int   *pint;
-		char  *pchar;
-		int   uint;
-		long  ulong;
-	} localval;
 	int iarg;
 	int prop;		// properties: const, var, booking, true value.
 	int time;		// time from last refresh value, usec
@@ -90,11 +84,8 @@ typedef struct _VARBOOK{
 } varbook, *pvarbook;
 
 extern void vc_init(pvalue vt, int len);
-//extern varrec *vc_addvarrec(char *varname, LNODE *actln);
-//extern varrec *vc_addvarrec(char *varname, varrec *actvr);
-//extern varrec *vc_addvarrec(char *varname, varrec *actvr, value **defvr);
-extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
-//extern int vc_rmvarrec(char *varname);
-extern int vc_destroyvarreclist();
+//extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
+extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
+extern int vc_destroyvarreclist(varrec *fvr);
 
 #endif /* VARCONTROL_H_ */

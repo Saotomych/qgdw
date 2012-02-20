@@ -140,7 +140,7 @@ int x, y = 0;
 //           };
 
 char* ChangeDate(char *arg){
-char txtmenu = arg;
+char *txtmenu = arg;
 char *pmenu = arg;
 time_t *timel = &tmptime;
 struct tm *timetm = localtime(timel);
@@ -233,28 +233,33 @@ fact menufactset[] = {
 
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
-
+static char *txtmenu;
 menu* create_menu(char *menuname){
-FILE *fmcfg;               //file open
 struct stat fst;			// statistics of file
-int clen;					// lenght of file or array
-
-char *pmenu, *txtmenu;
+FILE *fmcfg;               //file open
+size_t clen;					// lenght of file or array
+char *pmenu;
 menu *psmenu;
 int i;
 
 	// It's memory part will be realloc after the txtmenu building and malloc for new menu structure
-	txtmenu = malloc(2048);
-	txtmenu[0] = 0;
-
+//	premenu = malloc(2048);
+//	premenu[0] = ' ';
+//fst.st_size = 2048;
 	// Stat of file, for get size of file
-	if (stat(menuname, &fst) == -1){
+	if (stat(menuname, &fst)){
 		printf("IEC Virt: menufile not found\n");
+		txtmenu = malloc(4096);
 	}else{
-		// Load file to static buffer
-		fmcfg = fopen(menuname, "r");
-		clen = fread(txtmenu + 1, 1, (size_t) (fst.st_size), fmcfg);
-		txtmenu[fst.st_size] = 0;
+		if (S_ISREG(S_IFREG)){
+			// Load file to static buffer
+			txtmenu = malloc((size_t)(fst.st_size + 2));
+			fmcfg = fopen(menuname, "r");
+			clen = fread(txtmenu + 1, 1, (size_t) (fst.st_size), fmcfg);
+			txtmenu[0] = 0;
+			txtmenu[clen+1] = 0;
+			fclose(fmcfg);
+		}
 	}
 
 	// Find and run proloque
@@ -264,7 +269,7 @@ int i;
 
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
-			(char*) menufactset[i].proloque(txtmenu + strlen(txtmenu) + 1);
+			menufactset[i].proloque(txtmenu + strlen(txtmenu) + 1);
 			break;
 		}
 	}

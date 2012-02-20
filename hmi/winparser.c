@@ -96,7 +96,7 @@ char *p;
 char servsyms[] = {" >~"};
 
 menu *num_menu = allmenus[maxmenus];
-varrec *nextvarrec;
+//varrec *nextvarrec;
 
 			if ((maxmenus) >= MAXMENU) return num_menu;
 
@@ -106,7 +106,7 @@ varrec *nextvarrec;
 
 		 	num_menu = malloc(sizeof(menu));   //возвращает указатель на первый байт блока области памяти структуры меню
 
-			num_menu->ptxtmenu = realloc(buf, clen);
+			num_menu->ptxtmenu = buf;
 
 		 	for (i=1; i<clen; i++)
 	        {
@@ -209,7 +209,7 @@ varrec *nextvarrec;
 
 		 	if (count_item > MAXITEM) count_item = MAXITEM;
 		 	num_menu->pitems = malloc(count_item * sizeof(item*));
-		 	nextvarrec = (varrec*) &(num_menu->fvarrec);
+//		 	nextvarrec = (varrec*) &(num_menu->fvarrec);
 
 		 	for (i = 0; i < count_item; i++){
 	            while ((*ptxt) < ' ') ptxt++;
@@ -308,8 +308,8 @@ varrec *nextvarrec;
 	            if (p){
 	            	*p = 0;
 	            	p += 5;
-	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, nextvarrec, defvalues);
-	            	if (num_menu->pitems[i]->vr) nextvarrec = num_menu->pitems[i]->vr;
+	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, defvalues);
+//	            	if (num_menu->pitems[i]->vr) nextvarrec = num_menu->pitems[i]->vr;
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{
@@ -324,6 +324,13 @@ varrec *nextvarrec;
 	         num_menu->start_item = first_menuitem;
 	         num_menu->count_item = count_item;
 	         num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->first_item]->rect.y;
+
+		 	for (i = 0; i < count_item; i++){
+		 		if (num_menu->pitems[i]->vr){
+		 			num_menu->fvarrec.next = num_menu->pitems[i]->vr;
+		 			break;
+		 		}
+		 	}
 
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
@@ -348,23 +355,18 @@ menu* num_menu;
 		exit(2);
 	}
 
+	vc_destroyvarreclist((varrec*) num_menu->fvarrec.next);
+
 	for (i=0; i < num_menu->count_item; i++){
 		GrUnmapWindow(num_menu->pitems[i]->main_window);
 		GrDestroyWindow(num_menu->pitems[i]->main_window);
-//		if (num_menu->pitems[i]->vr){
-//			if (num_menu->pitems[i]->vr->iarg & IECBASE){
-//				free(num_menu->pitems[i]->vr->val);
-//				free(num_menu->pitems[i]->vr->name);
-//			}
-//			free(num_menu->pitems[i]->vr);
-//		}
-//		free(num_menu->pitems[i]);
-//		num_menu->pitems[i] = 0;
+		free(num_menu->pitems[i]);
 	}
+	free(num_menu->pitems);
 	GrUnmapWindow(num_menu->main_window);
 	GrDestroyWindow(num_menu->main_window);
-//	free(num_menu->ptxtmenu);
-//	free(num_menu);
+	free(num_menu->ptxtmenu);
+	free(num_menu);
 
 	maxmenus--;
 	allmenus[maxmenus] = 0;

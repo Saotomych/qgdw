@@ -48,7 +48,7 @@ int i, idx, j;
 					for (j = 0; j < 3; j++){
 						if (!strcmp(lnclasses[j], actlnode->ln.lnclass)) break;
 					}
-					*((int*)(actmenu->pitems[i]->vr->val->val)) = lntypes[j];
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[j];
 				}
 			}
 		}

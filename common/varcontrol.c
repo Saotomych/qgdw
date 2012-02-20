@@ -16,24 +16,15 @@
 //static LIST fvarbook = {NULL, NULL};		// first varbook for future
 //static varbook *actvb;						// actual varbook for future
 
-static int varrec_number = 0;	// Argument counter for actual booking
-
-static varrec* init_varrec(varrec *vr){
-	if (!vr) return 1;
-	vr->name = malloc(sizeof(fcdarec));
-	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
-	else return 1;
-	vr->val = malloc(sizeof(value));
-	if (vr->val) memset(vr->val, 0, sizeof(value));
-	else{
-		free(vr->name);
-		return NULL;
-	}
-	return vr;
-}
+static int varrec_number;	// Argument counter for actual booking
+static LIST fvarrec;
+static varrec *lastvr;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist;
+
+	printf("Precreate list 0x%04X\n", plist);
+
 	plist->next = malloc(size);
 	if (!plist->next){
 		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
@@ -46,6 +37,20 @@ LIST *newlist;
 	return newlist;
 }
 
+static varrec* init_varrec(varrec *vr){
+	if (!vr) return NULL;
+	vr->name = malloc(sizeof(fcdarec));
+	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
+	else return NULL;
+	vr->val = malloc(sizeof(value));
+	if (vr->val) memset(vr->val, 0, sizeof(value));
+	else{
+		free(vr->name);
+		return NULL;
+	}
+	return vr;
+}
+
 // Set callback function for variable changing events
 void vc_setcallback(){
 
@@ -55,6 +60,8 @@ void vc_setcallback(){
 void vc_init(pvalue vt, int len){
 int i;
 //varrec *defvt;		// actual varrec
+
+	lastvr = (varrec*) &fvarrec;
 
 //	// Create const var table
 //	defvt = (varrec*) &fdefvt;
@@ -75,21 +82,26 @@ int i;
 //
 }
 
-static varrec* newappvarrec(varrec *vr){
+static varrec* newappvarrec(value *val){
+varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
+	lastvr = vr;
 	// Initialize varrec
 	vr->name = malloc(sizeof(fcdarec));
-	vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;
+	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
+	vr->val = malloc(sizeof(value));
+	if (vr->val) memcpy(vr->val, val, sizeof(value));
+	vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;;
 	vr->iarg = varrec_number;
 	varrec_number++;
 	vr->time = 0;
-	// Copy global variable to local for local changes
-	vr->localval.uint = *((uint*)(vr->val->val));
 	return vr;
 }
 
-static varrec* newiecvarrec(varrec *vr){
+static varrec* newiecvarrec(void){
+varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	// Initialize varrec
 	if (init_varrec(vr)){	// mallocs for 'fcdarec' and 'value'
+		lastvr = vr;
 		vr->iarg = varrec_number;
 		varrec_number++;
 		vr->time = 0;
@@ -101,7 +113,11 @@ static varrec* newiecvarrec(varrec *vr){
 		vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;
 		return vr;
 	}else{
-		free(vr);
+		if (vr){
+			if (vr->val) free(vr->val);
+			if (vr->name) free(vr->name);
+			free(vr);
+		}
 		return NULL;
 	}
 }
@@ -109,7 +125,7 @@ static varrec* newiecvarrec(varrec *vr){
 // To book concrete variable by name
 // Input data: name of variable
 // Return pointer to value record and properties
-varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr){
+varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr){
 int i, x;
 varrec *vr;
 struct _IED *pied;
@@ -125,8 +141,6 @@ char keywords[][10] = {
 		{"LN:"},
 };
 
-	if (!actvr) return NULL;
-
 	pld = pln->ln.pmyld;
 	pied = pln->ln.pmyied;
 
@@ -141,17 +155,15 @@ char keywords[][10] = {
 					while(defvr[x].idx == x){
 						if (!strcmp(defvr[x].name, varname)){
 							// Register new value in varrec LIST
-							vr = create_next_struct_in_list(&actvr->l, sizeof(varrec));
-							vr->val = &defvr[x];
-							if (newappvarrec(vr)){
+							vr = newappvarrec(&defvr[x]);
+							if (vr){
 								vr->name->fc = varname;
 								vr->val->name = varname;
-								// Value initialize
 								return vr;
 							}
 							else{
 								free(vr);
-								actvr->l.next = NULL;
+								lastvr->l.next = NULL;
 								return NULL;
 							}
 						}
@@ -164,8 +176,8 @@ char keywords[][10] = {
 			case 1:	// IED:
 					if (pied){
 						// Register new value in varrec LIST
-						vr = create_next_struct_in_list(&actvr->l, sizeof(varrec));
-						if (newiecvarrec(vr)){
+						vr = newiecvarrec();
+						if (vr){
 							vr->name->fc = varname;
 							vr->val->name = varname;
 							// Value initialize
@@ -176,10 +188,9 @@ char keywords[][10] = {
 								vr->val->idx = IECBASE + IEDname;
 								vr->val->val = pied->name;
 							}
-							vr->localval.uint = *((uint*)(vr->val->val));
 							return vr;
 						}else{
-							actvr->l.next = NULL;
+							lastvr->l.next = NULL;
 							return NULL;
 						}
 					}
@@ -190,8 +201,8 @@ char keywords[][10] = {
 					// Fill varrec as const of application
 					if (pld){
 						// Register new value in varrec LIST
-						vr = create_next_struct_in_list(&actvr->l, sizeof(varrec));
-						if (newiecvarrec(vr)){
+						vr = newiecvarrec();
+						if (vr){
 							vr->name->fc = varname;
 							vr->val->name = varname;
 							// Value initialize
@@ -210,7 +221,7 @@ char keywords[][10] = {
 							}
 							return vr;
 						}else{
-							actvr->l.next = NULL;
+							lastvr->l.next = NULL;
 							return NULL;
 						}
 					}
@@ -251,8 +262,8 @@ char keywords[][10] = {
 
 					if (actln){
 						// Register new value in varrec LIST
-						vr = create_next_struct_in_list(&actvr->l, sizeof(varrec));
-						if (newiecvarrec(vr)){
+						vr = newiecvarrec();
+						if (vr){
 							vr->name->fc = varname;
 							vr->val->name = varname;
 							// Value initialize
@@ -295,20 +306,18 @@ char keywords[][10] = {
 										vr->val->val = actln->ln.prefix;
 										vr->val->idx = IECBASE + LNprefix;
 									}
-									vr->localval.uint = ((uint*)(vr->val->val));
 									return vr;
 								}
 							}
 
 							return vr;
 						}else{
-							actvr->l.next = NULL;
+							lastvr->l.next = NULL;
 							return NULL;
 						}
 					}
 
 					break;
-
 			}
 		}
 	}
@@ -316,7 +325,23 @@ char keywords[][10] = {
 }
 
 // To delete booking of concrete variable by name
-int vc_destroyvarreclist(){
+int vc_destroyvarreclist(varrec *fvr){
+varrec *vr = lastvr;
+varrec *prevvr;
+
+	while((vr->l.next != fvr) && (vr->l.prev)){
+
+		// TODO Unsubscribe variable if needed
+
+		// Free and switch to next varrec
+		prevvr = vr->l.prev;
+		if (vr->name) free(vr->name);
+		if (vr->val) free(vr->val);
+		free(vr);
+		vr = prevvr;
+	}
+
+	vr->l.next = NULL;
 
 	return 0;
 }

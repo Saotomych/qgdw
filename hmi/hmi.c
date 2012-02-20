@@ -211,6 +211,8 @@ void mainloop()
 	GR_EVENT event;
 	//GR_WM_PROPERTIES props;ы
 
+	memset(&event, 0, sizeof(GR_EVENT));
+
 	while (1) {
  		wm_handle_event(&event);
  		GrGetNextEvent(&event);
@@ -300,7 +302,7 @@ char *fname;
 	for(i=0; i < (sizeof(defvalues)/sizeof(value) - 1); i++) defvalues[i].idx = i;
 
 	// Register all variables in varcontroller
-//	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
+	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
 //---*** Init visual control ***---//
 	if (init_menu()){
