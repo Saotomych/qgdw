@@ -62,6 +62,8 @@ int i;
 //varrec *defvt;		// actual varrec
 
 	lastvr = (varrec*) &fvarrec;
+	fvarrec.prev = NULL;
+	fvarrec.next = NULL;
 
 //	// Create const var table
 //	defvt = (varrec*) &fdefvt;
@@ -339,6 +341,7 @@ varrec *prevvr;
 		if (vr->val) free(vr->val);
 		free(vr);
 		vr = prevvr;
+		lastvr = vr;
 	}
 
 	vr->l.next = NULL;

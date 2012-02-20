@@ -327,7 +327,7 @@ menu *num_menu = allmenus[maxmenus];
 
 		 	for (i = 0; i < count_item; i++){
 		 		if (num_menu->pitems[i]->vr){
-		 			num_menu->fvarrec.next = num_menu->pitems[i]->vr;
+		 			num_menu->fvarrec = num_menu->pitems[i]->vr;
 		 			break;
 		 		}
 		 	}
@@ -355,7 +355,7 @@ menu* num_menu;
 		exit(2);
 	}
 
-	vc_destroyvarreclist((varrec*) num_menu->fvarrec.next);
+	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
 
 	for (i=0; i < num_menu->count_item; i++){
 		GrUnmapWindow(num_menu->pitems[i]->main_window);

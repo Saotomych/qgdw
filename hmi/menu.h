@@ -75,7 +75,7 @@ typedef struct _menu{
 	void (*keyup)();
 	void (*keydown)();
 	void (*keyenter)();
-	LIST fvarrec;		// Pointer to LIST first varrec in list all varrec for this menu
+	varrec *fvarrec;		// Pointer to LIST first varrec in list all varrec for this menu
 } menu;
 
 extern int *args;
