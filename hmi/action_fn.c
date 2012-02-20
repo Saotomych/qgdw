@@ -103,7 +103,7 @@ char *filter = pln->ln.lnclass;
 		}while (pln->l.next);
 	}
 
-	return 1;
+	return 0;
 }
 
 // Function change pointer (arg[0]) to pointer of previous LNODE with equal class
@@ -186,7 +186,7 @@ int ret = 0;
 int i;
 char *act = actmenu->pitems[actmenu->num_item]->action;
 
-	get_argindex((varrec*) actmenu->fvarrec.next, 0, 0);	// Set first varrec to var parser
+	get_argindex((varrec*) actmenu->fvarrec, 0, 0);	// Set first varrec to var parser
 
 	// Separate keys and call action
 	switch(direct){
