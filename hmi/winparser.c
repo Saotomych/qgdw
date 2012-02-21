@@ -30,8 +30,6 @@ extern void date_down(GR_EVENT *event);
 extern void date_enter(GR_EVENT *event);
 extern void setlnbytype(GR_EVENT *event);
 extern void setlnbyclass(GR_EVENT *event);
-//extern void setjournaldate(GR_EVENT *event);
-//extern void setjournaltime(GR_EVENT *event);
 extern void time_left(GR_EVENT *event);
 extern void time_right(GR_EVENT *event);
 extern void time_up(GR_EVENT *event);
@@ -365,6 +363,8 @@ menu* num_menu;
 		printf("HMI error: Detect damaged menu order\n");
 		exit(2);
 	}
+
+	call_epiloque(actmenu);
 
 	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
 	GrDestroyFont(num_menu->font);

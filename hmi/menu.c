@@ -355,10 +355,8 @@ int itemy, itemh, i;
 		if (ttm->tm_mon) ttm->tm_mon--;
 		else { ttm->tm_mon = 11; ttm->tm_year--;}
 		tmptime = mktime(ttm);
-		destroy_menu(num_menu, DIR_SIDEBKW);
-		num_menu = create_menu("date");
-		if (num_menu) draw_menu();
-
+		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+		default_enter(NULL);
 	}else{
 		// Days
 		if (num_menu->pitems[num_menu->num_item]->rect.y ==
@@ -393,9 +391,8 @@ int itemy, itemh, i;
 		if (ttm->tm_mon < 11) ttm->tm_mon++;
 		else { ttm->tm_mon = 0; ttm->tm_year++;}
 		tmptime = mktime(ttm);
-		destroy_menu(num_menu, DIR_SIDEBKW);
-		num_menu = create_menu("date");
-		if (num_menu) draw_menu();
+		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+		default_enter(NULL);
 	}else{
 		// Days
 		if (num_menu->pitems[num_menu->num_item]->rect.y ==
@@ -469,15 +466,19 @@ int itemy, itemh, i;
 
 void date_enter(GR_EVENT *event){
 struct tm *ttm;
-int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 
-	ttm	= localtime(&tmptime);
-	if (day) ttm->tm_mday = day;
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+
+	ttm	= localtime(&jourtime);
 	memcpy(&jtime_tm, ttm, sizeof(struct tm));
 	jyear = 1900 + jtime_tm.tm_year;
 	j_mon = jtime_tm.tm_mon + 1;
 
-	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+	ttm	= localtime(&maintime);
+	memcpy(&mtime_tm, ttm, sizeof(struct tm));
+	myear = 1900 + mtime_tm.tm_year;
+	m_mon = mtime_tm.tm_mon + 1;
+
 	redraw_screen(NULL);
 
 }
@@ -534,17 +535,20 @@ char *pdig = num_menu->pitems[num_menu->num_item]->text;
 
 void time_enter(GR_EVENT *event){
 struct tm *ttm;
-int hour = atoi(num_menu->pitems[1]->text) * 10 + atoi(num_menu->pitems[2]->text);
-int min = atoi(num_menu->pitems[4]->text) * 10 + atoi(num_menu->pitems[5]->text);
-int sec = atoi(num_menu->pitems[7]->text) * 10 + atoi(num_menu->pitems[8]->text);
-
-	jtime_tm.tm_hour = hour;
-	jtime_tm.tm_min = min;
-	jtime_tm.tm_sec = sec;
 
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
-	redraw_screen(NULL);
 
+	ttm	= localtime(&jourtime);
+	memcpy(&jtime_tm, ttm, sizeof(struct tm));
+	jyear = 1900 + jtime_tm.tm_year;
+	j_mon = jtime_tm.tm_mon + 1;
+
+	ttm	= localtime(&maintime);
+	memcpy(&mtime_tm, ttm, sizeof(struct tm));
+	myear = 1900 + mtime_tm.tm_year;
+	m_mon = mtime_tm.tm_mon + 1;
+
+	redraw_screen(NULL);
 }
 
 void setlnbytype(GR_EVENT *event){
@@ -593,26 +597,6 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	call_action(NODIRECT, num_menu);		// Refresh variables
 }
 
-//void setjournaldate(GR_EVENT *event){
-//struct tm *ttm;
-//int day = atoi(num_menu->pitems[num_menu->num_item]->text);
-//
-//	ttm	= localtime(&tmptime);
-//	ttm->tm_mday = day;
-//	memcpy(&jtime_tm, ttm, sizeof(struct tm));
-//	myear = 1900 + jtime_tm.tm_year;
-//	m_mon = jtime_tm.tm_mon + 1;
-//
-//	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
-//	redraw_screen(NULL);
-//
-//}
-//
-//void setjournaltime(GR_EVENT *event){
-//
-//}
-
-//--------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
 void redraw_screen(void *arg){

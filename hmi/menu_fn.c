@@ -247,6 +247,58 @@ char* ChangeTimeJour(char *arg){
 	return ChangeTime(arg);
 }
 
+char* SetDateMain(char *arg){
+struct tm *ttm;
+menu* actmenu = ((menu*)arg);
+int day = atoi(actmenu->pitems[actmenu->num_item]->text);
+
+	ttm	= localtime(&tmptime);
+	if (day) ttm->tm_mday = day;
+
+	maintime = mktime(ttm);
+
+	return 0;
+}
+
+char* SetDateJour(char *arg){
+struct tm *ttm;
+menu* actmenu = ((menu*)arg);
+int day = atoi(actmenu->pitems[actmenu->num_item]->text);
+
+	ttm	= localtime(&tmptime);
+	if (day) ttm->tm_mday = day;
+
+	jourtime = mktime(ttm);
+
+	return 0;
+}
+
+char* SetTimeMain(char *arg){
+struct  tm *ttm = localtime(&maintime);
+menu* actmenu = ((menu*)arg);
+
+	ttm->tm_hour = atoi(actmenu->pitems[1]->text) * 10 + atoi(actmenu->pitems[2]->text);
+	ttm->tm_min = atoi(actmenu->pitems[4]->text) * 10 + atoi(actmenu->pitems[5]->text);
+	ttm->tm_sec = atoi(actmenu->pitems[7]->text) * 10 + atoi(actmenu->pitems[8]->text);
+
+	maintime = mktime(ttm);
+
+	return 0;
+}
+
+char* SetTimeJour(char *arg){
+struct  tm *ttm = localtime(&jourtime);
+menu* actmenu = ((menu*)arg);
+
+	ttm->tm_hour = atoi(actmenu->pitems[1]->text) * 10 + atoi(actmenu->pitems[2]->text);
+	ttm->tm_min = atoi(actmenu->pitems[4]->text) * 10 + atoi(actmenu->pitems[5]->text);
+	ttm->tm_sec = atoi(actmenu->pitems[7]->text) * 10 + atoi(actmenu->pitems[8]->text);
+
+	jourtime = mktime(ttm);
+
+	return 0;
+}
+
 // Menu of Interval
 char* ChangeIntl(char *arg){
 char *ptxt;
@@ -266,10 +318,10 @@ fact menufactset[] = {
 		{"lnmenu", (void*) ChangeLN, NULL},
 		{"lntypemenu", (void*) ChangeLNType, NULL},
 		{"date", (void*) ChangeDate, NULL},					// For temporary operations with date
-		{"maindate", (void*) ChangeDateMain, NULL},			// Initial operation by main date
-		{"jourdate", (void*) ChangeDateJour, NULL},			// Initial operation by journal date
-		{"maintime", (void*) ChangeTimeMain, NULL},			// Initial operation by main date
-		{"jourtime", (void*) ChangeTimeJour, NULL},			// Initial operation by journal date
+		{"maindate", (void*) ChangeDateMain, SetDateMain},			// Initial operation by main date
+		{"jourdate", (void*) ChangeDateJour, SetDateJour},			// Initial operation by journal date
+		{"maintime", (void*) ChangeTimeMain, SetTimeMain},			// Initial operation by main date
+		{"jourtime", (void*) ChangeTimeJour, SetTimeJour},			// Initial operation by journal date
 		{"interval", (void*) ChangeIntl, NULL},
 		{"tarif", (void*) ChangeTarif, NULL},
 };
@@ -279,6 +331,7 @@ fact menufactset[] = {
 //-------------------------------------------------------------------------------
 // Form dynamic menu on base cycle string and draw on screen
 static char *txtmenu;
+static char idxmenu = -1;
 menu* create_menu(char *menuname){
 struct stat fst;			// statistics of file
 FILE *fmcfg;               //file open
@@ -316,6 +369,7 @@ int i;
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
 			menufactset[i].proloque(txtmenu + strlen(txtmenu) + 1);
+			idxmenu = i;
 			break;
 		}
 	}
@@ -328,3 +382,9 @@ int i;
 	return psmenu;
 }
 
+void call_epiloque(menu *actmenu){
+
+	if ((idxmenu != -1) && (menufactset[(int)idxmenu].epiloque))
+									menufactset[(int)idxmenu].epiloque(actmenu);
+
+}
