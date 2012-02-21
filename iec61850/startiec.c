@@ -8,8 +8,11 @@
 #include <sys/time.h>
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/ts_print.h"
 #include "iec61850.h"
 #include "xml.h"
+#include "log_db.h"
+
 
 char prepath[] = {"/rw/mx00"};
 char pathul[] = {"unitlinks"};
@@ -27,17 +30,18 @@ int ssdlen, ret = 0;
 struct stat fst;
  	// Get size of main config file
 	if (stat("/rw/mx00/configs/ieclevel.ssd", &fst) == -1){
-		printf("IEC61850: SCL file not found\n");
+		ts_printf(STDOUT_FILENO, "IEC61850: SCL file not found\n");
 	}
 
-	SCLfile = malloc(fst.st_size);
-
+	SCLfile = malloc(fst.st_size+1);
 	// Loading main config file
 	fssd = fopen("/rw/mx00/configs/ieclevel.ssd", "r");
 	ssdlen = fread(SCLfile, 1, (size_t) (fst.st_size), fssd);
+	SCLfile[fst.st_size] = '\0'; // make it null terminating string
+
 	if(!strstr(SCLfile, "</SCL>"))
 	{
-		printf("IEC61850: SCL is incomplete\n");
+		ts_printf(STDOUT_FILENO, "IEC61850: SCL is incomplete\n");
 		exit(1);
 	}
 	if (ssdlen == fst.st_size) XMLSelectSource(SCLfile);
@@ -46,13 +50,20 @@ struct stat fst;
 	return ret;
 }
 
+// Program terminating
+void sighandler(int arg){
+	// close log env and db
+	log_db_env_close();
+	exit(0);
+}
+
 int main(int argc, char * argv[]){
 pid_t chldpid;
 char buf[5];
 
 	// Parsing ssd, create virtualization structures from common iec61850 configuration
 	if (ssd_build()){
-		printf("IEC61850: SSD not found\n");
+		ts_printf(STDOUT_FILENO, "IEC61850: SSD not found\n");
 		exit(1);
 	}
 	// Cross connection of IEC structures
@@ -61,14 +72,20 @@ char buf[5];
 	// Start of virtualize functions
 	chldpid = virt_start("startiec");
 	if (chldpid == -1){
-		printf("IEC61850: Virtualization wasn't started\n");
+		ts_printf(STDOUT_FILENO, "IEC61850: Virtualization wasn't started\n");
 		exit(2);
 	}
 
-	printf("\n--- Low level applications ready --- \n\n");
+	ts_printf(STDOUT_FILENO, "\n--- Low level applications ready --- \n\n");
 
 	signal(SIGALRM, catch_alarm);
 	alarm(ALARM_PER);
+
+	signal(SIGTERM, sighandler);
+	signal(SIGINT, sighandler);
+
+	// open log env and db
+	log_db_env_open();
 
 	// Cycle data routing in rcv_data
 	do{
@@ -76,6 +93,9 @@ char buf[5];
 	}while(!appexit);
 
 	mf_exit();
+
+	// close log env and db
+	log_db_env_close();
 
 	return 0;
 }

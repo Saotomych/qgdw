@@ -11,14 +11,16 @@ SRCS = src/dlt645.c \
        src/dlt_asdu.c \
        ../common/asdu.c \
        src/p_num.c \
-       ../common/multififo.c
+       ../common/multififo.c \
+       ../common/ts_print.c
 
 OBJS = obj/dlt645.o \
        obj/dlt_frame.o \
        obj/dlt_asdu.o \
        obj/asdu.o \
        obj/p_num.o \
-       obj/multififo.o
+       obj/multififo.o \
+       obj/ts_print.o
 
 CCSYSTEM = $(shell $(CC) -dumpmachine)
 
@@ -44,7 +46,7 @@ LFLAGS = -Wall
 all : $(TARGET)
 
 $(TARGET) : $(OBJS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS) -lpthread
 
 
 obj/dlt645.o : src/dlt645.c
@@ -65,6 +67,8 @@ obj/p_num.o : src/p_num.c
 obj/multififo.o : ../common/multififo.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
+obj/ts_print.o: ../common/ts_print.c
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :
 ifeq ($(findstring linux, $(CCSYSTEM)), linux)

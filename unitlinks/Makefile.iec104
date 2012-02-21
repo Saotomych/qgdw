@@ -11,14 +11,16 @@ SRCS = src/iec104.c \
        src/iec_asdu.c \
        ../common/asdu.c \
        src/p_num.c \
-       ../common/multififo.c
+       ../common/multififo.c \
+       ../common/ts_print.c
 
 OBJS = obj/iec104.o \
        obj/apdu_frame.o \
        obj/iec_asdu.o \
        obj/asdu.o \
        obj/p_num.o \
-       obj/multififo.o
+       obj/multififo.o \
+       obj/ts_print.o
 
 CCSYSTEM = $(shell $(CC) -dumpmachine)
 
@@ -44,7 +46,7 @@ LFLAGS = -Wall
 all : $(TARGET)
 
 $(TARGET) : $(OBJS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS) -lpthread
 
 
 obj/iec104.o : src/iec104.c
@@ -65,6 +67,8 @@ obj/p_num.o : src/p_num.c
 obj/multififo.o : ../common/multififo.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
+obj/ts_print.o: ../common/ts_print.c
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :
 ifeq ($(findstring linux, $(CCSYSTEM)), linux)

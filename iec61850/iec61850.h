@@ -143,6 +143,8 @@ extern int virt_start(char *appname);
 extern void crossconnection(void);
 extern void catch_alarm(int sig);
 
+extern LIST* create_next_struct_in_list(LIST *plist, int size);	// call create new LIST item
+
 extern void ssd_create_ied(const char *pTag);			// call parse ied
 extern void ssd_create_ld(const char *pTag);			// call parse ld
 extern void ssd_create_ln(const char *pTag);			// call parse ln
@@ -152,7 +154,7 @@ extern void ssd_create_dobjtype(const char *pTag);		// call parse dotype
 extern void ssd_create_attr(const char *pTag);			// call parse attr
 extern void ssd_create_enum(const char *pTag);			// call parse enumtype
 extern void ssd_create_enumval(const char *pTag);		// call parse enumval
-extern void ssd_create_subst(const char *pTag);		// call parse substation
+extern void ssd_create_subst(const char *pTag);			// call parse substation
 
 
 #endif /* IEC61850_H_ */

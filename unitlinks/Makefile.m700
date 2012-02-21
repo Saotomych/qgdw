@@ -10,13 +10,15 @@ SRCS = src/m700.c \
        src/m700_frame.c \
        ../common/asdu.c \
        src/p_num.c \
-       ../common/multififo.c
+       ../common/multififo.c \
+       ../common/ts_print.c
 
 OBJS = obj/m700.o \
        obj/m700_frame.o \
        obj/asdu.o \
        obj/p_num.o \
-       obj/multififo.o
+       obj/multififo.o \
+       obj/ts_print.o
 
 CCSYSTEM = $(shell $(CC) -dumpmachine)
 
@@ -42,7 +44,7 @@ LFLAGS = -Wall
 all : $(TARGET)
 
 $(TARGET) : $(OBJS)
-	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(LFLAGS) -o $(TARGET) $(OBJS) -lpthread
 
 
 obj/m700.o : src/m700.c
@@ -60,6 +62,8 @@ obj/p_num.o : src/p_num.c
 obj/multififo.o : ../common/multififo.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
+obj/ts_print.o: ../common/ts_print.c
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :
 ifeq ($(findstring linux, $(CCSYSTEM)), linux)

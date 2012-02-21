@@ -37,7 +37,7 @@ char TmpString[4];
 int i;
 	cbuf[0]=0;
 	for (i=0; i<len; i++){
-		sprintf(TmpString,"%02X ", (u08) hexbuf[i]);
+		snprintf(TmpString, 4, "%02X ", (u08) hexbuf[i]);
 		strcat(cbuf, TmpString);
 	}
 	return len;

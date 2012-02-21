@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS_MGR = autoconfig.o addrxml.o icdxml.o multififo.o
+OBJS_MGR = autoconfig.o addrxml.o icdxml.o multififo.o ts_print.o
 OBJS_PP = persparser.o
 CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
@@ -12,7 +12,7 @@ persparser.o: persparser.c
 	$(CC) $(CCFLAGS) persparser.c -o persparser.o
 	
 manager: $(OBJS_MGR)
-	$(CC) $(LDFLAGS) -o ../bin/manager $(OBJS_MGR)
+	$(CC) $(LDFLAGS) -o ../bin/manager $(OBJS_MGR) -lpthread
 
 autoconfig.o: autoconfig.c
 	$(CC) $(CCFLAGS) autoconfig.c -o autoconfig.o
@@ -25,6 +25,9 @@ icdxml.o: icdxml.c
 
 multififo.o: ../common/multififo.c
 	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
+
+ts_print.o: ../common/ts_print.c
+	$(CC) $(CCFLAGS) ../common/ts_print.c -o ts_print.o
 
 rebuild: clean all
 

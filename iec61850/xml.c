@@ -7,6 +7,7 @@
 */
 
 #include "../common/common.h"
+#include "../common/ts_print.h"
 #include "iec61850.h"
 
 u08 Encoding, EndScript;
@@ -62,12 +63,12 @@ void TagEndEnumVal(const char *pTag){
 }
 
 void TagSetSCL(const char *pTag){
-	printf("IEC61850: Start SCL file to parse\n");
+	ts_printf(STDOUT_FILENO, "IEC61850: Start SCL file to parse\n");
 }
 
 void TagEndSCL(const char *pTag){
 	EndScript=1;
-	printf("IEC61850: Stop SCL file to parse\n");
+	ts_printf(STDOUT_FILENO, "IEC61850: Stop SCL file to parse\n");
 }
 
 void TagSetXml(const char *pTag){

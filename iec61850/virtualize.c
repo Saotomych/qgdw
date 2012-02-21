@@ -13,8 +13,10 @@
 #include <sys/time.h>
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/ts_print.h"
 #include "../common/asdu.h"
 #include "iec61850.h"
+#include "log_db.h"
 
 #define VIRT_ASDU_MAXSIZE 	512
 #define RTC_DEV_NAME		"/dev/rtc1"
@@ -27,11 +29,16 @@ static time_t time_dev = 0;
 
 /* RTC precision adjustment variables and constants */
 static time_t time_adj = 0;
-static int p_adj = 0;
 
 #define ADJ_RESOLUTION		3050		// by the Epson RTC driver
 #define CLOCK_FREQ			32768		// by the Epson RTC driver
 #define ADJ_TIME_DIFF		6*3600		// 6 hours
+
+/* log_db timers variables and constants */
+#define LOG_T_LOAD_PROFILE	60
+#define LOG_T_CONSUM_ARCH	120//1800
+static time_t t_load_profile = 0;
+static time_t t_consum_arch = 0;
 
 // DATA
 typedef struct _DATAMAP{
@@ -60,6 +67,7 @@ typedef struct _SCADA_CH{
 	LIST l;
 	LDEVICE *myld;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
+	uint32_t log_rec[LOG_FLD_NUM];
 } SCADA_CH;
 
 typedef struct _SCADA_ASDU{
@@ -71,21 +79,7 @@ typedef struct _SCADA_ASDU{
 char *MCFGfile;
 
 // Variables for asdu actions
-static LIST fasdu = {NULL, NULL}, fasdutype = {NULL, NULL}, fdm = {NULL, NULL}, fscada = {NULL, NULL}, fscadach = {NULL, NULL};
-
-static void* create_next_struct_in_list(LIST *plist, int size){
-LIST *newlist;
-	plist->next = malloc(size);
-	if (!plist->next){
-		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
-		exit(3);
-	}
-
-	newlist = plist->next;
-	newlist->prev = plist;
-	newlist->next = 0;
-	return newlist;
-}
+static LIST fasdu, fasdutype, fdm, fscada, fscadach;
 
 // Get mapping parameters from special config file 'mainmap.cfg' of real ASDU frames from meters
 int get_map_by_name(char *name, uint32_t *mid){
@@ -146,6 +140,7 @@ ep_data_header edh;
 void start_collect_data()
 {
 	SCADA_CH *sch = (SCADA_CH *) fscadach.next;
+	time_t sys_time = time(NULL);
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	//sch = sch->l.next;
@@ -153,10 +148,14 @@ void start_collect_data()
 	{
 		send_sys_msg(sch->ASDUaddr, EP_MSG_DCOLL_START);
 
-		printf("IEC61850: System message EP_MSG_DCOLL_START sent. Address = %d.\n", sch->ASDUaddr);
+		ts_printf(STDOUT_FILENO, "IEC61850: System message EP_MSG_DCOLL_START sent. Address = %d.\n", sch->ASDUaddr);
 
 		sch = sch->l.next;
 	}
+
+	// set log_db timers initial values (logging with delayed start)
+	t_load_profile = sys_time;
+	t_consum_arch = sys_time - LOG_T_CONSUM_ARCH + 60;
 }
 
 int get_rtc_time(const char *dev_name, time_t *t_val)
@@ -253,16 +252,30 @@ int set_rtc_adj(const char *dev_name, int adj) {
 	return res;
 }
 
+int is_scada(uint32_t adr)
+{
+	SCADA_ASDU *scd = (SCADA_ASDU *) fscada.next;
+
+	while(scd)
+	{
+		if(atoi(scd->pscada->myln->ln.ldinst) == adr) return 1;
+		scd = scd->l.next;
+	}
+
+	return 0;
+}
+
 void catch_alarm(int sig)
 {
 	struct timeval cor_time;
 	time_t rtc_time, sys_time;
 	int res;
+	SCADA_CH *sch;
+
+	sys_time = time(NULL);
 
 	if(time_dev != 0)
 	{
-		sys_time = time(NULL);
-
 		res = get_rtc_time(RTC_DEV_NAME, &rtc_time);
 
 		time_dev = sys_time - rtc_time;
@@ -286,6 +299,30 @@ void catch_alarm(int sig)
 		}
 	}
 
+	if(t_load_profile > 0 && difftime(sys_time, t_load_profile) >= LOG_T_LOAD_PROFILE)
+	{
+		sch = (SCADA_CH*) fscadach.next;
+		while(sch)
+		{
+			if(!is_scada(sch->ASDUaddr)) log_db_load_profile_add_rec(sch->ASDUaddr, sch->log_rec);
+			sch = sch->l.next;
+		}
+		// update timer
+		t_load_profile = sys_time;
+	}
+
+	if(t_consum_arch > 0 && difftime(sys_time, t_consum_arch) >= LOG_T_CONSUM_ARCH)
+	{
+		sch = (SCADA_CH*) fscadach.next;
+		while(sch)
+		{
+			if(!is_scada(sch->ASDUaddr)) log_db_consum_arch_add_rec(sch->ASDUaddr, sch->log_rec);
+			sch = sch->l.next;
+		}
+		// update timer
+		t_consum_arch = sys_time;
+	}
+
 	signal(sig, catch_alarm);
 
 	alarm(alarm_t);
@@ -295,7 +332,7 @@ int sync_time(time_t srv_time)
 {
 	struct timeval tv;
 	time_t sys_time, rtc_time, time_diff;
-	int res;
+	int res, p_adj_cur, p_adj;
 
 	if(time_adj != 0 && srv_time - time_adj > ADJ_TIME_DIFF)
 	{
@@ -304,11 +341,26 @@ int sync_time(time_t srv_time)
 		if(res == -1) return res;
 
 		// calculation of precision adjustment according to the RX8025 SA/NB application manual
-		p_adj += (int)( ( (float)(rtc_time - time_adj)/(float)(srv_time - time_adj)*(float)(CLOCK_FREQ) - (float)(CLOCK_FREQ) ) / (float)(CLOCK_FREQ) * 1e9 ) * (-1);
+		p_adj = (int)( ( (float)(rtc_time - time_adj)/(float)(srv_time - time_adj)*(float)(CLOCK_FREQ) - (float)(CLOCK_FREQ) ) / (float)(CLOCK_FREQ) * 1e9 ) * (-1);
 
-		res = set_rtc_adj(RTC_DEV_NAME, p_adj);
+		// get current precision adjustment value
+		res = get_rtc_adj(RTC_DEV_NAME, &p_adj_cur);
 
-		time_adj = srv_time;
+		if(p_adj != 0 && res != -1)
+		{
+			ts_printf(STDOUT_FILENO, "IEC61850: RTC precision adjustment needed. rtc_time = %d, srv_time = %d, p_adj_cur = %d, p_adj = %d.\n", (int)rtc_time, (int)srv_time, p_adj_cur, p_adj);
+
+			p_adj += p_adj_cur;
+
+			res = set_rtc_adj(RTC_DEV_NAME, p_adj);
+
+			if(res != -1)
+			{
+				ts_printf(STDOUT_FILENO, "IEC61850: RTC precision adjustment %s.\n", res?"failed":"succeeded");
+
+				time_adj = srv_time;
+			}
+		}
 	}
 	else if(time_adj == 0)
 	{
@@ -317,7 +369,7 @@ int sync_time(time_t srv_time)
 
 	res = set_rtc_time(RTC_DEV_NAME, srv_time);
 
-	printf("IEC61850: RTC synchronization with master host %s.\n", res?"failed":"succeeded");
+	ts_printf(STDOUT_FILENO, "IEC61850: RTC synchronization with master host %s.\n", res?"failed":"succeeded");
 
 	sys_time = time(NULL);
 
@@ -336,13 +388,13 @@ int sync_time(time_t srv_time)
 
 			res = settimeofday(&tv, NULL);
 
-			printf("IEC61850: STC synchronization with master host %s. Time diff = %d.\n", res?"failed":"succeeded", (int)time_diff);
+			ts_printf(STDOUT_FILENO, "IEC61850: STC synchronization with master host %s. Time diff = %d.\n", res?"failed":"succeeded", (int)time_diff);
 		}
 		else
 		{
 			time_dev = sys_time - srv_time;
 
-			printf("IEC61850: Time adjusting started. time_dev = %d\n", (int)time_dev);
+			ts_printf(STDOUT_FILENO, "IEC61850: Time adjusting started. time_dev = %d\n", (int)time_dev);
 		}
 	}
 
@@ -352,13 +404,15 @@ int sync_time(time_t srv_time)
 int rcvdata(int len){
 char *buff, *sendbuff;
 int adr, dir, rdlen, fullrdlen;
-int offset;
+int offset, fld_idx;
 ep_data_header *edh, *sedh;
 data_unit *pdu, *spdu;
 VIRT_ASDU *sasdu = (VIRT_ASDU*) fasdu.next;
 asdu *pasdu, *psasdu;
 ASDU_DATAMAP *pdm;
 SCADA_ASDU *actscada;
+SCADA_CH *actscadach;
+
 
 	buff = malloc(len);
 
@@ -366,14 +420,14 @@ SCADA_ASDU *actscada;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
-	printf("IEC61850: Data received. Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+	ts_printf(STDOUT_FILENO, "IEC61850: Data received. Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
 
 	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < fullrdlen){
 		if(fullrdlen - offset < sizeof(ep_data_header)){
-			printf("IEC61850: Found not full ep_data_header\n");
+			ts_printf(STDOUT_FILENO, "IEC61850: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
 		}
@@ -387,7 +441,7 @@ SCADA_ASDU *actscada;
 			rdlen -= sizeof(asdu);
 
 
-			printf("IEC61850: Values for ASDU = %d received\n", edh->adr);
+			ts_printf(STDOUT_FILENO, "IEC61850: Values for ASDU = %d received\n", edh->adr);
 
 			// TODO broadcast request, etc.
 
@@ -408,6 +462,27 @@ SCADA_ASDU *actscada;
 				if (pdu->id <= (VIRT_ASDU_MAXSIZE - 4)){
 	 				// TODO Copy variable to data struct IEC61850
 					// TODO Find type of variable and convert type on fly
+
+					// save current data unit value for log_db
+					if(strlen(pdu->name) > 0)
+					{
+						actscadach = (SCADA_CH*) fscadach.next;
+						while(actscadach && actscadach->ASDUaddr != pasdu->adr)
+						{
+							actscadach = actscadach->l.next;
+						}
+
+						if(actscadach)
+						{
+							// SCADA_CH was found
+							fld_idx = log_db_get_fld_idx(pdu->name);
+
+							if(fld_idx >= 0)
+							{
+								actscadach->log_rec[fld_idx] = pdu->value.ui;
+							}
+						}
+					}
 
 					// Mapping id
 					pdm = (ASDU_DATAMAP*) &fdm;
@@ -433,18 +508,18 @@ SCADA_ASDU *actscada;
 							spdu++;
 							psasdu->size++;
 							sedh->len += sizeof(data_unit);
-							printf("IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+							ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
 						}
 						else{
-							printf("IEC61850 error: Address ASDU %d not found\n", edh->adr);
+							ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
 						}
 					}
 //					else{
-//						printf("IEC61850: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
+//						ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
 //					}
 				}
 //				else{
-//					printf("IEC61850 error: id %d very big\n", pdu->id);
+//					ts_printf(STDOUT_FILENO, "IEC61850 error: id %d very big\n", pdu->id);
 //				}
 				// Next pdu
 				pdu++;
@@ -458,7 +533,7 @@ SCADA_ASDU *actscada;
 					sedh->adr = atoi(actscada->pscada->myln->ln.pmyld->inst);
 					psasdu->adr = sedh->adr;
 					mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRDN);
-					printf("IEC61850: %d data_units sent to SCADA adr = %d\n", psasdu->size, sedh->adr);
+					ts_printf(STDOUT_FILENO, "IEC61850: %d data_units sent to SCADA adr = %d\n", psasdu->size, sedh->adr);
 					actscada = actscada->l.next;
 				}
 			}
@@ -495,7 +570,7 @@ LNODE *aln;
 LNTYPE *alnt;
 DOBJ *adobj;
 
-	printf("ASDU: Start ASDU mapping to parse\n");
+	ts_printf(STDOUT_FILENO, "ASDU: Start ASDU mapping to parse\n");
 
 	// Create VIRT_ASDU_TYPE list
 	actasdutype = (VIRT_ASDU_TYPE*) &fasdutype;
@@ -503,11 +578,11 @@ DOBJ *adobj;
 	alnt = (LNTYPE*) flntype.next;
 	while(alnt){
 
-		actasdutype = create_next_struct_in_list((LIST*) actasdutype, sizeof(VIRT_ASDU_TYPE));
+		actasdutype = (VIRT_ASDU_TYPE*) create_next_struct_in_list((LIST*) actasdutype, sizeof(VIRT_ASDU_TYPE));
 
 		actasdutype->fdmap = NULL;
 
-		printf("ASDU: new VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
+		ts_printf(STDOUT_FILENO, "ASDU: new VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
 		// Fill VIRT_ASDU_TYPE
 		actasdutype->mylntype = alnt;
@@ -520,7 +595,7 @@ DOBJ *adobj;
 			if(adobj->dobj.pmynodetype == &alnt->lntype){
 				if (adobj->dobj.options){
 						// creating new DATAMAP and filling
-						actasdudm = create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
+						actasdudm = (ASDU_DATAMAP*) create_next_struct_in_list((LIST*) actasdudm, sizeof(ASDU_DATAMAP));
 
 						// if point fdmap to first datamap found
 						if(actasdutype->fdmap == NULL) actasdutype->fdmap = actasdudm;
@@ -531,16 +606,16 @@ DOBJ *adobj;
 						if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
 							// find by DOType->DA.name = mag => DOType->DA.btype
 							actasdudm->value_type = get_type_by_name("mag", adobj->dobj.type);
-							printf("ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
+							ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
 									adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
-						}else printf("ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
-				}else printf("ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
+						}else ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
+				}else ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
 			}
 			// Next DOBJ
 			adobj = adobj->l.next;
 		}
 
-		printf("ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
+		ts_printf(STDOUT_FILENO, "ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
 		alnt = alnt->l.next;
 	}
@@ -551,13 +626,14 @@ DOBJ *adobj;
 	while(ald)
 	{
 		if(ald->ld.inst){
-			actscadach = create_next_struct_in_list((LIST*) actscadach, sizeof(SCADA_CH));
+			actscadach = (SCADA_CH*) create_next_struct_in_list((LIST*) actscadach, sizeof(SCADA_CH));
 
 			// Fill SCADA_CH
 			actscadach->myld = ald;
 			actscadach->ASDUaddr = atoi(ald->ld.inst);
+			memset(actscadach->log_rec, 0, sizeof(actscadach->log_rec)); // initialize array members with zeros
 
-			printf("ASDU: ready SCADA_CH addr=%d for LDEVICE inst=%s \n", actscadach->ASDUaddr, ald->ld.inst);
+			ts_printf(STDOUT_FILENO, "ASDU: ready SCADA_CH addr=%d for LDEVICE inst=%s \n", actscadach->ASDUaddr, ald->ld.inst);
 		}
 
 		ald = ald->l.next;
@@ -569,7 +645,7 @@ DOBJ *adobj;
 	aln = (LNODE*) fln.next;
 	while(aln){
 		if (aln->ln.lninst){
-			actasdu = create_next_struct_in_list((LIST*) actasdu, sizeof(VIRT_ASDU));
+			actasdu = (VIRT_ASDU*) create_next_struct_in_list((LIST*) actasdu, sizeof(VIRT_ASDU));
 
 			// Fill VIRT_ASDU
 			actasdu->myln = aln;
@@ -578,7 +654,7 @@ DOBJ *adobj;
 			// If 'scada', create SCADA_ASDU
 //			if (strstr(actasdu->myln->ln.iedname, "scada")){
 			if (atoi(actasdu->myln->ln.lninst) >= SLAVE_START_INST && strstr(actasdu->myln->ln.lnclass, "MMXU")){
-				actscada = create_next_struct_in_list((LIST*) actscada, sizeof(SCADA_ASDU));
+				actscada = (SCADA_ASDU*) create_next_struct_in_list((LIST*) actscada, sizeof(SCADA_ASDU));
 				actscada->pscada = actasdu;
 			}
 
@@ -592,36 +668,38 @@ DOBJ *adobj;
 			}
 			if (actasdutype){
 				actasdu->myasdutype = actasdutype;
-				printf("ASDU: VIRT_ASDU %s.%s.%s linked to TYPE %s\n",
+				ts_printf(STDOUT_FILENO, "ASDU: VIRT_ASDU %s.%s.%s linked to TYPE %s\n",
 						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
 			}
-			else printf("ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
+			else ts_printf(STDOUT_FILENO, "ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
 
 			// Link ASDU_TYPE to DATAMAP
 
 
-			printf("ASDU: new VIRT_ASDU offset=%d for LN name=%s.%s.%s type=%s ied=%s\n",
+			ts_printf(STDOUT_FILENO, "ASDU: new VIRT_ASDU offset=%d for LN name=%s.%s.%s type=%s ied=%s\n",
 					actasdu->baseoffset, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
 		}
 
 		aln = aln->l.next;
 	}
 
-	printf("ASDU: End ASDU mapping\n");
+	ts_printf(STDOUT_FILENO, "ASDU: End ASDU mapping\n");
 
 	return 0;
 }
 
 // Load data to low level
 void create_alldo(void){
-VIRT_ASDU *sasdu = (VIRT_ASDU *) &fasdu;
-ASDU_DATAMAP *pdm;
+VIRT_ASDU *sasdu = NULL;
+ASDU_DATAMAP *pdm = NULL;
 int adr;
 frame_dobj fr_do;
 
+	memset(fr_do.name, 0, DOBJ_NAMESIZE);
+
 	// Setup of unitlinks for getting DATA OBJECTS
 	// get VIRT_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
-	sasdu = ((VIRT_ASDU *) &fasdu)->l.next;
+	sasdu = (VIRT_ASDU *) fasdu.next;
 	while(sasdu){
 		if(sasdu->myln->ln.pmyld) // check if pmyld is not NULL
 		{
@@ -660,11 +738,12 @@ char *chld_app;
 //
 // Read mainmap.cfg into memory
 	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
-		printf("IEC Virt: 'mainmap.cfg' file not found\n");
+		ts_printf(STDOUT_FILENO, "IEC Virt: 'mainmap.cfg' file not found\n");
 	}
-	MCFGfile =  malloc(fst.st_size);
+	MCFGfile =  malloc(fst.st_size+1);
 	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
 	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
+	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
 	if (clen != fst.st_size) ret = -1;
 	else{
 		// Building mapping meter asdu to ssd asdu
@@ -676,13 +755,13 @@ char *chld_app;
 		}
 	}
 	free(MCFGfile);
-	printf("\n--- Configuration ready --- \n\n");
+	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	sch = sch->l.next;
 	while(sch){
 
-		printf("\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
+		ts_printf(STDOUT_FILENO, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
 
 		// Create config_device
 		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
@@ -699,7 +778,7 @@ char *chld_app;
 		if (pchld_app_end) *pchld_app_end = 0;
 
 		// New endpoint
-		mf_newendpoint(sch->ASDUaddr, chld_app,"/rw/mx00/unitlinks", 0);
+		mf_newendpoint(sch->ASDUaddr, chld_app, "/rw/mx00/unitlinks", 0);
 
 		free(chld_app);
 		sleep(1);	// Delay for forming next level endpoint

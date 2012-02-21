@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += hmi.o menu.o multififo.o
+OBJS += hmi.o menu.o multififo.o ts_print.o
 
 NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
 NANOLIBS = ../../nano-x.X11.x86/microwin/src/lib
@@ -14,13 +14,15 @@ CCFLAGS += -c -O0 -g3 -Wall -I $(NANOINCLUDE)
 LDFLAGS += -Wl -L $(NANOLIBS)
 
 hmi: $(OBJS)
-	$(CC) $(LDFLAGS) -o ../bin/hmi700 $(OBJS) -lnano-X
+	$(CC) $(LDFLAGS) -o ../bin/hmi700 $(OBJS) -lnano-X -lpthread
 hmi.o: hmi.c
 	$(CC) $(CCFLAGS) hmi.c -o hmi.o
 menu.o: menu.c
 	$(CC) $(CCFLAGS) menu.c -o menu.o
 multififo.o: ../common/multififo.c
 	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
+ts_print.o: ../common/ts_print.c
+	$(CC) $(CCFLAGS) ../common/ts_print.c -o ts_print.o
 
 all: hmi
 

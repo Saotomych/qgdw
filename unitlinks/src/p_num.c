@@ -296,7 +296,7 @@ int hex2ascii(unsigned char *h_buff, char *c_buff, int len)
 
 	for(i=0; i<len; i++)
 	{
-		sprintf(tmp, "%02X", h_buff[i]);
+		snprintf(tmp, 4, "%02X", h_buff[i]);
 		strcat(c_buff, tmp);
 	}
 

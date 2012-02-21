@@ -6,6 +6,7 @@
  */
 
 #include "../common/common.h"
+#include "../common/ts_print.h"
 #include "iec61850.h"
 
 struct _IED *actlied = NULL;
@@ -23,19 +24,19 @@ DOBJ *flastdo = (DOBJ*) &fdo;
 DTYPE *flastdtype = (DTYPE*) &fdtype;
 ATTR *flastattr = (ATTR*) &fattr;
 
-static void* create_next_struct_in_list(LIST *plist, int size){
-LIST *new;
-	plist->next = malloc(size);
+LIST* create_next_struct_in_list(LIST *plist, int size){
+LIST *newlist = NULL;
+	plist->next = calloc(1, size);
 
 	if (!plist->next){
-		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, "IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 
-	new = plist->next;
-	new->prev = plist;
-	new->next = 0;
-	return new;
+	newlist = plist->next;
+	newlist->prev = plist;
+	newlist->next = 0;
+	return newlist;
 }
 
 // In: p - pointer to string
@@ -76,8 +77,7 @@ int mode=0;
 void ssd_create_ied(const char *pTag){			// call parse ied
 char *p;
 char *key=0, *par=0;
-
-	flastied = create_next_struct_in_list(&(flastied->l), sizeof(IED));
+	flastied = (IED*) create_next_struct_in_list(&(flastied->l), sizeof(IED));
 
 	// Parse parameters for ied
 	p = (char*) pTag;
@@ -92,13 +92,14 @@ char *key=0, *par=0;
 
 	actlied = &(flastied->ied);
 
-	printf("IEC61850: new IED: name=%s desc=%s\n", flastied->ied.name, flastied->ied.desc);
+	ts_printf(STDOUT_FILENO, "IEC61850: new IED: name=%s desc=%s\n", flastied->ied.name, flastied->ied.desc);
 }
 
 void ssd_create_ld(const char *pTag){			// call parse ld
 char *p;
 char *key=0, *par=0;
-	flastld = create_next_struct_in_list(&(flastld->l), sizeof(LDEVICE));
+	flastld = (LDEVICE*) create_next_struct_in_list(&(flastld->l), sizeof(LDEVICE));
+
 	// Parse parameters for ldevice
 	p = (char*) pTag;
 	do{
@@ -114,13 +115,13 @@ char *key=0, *par=0;
 
 	actlldevice = &(flastld->ld);
 
-	printf("IEC61850: new LDevice: inst=%s desc=%s\n", flastld->ld.inst, flastld->ld.desc);
+	ts_printf(STDOUT_FILENO, "IEC61850: new LDevice: inst=%s desc=%s\n", flastld->ld.inst, flastld->ld.desc);
 }
 
 void ssd_create_ln(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
-	flastln = create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
+	flastln = (LNODE*) create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
 
 	// Parse parameters for ln
 	p = (char*) pTag;
@@ -147,14 +148,14 @@ char *key=0, *par=0;
 
 	if(actlied) flastln->ln.iedname = actlied->name;
 
-	printf("IEC61850: new LN: class=%s inst=%s iedname=%s ldinst=%s\n",
+	ts_printf(STDOUT_FILENO, "IEC61850: new LN: class=%s inst=%s iedname=%s ldinst=%s\n",
 			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);
 }
 
 void ssd_create_lntype(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
-	flastlntype = create_next_struct_in_list(&(flastlntype->l), sizeof(LNTYPE));
+	flastlntype = (LNTYPE*) create_next_struct_in_list(&(flastlntype->l), sizeof(LNTYPE));
 
 	// Parse parameters for lntype
 	p = (char*) pTag;
@@ -171,13 +172,13 @@ char *key=0, *par=0;
 
 	flastlntype->lntype.maxdobj = 0;
 
-	printf("IEC61850: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
+	ts_printf(STDOUT_FILENO, "IEC61850: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
 
 void ssd_create_dobj(const char *pTag){			// call parse data
 char *p;
 char *key=0, *par=0;
-	flastdo = create_next_struct_in_list(&(flastdo->l), sizeof(DOBJ));
+	flastdo = (DOBJ*) create_next_struct_in_list(&(flastdo->l), sizeof(DOBJ));
 
 	// Parse parameters for dobj
 	p = (char*) pTag;
@@ -196,13 +197,13 @@ char *key=0, *par=0;
 
 	actlnodetype->maxdobj++;
 
-	printf("IEC61850: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
+	ts_printf(STDOUT_FILENO, "IEC61850: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
 void ssd_create_dobjtype(const char *pTag){		// call parse data_type
 char *p;
 char *key=0, *par=0;
-	flastdtype = create_next_struct_in_list(&(flastdtype->l), sizeof(DTYPE));
+	flastdtype = (DTYPE*) create_next_struct_in_list(&(flastdtype->l), sizeof(DTYPE));
 
 	// Parse parameters for dobjtype
 	p = (char*) pTag;
@@ -219,13 +220,13 @@ char *key=0, *par=0;
 
 	flastdtype->dtype.maxattr = 0;
 
-	printf("IEC61850: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
+	ts_printf(STDOUT_FILENO, "IEC61850: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
 void ssd_create_attr(const char *pTag){			// call parse attr
 char *p;
 char *key=0, *par=0;
-	flastattr = create_next_struct_in_list(&(flastattr->l), sizeof(ATTR));
+	flastattr = (ATTR*) create_next_struct_in_list(&(flastattr->l), sizeof(ATTR));
 
 	// Parse parameters for attr
 	p = (char*) pTag;
@@ -248,7 +249,7 @@ char *key=0, *par=0;
 
 	actdtype->maxattr++;
 
-	printf("IEC61850: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
+	ts_printf(STDOUT_FILENO, "IEC61850: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 
@@ -285,9 +286,9 @@ LNTYPE *ptype;
 		// ldevice found ?
 		if (pld){
 			pln->ln.pmyld = &(pld->ld);
-			printf("IEC61850: LDEVICE %s for LNODE %s.%s.%s found\n", pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
+			ts_printf(STDOUT_FILENO, "IEC61850: LDEVICE %s for LNODE %s.%s.%s found\n", pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
 		}else{
-			printf("IEC61850 error: LDEVICE %s for LNODE %s.%s.%s not found\n", pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: LDEVICE %s for LNODE %s.%s.%s not found\n", pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
 		}
 
 		// find ied
@@ -299,9 +300,9 @@ LNTYPE *ptype;
 			pln->ln.pmyied = &(pied->ied);
 			// LDEVICE -> _IED
 			if(pln->ln.pmyld) pln->ln.pmyld->pmyied = pln->ln.pmyied;
-			printf("IEC61850: IED %s for LNODE %s.%s.%s found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
+			ts_printf(STDOUT_FILENO, "IEC61850: IED %s for LNODE %s.%s.%s found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
 		}else{
-			printf("IEC61850 error: IED %s for LNODE %s.%s.%s not found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: IED %s for LNODE %s.%s.%s not found\n", pln->ln.iedname, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
 		}
 
 		// find lntype
@@ -310,9 +311,9 @@ LNTYPE *ptype;
 		// lntype found ?
 		if (ptype){
 			pln->ln.pmytype = &(ptype->lntype);
-			printf("IEC61850: LNTYPE %s for LNODE %s.%s.%s found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
+			ts_printf(STDOUT_FILENO, "IEC61850: LNTYPE %s for LNODE %s.%s.%s found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
 		}else{
-			printf("IEC61850 error: LNTYPE %s for LNODE %s.%s.%s not found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: LNTYPE %s for LNODE %s.%s.%s not found\n", pln->ln.lntype, pln->ln.lnclass, pln->ln.lninst, pln->ln.ldinst);
 		}
 
 		// Next LN
@@ -333,9 +334,9 @@ DOBJ *pdo;
 		// pdo found ?
 		if (pdo){
 			ptype->lntype.pfdobj = pdo;
-			printf("IEC61850: First DOBJ %s for LNTYPE %s.%s found\n", pdo->dobj.name, ptype->lntype.lnclass, ptype->lntype.id);
+			ts_printf(STDOUT_FILENO, "IEC61850: First DOBJ %s for LNTYPE %s.%s found\n", pdo->dobj.name, ptype->lntype.lnclass, ptype->lntype.id);
 		}else{
-			printf("IEC61850 error: First DOBJ for LNTYPE %s.%s not found\n", ptype->lntype.lnclass, ptype->lntype.id);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: First DOBJ for LNTYPE %s.%s not found\n", ptype->lntype.lnclass, ptype->lntype.id);
 		}
 
 		// TODO Create iec61850 set of dataobjects for each LN
@@ -358,9 +359,9 @@ DTYPE *pdt;
 		// pdt found ?
 		if (pdt){
 			pdo->dobj.pmytype = &(pdt->dtype);
-			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pdt->dtype.id, pdo->dobj.name);
+			ts_printf(STDOUT_FILENO, "IEC61850: DTYPE %s for DOBJ %s found\n", pdt->dtype.id, pdo->dobj.name);
 		}else{
-			printf("IEC61850 error: DTYPE for DOBJ %s not found\n", pdo->dobj.name);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: DTYPE for DOBJ %s not found\n", pdo->dobj.name);
 		}
 
 		pdo = pdo->l.next;
@@ -379,9 +380,9 @@ ATTR *pa;
 		while((pa) && (pa->attr.pmydatatype != &(pdt->dtype))) pa = pa->l.next;
 		// pa found ?
 		if (pa){
-			printf("IEC61850: First ATTR %s(%s) for DTYPE %s found\n", pa->attr.name, pa->attr.btype, pdt->dtype.id);
+			ts_printf(STDOUT_FILENO, "IEC61850: First ATTR %s(%s) for DTYPE %s found\n", pa->attr.name, pa->attr.btype, pdt->dtype.id);
 		}else{
-			printf("IEC61850 error: ATTR for DTYPE %s not found\n", pdt->dtype.id);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: ATTR for DTYPE %s not found\n", pdt->dtype.id);
 		}
 
 		pdt = pdt->l.next;
