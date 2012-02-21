@@ -304,8 +304,6 @@ menu* actmenu = ((menu*)arg);
 char* ChangeIntl(char *arg){
 char *txtmenu = arg;
 char *pmenu = arg;
-time_t *timel = &tmptime;
-struct tm *timetm = localtime(timel);
 int i, x = 4, l;
 
 	sprintf(pmenu, "main 10 65 140 60\n");

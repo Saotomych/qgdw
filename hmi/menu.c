@@ -273,11 +273,19 @@ struct tm *ttm;
 			if (num_menu) draw_menu();
 		}
 
-		if (ret == REDRAWTIME){
+		if (ret == REDRAWTIMEJOUR){
 			ttm	= localtime(&jourtime);
 			memcpy(&jtime_tm, ttm, sizeof(struct tm));
 			jyear = 1900 + jtime_tm.tm_year;
 			j_mon = jtime_tm.tm_mon + 1;
+			redraw_screen(NULL);
+		}
+
+		if (ret == REDRAWTIMEMAIN){
+			ttm	= localtime(&maintime);
+			memcpy(&mtime_tm, ttm, sizeof(struct tm));
+			myear = 1900 + mtime_tm.tm_year;
+			m_mon = mtime_tm.tm_mon + 1;
 			redraw_screen(NULL);
 		}
 
@@ -303,11 +311,19 @@ struct tm *ttm;
 			if (num_menu) draw_menu();
 		}
 
-		if (ret == REDRAWTIME){
+		if (ret == REDRAWTIMEJOUR){
 			ttm	= localtime(&jourtime);
 			memcpy(&jtime_tm, ttm, sizeof(struct tm));
 			jyear = 1900 + jtime_tm.tm_year;
 			j_mon = jtime_tm.tm_mon + 1;
+			redraw_screen(NULL);
+		}
+
+		if (ret == REDRAWTIMEMAIN){
+			ttm	= localtime(&maintime);
+			memcpy(&mtime_tm, ttm, sizeof(struct tm));
+			myear = 1900 + mtime_tm.tm_year;
+			m_mon = mtime_tm.tm_mon + 1;
 			redraw_screen(NULL);
 		}
 

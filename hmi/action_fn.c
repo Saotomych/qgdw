@@ -206,14 +206,28 @@ int next_jourday(void *arg){
 
 	jourtime = next_day((void*) jourtime);
 
-	return REDRAWTIME;
+	return REDRAWTIMEJOUR;
 }
 
 int prev_jourday(void *arg){
 
 	jourtime = prev_day((void*) jourtime);
 
-	return REDRAWTIME;
+	return REDRAWTIMEJOUR;
+}
+
+int next_mainday(void *arg){
+
+	maintime = next_day((void*) maintime);
+
+	return REDRAWTIMEMAIN;
+}
+
+int prev_mainday(void *arg){
+
+	maintime = prev_day((void*) maintime);
+
+	return REDRAWTIMEMAIN;
 }
 
 int next_min(void *arg){
@@ -240,14 +254,28 @@ int next_jourmin(void *arg){
 
 	jourtime = next_min((void*) jourtime);
 
-	return REDRAWTIME;
+	return REDRAWTIMEJOUR;
 }
 
 int prev_jourmin(void *arg){
 
 	jourtime = prev_min((void*) jourtime);
 
-	return REDRAWTIME;
+	return REDRAWTIMEJOUR;
+}
+
+int next_mainmin(void *arg){
+
+	maintime = next_min((void*) maintime);
+
+	return REDRAWTIMEMAIN;
+}
+
+int prev_mainmin(void *arg){
+
+	maintime = prev_min((void*) maintime);
+
+	return REDRAWTIMEMAIN;
 }
 
 // Array of structures "synonym to function"
@@ -256,6 +284,8 @@ fact actfactset[] = {
 		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
 		{"change1day", (void*) prev_jourday, (void*) next_jourday},
 		{"change1min", (void*) prev_jourmin, (void*) next_jourmin},
+		{"change1mainday", (void*) prev_mainday, (void*) next_mainday},
+		{"change1mainmin", (void*) prev_mainmin, (void*) next_mainmin},
 };
 
 //---*** External IP ***---//

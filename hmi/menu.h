@@ -36,8 +36,9 @@
 #define MAXITEM 40
 
 #define REMAKEMENU		100
-#define REDRAWTIME		101
+#define REDRAWTIMEJOUR	101
 #define REDRAW			102
+#define REDRAWTIMEMAIN	103
 
 #define NODIRECT		0
 #define DIR_FORWARD		1
