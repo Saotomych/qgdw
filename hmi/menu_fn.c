@@ -15,6 +15,7 @@ extern LNODE *actlnode;
 extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
+extern int intervals[];
 
 static struct _mons{
 	char *meng;
@@ -301,16 +302,37 @@ menu* actmenu = ((menu*)arg);
 
 // Menu of Interval
 char* ChangeIntl(char *arg){
-char *ptxt;
+char *txtmenu = arg;
+char *pmenu = arg;
+time_t *timel = &tmptime;
+struct tm *timetm = localtime(timel);
+int i, x = 4, l;
 
-	return ptxt;
+	sprintf(pmenu, "main 10 65 140 60\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "keys right:timeright left:timeleft enter:tarifenter\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "text 0 0 160 a Установка интервала\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "text 50 14 160 a минуты\n");
+	pmenu += strlen(pmenu);
+
+	for (i=0; i < 7; i++){
+		if (intervals[i] > 9) l = 18;
+		else l = 11;
+		sprintf(pmenu, "menu %d 40 %d a %d\n", x, l, intervals[i]);
+		pmenu += strlen(pmenu);
+		x += l + 3;
+	}
+
+	return txtmenu;
 }
 
 // Menu of Tarif
 char* ChangeTarif(char *arg){
-char *ptxt;
+char *txtmenu = arg;
 
-	return ptxt;
+	return txtmenu;
 }
 
 // Array of structs "synonym to function"

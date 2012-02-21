@@ -20,6 +20,7 @@ time_t jourtime;		// Time for journal setting
 time_t tmptime;			// Time for setting process
 int idlnmenuname = 0;
 
+int intervals[] = {1,5,10,15,20,30,60};
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l

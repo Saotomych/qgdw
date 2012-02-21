@@ -8,5 +8,5 @@ menu 0 35 60 a Время >jourtime~change1min
 text 60 35 15 a &var:APP:jhour
 text 75 35 22 a :&var:APP:jmin
 text 97 35 23 a :&var:APP:jsec
-menu 0 50 80 a Интервал
+menu 0 50 80 a Интервал >interval
 text 80 50 80 a 1 мин
