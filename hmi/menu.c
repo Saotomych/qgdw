@@ -18,6 +18,8 @@ LNODE *actlnode;			// Global variable, change in menu only
 time_t maintime;		// Actual Time
 time_t jourtime;		// Time for journal setting
 time_t tmptime;			// Time for setting process
+int idlnmenuname = 0;
+
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
@@ -50,8 +52,8 @@ static char lnmenunames[][16] = {
 static value menuvalues[] = {
 		// Time variables
 		{0, "APP:year", 	&myear, 			"XXXX", 	INT32, 		STRING},
-		{0, "APP:montext", &pmmon, 			"XX", 		PTRSTRING, 	STRING},	// Month as full text
-		{0, "APP:mondig", 	&m_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{0, "APP:montext", &pmmon, 				"XX", 		PTRSTRING, 	STRING},	// Month as full text
+		{0, "APP:mondig", 	&m_mon,				"XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
 		{0, "APP:day",  	&(mtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},	// Day as digit with zero
 		{0, "APP:wday", 	&pmwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text (2 symbols)
 		{0, "APP:hour", 	&(mtime_tm.tm_hour),"XX", 		INT32DIG2, 	STRING},
@@ -59,15 +61,15 @@ static value menuvalues[] = {
 		{0, "APP:sec", 		&(mtime_tm.tm_sec), "XX", 		INT32DIG2, 	STRING},
 		{0, "APP:jyear", 	&jyear, 			"XXXX", 	INT32, 		STRING},
 		{0, "APP:jmontext",	&pjmon, 			"XX", 		PTRSTRING, 	STRING},
-		{0, "APP:jmondig", 	&j_mon, "XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
+		{0, "APP:jmondig", 	&j_mon, 			"XX", 		INT32DIG2, 	STRING},	// Month as digit with zero
 		{0, "APP:jday", 	&(jtime_tm.tm_mday),"XX", 		INT32DIG2, 	STRING},
 		{0, "APP:jwday", 	&pjwday, 			"XX", 		PTRSTRING, 	STRING},	// Day of week as text
 		{0, "APP:jhour", 	&(jtime_tm.tm_hour),"XX", 		INT32DIG2,	STRING},
 		{0, "APP:jmin", 	&(jtime_tm.tm_min), "XX", 		INT32DIG2,	STRING},
 		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
-		{0, "APP:ldtypetext", &devtypetext,  "Тип не выбран", PTRSTRING , STRING},
-		{0, "APP:filter", &lnodefilter, NULL, PTRSTRING, NULL},
+		{0, "APP:ldtypetext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
+		{0, "APP:filter",	&lnodefilter, 		NULL, 		PTRSTRING, 	NULL},
 };
 
 //------------------------------------------------------------------------------------
@@ -256,33 +258,53 @@ int stepy, y, itemy, itemh;
 
 void default_left(GR_EVENT *event){
 int ret;
+struct tm *ttm;
+
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
-		if (ret){
-			ret -= REMAKEMENU;
+
+		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
-				num_menu = create_menu(lnmenunames[ret]);
+				num_menu = create_menu(lnmenunames[idlnmenuname]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
 			}
 			if (num_menu) draw_menu();
-		}else redraw_screen(NULL);
+		}
+
+		if (ret == REDRAWTIME){
+			ttm	= localtime(&jourtime);
+			memcpy(&jtime_tm, ttm, sizeof(struct tm));
+			jyear = 1900 + jtime_tm.tm_year;
+			j_mon = jtime_tm.tm_mon + 1;
+			redraw_screen(NULL);
+		}
 	}
 }
 
 void default_right(GR_EVENT *event){
 int ret;
+struct tm *ttm;
+
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
-		if (ret){
-			ret -= REMAKEMENU;
+
+		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
-				num_menu = create_menu(lnmenunames[ret]);
+				num_menu = create_menu(lnmenunames[idlnmenuname]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
 			}
 			if (num_menu) draw_menu();
-		}else redraw_screen(NULL);
+		}
+
+		if (ret == REDRAWTIME){
+			ttm	= localtime(&jourtime);
+			memcpy(&jtime_tm, ttm, sizeof(struct tm));
+			jyear = 1900 + jtime_tm.tm_year;
+			j_mon = jtime_tm.tm_mon + 1;
+			redraw_screen(NULL);
+		}
 	}
 }
 
@@ -317,7 +339,6 @@ void default_enter(GR_EVENT *event){
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
 		strcpy(tmpstring, "menus/");
 		strcat(tmpstring, num_menu->pitems[num_menu->num_item]->next_menu);
-//		memset(dynmenuvars, 0, MAXITEM * sizeof(int));
 		num_menu = create_menu(tmpstring);
 		call_action(NODIRECT, num_menu);		// Refresh variables
 		if (num_menu) draw_menu();
@@ -451,10 +472,10 @@ struct tm *ttm;
 int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 
 	ttm	= localtime(&tmptime);
-	ttm->tm_mday = day;
-	memcpy(&mtime_tm, ttm, sizeof(struct tm));
-	myear = 1900 + mtime_tm.tm_year;
-	m_mon = mtime_tm.tm_mon + 1;
+	if (day) ttm->tm_mday = day;
+	memcpy(&jtime_tm, ttm, sizeof(struct tm));
+	jyear = 1900 + jtime_tm.tm_year;
+	j_mon = jtime_tm.tm_mon + 1;
 
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	redraw_screen(NULL);
@@ -482,7 +503,13 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	// Return to previous menu
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	// Refresh menu by new values
-	call_action(NODIRECT, num_menu);		// Refresh variables
+	call_action(NODIRECT, num_menu);		// Refresh variables for set right main menu
+	num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
+	if (!num_menu){
+		num_menu = create_menu(lnmenunames[idlnmenuname]);
+		call_action(NODIRECT, num_menu);		// Refresh variables for set all vars
+	}
+	if (num_menu) draw_menu();
 }
 
 void setlnbyclass(GR_EVENT *event){

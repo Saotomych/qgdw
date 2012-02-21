@@ -8,8 +8,13 @@
 #include "../common/common.h"
 #include "../common/iec61850.h"
 #include "hmi.h"
+#include "menu.h"
 
 extern LNODE *actlnode;
+extern time_t maintime;		// Actual Time
+extern time_t jourtime;		// Time for journal setting
+extern time_t tmptime;		// Time for journal setting
+extern int idlnmenuname;
 
 // Values for change visible lnode types
 // For indication
@@ -26,7 +31,14 @@ static char lnclasses[][5] = {
 };
 
 static void refreshvars(menu *actmenu){
-int i, idx, j;
+int i, idx, lnclassnum;
+
+// Set ID main menu of type ln
+	for (lnclassnum = 0; lnclassnum < 3; lnclassnum++){
+		if (!strcmp(lnclasses[lnclassnum], actlnode->ln.lnclass)) break;
+	}
+	idlnmenuname = lnclassnum;
+
 	for (i = 0; i < actmenu->count_item; i++){
 		if (actmenu->pitems[i]->vr){
 			if (actmenu->pitems[i]->vr->val->idx & IECBASE){
@@ -45,11 +57,9 @@ int i, idx, j;
 				// Set text of type LN
 				if (idx == 27){
 					// Type text change
-					for (j = 0; j < 3; j++){
-						if (!strcmp(lnclasses[j], actlnode->ln.lnclass)) break;
-					}
-					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[j];
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[lnclassnum];
 				}
+
 			}
 		}
 	}
@@ -145,7 +155,7 @@ int i;
 	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
 	if (pln) *pbln = pln;
 
-	return REMAKEMENU + i;
+	return REMAKEMENU;
 }
 
 // Function change pointer (arg[0]) to pointer of first LNODE with previous class in array of classes
@@ -169,36 +179,48 @@ int i;
 //	destroy_menu(DIR_SIDEBKW);
 //	num_menu = create_menu(lnmenunames[i]);
 
-	return REMAKEMENU + i;
+	return REMAKEMENU;
 }
 
 int next_day(void *arg){
-time_t time = *((int*) arg);
+time_t time = (time_t) arg;
+struct tm *ttm;
 
-//		localtime(&maintime);
+	time += (24 * 60 * 60);
+	ttm = localtime(&time);
 
 	return time;
 }
 
 int prev_day(void *arg){
+time_t time = (time_t) arg;
+struct tm *ttm;
 
+	time -= (24 * 60 * 60);
+	ttm = localtime(&time);
+
+	return time;
 }
 
 int next_jourday(void *arg){
-//	jourtime = next_day(jourtime);
 
-	return 0;
+	jourtime = next_day((void*) jourtime);
+
+	return REDRAWTIME;
 }
 
 int prev_jourday(void *arg){
 
+	jourtime = prev_day((void*) jourtime);
+
+	return REDRAWTIME;
 }
 
 // Array of structures "synonym to function"
 fact actfactset[] = {
 		{"changeln", (void*) prev_ln, (void*) next_ln},
 		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
-		{"change1day", (void*) next_jourday, (void*) prev_jourday},
+		{"change1day", (void*) prev_jourday, (void*) next_jourday},
 };
 
 //---*** External IP ***---//

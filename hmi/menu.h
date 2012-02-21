@@ -36,6 +36,7 @@
 #define MAXITEM 40
 
 #define REMAKEMENU		100
+#define REDRAWTIME		101
 
 #define NODIRECT		0
 #define DIR_FORWARD		1
