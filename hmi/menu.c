@@ -33,15 +33,12 @@ static int myear;				// Year actual
 static int jyear;				// Year journal
 static int m_mon;				// Month as digit = tm_mon + 1, actual
 static int j_mon;				// Month as digit, journal
+static int interval;			// Time Interval for view journal records
 
 //static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
 
 static char tmpstring[100];			// For temporary operations
-
-//static int *dynmenuvars[MAXITEM];	// Pointers to variables according to the menu item
-
-static char *lnodefilter;		// Type of actual lnode
 static char *devtypetext;		// Text of device type
 
 static char lnmenunames[][16] = {
@@ -70,7 +67,7 @@ static value menuvalues[] = {
 		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
 		{0, "APP:ldtypetext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
-		{0, "APP:filter",	&lnodefilter, 		NULL, 		PTRSTRING, 	NULL},
+		{0, "APP:interval", &interval, "нет", INT32, STRING},
 };
 
 //------------------------------------------------------------------------------------
@@ -385,12 +382,12 @@ int itemy, itemh, i;
 	}else{
 		// Days
 		if (num_menu->pitems[num_menu->num_item]->rect.y ==
-			num_menu->pitems[num_menu->pitems[num_menu->num_item]->prev_item]->rect.y)
+			num_menu->pitems[(int)num_menu->pitems[num_menu->num_item]->prev_item]->rect.y)
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 		else{
 			for (i=0; i<6; i++){
 				if (num_menu->pitems[num_menu->num_item]->rect.y ==
-					num_menu->pitems[num_menu->pitems[num_menu->num_item]->next_item]->rect.y)
+					num_menu->pitems[(int)num_menu->pitems[num_menu->num_item]->next_item]->rect.y)
 						num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
 				else break;
 			}
@@ -421,12 +418,12 @@ int itemy, itemh, i;
 	}else{
 		// Days
 		if (num_menu->pitems[num_menu->num_item]->rect.y ==
-			num_menu->pitems[num_menu->pitems[num_menu->num_item]->next_item]->rect.y)
+			num_menu->pitems[(int)num_menu->pitems[num_menu->num_item]->next_item]->rect.y)
 					num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
 		else{
 			for (i=0; i<6; i++){
 				if (num_menu->pitems[num_menu->num_item]->rect.y ==
-					num_menu->pitems[num_menu->pitems[num_menu->num_item]->prev_item]->rect.y)
+					num_menu->pitems[(int)num_menu->pitems[num_menu->num_item]->prev_item]->rect.y)
 						num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 				else break;
 			}
@@ -509,8 +506,6 @@ struct tm *ttm;
 }
 
 void time_left(GR_EVENT *event){
-struct tm *ttm;
-int itemy, itemh, i;
 
 	num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
 	redraw_screen(NULL);
@@ -518,8 +513,6 @@ int itemy, itemh, i;
 }
 
 void time_right(GR_EVENT *event){
-struct tm *ttm;
-int itemy, itemh, i;
 
 	num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
 	redraw_screen(NULL);
@@ -527,7 +520,6 @@ int itemy, itemh, i;
 }
 
 void time_up(GR_EVENT *event){
-struct tm *ttm;
 char *pdig = num_menu->pitems[num_menu->num_item]->text;
 
 	(*pdig)++;
@@ -543,7 +535,6 @@ char *pdig = num_menu->pitems[num_menu->num_item]->text;
 }
 
 void time_down(GR_EVENT *event){
-struct tm *ttm;
 char *pdig = num_menu->pitems[num_menu->num_item]->text;
 
 	(*pdig)--;
@@ -642,7 +633,6 @@ int i;
 // MENU it's return to previous menu without changes forever
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
-int i;
 
 	switch(event->keystroke.ch){
 

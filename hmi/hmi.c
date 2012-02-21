@@ -53,7 +53,8 @@ value defvalues[] = {
 		{26, "APP:jsec", NULL, NULL, 0, 0},
 		// IEC variables
 		{27, "APP:ldtypetext", NULL, NULL, 0 ,0},
-		{28, "APP:filter", NULL, NULL, 0, NULL},
+		// Filter variables
+		{28, "APP:interval", NULL, NULL, 0 ,0},
 		{0, NULL, NULL, NULL, 0, 0},
 };
 
