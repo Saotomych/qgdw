@@ -30,8 +30,13 @@ extern void date_down(GR_EVENT *event);
 extern void date_enter(GR_EVENT *event);
 extern void setlnbytype(GR_EVENT *event);
 extern void setlnbyclass(GR_EVENT *event);
-extern void setjournaldate(GR_EVENT *event);
-extern void setjournaltime(GR_EVENT *event);
+//extern void setjournaldate(GR_EVENT *event);
+//extern void setjournaltime(GR_EVENT *event);
+extern void time_left(GR_EVENT *event);
+extern void time_right(GR_EVENT *event);
+extern void time_up(GR_EVENT *event);
+extern void time_down(GR_EVENT *event);
+extern void time_enter(GR_EVENT *event);
 
 struct _kt {
 	char *funcname;
@@ -48,10 +53,15 @@ struct _kt {
 		{"dateup", date_up},
 		{"datedown", date_down},
 		{"dateenter", date_enter},
+		{"timeleft", time_left},
+		{"timeright", time_right},
+		{"timeup", time_up},
+		{"timedown", time_down},
+		{"timeenter", time_enter},
 		{"setlnbytype", setlnbytype},
 		{"setlnbyclass", setlnbyclass},
-		{"setjournaldate", setjournaldate},
-		{"setjournaltime", setjournaltime},
+//		{"setjournaldate", setjournaldate},
+//		{"setjournaltime", setjournaltime},
 		{"", NULL},
 };
 

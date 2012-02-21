@@ -152,7 +152,7 @@ int i, x, y, maxday, wday, day;
 	if ((timetm->tm_mon == 1) && (!(timetm->tm_year % 4))) maxday++;
 
     // Months and years
-	sprintf(pmenu, "main 10 0 140 130\n");
+	sprintf(pmenu, "main 10 35 140 124\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "keys up:dateup down:datedown right:dateright left:dateleft enter:dateenter\n");
 	pmenu += strlen(pmenu);
@@ -204,6 +204,49 @@ char* ChangeDateJour(char *arg){
 	return ChangeDate(arg);
 }
 
+char* ChangeTime(char *arg){
+char *txtmenu = arg;
+char *pmenu = arg;
+time_t *timel = &tmptime;
+struct tm *timetm = localtime(timel);
+
+    // Months and years
+	sprintf(pmenu, "main 10 50 140 60\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "keys up:timeup down:timedown right:timeright left:timeleft enter:timeenter\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "text 10 0 160 a Установка времени\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 30 25 10 a %d\n", timetm->tm_hour/10);
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 40 25 10 a %d\n", timetm->tm_hour%10);
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "text 50 25 10 a :\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 60 25 10 a %d\n", timetm->tm_min/10);
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 70 25 10 a %d\n", timetm->tm_min%10);
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "text 80 25 10 a :\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 90 25 10 a %d\n", timetm->tm_sec/10);
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "menu 100 25 10 a %d\n", timetm->tm_sec%10);
+	pmenu += strlen(pmenu);
+
+	return txtmenu;
+}
+
+char* ChangeTimeMain(char *arg){
+	tmptime = maintime;
+	return ChangeTime(arg);
+}
+
+char* ChangeTimeJour(char *arg){
+	tmptime = jourtime;
+	return ChangeTime(arg);
+}
+
 // Menu of Interval
 char* ChangeIntl(char *arg){
 char *ptxt;
@@ -225,6 +268,8 @@ fact menufactset[] = {
 		{"date", (void*) ChangeDate, NULL},					// For temporary operations with date
 		{"maindate", (void*) ChangeDateMain, NULL},			// Initial operation by main date
 		{"jourdate", (void*) ChangeDateJour, NULL},			// Initial operation by journal date
+		{"maintime", (void*) ChangeTimeMain, NULL},			// Initial operation by main date
+		{"jourtime", (void*) ChangeTimeJour, NULL},			// Initial operation by journal date
 		{"interval", (void*) ChangeIntl, NULL},
 		{"tarif", (void*) ChangeTarif, NULL},
 };

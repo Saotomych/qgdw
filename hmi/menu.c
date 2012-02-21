@@ -482,8 +482,68 @@ int day = atoi(num_menu->pitems[num_menu->num_item]->text);
 
 }
 
-void time_enter(GR_EVENT *event){
+void time_left(GR_EVENT *event){
+struct tm *ttm;
+int itemy, itemh, i;
 
+	num_menu->num_item = num_menu->pitems[num_menu->num_item]->prev_item;
+	redraw_screen(NULL);
+
+}
+
+void time_right(GR_EVENT *event){
+struct tm *ttm;
+int itemy, itemh, i;
+
+	num_menu->num_item = num_menu->pitems[num_menu->num_item]->next_item;
+	redraw_screen(NULL);
+
+}
+
+void time_up(GR_EVENT *event){
+struct tm *ttm;
+char *pdig = num_menu->pitems[num_menu->num_item]->text;
+
+	(*pdig)++;
+	if ((*pdig) > '9') *pdig = '0';
+
+	// Correct by position
+	if ((num_menu->num_item == 1) && ((*pdig) > '2')) *pdig = '0';
+	if ((num_menu->num_item == 4) && ((*pdig) > '5')) *pdig = '0';
+	if ((num_menu->num_item == 7) && ((*pdig) > '5')) *pdig = '0';
+
+	redraw_screen(NULL);
+
+}
+
+void time_down(GR_EVENT *event){
+struct tm *ttm;
+char *pdig = num_menu->pitems[num_menu->num_item]->text;
+
+	(*pdig)--;
+	if ((*pdig) < '0') *pdig = '9';
+
+	// Correct by position
+	if ((num_menu->num_item == 1) && ((*pdig) > '2')) *pdig = '2';
+	if ((num_menu->num_item == 4) && ((*pdig) > '5')) *pdig = '5';
+	if ((num_menu->num_item == 7) && ((*pdig) > '5')) *pdig = '5';
+
+	redraw_screen(NULL);
+
+}
+
+void time_enter(GR_EVENT *event){
+struct tm *ttm;
+int hour = atoi(num_menu->pitems[1]->text) * 10 + atoi(num_menu->pitems[2]->text);
+int min = atoi(num_menu->pitems[4]->text) * 10 + atoi(num_menu->pitems[5]->text);
+int sec = atoi(num_menu->pitems[7]->text) * 10 + atoi(num_menu->pitems[8]->text);
+
+	jtime_tm.tm_hour = hour;
+	jtime_tm.tm_min = min;
+	jtime_tm.tm_sec = sec;
+
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+	redraw_screen(NULL);
 
 }
 
@@ -533,24 +593,24 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	call_action(NODIRECT, num_menu);		// Refresh variables
 }
 
-void setjournaldate(GR_EVENT *event){
-struct tm *ttm;
-int day = atoi(num_menu->pitems[num_menu->num_item]->text);
-
-	ttm	= localtime(&tmptime);
-	ttm->tm_mday = day;
-	memcpy(&jtime_tm, ttm, sizeof(struct tm));
-	myear = 1900 + jtime_tm.tm_year;
-	m_mon = jtime_tm.tm_mon + 1;
-
-	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
-	redraw_screen(NULL);
-
-}
-
-void setjournaltime(GR_EVENT *event){
-
-}
+//void setjournaldate(GR_EVENT *event){
+//struct tm *ttm;
+//int day = atoi(num_menu->pitems[num_menu->num_item]->text);
+//
+//	ttm	= localtime(&tmptime);
+//	ttm->tm_mday = day;
+//	memcpy(&jtime_tm, ttm, sizeof(struct tm));
+//	myear = 1900 + jtime_tm.tm_year;
+//	m_mon = jtime_tm.tm_mon + 1;
+//
+//	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+//	redraw_screen(NULL);
+//
+//}
+//
+//void setjournaltime(GR_EVENT *event){
+//
+//}
 
 //--------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------

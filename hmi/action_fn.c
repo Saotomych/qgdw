@@ -216,11 +216,46 @@ int prev_jourday(void *arg){
 	return REDRAWTIME;
 }
 
+int next_min(void *arg){
+time_t time = (time_t) arg;
+struct tm *ttm;
+
+	time += 60;
+	ttm = localtime(&time);
+
+	return time;
+}
+
+int prev_min(void *arg){
+time_t time = (time_t) arg;
+struct tm *ttm;
+
+	time -= 60;
+	ttm = localtime(&time);
+
+	return time;
+}
+
+int next_jourmin(void *arg){
+
+	jourtime = next_min((void*) jourtime);
+
+	return REDRAWTIME;
+}
+
+int prev_jourmin(void *arg){
+
+	jourtime = prev_min((void*) jourtime);
+
+	return REDRAWTIME;
+}
+
 // Array of structures "synonym to function"
 fact actfactset[] = {
 		{"changeln", (void*) prev_ln, (void*) next_ln},
 		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
 		{"change1day", (void*) prev_jourday, (void*) next_jourday},
+		{"change1min", (void*) prev_jourmin, (void*) next_jourmin},
 };
 
 //---*** External IP ***---//

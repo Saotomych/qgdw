@@ -4,7 +4,7 @@ menu 0 20 60 a Дата >jourdate~change1day
 text 60 20 15 a &var:APP:jday
 text 75 20 22 a .&var:APP:jmondig
 text 97 20 43 a .&var:APP:jyear
-menu 0 35 60 a Время
+menu 0 35 60 a Время >jourtime~change1min
 text 60 35 15 a &var:APP:jhour
 text 75 35 22 a :&var:APP:jmin
 text 97 35 23 a :&var:APP:jsec
