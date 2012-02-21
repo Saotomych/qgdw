@@ -37,6 +37,7 @@
 
 #define REMAKEMENU		100
 #define REDRAWTIME		101
+#define REDRAW			102
 
 #define NODIRECT		0
 #define DIR_FORWARD		1

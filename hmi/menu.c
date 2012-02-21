@@ -279,6 +279,10 @@ struct tm *ttm;
 			j_mon = jtime_tm.tm_mon + 1;
 			redraw_screen(NULL);
 		}
+
+		if (ret == REDRAW){
+			redraw_screen(NULL);
+		}
 	}
 }
 
@@ -303,6 +307,10 @@ struct tm *ttm;
 			memcpy(&jtime_tm, ttm, sizeof(struct tm));
 			jyear = 1900 + jtime_tm.tm_year;
 			j_mon = jtime_tm.tm_mon + 1;
+			redraw_screen(NULL);
+		}
+
+		if (ret == REDRAW){
 			redraw_screen(NULL);
 		}
 	}

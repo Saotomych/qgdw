@@ -108,7 +108,7 @@ char *filter = pln->ln.lnclass;
 			pln = pln->l.next;
 			if (!strcmp(pln->ln.lnclass, filter)){
 				*pbln = pln;
-				return 0;
+				return REDRAW;
 			}
 		}while (pln->l.next);
 	}
@@ -129,7 +129,7 @@ char *filter = pln->ln.lnclass;
 			pln = pln->l.prev;
 			if (!strcmp(pln->ln.lnclass, filter)){
 				*pbln = pln;
-				return 0;
+				return REDRAW;
 			}
 		}while (pln->l.prev);
 	}

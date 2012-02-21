@@ -318,10 +318,10 @@ fact menufactset[] = {
 		{"lnmenu", (void*) ChangeLN, NULL},
 		{"lntypemenu", (void*) ChangeLNType, NULL},
 		{"date", (void*) ChangeDate, NULL},					// For temporary operations with date
-		{"maindate", (void*) ChangeDateMain, SetDateMain},			// Initial operation by main date
-		{"jourdate", (void*) ChangeDateJour, SetDateJour},			// Initial operation by journal date
-		{"maintime", (void*) ChangeTimeMain, SetTimeMain},			// Initial operation by main date
-		{"jourtime", (void*) ChangeTimeJour, SetTimeJour},			// Initial operation by journal date
+		{"maindate", (void*) ChangeDateMain, (void*) SetDateMain},			// Initial operation by main date
+		{"jourdate", (void*) ChangeDateJour, (void*) SetDateJour},			// Initial operation by journal date
+		{"maintime", (void*) ChangeTimeMain, (void*) SetTimeMain},			// Initial operation by main date
+		{"jourtime", (void*) ChangeTimeJour, (void*) SetTimeJour},			// Initial operation by journal date
 		{"interval", (void*) ChangeIntl, NULL},
 		{"tarif", (void*) ChangeTarif, NULL},
 };
