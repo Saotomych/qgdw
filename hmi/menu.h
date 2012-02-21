@@ -7,32 +7,36 @@
 #ifndef MENU_H_
 #define MENU_H_
 
-#ifndef HMI_H_
-#include "hmi.h"
-#endif
+#include "../common/varcontrol.h"
+#include <nano-X.h>
+#include <nanowm.h>
 
 #define MENUFILE	1
 #define MENUMEM		2
-
 #define MENUSTEP	16
 
 typedef struct _item{
 	GR_WINDOW_ID main_window;
 	GR_RECT rect;
 	GR_RECT bgnrect;
+	varrec *vr;			// pointer to variable of item
+	int  ctrl_height;	// Height of below control by this menu item
 	char *name_font;
-	char *text;
-	char *next_menu;  //указатель на имя следующего подменю
+	char *text;			// Start text of item
+	char *endtext;		// End text of item
+	char *next_menu;  	// pointer to next submenu
 	char *action;
+	int  *dynmenuvar;	// Pointer to variable for select this item
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
-}item;
+} item;
 
 typedef struct _menu{
 	GR_WINDOW_ID main_window;
 	GR_FONT_ID	font;
+	GR_RECT rect;
 	item **pitems;
-	char *ptxtmenu;     //указатель на массив пунктов меню
+	char *ptxtmenu;     // pointer to menu dimension of texts
 	int num_item;   //текущий пункт меню
 	int start_item; //пункт начала вывода
 	int count_item;        //number of item
@@ -40,15 +44,17 @@ typedef struct _menu{
 	char first_item;	// index of first menu point
 //  функции set
 
-}menu;
+} menu;
 
-extern int init_menu(fact *factsetting, int len);
-extern int do_openfilemenu(char *buf, int type);
-extern void draw_menu();
-extern void f1(void *arg);
-extern void f2(void *arg);
-extern void f3(void *arg);
+//extern int init_menu(fact *factsetting, int len);
+extern void menu_parser(pvalue vt, int len);
+extern int init_menu(void);
+extern void redraw_screen(void *arg);
+extern void key_pressed(void *arg);
+extern void key_rised(void *arg);
 
+extern int call_action(int direct, char *act, void *arg);
+extern char* create_dynmenu(char *menuname, void *arg);
 
 //void SetNewMenu();
 //void SetMainMenu();

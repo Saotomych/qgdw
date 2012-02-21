@@ -8,6 +8,8 @@
 #ifndef IEC61850_H_
 #define IEC61850_H_
 
+#define IECCONFIG		"ieclevel.cid"
+
 #define ALARM_PER		2  // must be >= 2 sec!!!
 
 struct _ATTR;
@@ -26,12 +28,6 @@ struct _IED;
 struct _IED_LIST;
 
 extern u08 Encoding;
-
-/* Just List */
-typedef struct _LIST{
-	void *next;
-	void *prev;
-} LIST;
 
 /* Attributes */
 typedef struct _ATTR_LIST{
@@ -90,6 +86,7 @@ typedef struct _LNODE_LIST{
 		char *lntype;
 		char *iedname;
 		char *ldinst;
+		char *prefix;
 		struct _IED *pmyied;			// crossconnector set up this value
 		struct _LDEVICE *pmyld;			// crossconnector set up this value
 		struct _LNODETYPE *pmytype;		// crossconnector set up this value
@@ -139,22 +136,23 @@ typedef struct _iec_data_unit{
 
 extern LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 
+extern int cid_build(char *filename);
 extern int virt_start(char *appname);
 extern void crossconnection(void);
 extern void catch_alarm(int sig);
 
 extern LIST* create_next_struct_in_list(LIST *plist, int size);	// call create new LIST item
 
-extern void ssd_create_ied(const char *pTag);			// call parse ied
-extern void ssd_create_ld(const char *pTag);			// call parse ld
-extern void ssd_create_ln(const char *pTag);			// call parse ln
-extern void ssd_create_lntype(const char *pTag);		// call parse lntype
-extern void ssd_create_dobj(const char *pTag);			// call parse do
-extern void ssd_create_dobjtype(const char *pTag);		// call parse dotype
-extern void ssd_create_attr(const char *pTag);			// call parse attr
-extern void ssd_create_enum(const char *pTag);			// call parse enumtype
-extern void ssd_create_enumval(const char *pTag);		// call parse enumval
-extern void ssd_create_subst(const char *pTag);			// call parse substation
+extern void cid_create_ied(const char *pTag);			// call parse ied
+extern void cid_create_ld(const char *pTag);			// call parse ld
+extern void cid_create_ln(const char *pTag);			// call parse ln
+extern void cid_create_lntype(const char *pTag);		// call parse lntype
+extern void cid_create_dobj(const char *pTag);			// call parse do
+extern void cid_create_dobjtype(const char *pTag);		// call parse dotype
+extern void cid_create_attr(const char *pTag);			// call parse attr
+extern void cid_create_enum(const char *pTag);			// call parse enumtype
+extern void cid_create_enumval(const char *pTag);		// call parse enumval
+extern void cid_create_subst(const char *pTag);		// call parse substation
 
 
 #endif /* IEC61850_H_ */

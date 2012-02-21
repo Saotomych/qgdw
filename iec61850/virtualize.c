@@ -15,7 +15,7 @@
 #include "../common/multififo.h"
 #include "../common/ts_print.h"
 #include "../common/asdu.h"
-#include "iec61850.h"
+#include "../common/iec61850.h"
 #include "log_db.h"
 
 #define VIRT_ASDU_MAXSIZE 	512
@@ -746,7 +746,7 @@ char *chld_app;
 	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
 	if (clen != fst.st_size) ret = -1;
 	else{
-		// Building mapping meter asdu to ssd asdu
+		// Building mapping meter asdu to cid asdu
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo

@@ -1,13 +1,14 @@
 /*
- * ssd.c
+ * cid.c
  *
  *  Created on: 13.07.2011
  *      Author: Alex AVAlon
  */
 
-#include "../common/common.h"
-#include "../common/ts_print.h"
+#include "common.h"
+#include "ts_print.h"
 #include "iec61850.h"
+#include "xml.h"
 
 struct _IED *actlied = NULL;
 struct _LDEVICE *actlldevice = NULL;
@@ -74,7 +75,7 @@ int mode=0;
 
 // *** Tag structure working ***//
 
-void ssd_create_ied(const char *pTag){			// call parse ied
+void cid_create_ied(const char *pTag){			// call parse ied
 char *p;
 char *key=0, *par=0;
 	flastied = (IED*) create_next_struct_in_list(&(flastied->l), sizeof(IED));
@@ -95,7 +96,7 @@ char *key=0, *par=0;
 	ts_printf(STDOUT_FILENO, "IEC61850: new IED: name=%s desc=%s\n", flastied->ied.name, flastied->ied.desc);
 }
 
-void ssd_create_ld(const char *pTag){			// call parse ld
+void cid_create_ld(const char *pTag){			// call parse ld
 char *p;
 char *key=0, *par=0;
 	flastld = (LDEVICE*) create_next_struct_in_list(&(flastld->l), sizeof(LDEVICE));
@@ -118,7 +119,7 @@ char *key=0, *par=0;
 	ts_printf(STDOUT_FILENO, "IEC61850: new LDevice: inst=%s desc=%s\n", flastld->ld.inst, flastld->ld.desc);
 }
 
-void ssd_create_ln(const char *pTag){			// call parse ln
+void cid_create_ln(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
 	flastln = (LNODE*) create_next_struct_in_list(&(flastln->l), sizeof(LNODE));
@@ -137,6 +138,8 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "ldInst")) flastln->ln.ldinst = par;
 			else
 			if (strstr((char*) key, "lnType")) flastln->ln.lntype = par;
+			else
+			if (strstr((char*) key, "prefix")) flastln->ln.prefix = par;
 		}
 	}while(p);
 
@@ -152,7 +155,7 @@ char *key=0, *par=0;
 			flastln->ln.lnclass, flastln->ln.lninst, flastln->ln.iedname, flastln->ln.ldinst);
 }
 
-void ssd_create_lntype(const char *pTag){			// call parse ln
+void cid_create_lntype(const char *pTag){			// call parse ln
 char *p;
 char *key=0, *par=0;
 	flastlntype = (LNTYPE*) create_next_struct_in_list(&(flastlntype->l), sizeof(LNTYPE));
@@ -175,7 +178,7 @@ char *key=0, *par=0;
 	ts_printf(STDOUT_FILENO, "IEC61850: new LNTYPE: id=%s lnclass=%s\n", flastlntype->lntype.id, flastlntype->lntype.lnclass);
 }
 
-void ssd_create_dobj(const char *pTag){			// call parse data
+void cid_create_dobj(const char *pTag){			// call parse data
 char *p;
 char *key=0, *par=0;
 	flastdo = (DOBJ*) create_next_struct_in_list(&(flastdo->l), sizeof(DOBJ));
@@ -200,7 +203,7 @@ char *key=0, *par=0;
 	ts_printf(STDOUT_FILENO, "IEC61850: new DATA OBJECT: name=%s type=%s options=%s\n", flastdo->dobj.name, flastdo->dobj.type, flastdo->dobj.options);
 }
 
-void ssd_create_dobjtype(const char *pTag){		// call parse data_type
+void cid_create_dobjtype(const char *pTag){		// call parse data_type
 char *p;
 char *key=0, *par=0;
 	flastdtype = (DTYPE*) create_next_struct_in_list(&(flastdtype->l), sizeof(DTYPE));
@@ -223,7 +226,7 @@ char *key=0, *par=0;
 	ts_printf(STDOUT_FILENO, "IEC61850: new DATA OBJECT TYPE: id=%s cdc=%s\n", flastdtype->dtype.id, flastdtype->dtype.cdc);
 }
 
-void ssd_create_attr(const char *pTag){			// call parse attr
+void cid_create_attr(const char *pTag){			// call parse attr
 char *p;
 char *key=0, *par=0;
 	flastattr = (ATTR*) create_next_struct_in_list(&(flastattr->l), sizeof(ATTR));
@@ -253,15 +256,15 @@ char *key=0, *par=0;
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 
-void ssd_create_enum(const char *pTag){			// call parse enum
+void cid_create_enum(const char *pTag){			// call parse enum
 
 }
 
-void ssd_create_enumval(const char *pTag){			// call parse enum
+void cid_create_enumval(const char *pTag){			// call parse enum
 
 }
 
-void ssd_create_subst(const char *pTag){			// call parse substation
+void cid_create_subst(const char *pTag){			// call parse substation
 
 }
 
@@ -399,4 +402,33 @@ void crossconnection(){
 	// DTYPE -> ATTR
 	dtype2attr();
 
+}
+
+// Create structures according to ieclevel.cid
+int cid_build(char *filename){
+char *SCLfile;
+FILE *fcid;
+int cidlen, ret = 0;
+struct stat fst;
+ 	// Get size of main config file
+	if (stat(filename, &fst) == -1){
+		ts_printf(STDOUT_FILENO, "IEC61850: SCL file not found\n");
+		exit(1);
+	}
+
+	SCLfile = malloc(fst.st_size + 1);
+
+	// Loading main config file
+	fcid = fopen(filename, "r");
+	cidlen = fread(SCLfile, 1, (size_t) (fst.st_size), fcid);
+	SCLfile[fst.st_size] = '\0'; // make it null terminating string
+	if(!strstr(SCLfile, "</SCL>"))
+	{
+		ts_printf(STDOUT_FILENO, "IEC61850: SCL is incomplete\n");
+		exit(1);
+	}
+	if (cidlen == fst.st_size) XMLSelectSource(SCLfile);
+	else ret = -1;
+
+	return ret;
 }
