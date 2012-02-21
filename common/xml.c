@@ -82,6 +82,50 @@ void TagSetXml(const char *pTag){
   }
 }
 
+void TagStartTarifs(const char *pTag){
+
+}
+
+void TagSetSeason(const char *pTag){
+
+}
+
+void TagEndSeason(const char *pTag){
+
+}
+
+void TagSetWDays(const char *pTag){
+
+}
+
+void TagSetHolidays(const char *pTag){
+
+}
+
+void TagSetHighdays(const char *pTag){
+
+}
+
+void TagEndHighdays(const char *pTag){
+
+}
+
+void TagSetWDay(const char *pTag){
+
+}
+
+void TagSetHlday(const char *pTag){
+
+}
+
+void TagSetHgday(const char *pTag){
+
+}
+
+void TagSetSet(const char *pTag){
+
+}
+
 //*** End Tag RAW working ***//
 
 typedef struct _XML_Name{
@@ -90,6 +134,7 @@ typedef struct _XML_Name{
 } XML_Name, *pXML_Name;
 
 static const XML_Name XTags[] = {
+  // Tags for IEC config
   {"Header", TagSetHeader},
   {"/Header", TagEndHeader},
   {"IED", cid_create_ied},
@@ -117,6 +162,19 @@ static const XML_Name XTags[] = {
   {"SCL", TagSetSCL},
   {"/SCL", TagEndSCL},
   {"?xml", TagSetXml},
+  // Tags for tarif config
+  {"Tarifs", TagStartTarifs},
+  {"Season", TagSetSeason},
+  {"/Season", TagEndSeason},
+  {"Workdays", TagSetWDays},
+  {"Holidays", TagSetHolidays},
+  {"Highdays", TagSetHighdays},
+  {"/Highdays", TagEndHighdays},
+  {"Workday", TagSetWDay},
+  {"Holiday", TagSetHlday},
+  {"Highday", TagSetHgday},
+  {"Set", TagSetSet},
+
 };
 
 void OpenTag(const char *pS){

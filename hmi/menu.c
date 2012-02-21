@@ -19,8 +19,8 @@ time_t maintime;		// Actual Time
 time_t jourtime;		// Time for journal setting
 time_t tmptime;			// Time for setting process
 int idlnmenuname = 0;
-
 int intervals[] = {1,5,10,15,20,30,60};
+int* pinterval = intervals;		// Time Interval for view journal records
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
@@ -33,7 +33,6 @@ static int myear;				// Year actual
 static int jyear;				// Year journal
 static int m_mon;				// Month as digit = tm_mon + 1, actual
 static int j_mon;				// Month as digit, journal
-static int interval;			// Time Interval for view journal records
 
 //static char prev_item;		// pointer to item in main menu
 static menu *num_menu;     //указатель на структуру меню
@@ -67,7 +66,7 @@ static value menuvalues[] = {
 		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
 		{0, "APP:ldtypetext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
-		{0, "APP:interval", &interval, "нет", INT32, STRING},
+		{0, "APP:interval", &pinterval, "нет", PTRINT32, STRING},
 };
 
 //------------------------------------------------------------------------------------
@@ -94,6 +93,10 @@ int len = sizeof(wintext) - 1;
 //				if (pitem->vr->prop & ISTRUE)
 				if (pitem->vr->prop & INT32){
 					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
+				}
+
+				if (pitem->vr->prop & PTRINT32){
+					sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
 				}
 
 				if (pitem->vr->prop & INT32DIG2){
@@ -611,6 +614,14 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	// Refresh menu by new values
 	call_action(NODIRECT, num_menu);		// Refresh variables
+}
+
+void setinterval(GR_EVENT *event){
+int i = num_menu->num_item - 2;
+
+	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+	pinterval = &intervals[i];
+	redraw_screen(NULL);
 }
 
 //-------------------------------------------------------------------------------

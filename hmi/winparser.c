@@ -35,6 +35,7 @@ extern void time_right(GR_EVENT *event);
 extern void time_up(GR_EVENT *event);
 extern void time_down(GR_EVENT *event);
 extern void time_enter(GR_EVENT *event);
+extern void setinterval(GR_EVENT *event);
 
 struct _kt {
 	char *funcname;
@@ -58,8 +59,7 @@ struct _kt {
 		{"timeenter", time_enter},
 		{"setlnbytype", setlnbytype},
 		{"setlnbyclass", setlnbyclass},
-//		{"setjournaldate", setjournaldate},
-//		{"setjournaltime", setjournaltime},
+		{"setinterval", setinterval},
 		{"", NULL},
 };
 

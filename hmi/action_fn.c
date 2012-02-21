@@ -15,6 +15,8 @@ extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
 extern int idlnmenuname;
+extern int *pinterval;
+extern int intervals;
 
 // Values for change visible lnode types
 // For indication
@@ -59,7 +61,6 @@ int i, idx, lnclassnum;
 					// Type text change
 					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[lnclassnum];
 				}
-
 			}
 		}
 	}
@@ -278,6 +279,22 @@ int prev_mainmin(void *arg){
 	return REDRAWTIMEMAIN;
 }
 
+int prev_interval(void *arg){
+
+	if (pinterval > &intervals) pinterval--;
+	else pinterval = &intervals + 6;
+
+	return REDRAW;
+}
+
+int next_interval(void *arg){
+
+	if (pinterval < (&intervals+6)) pinterval++;
+	else pinterval = &intervals;		// Time Interval for view journal records
+
+	return REDRAW;
+}
+
 // Array of structures "synonym to function"
 fact actfactset[] = {
 		{"changeln", (void*) prev_ln, (void*) next_ln},
@@ -286,6 +303,7 @@ fact actfactset[] = {
 		{"change1min", (void*) prev_jourmin, (void*) next_jourmin},
 		{"change1mainday", (void*) prev_mainday, (void*) next_mainday},
 		{"change1mainmin", (void*) prev_mainmin, (void*) next_mainmin},
+		{"chinterval", (void*) prev_interval, (void*) next_interval},
 };
 
 //---*** External IP ***---//

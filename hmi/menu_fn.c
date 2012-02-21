@@ -308,7 +308,7 @@ int i, x = 4, l;
 
 	sprintf(pmenu, "main 10 65 140 60\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys right:timeright left:timeleft enter:tarifenter\n");
+	sprintf(pmenu, "keys right:timeright left:timeleft enter:setinterval\n");
 	pmenu += strlen(pmenu);
 	sprintf(pmenu, "text 0 0 160 a Установка интервала\n");
 	pmenu += strlen(pmenu);
