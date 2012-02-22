@@ -9,6 +9,121 @@
 #include "xml.h"
 #include "tarif.h"
 
+// Start points for tariffes
+sett fhighdays;
+LIST fseason, fspecs, ftarif, fmyhgdays;
+season *flastseason = (season*) &fseason;
+specday *flastspec = (specday*) &fspecs ;
+tarif *flasttarif = (tarif*) &ftarif;
+sett *flasthgday = &fhighdays;
+
+static void* create_next_struct_in_list(LIST *plist, int size){
+LIST *new;
+	plist->next = malloc(size);
+
+	if (!plist->next){
+		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
+		exit(3);
+	}
+
+	new = plist->next;
+	new->prev = plist;
+	new->next = 0;
+	return new;
+}
+
+// In: p - pointer to string
+// Out: key - pointer to string with key of XML file
+//      par - pointer to string par for this key without ""
+static char* get_next_parameter(char *p, char **key, char **par){
+int mode=0;
+
+	*key = p;
+	while (*p != '>'){
+		if (!mode){
+			// Key mode
+			if (*p == '='){
+				mode = 1;	// switch to par mode
+				*p = 0;
+			}
+		}else{
+			// Par mode
+			if (*p == '"'){
+				if (mode == 2){
+					*p = 0;
+					return p+1;		// key + par ready
+				}
+				if (mode == 1){
+					mode = 2;
+					*par = p+1;
+				}
+			}
+		}
+		p++;
+	}
+
+	return 0;
+}
+
+void create_season(const char *pTag){
+char *p;
+char *key=0, *par=0;
+
+	flastseason = create_next_struct_in_list(&(flastseason->l), sizeof(season));
+
+	// Parse parameters for season
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flastseason->name = par;
+			else
+			if (strstr((char*) key, "id")) flastseason->id = atoi(par);
+			else
+			if (strstr((char*) key, "date")){
+				flastseason->day = atoi(par);
+				flastseason->mnth = atoi(par+3);
+			}
+		}
+	}while(p);
+
+	printf("Tarif: new season: id=%d name=%s date=%d.%d\n",
+			flastseason->id, flastseason->name, flastseason->day, flastseason->mnth);
+
+}
+
+void start_workdaysset(const char *pTag){
+
+}
+
+void start_holidaysset(const char *pTag){
+
+}
+
+void start_highdaysset(const char *pTag){
+
+}
+
+void add_workday(const char *pTag){
+
+}
+
+void add_holiday(const char *pTag){
+
+}
+
+void add_highday(const char *pTag){
+
+}
+
+void create_set(const char *pTag){
+
+}
+
+void create_tarif(const char *pTag){
+
+}
+
 int tarif_parser(char *filename){
 char *tfile;
 FILE *fcid;

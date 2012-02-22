@@ -8,6 +8,7 @@
 
 #include "../common/common.h"
 #include "../common/iec61850.h"
+#include "../common/tarif.h"
 
 u08 Encoding, EndScript;
 
@@ -84,6 +85,11 @@ void TagSetXml(const char *pTag){
 
 void TagStartTarifs(const char *pTag){
 
+}
+
+void TagEndTarifs(const char *pTag){
+	EndScript=1;
+	printf("Tarif: Stop tariff file to parse\n");
 }
 
 void TagSetSeason(const char *pTag){
@@ -164,17 +170,18 @@ static const XML_Name XTags[] = {
   {"?xml", TagSetXml},
   // Tags for tarif config
   {"Tarifs", TagStartTarifs},
-  {"Season", TagSetSeason},
+  {"/Tarifs", TagEndTarifs},
+  {"Season", create_season},
   {"/Season", TagEndSeason},
-  {"Workdays", TagSetWDays},
-  {"Holidays", TagSetHolidays},
-  {"Highdays", TagSetHighdays},
+  {"Workdays", start_workdaysset},
+  {"Holidays", start_holidaysset},
+  {"Highdays", start_highdaysset},
   {"/Highdays", TagEndHighdays},
-  {"Workday", TagSetWDay},
-  {"Holiday", TagSetHlday},
-  {"Highday", TagSetHgday},
-  {"Set", TagSetSet},
-
+  {"Workday", add_workday},
+  {"Holiday", add_holiday},
+  {"Highday", add_highday},
+  {"Set", create_set},
+  {"Tarif", create_tarif},
 };
 
 void OpenTag(const char *pS){

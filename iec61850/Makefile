@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o
+OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o tarif.o
 CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 
@@ -17,6 +17,8 @@ xml.o: ../common/xml.c
 	$(CC) $(CCFLAGS) ../common/xml.c -o xml.o
 multififo.o: ../common/multififo.c
 	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
+tarif.o: ../common/tarif.c
+	$(CC) $(CCFLAGS) ../common/tarif.c -o tarif.o
 
 all: startiec
 

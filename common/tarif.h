@@ -52,4 +52,14 @@ extern sett fhighdays;
 
 extern LIST fseason, fspecs, ftarif, fmyhgdays;
 
+extern void create_season(const char *pTag);
+extern void start_workdaysset(const char *pTag);
+extern void start_holidaysset(const char *pTag);
+extern void start_highdaysset(const char *pTag);
+extern void add_workday(const char *pTag);
+extern void add_holiday(const char *pTag);
+extern void add_highday(const char *pTag);
+extern void create_set(const char *pTag);
+extern void create_tarif(const char *pTag);
+
 #endif /* TARIF_H_ */

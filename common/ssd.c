@@ -8,7 +8,6 @@
 #include "common.h"
 #include "iec61850.h"
 #include "xml.h"
-#include "tarif.h"
 
 struct _IED *actlied = NULL;
 struct _LDEVICE *actlldevice = NULL;
@@ -24,14 +23,6 @@ LNTYPE *flastlntype = (LNTYPE*) &flntype;
 DOBJ *flastdo = (DOBJ*) &fdo;
 DTYPE *flastdtype = (DTYPE*) &fdtype;
 ATTR *flastattr = (ATTR*) &fattr;
-
-// Start points for tariffes
-sett fhighdays;
-LIST fseason, fspecs, ftarif, fmyhgdays;
-season *flastseason = (season*) &fseason;
-specday *flastspec = (specday*) &fspecs ;
-tarif *flasttarif = (tarif*) &ftarif;
-sett *flasthgday = &fhighdays;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *new;
@@ -51,7 +42,7 @@ LIST *new;
 // In: p - pointer to string
 // Out: key - pointer to string with key of SCL file
 //      par - pointer to string par for this key without ""
-char* get_next_parameter(char *p, char **key, char **par){
+static char* get_next_parameter(char *p, char **key, char **par){
 int mode=0;
 
 	*key = p;
