@@ -7,6 +7,7 @@
 
 #include "../common/common.h"
 #include "../common/iec61850.h"
+#include "../common/tarif.h"
 #include "hmi.h"
 #include "menu.h"
 
@@ -329,6 +330,25 @@ int i, x = 4, l;
 // Menu of Tarif
 char* ChangeTarif(char *arg){
 char *txtmenu = arg;
+char *pmenu = arg;
+tarif *ptarif = (tarif*) ftarif.next;
+int y = 0;
+
+	sprintf(pmenu, "main 2 60 156 100\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "keys enter:settarif\n");
+	pmenu += strlen(pmenu);
+	sprintf(pmenu, "text 12 %d a a Выбор тарифа\n", y);
+	pmenu += strlen(pmenu);
+	y += MENUSTEP;
+	while(ptarif){
+		sprintf(pmenu, "menu 2 %d a a Тариф %d - %s\n", y, ptarif->id, ptarif->name);
+		pmenu += strlen(pmenu);
+		y += MENUSTEP;
+		ptarif = ptarif->l.next;
+	}
+
+	*pmenu = 0;
 
 	return txtmenu;
 }

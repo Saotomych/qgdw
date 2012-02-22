@@ -10,6 +10,6 @@ text 97 35 23 a :&var:APP:jsec
 menu 0 50 70 a Интервал >interval~chinterval
 text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
-menu 0 65 40 a Тариф
+menu 0 65 40 a Тариф >tarif~chtarif
 text 40 65 10 a &var:APP:tarifid
-text 50 65 110 a &var:APP:tarifname
+text 53 65 110 a - &var:APP:tarifname

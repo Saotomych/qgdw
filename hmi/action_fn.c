@@ -7,10 +7,13 @@
 
 #include "../common/common.h"
 #include "../common/iec61850.h"
+#include "../common/tarif.h"
 #include "hmi.h"
 #include "menu.h"
 
 extern LNODE *actlnode;
+extern tarif *acttarif;
+
 extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
@@ -61,6 +64,14 @@ int i, idx, lnclassnum;
 					// Type text change
 					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[lnclassnum];
 				}
+				if (idx == 29){
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) &acttarif->id;
+				}
+
+				if (idx == 30){
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) acttarif->name;
+				}
+
 			}
 		}
 	}

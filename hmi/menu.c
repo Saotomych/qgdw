@@ -15,6 +15,7 @@
 #include "menu.h"
 
 LNODE *actlnode;			// Global variable, change in menu only
+tarif *acttarif;			// Global variable, change in menu only
 
 time_t maintime;		// Actual Time
 time_t jourtime;		// Time for journal setting
@@ -722,6 +723,9 @@ struct tm *ttm;
 	// First actual LNODE init
 	actlnode = (LNODE*) fln.next;					// Try set first LLN0
 	if (!actlnode) exit(1);
+
+	// First actual tarif init
+	acttarif = (tarif*) ftarif.next;
 
 	// Open first menu
 	num_menu = create_menu("menus/itemti");
