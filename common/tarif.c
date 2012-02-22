@@ -69,8 +69,7 @@ int mode=0;
 
 void tarifvars_init(const char *pTag){
 	flasthighday = create_next_struct_in_list(&(flasthighday->l), sizeof(season));
-	flasthighday->myhgdays = create_next_struct_in_list(&(flasthighday->myhgdays->l), sizeof(LIST));
-	flasthighset = flasthighday->myhgdays;
+	flasthighset = (sett*) &flasthighday->myhgdays;
 }
 
 void create_season(const char *pTag){
@@ -96,10 +95,10 @@ char *key=0, *par=0;
 	}while(p);
 
 	// create first LISTs for work and holidays
-	flastseason->mywrdays = create_next_struct_in_list(&(flastseason->mywrdays->l), sizeof(LIST));
-	flastseason->myhldays = create_next_struct_in_list(&(flastseason->myhldays->l), sizeof(LIST));
-	flastworkset = flastseason->mywrdays;
-	flastholiset = flastseason->myhldays;
+//	flastseason->mywrdays = create_next_struct_in_list(&(flastseason->mywrdays->l), sizeof(LIST));
+//	flastseason->myhldays = create_next_struct_in_list(&(flastseason->myhldays->l), sizeof(LIST));
+	flastworkset = (sett*) &flastseason->mywrdays;
+	flastholiset = (sett*) &flastseason->myhldays;
 
 	printf("Tarif: new season: id=%d name=%s date=%02d.%02d\n",
 			flastseason->id, flastseason->name, flastseason->day, flastseason->mnth);
@@ -219,9 +218,9 @@ char *key=0, *par=0;
 	do{
 		p = get_next_parameter(p, &key, &par);
 		if (p){
-			if (strstr((char*) key, "id")) actset->id = atoi(par);
-			else
 			if (strstr((char*) key, "idtarif")) actset->idtarif = atoi(par);
+			else
+			if (strstr((char*) key, "id")) actset->id = atoi(par);
 			else
 			if (strstr((char*) key, "time")){
 				actset->hour = atoi(par);
@@ -254,7 +253,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("Tarif: new season: id=%d name=%s money=%f\n",
+	printf("Tarif: new tarif: id=%d name=%s money=%f\n",
 			flasttarif->id, flasttarif->name, flasttarif->money);
 
 }
@@ -283,6 +282,52 @@ struct stat fst;
 	if (cidlen == fst.st_size) XMLSelectSource(tfile);
 	else ret = -1;
 
+	connect_2tarif();
+
 	return ret;
 }
 
+void connect_2tarif(){
+season *acts = (season*) fseason.next;
+sett *actwset;
+sett *acthset;
+tarif *actt;
+
+	while(acts){
+
+		actwset = (sett*) acts->mywrdays.next;
+		while(actwset){
+			actt = (tarif*) ftarif.next;
+			while((actt) && (actt->id != actwset->idtarif))	actt = actt->l.next;
+			actwset->mytarif = actt;
+
+			printf("Tarif: Workday set id=%d connect to tarif id=%d (0x04%X)\n", actwset->id, actt->id, (int) actwset->mytarif);
+
+			actwset = actwset->l.next;
+		}
+
+		acthset = (sett*) acts->myhldays.next;
+		while(acthset){
+			actt = (tarif*) ftarif.next;
+			while((actt) && (actt->id != acthset->idtarif))	actt = actt->l.next;
+			acthset->mytarif = actt;
+
+			printf("Tarif: Holiday set id=%d connect to tarif id=%d (0x04%X)\n", acthset->id, actt->id, (int) acthset->mytarif);
+
+			acthset = acthset->l.next;
+		}
+
+		acts = acts->l.next;
+	}
+
+	acthset = ((highday*) (fhighday.next))->myhgdays.next;
+	while(acthset){
+		actt = (tarif*) ftarif.next;
+		while((actt) && (actt->id != acthset->idtarif))	actt = actt->l.next;
+		acthset->mytarif = actt;
+
+		printf("Tarif: Highday set id=%d connect to tarif id=%d (0x04%X)\n", acthset->id, actt->id, (int) acthset->mytarif);
+
+		acthset = acthset->l.next;
+	}
+}

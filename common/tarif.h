@@ -30,9 +30,9 @@ typedef struct _sett{
 } sett;
 
 typedef struct _season{
-	LIST l;
-	sett 	*mywrdays;		// Set of switches of work day for this season
-	sett 	*myhldays;      // Set of switches of holiday for this season
+	LIST 	l;
+	LIST 	mywrdays;		// Set of switches of work day for this season
+	LIST 	myhldays;      // Set of switches of holiday for this season
 	int 	id;
 	char 	*name;
 	u_char	mnth;
@@ -43,19 +43,20 @@ typedef struct _specday{
 	LIST l;
 	int		daytype;
 	int		id;
-	sett	*mysett;
+	LIST	mysett;
 	u_char	mnth;
 	u_char	day;
 } specday;
 
 typedef struct _highday{
 	LIST l;
-	sett *myhgdays;
+	LIST myhgdays;
 } highday;
 
 extern LIST fseason, fspecs, ftarif, fhighday;
 
 extern int tarif_parser(char *filename);
+extern void connect_2tarif(void);
 extern void tarifvars_init(const char *pTag);
 extern void create_season(const char *pTag);
 extern void start_workdaysset(const char *pTag);
