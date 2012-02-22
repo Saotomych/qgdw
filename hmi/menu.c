@@ -741,7 +741,8 @@ struct tm *ttm;
 	if (!actlnode) exit(1);
 
 	// First actual tarif init
-	acttarif = (tarif*) ftarif.l.next;
+	acttarif = (tarif*) &ftarif;
+	acttarif->name = defvalues[30].defval;
 
 	// Open first menu
 	num_menu = create_menu("menus/itemti");
