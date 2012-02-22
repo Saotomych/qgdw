@@ -48,10 +48,15 @@ typedef struct _specday{
 	u_char	day;
 } specday;
 
-extern sett fhighdays;
+typedef struct _highday{
+	LIST l;
+	sett *myhgdays;
+} highday;
 
-extern LIST fseason, fspecs, ftarif, fmyhgdays;
+extern LIST fseason, fspecs, ftarif, fhighday;
 
+extern int tarif_parser(char *filename);
+extern void tarifvars_init(const char *pTag);
 extern void create_season(const char *pTag);
 extern void start_workdaysset(const char *pTag);
 extern void start_holidaysset(const char *pTag);

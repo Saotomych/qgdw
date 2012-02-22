@@ -9,6 +9,7 @@
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
+#include "../common/tarif.h"
 #include "hmi.h"
 #include "menu.h"
 
@@ -304,6 +305,8 @@ char *fname;
 
 	// Register all variables in varcontroller
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
+
+	tarif_parser("configs/tarif.xml");
 
 //---*** Init visual control ***---//
 	if (init_menu()){

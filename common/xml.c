@@ -169,7 +169,7 @@ static const XML_Name XTags[] = {
   {"/SCL", TagEndSCL},
   {"?xml", TagSetXml},
   // Tags for tarif config
-  {"Tarifs", TagStartTarifs},
+  {"Tarifs", tarifvars_init},
   {"/Tarifs", TagEndTarifs},
   {"Season", create_season},
   {"/Season", TagEndSeason},

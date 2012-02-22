@@ -10,12 +10,15 @@
 #include "tarif.h"
 
 // Start points for tariffes
-sett fhighdays;
-LIST fseason, fspecs, ftarif, fmyhgdays;
+LIST fseason, fspecs, ftarif, fhighday;
+
 season *flastseason = (season*) &fseason;
 specday *flastspec = (specday*) &fspecs ;
 tarif *flasttarif = (tarif*) &ftarif;
-sett *flasthgday = &fhighdays;
+highday *flasthighday = (highday*) &fhighday;
+sett *flastworkset, *flastholiset, *flasthighset;
+
+int actdaymode = 0;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *new;
@@ -65,6 +68,10 @@ int mode=0;
 	return 0;
 }
 
+void tarifvars_init(const char *pTag){
+	flasthighset = flasthighday->myhgdays;
+}
+
 void create_season(const char *pTag){
 char *p;
 char *key=0, *par=0;
@@ -87,21 +94,27 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
+	// create first LISTs for work and holidays
+	flastseason->mywrdays = create_next_struct_in_list(&(flastseason->mywrdays->l), sizeof(LIST));
+	flastseason->myhldays = create_next_struct_in_list(&(flastseason->myhldays->l), sizeof(LIST));
+	flastworkset = flastseason->mywrdays;
+	flastholiset = flastseason->myhldays;
+
 	printf("Tarif: new season: id=%d name=%s date=%d.%d\n",
 			flastseason->id, flastseason->name, flastseason->day, flastseason->mnth);
 
 }
 
 void start_workdaysset(const char *pTag){
-
+	actdaymode = WORKDAY;
 }
 
 void start_holidaysset(const char *pTag){
-
+	actdaymode = HOLIDAY;
 }
 
 void start_highdaysset(const char *pTag){
-
+	actdaymode = HIGHDAY;
 }
 
 void add_workday(const char *pTag){
@@ -117,6 +130,13 @@ void add_highday(const char *pTag){
 }
 
 void create_set(const char *pTag){
+sett *actset;
+
+	if (actdaymode == WORKDAY) actset = flastworkset;
+	if (actdaymode == HOLIDAY) actset = flastholiset;
+	if (actdaymode == HIGHDAY) actset = flasthighset;
+
+	actset = create_next_struct_in_list(&(actset->l), sizeof(sett));
 
 }
 
