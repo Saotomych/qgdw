@@ -9,9 +9,6 @@
 #include "xml.h"
 #include "tarif.h"
 
-sett *highdays;
-LIST fseason, fspecs, ftarif, fmyhgdays;
-
 int tarif_parser(char *filename){
 char *tfile;
 FILE *fcid;

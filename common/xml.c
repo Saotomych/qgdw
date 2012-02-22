@@ -206,13 +206,11 @@ const char *pS=XMLScript;
       OpenTag(pS);
     }
   }
-
 }
 
 void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
 
 	if (pt) XMLParser(pt);
-//	else XMLParser(DefaultConfig);
 
 }

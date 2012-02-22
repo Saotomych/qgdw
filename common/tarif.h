@@ -13,12 +13,20 @@
 #define HOLIDAY		11
 #define HIGHDAY		12
 
+typedef struct _tarif{
+	LIST l;
+	int 	id;
+	float	money;
+	char	*desc;
+} tarif;
+
 typedef struct _sett{
 	LIST l;
 	u_char	id;
 	u_char	hour;
 	u_char	min;
 	u_char	tarif;
+	tarif	*mytarif;
 } sett;
 
 typedef struct _season{
@@ -40,7 +48,7 @@ typedef struct _specday{
 	u_char	day;
 } specday;
 
-extern sett *highdays;
+extern sett fhighdays;
 
 extern LIST fseason, fspecs, ftarif, fmyhgdays;
 

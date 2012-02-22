@@ -8,13 +8,14 @@
 #include "common.h"
 #include "iec61850.h"
 #include "xml.h"
+#include "tarif.h"
 
 struct _IED *actlied = NULL;
 struct _LDEVICE *actlldevice = NULL;
 struct _LNODETYPE *actlnodetype = NULL;
 struct _DTYPE  *actdtype = NULL;
 
-// Start points
+// Start points for IEC61850
 LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
 IED *flastied = (IED*) &fied;
 LDEVICE *flastld = (LDEVICE*) &fld;
@@ -23,6 +24,14 @@ LNTYPE *flastlntype = (LNTYPE*) &flntype;
 DOBJ *flastdo = (DOBJ*) &fdo;
 DTYPE *flastdtype = (DTYPE*) &fdtype;
 ATTR *flastattr = (ATTR*) &fattr;
+
+// Start points for tariffes
+sett fhighdays;
+LIST fseason, fspecs, ftarif, fmyhgdays;
+season *flastseason = (season*) &fseason;
+specday *flastspec = (specday*) &fspecs ;
+tarif *flasttarif = (tarif*) &ftarif;
+sett *flasthgday = &fhighdays;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *new;
