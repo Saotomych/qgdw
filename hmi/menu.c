@@ -73,7 +73,7 @@ static value menuvalues[] = {
 		{0, "APP:interval", &pinterval, "нет", PTRINT32, STRING},
 		// Tarif variables
 		{0, "APP:tarifid", &ptarifid, "-", PTRINT32, STRING},
-		{0, "APP:tarifname", &ptarifname, "не выбран", PTRSTRING, STRING},
+		{0, "APP:tarifname", &ptarifname, "все", PTRSTRING, STRING},
 };
 
 //------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ int len = sizeof(wintext) - 1;
 				}
 
 				if (pitem->vr->prop & PTRINT32){
-					if (pitem->vr->val){
+					if (((int*)*((int*) (pitem->vr->val->val)))){
 						sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
 					}
 				}
@@ -635,7 +635,7 @@ int i = num_menu->num_item - 2;
 
 void settarif(GR_EVENT *event){
 int i = num_menu->num_item - 1;
-tarif *ptarif = (tarif*) ftarif.next;
+tarif *ptarif = (tarif*) &ftarif;
 
 	while((ptarif) && (i)){
 		i--;
@@ -741,7 +741,7 @@ struct tm *ttm;
 	if (!actlnode) exit(1);
 
 	// First actual tarif init
-	acttarif = (tarif*) ftarif.next;
+	acttarif = (tarif*) ftarif.l.next;
 
 	// Open first menu
 	num_menu = create_menu("menus/itemti");

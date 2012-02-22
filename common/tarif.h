@@ -53,7 +53,8 @@ typedef struct _highday{
 	LIST myhgdays;
 } highday;
 
-extern LIST fseason, fspecs, ftarif, fhighday;
+extern LIST fseason, fspecs, fhighday;
+extern tarif ftarif;
 
 extern int tarif_parser(char *filename);
 extern void connect_2tarif(void);

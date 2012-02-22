@@ -306,6 +306,20 @@ int next_interval(void *arg){
 	return REDRAW;
 }
 
+int prev_tarif(void *arg){
+
+	if (acttarif->l.prev) acttarif = acttarif->l.prev;
+
+	return REDRAW;
+}
+
+int next_tarif(void *arg){
+
+	if (acttarif->l.next) acttarif = acttarif->l.next;
+
+	return REDRAW;
+}
+
 // Array of structures "synonym to function"
 fact actfactset[] = {
 		{"changeln", (void*) prev_ln, (void*) next_ln},
@@ -315,6 +329,7 @@ fact actfactset[] = {
 		{"change1mainday", (void*) prev_mainday, (void*) next_mainday},
 		{"change1mainmin", (void*) prev_mainmin, (void*) next_mainmin},
 		{"chinterval", (void*) prev_interval, (void*) next_interval},
+		{"chtarif", (void*) prev_tarif, (void*) next_tarif},
 };
 
 //---*** External IP ***---//

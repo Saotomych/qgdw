@@ -10,7 +10,8 @@
 #include "tarif.h"
 
 // Start points for tariffes
-LIST fseason, fspecs, ftarif, fhighday;
+LIST fseason, fspecs, fhighday;
+tarif ftarif;
 
 season *flastseason = (season*) &fseason;
 specday *flastspec = (specday*) &fspecs ;
@@ -70,6 +71,7 @@ int mode=0;
 void tarifvars_init(const char *pTag){
 	flasthighday = create_next_struct_in_list(&(flasthighday->l), sizeof(season));
 	flasthighset = (sett*) &flasthighday->myhgdays;
+	memset(&ftarif, 0, sizeof(tarif));
 }
 
 void create_season(const char *pTag){
@@ -297,7 +299,7 @@ tarif *actt;
 
 		actwset = (sett*) acts->mywrdays.next;
 		while(actwset){
-			actt = (tarif*) ftarif.next;
+			actt = (tarif*) &ftarif.l.next;
 			while((actt) && (actt->id != actwset->idtarif))	actt = actt->l.next;
 			actwset->mytarif = actt;
 
@@ -308,7 +310,7 @@ tarif *actt;
 
 		acthset = (sett*) acts->myhldays.next;
 		while(acthset){
-			actt = (tarif*) ftarif.next;
+			actt = (tarif*) &ftarif.l.next;
 			while((actt) && (actt->id != acthset->idtarif))	actt = actt->l.next;
 			acthset->mytarif = actt;
 
@@ -322,7 +324,7 @@ tarif *actt;
 
 	acthset = ((highday*) (fhighday.next))->myhgdays.next;
 	while(acthset){
-		actt = (tarif*) ftarif.next;
+		actt = (tarif*) &ftarif.l.next;
 		while((actt) && (actt->id != acthset->idtarif))	actt = actt->l.next;
 		acthset->mytarif = actt;
 

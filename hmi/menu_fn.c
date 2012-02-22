@@ -331,7 +331,7 @@ int i, x = 4, l;
 char* ChangeTarif(char *arg){
 char *txtmenu = arg;
 char *pmenu = arg;
-tarif *ptarif = (tarif*) ftarif.next;
+tarif *ptarif = (tarif*) &ftarif.l.next;
 int y = 0;
 
 	sprintf(pmenu, "main 2 60 156 100\n");
