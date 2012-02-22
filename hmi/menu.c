@@ -11,6 +11,7 @@
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
+#include "../common/tarif.h"
 #include "menu.h"
 
 LNODE *actlnode;			// Global variable, change in menu only
@@ -20,7 +21,9 @@ time_t jourtime;		// Time for journal setting
 time_t tmptime;			// Time for setting process
 int idlnmenuname = 0;
 int intervals[] = {1,5,10,15,20,30,60};
-int* pinterval = intervals;		// Time Interval for view journal records
+int *pinterval = intervals;		// Time Interval for view journal records
+int *ptarifid = NULL;
+char *ptarifname = NULL;
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
@@ -67,6 +70,9 @@ static value menuvalues[] = {
 		// IEC variables
 		{0, "APP:ldtypetext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
 		{0, "APP:interval", &pinterval, "нет", PTRINT32, STRING},
+		// Tarif variables
+		{0, "APP:tarifid", &ptarifid, "-", PTRINT32, STRING},
+		{0, "APP:tarifname", &ptarifname, "не выбран", PTRSTRING, STRING},
 };
 
 //------------------------------------------------------------------------------------
@@ -96,7 +102,9 @@ int len = sizeof(wintext) - 1;
 				}
 
 				if (pitem->vr->prop & PTRINT32){
-					sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
+					if (pitem->vr->val){
+						sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
+					}
 				}
 
 				if (pitem->vr->prop & INT32DIG2){

@@ -56,6 +56,9 @@ value defvalues[] = {
 		{27, "APP:ldtypetext", NULL, NULL, 0 ,0},
 		// Filter variables
 		{28, "APP:interval", NULL, NULL, 0 ,0},
+		// Tarif variables
+		{29, "APP:tarifid", NULL, "-", 0, STRING},
+		{30, "APP:tarifname", NULL, "не выбран", 0, STRING},
 		{0, NULL, NULL, NULL, 0, 0},
 };
 
