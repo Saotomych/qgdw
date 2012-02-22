@@ -633,6 +633,22 @@ int i = num_menu->num_item - 2;
 	redraw_screen(NULL);
 }
 
+void settarif(GR_EVENT *event){
+int i = num_menu->num_item - 1;
+tarif *ptarif = (tarif*) ftarif.next;
+
+	while((ptarif) && (i)){
+		i--;
+		ptarif = ptarif->l.next;
+	}
+	if (ptarif){
+		acttarif = ptarif;
+		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+		call_action(NODIRECT, num_menu);		// Refresh variables
+		redraw_screen(NULL);
+	}else num_menu = destroy_menu(num_menu, DIR_BACKWARD);
+
+}
 //-------------------------------------------------------------------------------
 // Draw all items and cursor position as last
 void redraw_screen(void *arg){

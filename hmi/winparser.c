@@ -36,6 +36,7 @@ extern void time_up(GR_EVENT *event);
 extern void time_down(GR_EVENT *event);
 extern void time_enter(GR_EVENT *event);
 extern void setinterval(GR_EVENT *event);
+extern void settarif(GR_EVENT *event);
 
 struct _kt {
 	char *funcname;
@@ -60,6 +61,7 @@ struct _kt {
 		{"setlnbytype", setlnbytype},
 		{"setlnbyclass", setlnbyclass},
 		{"setinterval", setinterval},
+		{"settarif", settarif},
 		{"", NULL},
 };
 
