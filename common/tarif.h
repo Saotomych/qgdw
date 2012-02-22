@@ -17,7 +17,7 @@ typedef struct _tarif{
 	LIST l;
 	int 	id;
 	float	money;
-	char	*desc;
+	char	*name;
 } tarif;
 
 typedef struct _sett{
@@ -25,7 +25,7 @@ typedef struct _sett{
 	u_char	id;
 	u_char	hour;
 	u_char	min;
-	u_char	tarif;
+	u_char	idtarif;
 	tarif	*mytarif;
 } sett;
 

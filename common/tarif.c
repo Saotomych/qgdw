@@ -28,7 +28,6 @@ LIST *new;
 		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
-
 	new = plist->next;
 	new->prev = plist;
 	new->next = 0;
@@ -69,6 +68,8 @@ int mode=0;
 }
 
 void tarifvars_init(const char *pTag){
+	flasthighday = create_next_struct_in_list(&(flasthighday->l), sizeof(season));
+	flasthighday->myhgdays = create_next_struct_in_list(&(flasthighday->myhgdays->l), sizeof(LIST));
 	flasthighset = flasthighday->myhgdays;
 }
 
@@ -100,7 +101,7 @@ char *key=0, *par=0;
 	flastworkset = flastseason->mywrdays;
 	flastholiset = flastseason->myhldays;
 
-	printf("Tarif: new season: id=%d name=%s date=%d.%d\n",
+	printf("Tarif: new season: id=%d name=%s date=%02d.%02d\n",
 			flastseason->id, flastseason->name, flastseason->day, flastseason->mnth);
 
 }
@@ -118,29 +119,143 @@ void start_highdaysset(const char *pTag){
 }
 
 void add_workday(const char *pTag){
+char *p;
+char *key=0, *par=0;
+
+	flastspec = create_next_struct_in_list(&(flastspec->l), sizeof(specday));
+	flastspec->daytype = WORKDAY;
+
+	// Parse parameters for workday
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastspec->id = atoi(par);
+			else
+			if (strstr((char*) key, "date")){
+				flastspec->day = atoi(par);
+				flastspec->mnth = atoi(par+3);
+			}
+		}
+	}while(p);
+
+	printf("Tarif: new special working day: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
 
 }
 
 void add_holiday(const char *pTag){
+char *p;
+char *key=0, *par=0;
+
+	flastspec = create_next_struct_in_list(&(flastspec->l), sizeof(specday));
+	flastspec->daytype = HOLIDAY;
+
+	// Parse parameters for workday
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastspec->id = atoi(par);
+			else
+			if (strstr((char*) key, "date")){
+				flastspec->day = atoi(par);
+				flastspec->mnth = atoi(par+3);
+			}
+		}
+	}while(p);
+
+	printf("Tarif: new special holiday: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
 
 }
 
 void add_highday(const char *pTag){
+char *p;
+char *key=0, *par=0;
 
+	flastspec = create_next_struct_in_list(&(flastspec->l), sizeof(specday));
+	flastspec->daytype = HIGHDAY;
+
+	// Parse parameters for workday
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastspec->id = atoi(par);
+			else
+			if (strstr((char*) key, "date")){
+				flastspec->day = atoi(par);
+				flastspec->mnth = atoi(par+3);
+			}
+		}
+	}while(p);
+
+	printf("Tarif: new special highday day: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
 }
 
 void create_set(const char *pTag){
 sett *actset;
+char *p;
+char *key=0, *par=0;
 
-	if (actdaymode == WORKDAY) actset = flastworkset;
-	if (actdaymode == HOLIDAY) actset = flastholiset;
-	if (actdaymode == HIGHDAY) actset = flasthighset;
+	if (actdaymode == WORKDAY){
+		flastworkset = create_next_struct_in_list(&(flastworkset->l), sizeof(sett));
+		actset = flastworkset;
+	}
 
-	actset = create_next_struct_in_list(&(actset->l), sizeof(sett));
+	if (actdaymode == HOLIDAY){
+		flastholiset = create_next_struct_in_list(&(flastholiset->l), sizeof(sett));
+		actset = flastholiset;
+	}
+
+	if (actdaymode == HIGHDAY){
+		flasthighset = create_next_struct_in_list(&(flasthighset->l), sizeof(sett));
+		actset = flasthighset;
+	}
+
+	actset->mytarif = NULL;
+
+	// Parse parameters for set
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) actset->id = atoi(par);
+			else
+			if (strstr((char*) key, "idtarif")) actset->idtarif = atoi(par);
+			else
+			if (strstr((char*) key, "time")){
+				actset->hour = atoi(par);
+				actset->min = atoi(par+3);
+			}
+		}
+	}while(p);
+
+	printf("Tarif: new set for season %d - '%s': id=%d time=%02d:%02d idtarif=%d\n",
+			flastseason->id, flastseason->name, actset->id, actset->hour, actset->min, actset->idtarif);
 
 }
 
 void create_tarif(const char *pTag){
+char *p;
+char *key=0, *par=0;
+
+	flasttarif = create_next_struct_in_list(&(flasttarif->l), sizeof(season));
+
+	// Parse parameters for tarif
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flasttarif->name = par;
+			else
+			if (strstr((char*) key, "id")) flasttarif->id = atoi(par);
+			else
+			if (strstr((char*) key, "money")) flasttarif->money = atof(par);
+		}
+	}while(p);
+
+	printf("Tarif: new season: id=%d name=%s money=%f\n",
+			flasttarif->id, flasttarif->name, flasttarif->money);
 
 }
 
