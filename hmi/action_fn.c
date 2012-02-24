@@ -341,7 +341,8 @@ int ret = 0;
 int i;
 char *act = actmenu->pitems[actmenu->num_item]->action;
 
-	get_argindex((varrec*) actmenu->fvarrec, 0, 0);	// Set first varrec to var parser
+
+	if (actmenu->fvarrec) get_argindex((varrec*) actmenu->fvarrec, 0, 0);	// Set first varrec to var parser
 
 	// Separate keys and call action
 	switch(direct){
