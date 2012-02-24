@@ -20,6 +20,7 @@ extern time_t tmptime;		// Time for journal setting
 extern int idlnmenuname;
 extern int *pinterval;
 extern int intervals;
+extern int ptarifid;
 
 // Values for change visible lnode types
 // For indication
@@ -65,7 +66,9 @@ int i, idx, lnclassnum;
 					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[lnclassnum];
 				}
 				if (idx == 29){
-					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) &acttarif->id;
+					if (acttarif->id){
+						*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) &acttarif->id;
+					}else *((int*)(actmenu->pitems[i]->vr->val->val)) = NULL;
 				}
 
 				if (idx == 30){

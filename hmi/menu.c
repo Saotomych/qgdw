@@ -103,9 +103,9 @@ int len = sizeof(wintext) - 1;
 				}
 
 				if (pitem->vr->prop & PTRINT32){
-					if (((int*)*((int*) (pitem->vr->val->val)))){
+					if (*((int*) (pitem->vr->val->val))){
 						sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
-					}
+					}else sprintf(wintext, "%s%s%s", pitem->text, pitem->vr->val->defval, pitem->endtext);
 				}
 
 				if (pitem->vr->prop & INT32DIG2){
@@ -743,6 +743,7 @@ struct tm *ttm;
 	// First actual tarif init
 	acttarif = (tarif*) &ftarif;
 	acttarif->name = defvalues[30].defval;
+	acttarif->id = 0;//defvalues[29].defval;
 
 	// Open first menu
 	num_menu = create_menu("menus/itemti");

@@ -341,6 +341,10 @@ int y = 0;
 	sprintf(pmenu, "text 12 %d a a Выбор тарифа\n", y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP;
+	sprintf(pmenu, "menu 2 %d a a Тариф - - %s\n", y, ptarif->name);
+	pmenu += strlen(pmenu);
+	ptarif = ptarif->l.next;
+	y += MENUSTEP;
 	while(ptarif){
 		sprintf(pmenu, "menu 2 %d a a Тариф %d - %s\n", y, ptarif->id, ptarif->name);
 		pmenu += strlen(pmenu);
