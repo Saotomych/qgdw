@@ -73,7 +73,7 @@ static value menuvalues[] = {
 		{0, "APP:interval", &pinterval, "нет", PTRINT32, STRING},
 		// Tarif variables
 		{0, "APP:tarifid", &ptarifid, "-", PTRINT32, STRING},
-		{0, "APP:tarifname", &ptarifname, "все", PTRSTRING, STRING},
+		{0, "APP:tarifname", &ptarifname, "все тарифы", PTRSTRING, STRING},
 };
 
 //------------------------------------------------------------------------------------
