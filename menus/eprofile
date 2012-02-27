@@ -11,3 +11,6 @@ text 97 35 23 a :&var:APP:jsec
 menu 0 50 70 a Интервал >interval~chinterval
 text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
+text 0 a a a &val:LN:TotW,-2
+text 0 a a a &val:LN:TotW,-1
+text 0 a a a &val:LN:TotW,0

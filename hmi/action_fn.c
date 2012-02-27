@@ -30,7 +30,7 @@ static char lntypes[][50] = {
 		{"Телеуправление"},
 };
 // For filter
-static char lnclasses[][5] = {
+char lnclasses[][5] = {
 		{"MMXU"},
 		{"MSQI"},
 		{"MMTR"},
@@ -167,7 +167,7 @@ int i;
 	lntype = lnclasses[i];
 
 	pln = (LNODE*) fln.next;
-	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
+	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
 	if (pln) *pbln = pln;
 
 	return REMAKEMENU;
@@ -188,7 +188,7 @@ int i;
 	lntype = lnclasses[i];
 
 	pln = (LNODE*) fln.next;
-	while ((strcmp(lntype, pln->ln.lnclass)) && (pln)) pln = pln->l.next;
+	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
 	if (pln) *pbln = pln;
 
 //	destroy_menu(DIR_SIDEBKW);

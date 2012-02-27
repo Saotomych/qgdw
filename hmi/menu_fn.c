@@ -17,6 +17,7 @@ extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
 extern int intervals[];
+extern char lnclasses[][5];
 
 static struct _mons{
 	char *meng;
@@ -95,7 +96,7 @@ int x, y = 0;
 	pmenu += strlen(pmenu);
 	y += MENUSTEP; x = MENUSTEP;
 	while(pln){
-		if (!strcmp(pln->ln.lnclass, "MMXU")){
+		if (!strcmp(pln->ln.lnclass, lnclasses[0])){
 			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
@@ -105,7 +106,7 @@ int x, y = 0;
 
 	pln = (LNODE*) fln.next;
 	while(pln){
-		if (!strcmp(pln->ln.lnclass, "MSQI")){
+		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
 			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
@@ -115,7 +116,7 @@ int x, y = 0;
 
 	pln = (LNODE*) fln.next;
 	while(pln){
-		if (!strcmp(pln->ln.lnclass, "MMTR")){
+		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
 			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
