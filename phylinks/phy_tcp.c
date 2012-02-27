@@ -288,7 +288,7 @@ int offset;
 
 		switch(edh->sys_msg){
 		case EP_USER_DATA:	// Write data to socket
-				if(rdlen-offset >= edh->len) sendall(pr->socdesc, tai.buf, edh->len, 0);
+				if(rdlen-offset >= edh->len && pr->state == 1) sendall(pr->socdesc, tai.buf, edh->len, 0);
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
@@ -471,10 +471,10 @@ int maxdesc;
 		    			// Receive frame
 		    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024  - sizeof(ep_data_header), 0);
 		    			if (rdlen == -1){
+				    		send_sys_msg(pr, EP_MSG_CONNECT_LOST);
+	    					close_phyroute(pr);
 		    				printf("Phylink TCP/IP: Socket read error: %d - %s\n",errno, strerror(errno));
 				    		printf("Phylink TCP/IP: Connection to %s closed\n", inet_ntoa(pr->sai.sin_addr));
-	    					close_phyroute(pr);
-				    		send_sys_msg(pr, EP_MSG_CONNECT_LOST);
 		    			}else{
 		    				if (rdlen){
 					    		printf("Phylink TCP/IP: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", pr->socdesc, i, ret, rdlen);
@@ -493,9 +493,9 @@ int maxdesc;
 			    	}
 
 			    	if (FD_ISSET(pr->socdesc, &ex_socks)){
-			    		printf("Phylink TCP/IP: Connection with %s lost\n", inet_ntoa(pr->sai.sin_addr));
-		    			close_phyroute(pr);
 			    		send_sys_msg(pr, EP_MSG_CONNECT_LOST);
+		    			close_phyroute(pr);
+			    		printf("Phylink TCP/IP: Connection with %s lost\n", inet_ntoa(pr->sai.sin_addr));
 
 			    		// exit loop
 	    				break;

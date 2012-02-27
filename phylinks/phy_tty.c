@@ -300,7 +300,7 @@ char ascibuf[300];
 
 			// check if phy_route was found
 			if (!pr){
-				printf("Phylink TTY: This connect not found\n");
+				printf("Phylink TTY: This connection not found\n");
 				offset += edh->len;
 				continue;
 			}
@@ -312,7 +312,7 @@ char ascibuf[300];
 
 			switch(edh->sys_msg){
 			case EP_USER_DATA:	// Write data to socket
-					if(rdlen-offset >= edh->len) {
+					if(rdlen-offset >= edh->len && pr->state == 1) {
 						Hex2ASCII(tai.buf, ascibuf, edh->len);
 						printf("Phylink TTY: Buffer: %s\n", ascibuf);
 
@@ -428,6 +428,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 					send_sys_msg(pr, EP_MSG_CONNECT_LOST);
 					close(td->desc);
 					td->desc = 0;
+					pr->state = 0;
 		    	}
 	    	} // for i
 	    } // ret
