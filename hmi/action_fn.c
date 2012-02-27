@@ -16,11 +16,9 @@ extern tarif *acttarif;
 
 extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
-extern time_t tmptime;		// Time for journal setting
 extern int idlnmenuname;
 extern int *pinterval;
 extern int intervals;
-extern int ptarifid;
 
 // Values for change visible lnode types
 // For indication
@@ -68,9 +66,8 @@ int i, idx, lnclassnum;
 				if (idx == 29){
 					if (acttarif->id){
 						*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) &acttarif->id;
-					}else *((int*)(actmenu->pitems[i]->vr->val->val)) = NULL;
+					}else *((int*)(actmenu->pitems[i]->vr->val->val)) = 0;
 				}
-
 				if (idx == 30){
 					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) acttarif->name;
 				}
