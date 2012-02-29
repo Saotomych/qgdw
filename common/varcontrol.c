@@ -48,6 +48,13 @@ static varrec* init_varrec(varrec *vr){
 	return vr;
 }
 
+static char* type_test(char *ptype){
+	if (!strcmp(*ptype, "VisString255")) return ptype;
+	if (!strcmp(*ptype, "INT32")) return ptype;
+	if (!strcmp(*ptype, "FLOAT32")) return ptype;
+	return NULL;
+}
+
 // Set callback function for variable changing events
 void vc_setcallback(){
 
@@ -130,7 +137,8 @@ varrec *vr;
 struct _IED *pied;
 struct _LDEVICE *pld;
 DOBJ *pdo;
-ATTR *pda;	// for future
+ATTR *pda;
+BATTR *pbda;
 LNODE *pln = actln;
 char *p, *po=0, *pa=0, *ptag=0;
 char keywords[][10] = {
@@ -230,13 +238,6 @@ char keywords[][10] = {
 			// if LN has DO.name - book this variable
 			case 3: // LN
 
-					// Find LN.field
-// TODO Make find LN.field in future
-//					inst="2"
-//					lnClass="MMXU"
-//					lnType="MMXUa"
-//					prefix="M700"
-
 				// Find all fields: po, pa, ptag
 					p = strstr(varname, ":");
 					if (p){
@@ -273,21 +274,59 @@ char keywords[][10] = {
 								while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
 								if (!pdo) return NULL;
 
-		//						// find ATTR (in pa) for future IEC functions
-		//						if (pa){
-		//							pda = pdo->dobj.pmytype->pfattr;
-		//							while((pda) && (strcmp(pa, pda->attr.name))) pda = pda->l.next;
-		//							if (!pda) return NULL;
-		//						}
-		//
-		//						if (!strcmp(ptag, "value")){
-		//							// IF Value  =>  Book var in startiec and fill varrec as remote variable
-		//							// TODO Variable booking
-		//						}else{
-		//							if (!strcmp(ptag, "desc")) vr->val->val = pdo->dobj.options;
-		//							if (!strcmp(ptag, "name")) vr->val->val = pdo->dobj.name;
-		//							if (!strcmp(ptag, "type")) vr->val->val = pdo->dobj.type;
-		//						}
+								if (!strcmp(ptag, "desc")) vr->val->val = pdo->dobj.options;
+								else if (!strcmp(ptag, "name")) vr->val->val = pdo->dobj.name;
+								else if (!strcmp(ptag, "type")) vr->val->val = pdo->dobj.type;
+								else {
+									// Find type in IEC structures or set as STRING
+									// set Default type = VisString255 as STRING in menu.h
+									// DO.type -> DA.btype -> DAtype.btype
+									vr->val->val = type_test(pdo->dobj.type);
+
+									// If DO don't nave end type, find type in DA
+									if (!vr->val->val){
+										pda = pdo->dobj.pmytype->pfattr;
+										for (i = 0; i < pdo->dobj.pmytype->maxattr; i++){
+											vr->val->val = type_test(pda->attr.btype);
+											if (vr->val->val) break;
+											pda = pda->l.next;
+										}
+									}
+
+									// If DA don't have end type, find type in BDA
+									if (!vr->val->val){
+										pbda = pda->attr.pmyattrtype->pfbattr;
+										for (i = 0; i < pda->attr.pmyattrtype->maxbattr; i++){
+											vr->val->val = type_test(pbda->battr.btype);
+											if (vr->val->val) break;
+											pbda = pbda->l.next;
+										}
+									}
+
+									// If BDA dont have end type, set as STRING
+									if (!vr->val->val){
+										vr->val->idtype = STRING;
+										vr->val->val = malloc(255);
+									}else{
+										// Set idtype by val
+										if (!strcmp(vr->val->val, "VisString255")){
+											vr->val->idtype = STRING;
+											vr->val->val = malloc(255);
+										}
+										if (!strcmp(vr->val->val, "INT32")){
+											vr->val->idtype = INT32;
+											vr->val->val = malloc(4);
+										}
+										if (!strcmp(vr->val->val, "FLOAT32")){
+											vr->val->idtype = FLOAT32;
+											vr->val->val = malloc(4);
+										}
+									}
+
+									// TODO Variable subscribing
+
+								}
+
 							}else{
 								if (po){
 									// IF const  =>  Fill varrec as const of application

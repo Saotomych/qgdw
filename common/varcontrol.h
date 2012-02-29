@@ -25,6 +25,8 @@
 #define PTRINT32	0x10
 #define PTRINT64	0x20
 #define INT32DIG2	0x40
+#define FLOAT32		0x80
+#define AVALUE		0x100
 
 // IEC Types for varrec
 #define IECBASE		0x1000

@@ -15,7 +15,7 @@ struct _LNODETYPE *actlnodetype = NULL;
 struct _DTYPE  *actdtype = NULL;
 
 // Start points for IEC61850
-LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
+LIST fied, fld, fln, flntype, fdo, fdtype, fattr, fatype, fbattr;
 IED *flastied = (IED*) &fied;
 LDEVICE *flastld = (LDEVICE*) &fld;
 LNODE *flastln = (LNODE*) &fln;
@@ -23,6 +23,8 @@ LNTYPE *flastlntype = (LNTYPE*) &flntype;
 DOBJ *flastdo = (DOBJ*) &fdo;
 DTYPE *flastdtype = (DTYPE*) &fdtype;
 ATTR *flastattr = (ATTR*) &fattr;
+ATYPE *flastatype = (ATYPE*) &fatype;
+BATTR *flastbattr = (BATTR*) &fbattr;
 
 static void* create_next_struct_in_list(LIST *plist, int size){
 LIST *new;

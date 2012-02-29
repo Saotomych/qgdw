@@ -12,6 +12,8 @@
 
 #define ALARM_PER		2  // must be >= 2 sec!!!
 
+struct _BATTR;
+struct _BATTR_LIST;
 struct _ATTR;
 struct _ATTR_LIST;
 struct _DTYPE;
@@ -29,6 +31,27 @@ struct _IED_LIST;
 
 extern u08 Encoding;
 
+/* Base Attributes */
+typedef struct _BATTR_LIST{
+	LIST l;
+	struct _BATTR{
+		char *name;
+		char *btype;
+		struct _ATYPE *pmyattrtype;		// xml-parser set up this value
+		int  mytype;
+	} battr;
+} BATTR;
+
+/* Attributes type */
+typedef struct _ATYPE_LIST{
+	LIST l;
+	struct _ATYPE{
+		char *id;
+		BATTR *pfbattr;						// crossconnector set up this value
+		int maxbattr;						// xml-parser set up this value
+	} atype;
+} ATYPE;
+
 /* Attributes */
 typedef struct _ATTR_LIST{
 	LIST l;
@@ -39,6 +62,7 @@ typedef struct _ATTR_LIST{
 		char *fc;
 		char *type;
 		struct _DTYPE *pmydatatype;		// xml-parser set up this value
+		struct _ATYPE *pmyattrtype;		// xml-parser set up this value
 		int  mytype;
 	} attr;
 } ATTR;

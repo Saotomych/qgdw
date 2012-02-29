@@ -16,7 +16,7 @@ typedef struct _fact{
    char *action;
    int (*proloque)(void *arg);
    int (*epiloque)(void *arg);
-}fact, *pfact;
+} fact, *pfact;
 
 // lowlevel.cfg information
 typedef struct _LDEXTINFO{
