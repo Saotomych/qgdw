@@ -161,6 +161,8 @@ static const XML_Name XTags[] = {
   {"/DOType", TagEndDType},
   {"DA", cid_create_attr},
   {"/DA", TagEndAttr},
+  {"DAType", cid_create_attrtype},
+  {"BDA", cid_create_bda},
   {"EnumType", cid_create_enum},
   {"/EnumType", TagEndEnum},
   {"EnumVal", cid_create_enumval},

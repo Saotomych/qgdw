@@ -172,9 +172,11 @@ extern void cid_create_lntype(const char *pTag);		// call parse lntype
 extern void cid_create_dobj(const char *pTag);			// call parse do
 extern void cid_create_dobjtype(const char *pTag);		// call parse dotype
 extern void cid_create_attr(const char *pTag);			// call parse attr
+extern void cid_create_attrtype(const char *pTag);		// call parse attrtype
+extern void cid_create_bda(const char *pTag);			// call parse bda
 extern void cid_create_enum(const char *pTag);			// call parse enumtype
 extern void cid_create_enumval(const char *pTag);		// call parse enumval
-extern void cid_create_subst(const char *pTag);		// call parse substation
+extern void cid_create_subst(const char *pTag);			// call parse substation
 
 
 #endif /* IEC61850_H_ */

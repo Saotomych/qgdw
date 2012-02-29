@@ -13,6 +13,7 @@ struct _IED *actlied = NULL;
 struct _LDEVICE *actlldevice = NULL;
 struct _LNODETYPE *actlnodetype = NULL;
 struct _DTYPE  *actdtype = NULL;
+struct _ATYPE  *actatype = NULL;
 
 // Start points for IEC61850
 LIST fied, fld, fln, flntype, fdo, fdtype, fattr, fatype, fbattr;
@@ -257,6 +258,52 @@ char *key=0, *par=0;
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
 }
 
+void cid_create_attrtype(const char *pTag){			// call parse attrtype
+char *p;
+char *key=0, *par=0;
+	flastatype = create_next_struct_in_list(&(flastatype->l), sizeof(ATYPE));
+
+	// Parse parameters for dobjtype
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastatype->atype.id = par;
+		}
+	}while(p);
+
+	actatype = &(flastatype->atype);
+
+	flastatype->atype.maxbattr = 0;
+
+	printf("IEC61850: new ATTRIBUTE TYPE: id=%s \n", flastatype->atype.id);
+}
+
+void cid_create_bda(const char *pTag){			// call parse baseattrtype
+char *p;
+char *key=0, *par=0;
+	flastbattr = create_next_struct_in_list(&(flastbattr->l), sizeof(BATTR));
+
+	// Parse parameters for attr
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flastbattr->battr.name = par;
+			else
+			if (strstr((char*) key, "bType")) flastbattr->battr.btype = par;
+		}
+	}while(p);
+
+	flastbattr->battr.pmyattrtype = actatype;
+
+	actatype->maxbattr++;
+
+	printf("IEC61850: new BASE ATTRIBUTE: name=%s btype=%s\n",
+				flastbattr->battr.name, flastbattr->battr.btype);
+
+}
+
 void cid_create_enum(const char *pTag){			// call parse enum
 
 }
@@ -393,6 +440,26 @@ ATTR *pa;
 	}
 }
 
+void atype2bda(void){
+// find 1th BDA for DAType
+ATYPE *pat = (ATYPE*) fatype.next;
+BATTR *pba;
+
+	while (pat){
+		// find 1th base attr
+		pba = (BATTR*) fbattr.next;
+		while ((pba) && (pba->battr.pmyattrtype != &(pat->atype))) pba = pba->l.next;
+		// pba found ?
+		if (pba){
+			printf("IEC61850: First BASE ATTR %s(%s) for ATYPE %s found\n", pba->battr.name, pba->battr.btype, pat->atype.id);
+		}else{
+			printf("IEC61850 error: BASE ATTR for ATYPE %s not found\n", pat->atype.id);
+		}
+
+		pat = pat->l.next;
+	}
+}
+
 void crossconnection(){
 	// LNODE -> _IED & _LDEVICE & _LNODETYPE
 	lnode2ied2ldev2types();
@@ -402,7 +469,8 @@ void crossconnection(){
 	dobj2dtype();
 	// DTYPE -> ATTR
 	dtype2attr();
-
+	// ATTRTYPE -> BDA
+	atype2bda();
 }
 
 // Create structures according to ieclevel.cid
