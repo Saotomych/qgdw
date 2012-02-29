@@ -745,14 +745,14 @@ struct tm *ttm;
 	acttarif->name = defvalues[30].defval;
 	acttarif->id = 0;//defvalues[29].defval;
 
-	// Open first menu
-	num_menu = create_menu("menus/itemti");
-
 	// Set of parameters for all variable menu and action functions
 	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
 	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
 	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
 	if (!actlnode) exit(1);
+
+	// Open first menu
+	num_menu = create_menu("menus/itemti");
 
 	if (num_menu) draw_menu();
 
@@ -768,7 +768,6 @@ int i, j;
 				if (!strcmp(vt[i].name, menuvalues[j].name)) memcpy(&vt[i], &menuvalues[j], sizeof(value));
 		}
 	}
-
 }
 
 //---------------------------------------------------------------------------------

@@ -351,7 +351,8 @@ char keywords[][10] = {
 							vr->val->idx = IECBASE + DOdesc;
 
 							// Find po as DO.name
-							pdo = pln->ln.pmytype->pfdobj;
+							if (pln->ln.pmytype) pdo = pln->ln.pmytype->pfdobj;
+							else pdo = NULL;
 							while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
 
 							if (!pdo){
@@ -389,7 +390,8 @@ char keywords[][10] = {
 							}
 
 							// Find pa as DA.name
-							pda = pdo->dobj.pmytype->pfattr;
+							if (pdo->dobj.pmytype) pda = pdo->dobj.pmytype->pfattr;
+							else pda = NULL;
 							while ((pda) && (strcmp(pda->attr.name, pa))) pda = pda->l.next;
 							if (!pda){
 								// pa is DO.<field>
@@ -421,7 +423,8 @@ char keywords[][10] = {
 							}
 
 							// Find pba as BDA.name
-							pbda = pda->attr.pmyattrtype->pfbattr;
+							if (pda->attr.pmyattrtype) pbda = pda->attr.pmyattrtype->pfbattr;
+							else pbda = NULL;
 							while ((pbda) && (strcmp(pbda->battr.name, pa))) pbda = pbda->l.next;
 							if (!pbda){
 								// pbda is DA.<field>
