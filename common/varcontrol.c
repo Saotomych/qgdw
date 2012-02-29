@@ -49,12 +49,30 @@ static varrec* init_varrec(varrec *vr){
 }
 
 static char* type_test(char *ptype){
-	if (!strcmp(*ptype, "VisString255")) return ptype;
-	if (!strcmp(*ptype, "INT32")) return ptype;
-	if (!strcmp(*ptype, "FLOAT32")) return ptype;
-	if (!strcmp(*ptype, "Quality")) return ptype;
-	if (!strcmp(*ptype, "Timestamp")) return ptype;
+	if (!strcmp(ptype, "VisString255")) return ptype;
+	if (!strcmp(ptype, "INT32")) return ptype;
+	if (!strcmp(ptype, "FLOAT32")) return ptype;
+	if (!strcmp(ptype, "Quality")) return ptype;
+	if (!strcmp(ptype, "Timestamp")) return ptype;
 	return NULL;
+}
+
+static int get_type_idx(char *ptype){
+	if (!strcmp(ptype, "VisString255")) return STRING;
+	if (!strcmp(ptype, "INT32")) return INT32;
+	if (!strcmp(ptype, "FLOAT32")) return FLOAT32;
+	if (!strcmp(ptype, "Quality")) return QUALITY;
+	if (!strcmp(ptype, "Timestamp")) return TIMESTAMP;
+	return 0;
+}
+
+static int sizeof_idx(int idx){
+	if (idx == STRING) return 256;
+	if (idx == INT32) return 4;
+	if (idx == FLOAT32) return 4;
+	if (idx == QUALITY) return 4;
+	if (idx == TIMESTAMP) return sizeof(time_t);
+	return 0;
 }
 
 // Set callback function for variable changing events
@@ -64,30 +82,14 @@ void vc_setcallback(){
 
 // Make memory allocation for all variables, read values and set pointers
 void vc_init(pvalue vt, int len){
-int i;
-//varrec *defvt;		// actual varrec
 
 	lastvr = (varrec*) &fvarrec;
 	fvarrec.prev = NULL;
 	fvarrec.next = NULL;
 
-//	// Create const var table
-//	defvt = (varrec*) &fdefvt;
-//	for (i=0; i < len; i++){
-//		defvt = create_next_struct_in_list((LIST*) &defvt->l, sizeof(varrec));
-//		defvt->name = malloc(sizeof(fcdarec));
-//		defvt->val = &vt[i];
-//		defvt->name->fc = defvt->val->name;
-//		defvt->prop = INTVAR | TRUEVALUE | vt->idtype;
-//		defvt->time = 0;
-//	}
-//
-//		// Bring to conformity with all internal variables and config variables
-//		// It's equal constant booking
-//
-//	// Multififo init
-//
-//
+	// TODO Multififo init
+
+
 }
 
 static varrec* newappvarrec(value *val){
@@ -254,6 +256,9 @@ char keywords[][10] = {
 							if (p){
 								// Field for data attribute found
 								*p = 0;	p++; pba = p;
+								// Find next '.'
+								p = strstr(p, ".");
+								if (p) *p = 0;
 							}
 						}
 					}else return NULL;
@@ -262,89 +267,6 @@ char keywords[][10] = {
 						// Register new value in varrec LIST
 						vr = newiecvarrec();
 						if (vr){
-//							vr->name->fc = varname;
-//							vr->val->name = varname;
-//							// Value initialize
-//							// Find DOBJ as equal actual LN by type
-//							if (pba){
-//								vr->val->idx = IECBASE + DOdesc;
-//								pdo = pln->ln.pmytype->pfdobj;
-//								while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
-//								if (!pdo) return NULL;
-//
-//								if (!strcmp(pba, "desc")) vr->val->val = pdo->dobj.options;
-//								else if (!strcmp(pba, "name")) vr->val->val = pdo->dobj.name;
-//								else if (!strcmp(pba, "type")) vr->val->val = pdo->dobj.type;
-//								else {
-//									// Find type in IEC structures or set as STRING
-//									// set Default type = VisString255 as STRING in menu.h
-//									// DO.type -> DA.btype -> DAtype.btype
-//									vr->val->val = type_test(pdo->dobj.type);
-//
-//									// If DO don't nave end type, find type in DA
-//									if (!vr->val->val){
-//										pda = pdo->dobj.pmytype->pfattr;
-//										for (i = 0; i < pdo->dobj.pmytype->maxattr; i++){
-//											vr->val->val = type_test(pda->attr.btype);
-//											if (vr->val->val) break;
-//											pda = pda->l.next;
-//										}
-//									}
-//
-//									// If DA don't have end type, find type in BDA
-//									if (!vr->val->val){
-//										pbda = pda->attr.pmyattrtype->pfbattr;
-//										for (i = 0; i < pda->attr.pmyattrtype->maxbattr; i++){
-//											vr->val->val = type_test(pbda->battr.btype);
-//											if (vr->val->val) break;
-//											pbda = pbda->l.next;
-//										}
-//									}
-//
-//									// If BDA dont have end type, set as STRING
-//									if (!vr->val->val){
-//										vr->val->idtype = STRING;
-//										vr->val->val = malloc(255);
-//									}else{
-//										// Set idtype by val
-//										if (!strcmp(vr->val->val, "VisString255")){
-//											vr->val->idtype = STRING;
-//											vr->val->val = malloc(255);
-//										}
-//										if (!strcmp(vr->val->val, "INT32")){
-//											vr->val->idtype = INT32;
-//											vr->val->val = malloc(4);
-//										}
-//										if (!strcmp(vr->val->val, "FLOAT32")){
-//											vr->val->idtype = FLOAT32;
-//											vr->val->val = malloc(4);
-//										}
-//									}
-//
-//									// TODO Variable subscribing
-//
-//								}
-//
-//							}else{
-//								if (po){
-//									// IF const  =>  Fill varrec as const of application
-//									vr->val->val = actln->ln.lnclass;		// LN.class as default
-//									vr->val->idx = IECBASE + LNlnclass;
-//									if (!strcmp(po, "inst")){
-//										vr->val->val = actln->ln.lninst;
-//										vr->val->idx = IECBASE + LNlninst;
-//									}
-//									if (!strcmp(po, "type")){
-//										vr->val->val = actln->ln.lntype;
-//										vr->val->idx = IECBASE + LNlntype;
-//									}
-//									if (!strcmp(po, "prefix")){
-//										vr->val->val = actln->ln.prefix;
-//										vr->val->idx = IECBASE + LNprefix;
-//									}
-//									return vr;
-//								}
-//							}
 
 							vr->name->fc = varname;
 							vr->val->name = varname;
@@ -385,7 +307,8 @@ char keywords[][10] = {
 							if (vr->val->val){
 								// DO.name is value with var type
 								// Set vr->val->val to value
-
+								vr->val->idx = get_type_idx(vr->val->val);
+								vr->val->val = malloc(sizeof_idx(vr->val->idx));
 								return vr;
 							}
 
@@ -418,7 +341,8 @@ char keywords[][10] = {
 							if (vr->val->val){
 								// DA.name is value with var type
 								// Set vr->val->val to value
-
+								vr->val->idx = get_type_idx(vr->val->val);
+								vr->val->val = malloc(sizeof_idx(vr->val->idx));
 								return vr;
 							}
 
@@ -472,7 +396,8 @@ char keywords[][10] = {
 							if (vr->val->val){
 								// BDA.name is value with var type
 								// Set vr->val->val to value
-
+								vr->val->idx = get_type_idx(vr->val->val);
+								vr->val->val = malloc(sizeof_idx(vr->val->idx));
 								return vr;
 							}
 

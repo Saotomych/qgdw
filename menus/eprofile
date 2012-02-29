@@ -12,7 +12,7 @@ menu 0 50 70 a Интервал >interval~chinterval
 text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
 text 0 a a a Время/Актив/Реактив
-text 0 82 a a &val:LN:TotW(-4)
+text 0 82 a a &val:LN:TotW.mag.f.(-4)
 text 0 a a a &val:LN:TotW(-3)
 text 0 a a a &val:LN:TotW(-2)
 text 0 a a a &val:LN:TotW(-1)
