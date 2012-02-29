@@ -59,6 +59,8 @@ typedef struct _ATTR_LIST{
 		char *name;
 		char *btype;
 		char *dchg;
+		char *qchg;
+		char *dupd;
 		char *fc;
 		char *type;
 		struct _DTYPE *pmydatatype;		// xml-parser set up this value

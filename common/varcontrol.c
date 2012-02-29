@@ -52,6 +52,8 @@ static char* type_test(char *ptype){
 	if (!strcmp(*ptype, "VisString255")) return ptype;
 	if (!strcmp(*ptype, "INT32")) return ptype;
 	if (!strcmp(*ptype, "FLOAT32")) return ptype;
+	if (!strcmp(*ptype, "Quality")) return ptype;
+	if (!strcmp(*ptype, "Timestamp")) return ptype;
 	return NULL;
 }
 
@@ -140,7 +142,7 @@ DOBJ *pdo;
 ATTR *pda;
 BATTR *pbda;
 LNODE *pln = actln;
-char *p, *po=0, *pa=0, *ptag=0;
+char *p, *po=0, *pa=0, *pba=0;
 char keywords[][10] = {
 		{"APP:"},
 		{"IED:"},
@@ -241,7 +243,7 @@ char keywords[][10] = {
 				// Find all fields: po, pa, ptag
 					p = strstr(varname, ":");
 					if (p){
-						// Set po to data object
+						// Set po to data object tag
 						p++; po = p;
 						p = strstr(p, ".");
 						if (p){
@@ -251,11 +253,7 @@ char keywords[][10] = {
 							p = strstr(p, ".");
 							if (p){
 								// Field for data attribute found
-								*p = 0;	p++; ptag = p;
-							}else{
-								// This field is tag
-								ptag = pa;
-								pa = NULL;
+								*p = 0;	p++; pba = p;
 							}
 						}
 					}else return NULL;
@@ -264,91 +262,218 @@ char keywords[][10] = {
 						// Register new value in varrec LIST
 						vr = newiecvarrec();
 						if (vr){
+//							vr->name->fc = varname;
+//							vr->val->name = varname;
+//							// Value initialize
+//							// Find DOBJ as equal actual LN by type
+//							if (pba){
+//								vr->val->idx = IECBASE + DOdesc;
+//								pdo = pln->ln.pmytype->pfdobj;
+//								while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
+//								if (!pdo) return NULL;
+//
+//								if (!strcmp(pba, "desc")) vr->val->val = pdo->dobj.options;
+//								else if (!strcmp(pba, "name")) vr->val->val = pdo->dobj.name;
+//								else if (!strcmp(pba, "type")) vr->val->val = pdo->dobj.type;
+//								else {
+//									// Find type in IEC structures or set as STRING
+//									// set Default type = VisString255 as STRING in menu.h
+//									// DO.type -> DA.btype -> DAtype.btype
+//									vr->val->val = type_test(pdo->dobj.type);
+//
+//									// If DO don't nave end type, find type in DA
+//									if (!vr->val->val){
+//										pda = pdo->dobj.pmytype->pfattr;
+//										for (i = 0; i < pdo->dobj.pmytype->maxattr; i++){
+//											vr->val->val = type_test(pda->attr.btype);
+//											if (vr->val->val) break;
+//											pda = pda->l.next;
+//										}
+//									}
+//
+//									// If DA don't have end type, find type in BDA
+//									if (!vr->val->val){
+//										pbda = pda->attr.pmyattrtype->pfbattr;
+//										for (i = 0; i < pda->attr.pmyattrtype->maxbattr; i++){
+//											vr->val->val = type_test(pbda->battr.btype);
+//											if (vr->val->val) break;
+//											pbda = pbda->l.next;
+//										}
+//									}
+//
+//									// If BDA dont have end type, set as STRING
+//									if (!vr->val->val){
+//										vr->val->idtype = STRING;
+//										vr->val->val = malloc(255);
+//									}else{
+//										// Set idtype by val
+//										if (!strcmp(vr->val->val, "VisString255")){
+//											vr->val->idtype = STRING;
+//											vr->val->val = malloc(255);
+//										}
+//										if (!strcmp(vr->val->val, "INT32")){
+//											vr->val->idtype = INT32;
+//											vr->val->val = malloc(4);
+//										}
+//										if (!strcmp(vr->val->val, "FLOAT32")){
+//											vr->val->idtype = FLOAT32;
+//											vr->val->val = malloc(4);
+//										}
+//									}
+//
+//									// TODO Variable subscribing
+//
+//								}
+//
+//							}else{
+//								if (po){
+//									// IF const  =>  Fill varrec as const of application
+//									vr->val->val = actln->ln.lnclass;		// LN.class as default
+//									vr->val->idx = IECBASE + LNlnclass;
+//									if (!strcmp(po, "inst")){
+//										vr->val->val = actln->ln.lninst;
+//										vr->val->idx = IECBASE + LNlninst;
+//									}
+//									if (!strcmp(po, "type")){
+//										vr->val->val = actln->ln.lntype;
+//										vr->val->idx = IECBASE + LNlntype;
+//									}
+//									if (!strcmp(po, "prefix")){
+//										vr->val->val = actln->ln.prefix;
+//										vr->val->idx = IECBASE + LNprefix;
+//									}
+//									return vr;
+//								}
+//							}
+
 							vr->name->fc = varname;
 							vr->val->name = varname;
-							// Value initialize
-							// Find DOBJ as equal actual LN by type
-							if (ptag){
-								vr->val->idx = IECBASE + DOdesc;
-								pdo = pln->ln.pmytype->pfdobj;
-								while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
-								if (!pdo) return NULL;
+							vr->val->idx = IECBASE + DOdesc;
 
-								if (!strcmp(ptag, "desc")) vr->val->val = pdo->dobj.options;
-								else if (!strcmp(ptag, "name")) vr->val->val = pdo->dobj.name;
-								else if (!strcmp(ptag, "type")) vr->val->val = pdo->dobj.type;
-								else {
-									// Find type in IEC structures or set as STRING
-									// set Default type = VisString255 as STRING in menu.h
-									// DO.type -> DA.btype -> DAtype.btype
-									vr->val->val = type_test(pdo->dobj.type);
+							// Find po as DO.name
+							pdo = pln->ln.pmytype->pfdobj;
+							while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
 
-									// If DO don't nave end type, find type in DA
-									if (!vr->val->val){
-										pda = pdo->dobj.pmytype->pfattr;
-										for (i = 0; i < pdo->dobj.pmytype->maxattr; i++){
-											vr->val->val = type_test(pda->attr.btype);
-											if (vr->val->val) break;
-											pda = pda->l.next;
-										}
-									}
-
-									// If DA don't have end type, find type in BDA
-									if (!vr->val->val){
-										pbda = pda->attr.pmyattrtype->pfbattr;
-										for (i = 0; i < pda->attr.pmyattrtype->maxbattr; i++){
-											vr->val->val = type_test(pbda->battr.btype);
-											if (vr->val->val) break;
-											pbda = pbda->l.next;
-										}
-									}
-
-									// If BDA dont have end type, set as STRING
-									if (!vr->val->val){
-										vr->val->idtype = STRING;
-										vr->val->val = malloc(255);
-									}else{
-										// Set idtype by val
-										if (!strcmp(vr->val->val, "VisString255")){
-											vr->val->idtype = STRING;
-											vr->val->val = malloc(255);
-										}
-										if (!strcmp(vr->val->val, "INT32")){
-											vr->val->idtype = INT32;
-											vr->val->val = malloc(4);
-										}
-										if (!strcmp(vr->val->val, "FLOAT32")){
-											vr->val->idtype = FLOAT32;
-											vr->val->val = malloc(4);
-										}
-									}
-
-									// TODO Variable subscribing
-
-								}
-
-							}else{
-								if (po){
-									// IF const  =>  Fill varrec as const of application
-									vr->val->val = actln->ln.lnclass;		// LN.class as default
+							if (!pdo){
+								// po is LN.<field>
+								if (!strcmp(po, "class")){
+									vr->val->val = actln->ln.lnclass;
 									vr->val->idx = IECBASE + LNlnclass;
-									if (!strcmp(po, "inst")){
-										vr->val->val = actln->ln.lninst;
-										vr->val->idx = IECBASE + LNlninst;
-									}
-									if (!strcmp(po, "type")){
-										vr->val->val = actln->ln.lntype;
-										vr->val->idx = IECBASE + LNlntype;
-									}
-									if (!strcmp(po, "prefix")){
-										vr->val->val = actln->ln.prefix;
-										vr->val->idx = IECBASE + LNprefix;
-									}
 									return vr;
 								}
+								if (!strcmp(po, "inst")){
+									vr->val->val = actln->ln.lninst;
+									vr->val->idx = IECBASE + LNlninst;
+									return vr;
+								}
+								if (!strcmp(po, "type")){
+									vr->val->val = actln->ln.lntype;
+									vr->val->idx = IECBASE + LNlntype;
+									return vr;
+								}
+								if (!strcmp(po, "prefix")){
+									vr->val->val = actln->ln.prefix;
+									vr->val->idx = IECBASE + LNprefix;
+									return vr;
+								}
+								return NULL;
 							}
 
-							return vr;
+							// po is DO.name
+							vr->val->val = type_test(pdo->dobj.type);
+							if (vr->val->val){
+								// DO.name is value with var type
+								// Set vr->val->val to value
+
+								return vr;
+							}
+
+							// Find pa as DA.name
+							pda = pdo->dobj.pmytype->pfattr;
+							while ((pda) && (strcmp(pda->attr.name, pa))) pda = pda->l.next;
+							if (!pda){
+								// pa is DO.<field>
+								if (!strcmp(pa, "desc")){
+									vr->val->val = pdo->dobj.options;
+									vr->val->idx = IECBASE + DOdesc;
+									return vr;
+								}
+								if (!strcmp(pa, "name")){
+									vr->val->val = pdo->dobj.name;
+									vr->val->idx = IECBASE + DOname;
+									return vr;
+								}
+								if (!strcmp(pa, "type")){
+									vr->val->val = pdo->dobj.type;
+									vr->val->idx = IECBASE + DOtype;
+									return vr;
+								}
+								return NULL;
+							}
+
+							// pa is DA.name
+							vr->val->val = type_test(pda->attr.btype);
+							if (vr->val->val){
+								// DA.name is value with var type
+								// Set vr->val->val to value
+
+								return vr;
+							}
+
+							// Find pba as BDA.name
+							pbda = pda->attr.pmyattrtype->pfbattr;
+							while ((pbda) && (strcmp(pbda->battr.name, pa))) pbda = pbda->l.next;
+							if (!pbda){
+								// pbda is DA.<field>
+								if (!strstr(pba, "name")){
+									vr->val->val = pda->attr.name;
+									vr->val->idx = IECBASE + DAname;
+									return vr;
+								}
+								if (!strstr(pba, "bType")){
+									vr->val->val = pda->attr.btype;
+									vr->val->idx = IECBASE + DAbtype;
+									return vr;
+								}
+								if (!strstr(pba, "type")){
+									vr->val->val = pda->attr.type;
+									vr->val->idx = IECBASE + DAtype;
+									return vr;
+								}
+								if (!strstr(pba, "fc")){
+									vr->val->val = pda->attr.fc;
+									vr->val->idx = IECBASE + DAfc;
+									return vr;
+								}
+								if (!strstr(pba, "dchg")){
+									vr->val->val = pda->attr.dchg;
+									vr->val->idx = IECBASE + DAdchg;
+									return vr;
+								}
+								if (!strstr(pba, "dupd")){
+									vr->val->val = pda->attr.dupd;
+									vr->val->idx = IECBASE + DAdupd;
+									return vr;
+								}
+								if (!strstr(pba, "qchg")){
+									vr->val->val = pda->attr.qchg;
+									vr->val->idx = IECBASE + DAqchg;
+									return vr;
+								}
+
+								return NULL;
+							}
+
+							// pba is BDA.name
+							vr->val->val = type_test(pbda->battr.btype);
+							if (vr->val->val){
+								// BDA.name is value with var type
+								// Set vr->val->val to value
+
+								return vr;
+							}
+
+							return NULL;
 						}else{
 							lastvr->l.next = NULL;
 							return NULL;

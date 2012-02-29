@@ -27,6 +27,8 @@
 #define INT32DIG2	0x40
 #define FLOAT32		0x80
 #define AVALUE		0x100
+#define QUALITY		0x200
+#define TIMESTAMP	0x400
 
 // IEC Types for varrec
 #define IECBASE		0x1000
@@ -43,7 +45,14 @@
 #define DOname			11
 #define DOtype			12
 #define DOvalue			13
-#define DA				14
+#define DAname			14
+#define DAbtype			15
+#define DAtype			16
+#define DAfc			17
+#define DAdchg			18
+#define DAdupd			19
+#define DAqchg			20
+
 
 // IEC struct
 typedef struct _FCDAREC{

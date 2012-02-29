@@ -247,6 +247,10 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "fc")) flastattr->attr.fc = par;
 			else
 			if (strstr((char*) key, "dchg")) flastattr->attr.dchg = par;
+			else
+			if (strstr((char*) key, "dupd")) flastattr->attr.dupd = par;
+			else
+			if (strstr((char*) key, "qchg")) flastattr->attr.qchg = par;
 		}
 	}while(p);
 
