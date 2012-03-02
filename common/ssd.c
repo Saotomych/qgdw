@@ -435,6 +435,7 @@ ATTR *pa;
 		while((pa) && (pa->attr.pmydatatype != &(pdt->dtype))) pa = pa->l.next;
 		// pa found ?
 		if (pa){
+			pdt->dtype.pfattr = pa;
 			printf("IEC61850: First ATTR %s(%s) for DTYPE %s found\n", pa->attr.name, pa->attr.btype, pdt->dtype.id);
 		}else{
 			printf("IEC61850 error: ATTR for DTYPE %s not found\n", pdt->dtype.id);
@@ -455,12 +456,35 @@ BATTR *pba;
 		while ((pba) && (pba->battr.pmyattrtype != &(pat->atype))) pba = pba->l.next;
 		// pba found ?
 		if (pba){
+			pat->atype.pfbattr = pba;
 			printf("IEC61850: First BASE ATTR %s(%s) for ATYPE %s found\n", pba->battr.name, pba->battr.btype, pat->atype.id);
 		}else{
 			printf("IEC61850 error: BASE ATTR for ATYPE %s not found\n", pat->atype.id);
 		}
 
 		pat = pat->l.next;
+	}
+}
+
+void attr2atype(void){
+// find DTYPE for every DOBJ
+// dtype by id - type
+ATTR *pda = (ATTR*) fattr.next;
+ATYPE *pat;
+
+	while(pda){
+		// find atype
+		pat = fatype.next;
+		while((pat) && (pda->attr.type) && (strcmp(pat->atype.id, pda->attr.type))) pat = pat->l.next;
+		// pat found ?
+		if (pat){
+			pda->attr.pmyattrtype = &(pat->atype);
+			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pat->atype.id, pda->attr.name);
+		}else{
+			printf("IEC61850 error: DTYPE for DOBJ %s not found\n", pda->attr.name);
+		}
+
+		pda = pda->l.next;
 	}
 }
 
@@ -475,6 +499,8 @@ void crossconnection(){
 	dtype2attr();
 	// ATTRTYPE -> BDA
 	atype2bda();
+	// _ATTR -> _ATYPE
+	attr2atype();
 }
 
 // Create structures according to ieclevel.cid

@@ -274,7 +274,7 @@ char keywords[][10] = {
 
 							// Find po as DO.name
 							if (pln->ln.pmytype) pdo = pln->ln.pmytype->pfdobj;
-							else pdo = NULL;
+ 							else pdo = NULL;
 							while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
 
 							if (!pdo){
@@ -349,7 +349,7 @@ char keywords[][10] = {
 							// Find pba as BDA.name
 							if (pda->attr.pmyattrtype) pbda = pda->attr.pmyattrtype->pfbattr;
 							else pbda = NULL;
-							while ((pbda) && (strcmp(pbda->battr.name, pa))) pbda = pbda->l.next;
+							while ((pbda) && (strcmp(pbda->battr.name, pba))) pbda = pbda->l.next;
 							if (!pbda){
 								// pbda is DA.<field>
 								if (!strstr(pba, "name")){

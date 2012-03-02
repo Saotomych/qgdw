@@ -370,7 +370,6 @@ LNODE *ln = (LNODE*) &fln.next;
 		if (ln->ln.lnclass){
 			if (!strcmp(ln->ln.lnclass, lnclasses[lnclass])){
 				actlnode = ln;
-				if (actmenu) refreshvars(actmenu);
 				return ln;
 			}
 		}

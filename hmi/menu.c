@@ -105,7 +105,7 @@ int len = sizeof(wintext) - 1;
 				if (pitem->vr->prop & PTRINT32){
 					if (*((int*) (pitem->vr->val->val))){
 						sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
-					}else sprintf(wintext, "%s%s%s", pitem->text, pitem->vr->val->defval, pitem->endtext);
+					}else sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val->defval, pitem->endtext);
 				}
 
 				if (pitem->vr->prop & INT32DIG2){
@@ -745,16 +745,18 @@ struct tm *ttm;
 	acttarif->name = defvalues[30].defval;
 	acttarif->id = 0;
 
-	// Open first menu
-	num_menu = create_menu("menus/itemti");
-
-	// Set of parameters for all variable menu and action functions
+	// Set first actual LN
 	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
 	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
 	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
 	if (!actlnode) exit(1);
 
-	if (num_menu) draw_menu();
+	// Open first menu
+	num_menu = create_menu("menus/itemti");
+	if (num_menu) {
+		call_action(NODIRECT, num_menu);		// Refresh variables
+		draw_menu();
+	}
 
     return 0;
 }

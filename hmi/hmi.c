@@ -269,7 +269,7 @@ char *fname;
 
 	//---*** Init IEC61850 ***---//
 	// Make config name
-	i = strlen(prepath) + strlen(pathconfig) + strlen(IECCONFIG) + 3;
+ 	i = strlen(prepath) + strlen(pathconfig) + strlen(IECCONFIG) + 3;
 	fname = malloc(i);
 	sprintf(fname, "%s/%s/%s", prepath, pathconfig, IECCONFIG);
 
