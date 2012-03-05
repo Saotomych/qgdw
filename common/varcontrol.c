@@ -441,7 +441,9 @@ varrec *prevvr;
 
 		// Free and switch to next varrec
 		prevvr = vr->l.prev;
+		// Unsubscribe value
 //		if (vr->prop & BOOKING) unbook(vr);
+		// Free memory of value
 		if (vr->prop & NEEDFREE) free(vr->val->val);
 		if (vr->name) free(vr->name);
 		if (vr->val) free(vr->val);
