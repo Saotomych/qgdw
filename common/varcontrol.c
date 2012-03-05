@@ -81,7 +81,7 @@ void vc_init(pvalue vt, int len){
 }
 
 static varrec* newappvarrec(value *val){
-varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
+varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	lastvr = vr;
 	// Initialize varrec
 	vr->name = malloc(sizeof(fcdarec));
@@ -96,7 +96,7 @@ varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 }
 
 static varrec* newiecvarrec(void){
-varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
+varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	// Initialize varrec
 	if (init_varrec(vr)){	// mallocs for 'fcdarec' and 'value'
 		lastvr = vr;
