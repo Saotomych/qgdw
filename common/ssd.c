@@ -14,9 +14,10 @@ struct _IED *actlied = NULL;
 struct _LDEVICE *actlldevice = NULL;
 struct _LNODETYPE *actlnodetype = NULL;
 struct _DTYPE  *actdtype = NULL;
+struct _ATYPE  *actatype = NULL;
 
-// Start points
-LIST fied, fld, fln, flntype, fdo, fdtype, fattr;
+// Start points for IEC61850
+LIST fied, fld, fln, flntype, fdo, fdtype, fattr, fatype, fbattr;
 IED *flastied = (IED*) &fied;
 LDEVICE *flastld = (LDEVICE*) &fld;
 LNODE *flastln = (LNODE*) &fln;
@@ -24,6 +25,8 @@ LNTYPE *flastlntype = (LNTYPE*) &flntype;
 DOBJ *flastdo = (DOBJ*) &fdo;
 DTYPE *flastdtype = (DTYPE*) &fdtype;
 ATTR *flastattr = (ATTR*) &fattr;
+ATYPE *flastatype = (ATYPE*) &fatype;
+BATTR *flastbattr = (BATTR*) &fbattr;
 
 LIST* create_next_struct_in_list(LIST *plist, int size){
 LIST *newlist = NULL;
@@ -43,7 +46,7 @@ LIST *newlist = NULL;
 // In: p - pointer to string
 // Out: key - pointer to string with key of SCL file
 //      par - pointer to string par for this key without ""
-char* get_next_parameter(char *p, char **key, char **par){
+static char* get_next_parameter(char *p, char **key, char **par){
 int mode=0;
 
 	*key = p;
@@ -245,6 +248,10 @@ char *key=0, *par=0;
 			if (strstr((char*) key, "fc")) flastattr->attr.fc = par;
 			else
 			if (strstr((char*) key, "dchg")) flastattr->attr.dchg = par;
+			else
+			if (strstr((char*) key, "dupd")) flastattr->attr.dupd = par;
+			else
+			if (strstr((char*) key, "qchg")) flastattr->attr.qchg = par;
 		}
 	}while(p);
 
@@ -254,6 +261,52 @@ char *key=0, *par=0;
 
 	ts_printf(STDOUT_FILENO, "IEC61850: new ATTRIBUTE: name=%s btype=%s type=%s fc=%s dchg=%s\n",
 			flastattr->attr.name, flastattr->attr.btype, flastattr->attr.type, flastattr->attr.fc, flastattr->attr.dchg);
+}
+
+void cid_create_attrtype(const char *pTag){			// call parse attrtype
+char *p;
+char *key=0, *par=0;
+	flastatype = create_next_struct_in_list(&(flastatype->l), sizeof(ATYPE));
+
+	// Parse parameters for dobjtype
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "id")) flastatype->atype.id = par;
+		}
+	}while(p);
+
+	actatype = &(flastatype->atype);
+
+	flastatype->atype.maxbattr = 0;
+
+	printf("IEC61850: new ATTRIBUTE TYPE: id=%s \n", flastatype->atype.id);
+}
+
+void cid_create_bda(const char *pTag){			// call parse baseattrtype
+char *p;
+char *key=0, *par=0;
+	flastbattr = create_next_struct_in_list(&(flastbattr->l), sizeof(BATTR));
+
+	// Parse parameters for attr
+	p = (char*) pTag;
+	do{
+		p = get_next_parameter(p, &key, &par);
+		if (p){
+			if (strstr((char*) key, "name")) flastbattr->battr.name = par;
+			else
+			if (strstr((char*) key, "bType")) flastbattr->battr.btype = par;
+		}
+	}while(p);
+
+	flastbattr->battr.pmyattrtype = actatype;
+
+	actatype->maxbattr++;
+
+	printf("IEC61850: new BASE ATTRIBUTE: name=%s btype=%s\n",
+				flastbattr->battr.name, flastbattr->battr.btype);
+
 }
 
 void cid_create_enum(const char *pTag){			// call parse enum
@@ -384,11 +437,55 @@ ATTR *pa;
 		// pa found ?
 		if (pa){
 			ts_printf(STDOUT_FILENO, "IEC61850: First ATTR %s(%s) for DTYPE %s found\n", pa->attr.name, pa->attr.btype, pdt->dtype.id);
+			pdt->dtype.pfattr = pa;
 		}else{
 			ts_printf(STDOUT_FILENO, "IEC61850 error: ATTR for DTYPE %s not found\n", pdt->dtype.id);
 		}
 
 		pdt = pdt->l.next;
+	}
+}
+
+void atype2bda(void){
+// find 1th BDA for DAType
+ATYPE *pat = (ATYPE*) fatype.next;
+BATTR *pba;
+
+	while (pat){
+		// find 1th base attr
+		pba = (BATTR*) fbattr.next;
+		while ((pba) && (pba->battr.pmyattrtype != &(pat->atype))) pba = pba->l.next;
+		// pba found ?
+		if (pba){
+			pat->atype.pfbattr = pba;
+			printf("IEC61850: First BASE ATTR %s(%s) for ATYPE %s found\n", pba->battr.name, pba->battr.btype, pat->atype.id);
+		}else{
+			printf("IEC61850 error: BASE ATTR for ATYPE %s not found\n", pat->atype.id);
+		}
+
+		pat = pat->l.next;
+	}
+}
+
+void attr2atype(void){
+// find DTYPE for every DOBJ
+// dtype by id - type
+ATTR *pda = (ATTR*) fattr.next;
+ATYPE *pat;
+
+	while(pda){
+		// find atype
+		pat = fatype.next;
+		while((pat) && (pda->attr.type) && (strcmp(pat->atype.id, pda->attr.type))) pat = pat->l.next;
+		// pat found ?
+		if (pat){
+			pda->attr.pmyattrtype = &(pat->atype);
+			printf("IEC61850: DTYPE %s for DOBJ %s found\n", pat->atype.id, pda->attr.name);
+		}else{
+			printf("IEC61850 error: DTYPE for DOBJ %s not found\n", pda->attr.name);
+		}
+
+		pda = pda->l.next;
 	}
 }
 
@@ -401,7 +498,10 @@ void crossconnection(){
 	dobj2dtype();
 	// DTYPE -> ATTR
 	dtype2attr();
-
+	// ATTRTYPE -> BDA
+	atype2bda();
+	// _ATTR -> _ATYPE
+	attr2atype();
 }
 
 // Create structures according to ieclevel.cid

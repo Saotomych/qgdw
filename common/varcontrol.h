@@ -10,11 +10,12 @@
 
 #include "iec61850.h"
 
+
 #define BOOKING		0x100
 #define TRUEVALUE	0x080
 #define ISBOOKED	0x040
-#define INTVAR		0x020
-#define INTCONST	0x010
+#define INTERNAL	0x020
+#define NEEDFREE	0x010
 
 // Types
 #define STRING		1
@@ -23,6 +24,36 @@
 #define PTRSTRING	8
 #define PTRINT32	0x10
 #define PTRINT64	0x20
+#define INT32DIG2	0x40
+#define FLOAT32		0x80
+#define AVALUE		0x100
+#define QUALITY		0x200
+#define TIMESTAMP	0x400
+
+// IEC Types for varrec
+#define IECBASE		0x1000
+#define IEDdesc			1
+#define IEDname			2
+#define LDinst			3
+#define LDname			4
+#define LDdesc			5
+#define LNlnclass		6
+#define LNlninst		7
+#define LNlntype		8
+#define LNprefix		9
+#define DOdesc			10
+#define DOname			11
+#define DOtype			12
+#define DOvalue			13
+#define DAname			14
+#define DAbtype			15
+#define DAtype			16
+#define DAfc			17
+#define DAdchg			18
+#define DAdupd			19
+#define DAqchg			20
+
+#define IECVALUE		1000
 
 // IEC struct
 typedef struct _FCDAREC{
@@ -37,6 +68,7 @@ typedef struct _FCDAREC{
 } fcdarec, *pfcdarec;
 
 typedef struct _VALUE{
+	int	idx;		// Index of value in defvalues
 	char *name;		// full name of variable
 	void *val;		// pointer to value
 	void *defval;	// pointer to default value (if exists), using if val == NULL or value not true
@@ -49,6 +81,7 @@ typedef struct _VARREC{
 	LIST l;
 	fcdarec *name;	// Can see as pointer to pointer to full name already
 	value *val;		// Values and types of variable
+	int iarg;
 	int prop;		// properties: const, var, booking, true value.
 	int time;		// time from last refresh value, usec
 } varrec, *pvarrec;
@@ -63,8 +96,8 @@ typedef struct _VARBOOK{
 } varbook, *pvarbook;
 
 extern void vc_init(pvalue vt, int len);
-//extern varrec *vc_addvarrec(char *varname, LNODE *actln);
-extern varrec *vc_addvarrec(char *varname, LNODE *actln, varrec *actvr);
-extern int vc_rmvarrec(char *varname);
+//extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
+extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
+extern int vc_destroyvarreclist(varrec *fvr);
 
 #endif /* VARCONTROL_H_ */

@@ -10,11 +10,13 @@
 
 #include <nano-X.h>
 #include <nanowm.h>
+#include "menu.h"
 
 typedef struct _fact{
    char *action;
-   int (*func)(void *arg);
-}fact, *pfact;
+   int (*proloque)(void *arg);
+   int (*epiloque)(void *arg);
+} fact, *pfact;
 
 // lowlevel.cfg information
 typedef struct _LDEXTINFO{

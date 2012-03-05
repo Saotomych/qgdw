@@ -12,6 +12,8 @@
 
 #define ALARM_PER		2  // must be >= 2 sec!!!
 
+struct _BATTR;
+struct _BATTR_LIST;
 struct _ATTR;
 struct _ATTR_LIST;
 struct _DTYPE;
@@ -29,6 +31,27 @@ struct _IED_LIST;
 
 extern u08 Encoding;
 
+/* Base Attributes */
+typedef struct _BATTR_LIST{
+	LIST l;
+	struct _BATTR{
+		char *name;
+		char *btype;
+		struct _ATYPE *pmyattrtype;		// xml-parser set up this value
+		int  mytype;
+	} battr;
+} BATTR;
+
+/* Attributes type */
+typedef struct _ATYPE_LIST{
+	LIST l;
+	struct _ATYPE{
+		char *id;
+		BATTR *pfbattr;						// crossconnector set up this value
+		int maxbattr;						// xml-parser set up this value
+	} atype;
+} ATYPE;
+
 /* Attributes */
 typedef struct _ATTR_LIST{
 	LIST l;
@@ -36,9 +59,12 @@ typedef struct _ATTR_LIST{
 		char *name;
 		char *btype;
 		char *dchg;
+		char *qchg;
+		char *dupd;
 		char *fc;
 		char *type;
 		struct _DTYPE *pmydatatype;		// xml-parser set up this value
+		struct _ATYPE *pmyattrtype;		// xml-parser set up this value
 		int  mytype;
 	} attr;
 } ATTR;
@@ -150,9 +176,11 @@ extern void cid_create_lntype(const char *pTag);		// call parse lntype
 extern void cid_create_dobj(const char *pTag);			// call parse do
 extern void cid_create_dobjtype(const char *pTag);		// call parse dotype
 extern void cid_create_attr(const char *pTag);			// call parse attr
+extern void cid_create_attrtype(const char *pTag);		// call parse attrtype
+extern void cid_create_bda(const char *pTag);			// call parse bda
 extern void cid_create_enum(const char *pTag);			// call parse enumtype
 extern void cid_create_enumval(const char *pTag);		// call parse enumval
-extern void cid_create_subst(const char *pTag);		// call parse substation
+extern void cid_create_subst(const char *pTag);			// call parse substation
 
 
 #endif /* IEC61850_H_ */

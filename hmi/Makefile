@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += hmi.o menu.o action_fn.o menu_fn.o multififo.o ssd.o xml.o varcontrol.o ts_print.o
+OBJS += hmi.o menu.o action_fn.o menu_fn.o winparser.o multififo.o ssd.o xml.o varcontrol.o tarif.o
 
 NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
 NANOLIBS = ../../nano-x.X11.x86/microwin/src/lib
@@ -29,10 +29,14 @@ xml.o: ../common/xml.c
 	$(CC) $(CCFLAGS) ../common/xml.c -o xml.o
 varcontrol.o: ../common/varcontrol.c
 	$(CC) $(CCFLAGS) ../common/varcontrol.c -o varcontrol.o
+tarif.o: ../common/tarif.c
+	$(CC) $(CCFLAGS) ../common/tarif.c -o tarif.o
 action_fn.o: action_fn.c
 	$(CC) $(CCFLAGS) action_fn.c -o action_fn.o
 menu_fn.o: menu_fn.c
 	$(CC) $(CCFLAGS) menu_fn.c -o menu_fn.o
+winparser.o: winparser.c
+	$(CC) $(CCFLAGS) winparser.c -o winparser.o
 
 all: hmi
 

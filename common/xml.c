@@ -9,6 +9,7 @@
 #include "common.h"
 #include "ts_print.h"
 #include "iec61850.h"
+#include "tarif.h"
 
 u08 Encoding, EndScript;
 
@@ -83,6 +84,55 @@ void TagSetXml(const char *pTag){
   }
 }
 
+void TagStartTarifs(const char *pTag){
+
+}
+
+void TagEndTarifs(const char *pTag){
+	EndScript=1;
+	printf("Tarif: Stop tariff file to parse\n");
+}
+
+void TagSetSeason(const char *pTag){
+
+}
+
+void TagEndSeason(const char *pTag){
+
+}
+
+void TagSetWDays(const char *pTag){
+
+}
+
+void TagSetHolidays(const char *pTag){
+
+}
+
+void TagSetHighdays(const char *pTag){
+
+}
+
+void TagEndHighdays(const char *pTag){
+
+}
+
+void TagSetWDay(const char *pTag){
+
+}
+
+void TagSetHlday(const char *pTag){
+
+}
+
+void TagSetHgday(const char *pTag){
+
+}
+
+void TagSetSet(const char *pTag){
+
+}
+
 //*** End Tag RAW working ***//
 
 typedef struct _XML_Name{
@@ -91,6 +141,7 @@ typedef struct _XML_Name{
 } XML_Name, *pXML_Name;
 
 static const XML_Name XTags[] = {
+  // Tags for IEC config
   {"Header", TagSetHeader},
   {"/Header", TagEndHeader},
   {"IED", cid_create_ied},
@@ -111,6 +162,8 @@ static const XML_Name XTags[] = {
   {"/DOType", TagEndDType},
   {"DA", cid_create_attr},
   {"/DA", TagEndAttr},
+  {"DAType", cid_create_attrtype},
+  {"BDA", cid_create_bda},
   {"EnumType", cid_create_enum},
   {"/EnumType", TagEndEnum},
   {"EnumVal", cid_create_enumval},
@@ -118,6 +171,20 @@ static const XML_Name XTags[] = {
   {"SCL", TagSetSCL},
   {"/SCL", TagEndSCL},
   {"?xml", TagSetXml},
+  // Tags for tarif config
+  {"Tarifs", tarifvars_init},
+  {"/Tarifs", TagEndTarifs},
+  {"Season", create_season},
+  {"/Season", TagEndSeason},
+  {"Workdays", start_workdaysset},
+  {"Holidays", start_holidaysset},
+  {"Highdays", start_highdaysset},
+  {"/Highdays", TagEndHighdays},
+  {"Workday", add_workday},
+  {"Holiday", add_holiday},
+  {"Highday", add_highday},
+  {"Set", create_set},
+  {"Tarif", create_tarif},
 };
 
 void OpenTag(const char *pS){
@@ -149,13 +216,11 @@ const char *pS=XMLScript;
       OpenTag(pS);
     }
   }
-
 }
 
 void XMLSelectSource(char *xml){
 char *pt = strstr(xml,"<?xml");
 
 	if (pt) XMLParser(pt);
-//	else XMLParser(DefaultConfig);
 
 }
