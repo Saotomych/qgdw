@@ -8,6 +8,7 @@
 #include "common.h"
 #include "xml.h"
 #include "tarif.h"
+#include "ts_print.h"
 
 // Start points for tariffes
 LIST fseason, fspecs, fhighday;
@@ -26,7 +27,7 @@ LIST *new;
 	plist->next = malloc(size);
 
 	if (!plist->next){
-		printf("IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, "IEC61850: malloc error:%d - %s\n",errno, strerror(errno));
 		exit(3);
 	}
 	new = plist->next;
@@ -102,7 +103,7 @@ char *key=0, *par=0;
 	flastworkset = (sett*) &flastseason->mywrdays;
 	flastholiset = (sett*) &flastseason->myhldays;
 
-	printf("Tarif: new season: id=%d name=%s date=%02d.%02d\n",
+	ts_printf(STDOUT_FILENO, "Tarif: new season: id=%d name=%s date=%02d.%02d\n",
 			flastseason->id, flastseason->name, flastseason->day, flastseason->mnth);
 
 }
@@ -140,7 +141,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("Tarif: new special working day: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
+	ts_printf(STDOUT_FILENO, "Tarif: new special working day: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
 
 }
 
@@ -165,7 +166,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("Tarif: new special holiday: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
+	ts_printf(STDOUT_FILENO, "Tarif: new special holiday: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
 
 }
 
@@ -190,7 +191,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("Tarif: new special highday day: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
+	ts_printf(STDOUT_FILENO, "Tarif: new special highday day: id=%d date=%02d.%02d\n", flastspec->id, flastspec->day, flastspec->mnth);
 }
 
 void create_set(const char *pTag){
@@ -231,7 +232,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("Tarif: new set for season %d - '%s': id=%d time=%02d:%02d idtarif=%d\n",
+	ts_printf(STDOUT_FILENO, "Tarif: new set for season %d - '%s': id=%d time=%02d:%02d idtarif=%d\n",
 			flastseason->id, flastseason->name, actset->id, actset->hour, actset->min, actset->idtarif);
 
 }
@@ -255,7 +256,7 @@ char *key=0, *par=0;
 		}
 	}while(p);
 
-	printf("Tarif: new tarif: id=%d name=%s money=%f\n",
+	ts_printf(STDOUT_FILENO, "Tarif: new tarif: id=%d name=%s money=%f\n",
 			flasttarif->id, flasttarif->name, flasttarif->money);
 
 }
@@ -268,7 +269,7 @@ struct stat fst;
 
 	// Get size of main config file
 	if (stat(filename, &fst) == -1){
-		printf("Tarif: Config file not found\n");
+		ts_printf(STDOUT_FILENO, "Tarif: Config file not found\n");
 	}
 
 	tfile = malloc(fst.st_size);
@@ -278,7 +279,7 @@ struct stat fst;
 	cidlen = fread(tfile, 1, (size_t) (fst.st_size), fcid);
 	if(!strstr(tfile, "</Tarifs>"))
 	{
-		printf("Tarif: config file is incomplete\n");
+		ts_printf(STDOUT_FILENO, "Tarif: config file is incomplete\n");
 		exit(1);
 	}
 	if (cidlen == fst.st_size) XMLSelectSource(tfile);
@@ -303,7 +304,7 @@ tarif *actt;
 			while((actt) && (actt->id != actwset->idtarif))	actt = actt->l.next;
 			actwset->mytarif = actt;
 
-			printf("Tarif: Workday set id=%d connect to tarif id=%d (0x04%X)\n", actwset->id, actt->id, (int) actwset->mytarif);
+			ts_printf(STDOUT_FILENO, "Tarif: Workday set id=%d connect to tarif id=%d (0x04%X)\n", actwset->id, actt->id, (int) actwset->mytarif);
 
 			actwset = actwset->l.next;
 		}
@@ -314,7 +315,7 @@ tarif *actt;
 			while((actt) && (actt->id != acthset->idtarif))	actt = actt->l.next;
 			acthset->mytarif = actt;
 
-			printf("Tarif: Holiday set id=%d connect to tarif id=%d (0x04%X)\n", acthset->id, actt->id, (int) acthset->mytarif);
+			ts_printf(STDOUT_FILENO, "Tarif: Holiday set id=%d connect to tarif id=%d (0x04%X)\n", acthset->id, actt->id, (int) acthset->mytarif);
 
 			acthset = acthset->l.next;
 		}
@@ -328,7 +329,7 @@ tarif *actt;
 		while((actt) && (actt->id != acthset->idtarif))	actt = actt->l.next;
 		acthset->mytarif = actt;
 
-		printf("Tarif: Highday set id=%d connect to tarif id=%d (0x04%X)\n", acthset->id, actt->id, (int) acthset->mytarif);
+		ts_printf(STDOUT_FILENO, "Tarif: Highday set id=%d connect to tarif id=%d (0x04%X)\n", acthset->id, actt->id, (int) acthset->mytarif);
 
 		acthset = acthset->l.next;
 	}

@@ -10,8 +10,10 @@
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
+#include "../common/ts_print.h"
 #include "hmi.h"
 #include "menu.h"
+
 
 #define BLACK MWRGB( 0  , 0  , 0   )
 #define WHITE MWRGB( 255, 255, 255 )
@@ -213,7 +215,7 @@ void mainloop()
 
  				case GR_EVENT_TYPE_EXPOSURE:
  					if (event.exposure.wid == GR_ROOT_WINDOW_ID){
- 	 					printf ("Root exposure event 0x%04X\n", event.exposure.wid);
+ 	 					ts_printf (STDOUT_FILENO, "Root exposure event 0x%04X\n", event.exposure.wid);
  	 					redraw_screen(&event);
  					}
  					break;
@@ -227,7 +229,7 @@ void mainloop()
 					break;
 
 				case GR_EVENT_TYPE_UPDATE:
-					printf("Window event update\n");
+					ts_printf(STDOUT_FILENO, "Window event update\n");
 					break;
 
  				case GR_EVENT_TYPE_CLOSE_REQ:
@@ -263,7 +265,7 @@ char *fname;
 
 	// Parsing cid, create virtualization structures from common iec61850 configuration
 	if (cid_build(fname)){
-		printf("IEC61850: cid file not found\n");
+		ts_printf(STDOUT_FILENO, "IEC61850: cid file not found\n");
 	}else{
 		// Cross connection of IEC structures
 		crossconnection();
@@ -278,14 +280,14 @@ char *fname;
 	fname = malloc(i);
 	sprintf(fname, "%s/%s/%s", prepath, pathconfig, "lowlevel.cfg");
 	// Parse lowlevel config file
-	if (lowlevel_parser(fname)) printf("IEC61850: lowlevel file reading error\n");
+	if (lowlevel_parser(fname)) ts_printf(STDOUT_FILENO, "IEC61850: lowlevel file reading error\n");
 	free(fname);
 
 	// Setup environment variables from device environment
 	env_parser();
 
 	// Parse about config file
-	if (about_parser("/tmp/about/about.me")) printf("IEC61850: about.me file reading error\n");
+	if (about_parser("/tmp/about/about.me")) ts_printf(STDOUT_FILENO, "IEC61850: about.me file reading error\n");
 
 	// Parse vars from menu.c
 	menu_parser(defvalues, sizeof(defvalues) / sizeof (value));
@@ -300,7 +302,7 @@ char *fname;
 
 //---*** Init visual control ***---//
 	if (init_menu()){
-		printf("Configuration of LNODEs nor found\n");
+		ts_printf(STDOUT_FILENO, "Configuration of LNODEs nor found\n");
 		exit(1);
 	}
 	mainloop();

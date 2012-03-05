@@ -391,7 +391,6 @@ int i;
 //fst.st_size = 2048;
 	// Stat of file, for get size of file
 	if (stat(menuname, &fst)){
-		printf("IEC Virt: menufile not found\n");
 		txtmenu = malloc(4096);
 		txtmenu[0] = 0;
 	}else{
