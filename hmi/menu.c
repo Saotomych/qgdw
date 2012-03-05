@@ -104,6 +104,10 @@ int idtype;
 
 				idtype = pitem->vr->val->idtype;
 
+				if (idtype & FLOAT32){
+					sprintf(wintext, "%s%f%s", pitem->text, *((float*) (pitem->vr->val->val)), pitem->endtext);
+				}
+
 				if (idtype & INT32){
 					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
