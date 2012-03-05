@@ -14,8 +14,8 @@
 #define BOOKING		0x100
 #define TRUEVALUE	0x080
 #define ISBOOKED	0x040
-#define INTVAR		0x020
-#define INTCONST	0x010
+#define INTERNAL	0x020
+#define NEEDFREE	0x010
 
 // Types
 #define STRING		1
@@ -53,6 +53,7 @@
 #define DAdupd			19
 #define DAqchg			20
 
+#define IECVALUE		1000
 
 // IEC struct
 typedef struct _FCDAREC{

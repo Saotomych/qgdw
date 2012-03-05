@@ -100,7 +100,7 @@ int i;
 						defvalues[i].val = malloc(strlen(p));
 						p[strlen(p)-1] = 0;
 						strcpy(defvalues[i].val, p);
-						defvalues[i].idtype = INTVAR | TRUEVALUE | STRING;
+						defvalues[i].idtype = INTERNAL | TRUEVALUE | STRING;
 					}
 				}
 			}
@@ -134,7 +134,7 @@ char *papp;
 			papp = defvalues[j].name;
 			if (strstr(papp, &words[i][0])){
 				defvalues[j].val = getenv(&words[i][0]);
-				defvalues[j].idtype = INTVAR | TRUEVALUE | STRING;
+				defvalues[j].idtype = INTERNAL | TRUEVALUE | STRING;
 				break;
 			}
 		}

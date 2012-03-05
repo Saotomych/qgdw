@@ -66,7 +66,7 @@ static int get_type_idx(char *ptype){
 	return 0;
 }
 
-static int sizeof_idx(int idx){
+static size_t sizeof_idx(int idx){
 	if (idx == STRING) return 256;
 	if (idx == INT32) return 4;
 	if (idx == FLOAT32) return 4;
@@ -100,7 +100,7 @@ varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
 	vr->val = malloc(sizeof(value));
 	if (vr->val) memcpy(vr->val, val, sizeof(value));
-	vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;;
+	vr->prop = INTERNAL | TRUEVALUE;
 	vr->iarg = varrec_number;
 	varrec_number++;
 	vr->time = 0;
@@ -120,7 +120,7 @@ varrec *vr = create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 		vr->val->iddeftype = 0;
 		vr->val->defval = 0;
 		vr->val->idx = IECBASE;
-		vr->prop = INTVAR | TRUEVALUE | vr->val->idtype;
+		vr->prop = INTERNAL | TRUEVALUE;
 		return vr;
 	}else{
 		if (vr){
@@ -307,8 +307,13 @@ char keywords[][10] = {
 							if (vr->val->val){
 								// DO.name is value with var type
 								// Set vr->val->val to value
-								vr->val->idx = get_type_idx(vr->val->val);
-								vr->val->val = malloc(sizeof_idx(vr->val->idx));
+								vr->val->idx = IECBASE + IECVALUE;
+								vr->val->idtype = get_type_idx(vr->val->val);
+								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
+								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
+								vr->prop = BOOKING| NEEDFREE;
+								// TODO Subscribe DO value
+
 								return vr;
 							}
 
@@ -341,8 +346,13 @@ char keywords[][10] = {
 							if (vr->val->val){
 								// DA.name is value with var type
 								// Set vr->val->val to value
-								vr->val->idx = get_type_idx(vr->val->val);
-								vr->val->val = malloc(sizeof_idx(vr->val->idx));
+								vr->val->idx = IECBASE + IECVALUE;
+								vr->val->idtype = get_type_idx(vr->val->val);
+								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
+								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
+								vr->prop = BOOKING | NEEDFREE;
+								// TODO Subscribe DA value
+
 								return vr;
 							}
 
@@ -396,8 +406,13 @@ char keywords[][10] = {
 							if (vr->val->val){
 								// BDA.name is value with var type
 								// Set vr->val->val to value
-								vr->val->idx = get_type_idx(vr->val->val);
-								vr->val->val = malloc(sizeof_idx(vr->val->idx));
+								vr->val->idx = IECBASE + IECVALUE;
+								vr->val->idtype = get_type_idx(vr->val->val);
+								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
+								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
+								vr->prop = BOOKING | NEEDFREE;
+								// TODO Subscribe BDA value
+
 								return vr;
 							}
 
@@ -426,6 +441,8 @@ varrec *prevvr;
 
 		// Free and switch to next varrec
 		prevvr = vr->l.prev;
+//		if (vr->prop & BOOKING) unbook(vr);
+		if (vr->prop & NEEDFREE) free(vr->val->val);
 		if (vr->name) free(vr->name);
 		if (vr->val) free(vr->val);
 		free(vr);

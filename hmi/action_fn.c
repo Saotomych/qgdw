@@ -71,7 +71,6 @@ int i, idx, lnclassnum;
 				if (idx == 30){
 					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) acttarif->name;
 				}
-
 			}
 		}
 	}

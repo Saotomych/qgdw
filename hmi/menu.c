@@ -84,6 +84,7 @@ GR_GC_ID gc;
 GR_WINDOW_ID *main_window = &(pitem->main_window);
 GR_WINDOW_INFO winfo;
 int len = sizeof(wintext) - 1;
+int idtype;
 
 			GrGetWindowInfo(*main_window, &winfo);
 
@@ -97,26 +98,31 @@ int len = sizeof(wintext) - 1;
 			GrSetGCFont(gc, num_menu->font);
 
 			if (pitem->vr) {
-//				if (pitem->vr->prop & ISTRUE)
-				if (pitem->vr->prop & INT32){
+
+				wintext[0] = 0;
+				wintext[1] = 0;
+
+				idtype = pitem->vr->val->idtype;
+
+				if (idtype & INT32){
 					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
-				if (pitem->vr->prop & PTRINT32){
+				if (idtype & PTRINT32){
 					if (*((int*) (pitem->vr->val->val))){
 						sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
 					}else sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val->defval, pitem->endtext);
 				}
 
-				if (pitem->vr->prop & INT32DIG2){
+				if (idtype & INT32DIG2){
 					sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
-				if (pitem->vr->prop & INT64){
+				if (idtype & INT64){
 					sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
-				if (pitem->vr->prop & STRING){
+				if (idtype & STRING){
 					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
 					len -= strlen(wintext);
 					if ((pitem->vr) && (pitem->vr->val)){
@@ -128,7 +134,7 @@ int len = sizeof(wintext) - 1;
 					wintext[sizeof(wintext) - 1] = 0;
 				}
 
-				if (pitem->vr->prop & PTRSTRING){
+				if (idtype & PTRSTRING){
 					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
 					len -= strlen(wintext);
 					if ((pitem->vr) && (pitem->vr->val)){
