@@ -10,7 +10,7 @@
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
-#include "../common/ts_print.h"
+//#include "../common/ts_print.h"
 #include "hmi.h"
 #include "menu.h"
 
@@ -215,7 +215,7 @@ void mainloop()
 
  				case GR_EVENT_TYPE_EXPOSURE:
  					if (event.exposure.wid == GR_ROOT_WINDOW_ID){
- 	 					ts_printf (STDOUT_FILENO, "Root exposure event 0x%04X\n", event.exposure.wid);
+ 	 					ts_printf(STDOUT_FILENO, "Root exposure event 0x%04X\n", event.exposure.wid);
  	 					redraw_screen(&event);
  					}
  					break;

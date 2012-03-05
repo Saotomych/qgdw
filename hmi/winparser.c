@@ -362,7 +362,6 @@ menu* num_menu;
 	num_menu = allmenus[maxmenus-1];
 
 	if (actmenu != num_menu){
-		printf("HMI error: Detect damaged menu order\n");
 		exit(2);
 	}
 

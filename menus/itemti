@@ -1,5 +1,5 @@
 main 0 0 a a
-text 2 0 a a &var:LN:TotW.mag.f
+text 2 0 a a Адрес установки
 text 2 16 a a &var:IED:desc
 menu 2 32 a a &var:APP:ldtypetext~changetypeln>lntypemenu
 menu 4 48 38 a &var:LN:prefix~changeln>lnmenu

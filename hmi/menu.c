@@ -105,25 +105,25 @@ int idtype;
 				idtype = pitem->vr->val->idtype;
 
 				if (idtype & FLOAT32){
-					sprintf(wintext, "%s%f%s", pitem->text, *((float*) (pitem->vr->val->val)), pitem->endtext);
+					ts_sprintf(wintext, "%s%f%s", pitem->text, *((float*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
 				if (idtype & INT32){
-					sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
+					ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
 				if (idtype & PTRINT32){
 					if (*((int*) (pitem->vr->val->val))){
-						sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
-					}else sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val->defval, pitem->endtext);
+						ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
+					}else ts_sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val->defval, pitem->endtext);
 				}
 
 				if (idtype & INT32DIG2){
-					sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
+					ts_sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
 				if (idtype & INT64){
-					sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
+					ts_sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
 				if (idtype & STRING){
@@ -594,7 +594,7 @@ LNODE *pln = (LNODE*) fln.next;
 char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
 	while(pln){
-		sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+		ts_sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 		if (!strcmp(itemtext, tmpstring)){
 			actlnode = pln;
 			break;
@@ -620,7 +620,7 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, actlnode->ln.lnclass)){
-			sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			if (!strcmp(itemtext, tmpstring)){
 				actlnode = pln;
 				break;

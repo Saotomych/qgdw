@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += hmi.o menu.o action_fn.o menu_fn.o winparser.o multififo.o ssd.o xml.o varcontrol.o tarif.o
+OBJS += hmi.o menu.o action_fn.o menu_fn.o winparser.o multififo.o ssd.o xml.o varcontrol.o tarif.o ts_print.o
 
 NANOINCLUDE = ../../nano-x.X11.x86/microwin/src/include
 NANOLIBS = ../../nano-x.X11.x86/microwin/src/lib

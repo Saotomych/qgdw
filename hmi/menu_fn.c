@@ -8,6 +8,7 @@
 #include "../common/common.h"
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
+#include "../common/ts_print.h"
 #include "hmi.h"
 #include "menu.h"
 
@@ -59,16 +60,16 @@ int x, y = 0;
 char *lnodefilter = (char*) pln->ln.lnclass;
 
 	pln = (LNODE*) fln.next; x = 0;
-	sprintf(pmenu, "main 16 33 128 126\n");
+	ts_sprintf(pmenu, "main 16 33 128 126\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys enter:setlnbyclass\n");
+	ts_sprintf(pmenu, "keys enter:setlnbyclass\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
+	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP; x = MENUSTEP;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, lnodefilter)){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}
@@ -88,16 +89,16 @@ LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
 
 	pln = (LNODE*) fln.next; x = 2;
-	sprintf(pmenu, "main 16 15 128 145\n");
+	ts_sprintf(pmenu, "main 16 15 128 145\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys enter:setlnbytype\n");
+	ts_sprintf(pmenu, "keys enter:setlnbytype\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
+	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP; x = MENUSTEP;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, lnclasses[0])){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}
@@ -107,7 +108,7 @@ int x, y = 0;
 	pln = (LNODE*) fln.next;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}
@@ -117,7 +118,7 @@ int x, y = 0;
 	pln = (LNODE*) fln.next;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
-			sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}
@@ -155,18 +156,18 @@ int i, x, y, maxday, wday, day;
 	if ((timetm->tm_mon == 1) && (!(timetm->tm_year % 4))) maxday++;
 
     // Months and years
-	sprintf(pmenu, "main 10 35 140 124\n");
+	ts_sprintf(pmenu, "main 10 35 140 124\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys up:dateup down:datedown right:dateright left:dateleft enter:dateenter\n");
+	ts_sprintf(pmenu, "keys up:dateup down:datedown right:dateright left:dateleft enter:dateenter\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
+	ts_sprintf(pmenu, "menu 20 0 100 a %s %d\n", mons[timetm->tm_mon].mrus, 1900+timetm->tm_year);
 	pmenu += strlen(pmenu);
 
 
 	// Days of week
 	x = 2;
 	for (i = 0; i < 7; i++){
-		sprintf(pmenu, "text %d 16 20 a %s\n", x, days[i]);
+		ts_sprintf(pmenu, "text %d 16 20 a %s\n", x, days[i]);
 		pmenu += strlen(pmenu);
 		x += 20;
 	}
@@ -176,7 +177,7 @@ int i, x, y, maxday, wday, day;
 	// Numbers to end of first line days
 	day = 1;
 	for (i = wday; i < 7; i++){
-		sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
+		ts_sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
 		pmenu += strlen(pmenu);
 		x += 20; day++;
 	}
@@ -186,7 +187,7 @@ int i, x, y, maxday, wday, day;
 		x = 2;
 		y += MENUSTEP;
 		for (i = 0; (i < 7) && (day <= maxday); i++, day++){
-			sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
+			ts_sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
 			pmenu += strlen(pmenu);
 			x += 20;
 		}
@@ -214,27 +215,27 @@ time_t *timel = &tmptime;
 struct tm *timetm = localtime(timel);
 
     // Months and years
-	sprintf(pmenu, "main 10 50 140 60\n");
+	ts_sprintf(pmenu, "main 10 50 140 60\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys up:timeup down:timedown right:timeright left:timeleft enter:timeenter\n");
+	ts_sprintf(pmenu, "keys up:timeup down:timedown right:timeright left:timeleft enter:timeenter\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text 10 0 160 a Установка времени\n");
+	ts_sprintf(pmenu, "text 10 0 160 a Установка времени\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 30 25 10 a %d\n", timetm->tm_hour/10);
+	ts_sprintf(pmenu, "menu 30 25 10 a %d\n", timetm->tm_hour/10);
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 40 25 10 a %d\n", timetm->tm_hour%10);
+	ts_sprintf(pmenu, "menu 40 25 10 a %d\n", timetm->tm_hour%10);
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text 50 25 10 a :\n");
+	ts_sprintf(pmenu, "text 50 25 10 a :\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 60 25 10 a %d\n", timetm->tm_min/10);
+	ts_sprintf(pmenu, "menu 60 25 10 a %d\n", timetm->tm_min/10);
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 70 25 10 a %d\n", timetm->tm_min%10);
+	ts_sprintf(pmenu, "menu 70 25 10 a %d\n", timetm->tm_min%10);
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text 80 25 10 a :\n");
+	ts_sprintf(pmenu, "text 80 25 10 a :\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 90 25 10 a %d\n", timetm->tm_sec/10);
+	ts_sprintf(pmenu, "menu 90 25 10 a %d\n", timetm->tm_sec/10);
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "menu 100 25 10 a %d\n", timetm->tm_sec%10);
+	ts_sprintf(pmenu, "menu 100 25 10 a %d\n", timetm->tm_sec%10);
 	pmenu += strlen(pmenu);
 
 	return txtmenu;
@@ -308,19 +309,19 @@ char *txtmenu = arg;
 char *pmenu = arg;
 int i, x = 4, l;
 
-	sprintf(pmenu, "main 10 65 140 60\n");
+	ts_sprintf(pmenu, "main 10 65 140 60\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys right:timeright left:timeleft enter:setinterval\n");
+	ts_sprintf(pmenu, "keys right:timeright left:timeleft enter:setinterval\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text 0 0 160 a Установка интервала\n");
+	ts_sprintf(pmenu, "text 0 0 160 a Установка интервала\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text 50 14 160 a минуты\n");
+	ts_sprintf(pmenu, "text 50 14 160 a минуты\n");
 	pmenu += strlen(pmenu);
 
 	for (i=0; i < 7; i++){
 		if (intervals[i] > 9) l = 18;
 		else l = 11;
-		sprintf(pmenu, "menu %d 40 %d a %d\n", x, l, intervals[i]);
+		ts_sprintf(pmenu, "menu %d 40 %d a %d\n", x, l, intervals[i]);
 		pmenu += strlen(pmenu);
 		x += l + 3;
 	}
@@ -335,19 +336,19 @@ char *pmenu = arg;
 tarif *ptarif = (tarif*) &ftarif.l.next;
 int y = 0;
 
-	sprintf(pmenu, "main 2 60 156 100\n");
+	ts_sprintf(pmenu, "main 2 60 156 100\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "keys enter:settarif\n");
+	ts_sprintf(pmenu, "keys enter:settarif\n");
 	pmenu += strlen(pmenu);
-	sprintf(pmenu, "text 12 %d a a Выбор тарифа\n", y);
+	ts_sprintf(pmenu, "text 12 %d a a Выбор тарифа\n", y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP;
-	sprintf(pmenu, "menu 2 %d a a Тариф - - %s\n", y, ptarif->name);
+	ts_sprintf(pmenu, "menu 2 %d a a Тариф - - %s\n", y, ptarif->name);
 	pmenu += strlen(pmenu);
 	ptarif = ptarif->l.next;
 	y += MENUSTEP;
 	while(ptarif){
-		sprintf(pmenu, "menu 2 %d a a Тариф %d - %s\n", y, ptarif->id, ptarif->name);
+		ts_sprintf(pmenu, "menu 2 %d a a Тариф %d - %s\n", y, ptarif->id, ptarif->name);
 		pmenu += strlen(pmenu);
 		y += MENUSTEP;
 		ptarif = ptarif->l.next;
