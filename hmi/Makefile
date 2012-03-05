@@ -37,6 +37,9 @@ menu_fn.o: menu_fn.c
 	$(CC) $(CCFLAGS) menu_fn.c -o menu_fn.o
 winparser.o: winparser.c
 	$(CC) $(CCFLAGS) winparser.c -o winparser.o
+ts_print.o: ../common/ts_print.c
+	$(CC) $(CCFLAGS) ../common/ts_print.c -o ts_print.o
+	
 
 all: hmi
 
