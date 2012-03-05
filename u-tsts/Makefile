@@ -33,3 +33,6 @@ all: multififo-test multififo-test-device
 
 clean:
 	rm -f mainapptest devlinktest $(OBJS1) $(OBJS2) fbmmap $(OBJS3)
+
+force : ;
+	
