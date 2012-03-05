@@ -1,0 +1,13 @@
+main 0 0 a a
+text 2 0 a a &var:LN:TotW.mag.f
+text 2 16 a a &var:IED:desc
+menu 2 32 a a &var:APP:ldtypetext~changetypeln>lntypemenu
+menu 4 48 38 a &var:LN:prefix~changeln>lnmenu
+text 40 48 80 a Класс: &var:LN:class
+text 122 48 48 a &var:LN:inst
+menu 6 a a a Профиль нагрузки>eprofile
+menu 8 a a a Архив потребления>earch
+menu 10 a a a Энергия по тарифам>etarif
+menu 12 a a a Присоединение>connect
+menu 14 a a a Журнал событий>journal
+menu 16 a a a Об измерителе>meterabout
