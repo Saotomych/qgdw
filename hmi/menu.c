@@ -742,10 +742,6 @@ struct tm *ttm;
 	j_mon = jtime_tm.tm_mon + 1;
 	m_mon = mtime_tm.tm_mon + 1;
 
-	// Set start LN
-//	call_action(0xf801, "changetypeln", &parameters);
-	// Start LN ready
-
 	// First actual LNODE init
 	actlnode = (LNODE*) fln.next;					// Try set first LLN0
 	if (!actlnode) exit(1);
