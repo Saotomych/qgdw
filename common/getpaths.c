@@ -23,19 +23,19 @@ static char *basepath;		// Path to all project from environment MXPATH or defaul
 static char *pathbin;		// Path to binary files from environment MXBINPATH or default
 static char *pathconfig;	// Path to config files from environment MXCFGPATH or default
 static char *pathlibs;		// Path to project library files from environment MXLIBPATH or default
-static char *pathmenus;	// Path to project visible menu files from environment MXMENUPATH or default
-static char *pathfonts;	// Path to project visible fonts files from environment MXFNTPATH or default
+static char *pathmenus;		// Path to project visible menu files from environment MXMENUPATH or default
+static char *pathfonts;		// Path to project visible fonts files from environment MXFNTPATH or default
 static char *pathul;		// Path to unitlink's named fifo buffers (MXFIFOUL)
 static char *pathphy;		// Path to physical link's named fifo buffers (MXFIFOPHY)
 static char *pathmain;		// Path to main iec soft's named fifo buffers (MXFIFOMAIN)
 static char *pathabout;		// Path to about files (MXABOUTPATH)
-static char *pathlog;		// Path to log (MXLOGPATH)
+static char *pathlog;		// Path to project log files from environment MXLOGPATH or default
 
 static int lenbasepath;
 
 static char *makepath(char *envname, char *defptr){
 char *ptr, *eptr;
-char lenname = lenbasepath;
+int lenname = lenbasepath;
 
 	eptr = getenv(envname);
 	if (eptr == NULL){

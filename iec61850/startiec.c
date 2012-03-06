@@ -46,6 +46,9 @@ char *cidname;
 	// Cross connection of IEC structures
 	crossconnection();
 
+	// open log env and db
+	log_db_env_open();
+
 	// Start of virtualize functions
 	chldpid = virt_start("startiec");
 	if (chldpid == -1){
@@ -58,11 +61,8 @@ char *cidname;
 	signal(SIGALRM, catch_alarm);
 	alarm(ALARM_PER);
 
-	signal(SIGTERM, sighandler);
+//	signal(SIGTERM, sighandler);
 	signal(SIGINT, sighandler);
-
-	// open log env and db
-	log_db_env_open();
 
 	// Cycle data routing in rcv_data
 	do{
