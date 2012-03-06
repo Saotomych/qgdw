@@ -10,6 +10,7 @@
 
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/paths.h"
 #include "local-phyints.h"
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
@@ -193,6 +194,7 @@ int t;
 
 int createroutetable(void){
 FILE *addrcfg;
+char *fname;
 struct phy_route *pr;
 char *p, *pport;
 char outbuf[256];
@@ -200,7 +202,13 @@ int i = 1;
 
 // Init physical routes structures by phys.cfg file
 	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
-	addrcfg = fopen("/rw/mx00/configs/lowlevel.cfg", "r");
+
+	fname = malloc(strlen(getpath2configs()) + strlen("lowlevel.cfg") + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, "lowlevel.cfg");
+	addrcfg = fopen(fname, "r");
+	free(fname);
+
 	if (addrcfg){
 		// Create phy_route tables
 		do{
@@ -371,7 +379,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 	printf("Phylink TTY: config table ready, %d records\n", maxpr);
 
 // Init multififo
-	chldpid = mf_init("/rw/mx00/phyints","phy_tty", rcvdata);
+	chldpid = mf_init(getpath2fifophy(),"phy_tty", rcvdata);
 
 	do{
 	    FD_ZERO(&rd_desc);

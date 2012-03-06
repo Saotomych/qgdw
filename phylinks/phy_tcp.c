@@ -13,6 +13,7 @@
 
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/paths.h"
 #include "local-phyints.h"
 
 // Test config_device
@@ -90,10 +91,17 @@ struct phy_route *pr;
 char *p;
 char outbuf[256];
 int port;
+char *fname;
 
 // Init physical routes structures by phys.cfg file
 	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
-	addrcfg = fopen("/rw/mx00/configs/lowlevel.cfg", "r");
+
+	fname = malloc(strlen(getpath2configs()) + strlen("lowlevel.cfg") + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, "lowlevel.cfg");
+	addrcfg = fopen(fname, "r");
+	free(fname);
+
 	if (addrcfg){
 		// Create phy_route tables
 		do{
@@ -366,7 +374,7 @@ int maxdesc;
 	printf("Phylink TCP/IP: Config table ready, %d records\n", maxpr);
 
 	// Init multififo
-	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata);
+	chldpid = mf_init(getpath2fifophy(),"phy_tcp", rcvdata);
 
 	signal(SIGTERM, sighandler_sigterm);
 	signal(SIGINT, sighandler_sigterm);
