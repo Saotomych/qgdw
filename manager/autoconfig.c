@@ -5,6 +5,7 @@
  *  Author: Grigoriy Musiyaka
  */
 
+#include "../common/paths.h"
 #include "autoconfig.h"
 #include "icdxml.h"
 
@@ -30,6 +31,9 @@ static uint8_t alarm_t = ALARM_PER;
 /* Indexes */
 static int32_t speed_idx = 0;				/* current speed index */
 
+
+static char *llevelfile;
+static char *icdfile;
 
 // Support functions
 void catch_alarm(int sig)
@@ -254,7 +258,7 @@ void test_connection_iec104(FILE* fdesc)
 		{
 			if(lrs[i]->scen == IEC104)
 			{
-				mf_newendpoint(lrs[i]->asdu, "unitlink-iec104", CHILD_APP_PATH, 0);
+				mf_newendpoint(lrs[i]->asdu, "unitlink-iec104", getpath2fifoul(), 0);
 				sleep(EP_INIT_TIME);
 				send_sys_msg(lrs[i]->asdu, EP_MSG_TEST_CONN);
 			}
@@ -328,7 +332,7 @@ void test_connection_dlt645(FILE* fdesc)
 		{
 			if(lrs[i]->scen == DLT645)
 			{
-				mf_newendpoint(lrs[i]->asdu, "unitlink-dlt645", CHILD_APP_PATH, speed_idx?1:0);
+				mf_newendpoint(lrs[i]->asdu, "unitlink-dlt645", getpath2fifoul(), speed_idx?1:0);
 				// wait for initialization to end
 				sleep(EP_INIT_TIME);
 			}
@@ -391,7 +395,7 @@ void test_connection_dlt645(FILE* fdesc)
 	// check
 	if(spdstty[speed_idx] != 0)
 	{
-		fdesc = fopen(LLEVEL_FILE, "w");
+		fdesc = fopen(llevelfile, "w");
 
 		if(fdesc) test_connection_dlt645(fdesc);
 	}
@@ -429,7 +433,7 @@ void test_connection_mx00(FILE* fdesc)
 		{
 			if(lrs[i]->scen == MX00)
 			{
-				mf_newendpoint(lrs[i]->asdu, "unitlink-m700", CHILD_APP_PATH, speed_idx?1:0);
+				mf_newendpoint(lrs[i]->asdu, "unitlink-m700", getpath2fifoul(), speed_idx?1:0);
 				// wait for initialization to end
 				sleep(EP_INIT_TIME);
 			}
@@ -491,7 +495,7 @@ void test_connection_mx00(FILE* fdesc)
 	// check
 	if(spdstty[speed_idx] != 0)
 	{
-		fdesc = fopen(LLEVEL_FILE, "w");
+		fdesc = fopen(llevelfile, "w");
 
 		if(fdesc) test_connection_mx00(fdesc);
 	}
@@ -502,11 +506,34 @@ void (*scenfunc[])(FILE* fdesc) = {NULL, test_connection_iec104, test_connection
 int main(int argc, char * argv[]){
 uint8_t i, scen;
 FILE* fdesc;
-// Backup previous lowlevel.cfg and ieclevel.icd
-	rename(LLEVEL_FILE, "/rw/mx00/configs/lowlevel.bak");
-	rename(ICD_FILE,    "/rw/mx00/configs/ieclevel.bak");
+char *fname;
 
-	if (loadaddrcfg(ADDR_FILE) == -1) return -1;
+	init_allpaths();
+
+// Backup previous lowlevel.cfg and ieclevel.icd
+	fname = malloc(strlen(getpath2configs()) + strlen(LLEVEL_FILEBAK) + 1);
+	llevelfile = malloc(strlen(getpath2configs()) + strlen(LLEVEL_FILE) + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, LLEVEL_FILEBAK);
+	strcpy(llevelfile, getpath2configs());
+	strcat(llevelfile, LLEVEL_FILE);
+	rename(llevelfile, fname);
+	free(fname);
+
+	fname = malloc(strlen(getpath2configs()) + strlen(ICD_FILEBAK) + 1);
+	icdfile = malloc(strlen(getpath2configs()) + strlen(ICD_FILE) + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, ICD_FILEBAK);
+	strcpy(icdfile, getpath2configs());
+	strcat(icdfile, ICD_FILE);
+	rename(icdfile, fname);
+	free(fname);
+
+	fname = malloc(strlen(getpath2configs()) + strlen(ADDR_FILE) + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, ADDR_FILE);
+	if (loadaddrcfg(fname) == -1) return -1;
+	free(fname);
 
 	if(!strstr(Addrfile, "</Hardware>"))
 	{
@@ -515,7 +542,11 @@ FILE* fdesc;
 	}
 
 	// get  MAC-address of ethernet card
-	get_mac(MAC_FILE);
+	fname = malloc(strlen(getpath2about()) + strlen(MAC_FILE) + 1);
+	strcpy(fname, getpath2about());
+	strcat(fname, MAC_FILE);
+	get_mac(fname);
+	free(fname);
 
 	// Create lowrecord structures
 	XMLSelectSource(Addrfile);
@@ -526,7 +557,7 @@ FILE* fdesc;
 	alarm(alarm_t);
 
 	// init multififo
-	mf_init(APP_PATH, APP_NAME, recv_data);
+	mf_init(getpath2fifomain(), APP_NAME, recv_data);
 
 	// Create lowlevel.cfg for concrete speed level
 	// 1: fixed asdu iec104
@@ -535,7 +566,7 @@ FILE* fdesc;
 	// 4: dynamic asdu, dlt645
 	for (scen = 1; scen < 5; scen++)
 	{
-		fdesc = fopen(LLEVEL_FILE, "w");
+		fdesc = fopen(llevelfile, "w");
 
 		if(!fdesc) break;
 
@@ -554,7 +585,7 @@ FILE* fdesc;
 
 	printf("Config Manager: Writing of lowlevel.cfg file started...\n");
 
-	fdesc = fopen(LLEVEL_FILE, "w");
+	fdesc = fopen(llevelfile, "w");
 
 	for(i=0; i<maxrec; i++)
 	{
@@ -568,7 +599,7 @@ FILE* fdesc;
 
 	printf("Config Manager: Writing of ieclevel.icd file started...\n");
 
-	icd_full(ICD_FILE);
+	icd_full(icdfile);
 
 	printf("Config Manager: Creating of configuration files finished\n");
 

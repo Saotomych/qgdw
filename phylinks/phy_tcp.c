@@ -13,6 +13,7 @@
 
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/paths.h"
 #include "local-phyints.h"
 
 // Test config_device
@@ -22,6 +23,7 @@
 #define CONNECT 0x43
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
+static pthread_mutex_t socket_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 struct phy_route *myprs[MAXEP];	// One phy_route for one endpoint
 struct phy_route *firstpr;
@@ -90,10 +92,17 @@ struct phy_route *pr;
 char *p;
 char outbuf[256];
 int port;
+char *fname;
 
 // Init physical routes structures by phys.cfg file
 	firstpr = malloc(sizeof(struct phy_route) * MAXEP);
-	addrcfg = fopen("/rw/mx00/configs/lowlevel.cfg", "r");
+
+	fname = malloc(strlen(getpath2configs()) + strlen("lowlevel.cfg") + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, "lowlevel.cfg");
+	addrcfg = fopen(fname, "r");
+	free(fname);
+
 	if (addrcfg){
 		// Create phy_route tables
 		do{
@@ -288,7 +297,9 @@ int offset;
 
 		switch(edh->sys_msg){
 		case EP_USER_DATA:	// Write data to socket
+				pthread_mutex_lock(&socket_mtx);
 				if(rdlen-offset >= edh->len && pr->state == 1) sendall(pr->socdesc, tai.buf, edh->len, 0);
+				pthread_mutex_unlock(&socket_mtx);
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
@@ -359,6 +370,8 @@ fd_set rd_socks;
 fd_set ex_socks;
 int maxdesc;
 
+	init_allpaths();
+
 	if (createroutetable() == -1){
 		printf("Phylink TCP/IP: Config file not found\n");
 		return 0;
@@ -366,7 +379,7 @@ int maxdesc;
 	printf("Phylink TCP/IP: Config table ready, %d records\n", maxpr);
 
 	// Init multififo
-	chldpid = mf_init("/rw/mx00/phyints","phy_tcp", rcvdata);
+	chldpid = mf_init(getpath2fifophy(),"phy_tcp", rcvdata);
 
 	signal(SIGTERM, sighandler_sigterm);
 	signal(SIGINT, sighandler_sigterm);
@@ -468,6 +481,7 @@ int maxdesc;
 
    	    		if (myprs[i]->state == 1){
 			    	if (FD_ISSET(pr->socdesc, &rd_socks)){
+						pthread_mutex_lock(&socket_mtx);
 		    			// Receive frame
 		    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024  - sizeof(ep_data_header), 0);
 		    			if (rdlen == -1){
@@ -487,8 +501,9 @@ int maxdesc;
 		    					mf_toendpoint(outbuf, rdlen + sizeof(ep_data_header), pr->asdu, DIRUP);
 		    				}
 			    		}
+						pthread_mutex_unlock(&socket_mtx);
 
-		    			// exit loop
+						// exit loop
 	    				break;
 			    	}
 

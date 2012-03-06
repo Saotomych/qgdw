@@ -39,17 +39,28 @@ int main(int argc, char *argv[])
 {
 	pid_t chldpid;
 	uint16_t res;
+	char *fname;
 
 	int ret;
 	struct ep_init_header *eih = 0;
 
-	res = dlt645_config_read(APP_CFG);
+	init_allpaths();
+
+	fname = malloc(strlen(getpath2configs()) + strlen(APP_CFG) + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, APP_CFG);
+	res = dlt645_config_read(fname);
+	free(fname);
 
 	if(res != RES_SUCCESS) exit(1);
 
-	res = asdu_map_read(&map_list, APP_MAP, APP_NAME, HEX_BASE);
+	fname = malloc(strlen(getpath2configs()) + strlen(APP_MAP) + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, APP_MAP);
+	res = asdu_map_read(&map_list, fname, APP_NAME, HEX_BASE);
+	free(fname);
 
-	chldpid = mf_init(APP_PATH, APP_NAME, dlt645_recv_data);
+	chldpid = mf_init(getpath2fifoul(), APP_NAME, dlt645_recv_data);
 
 	signal(SIGALRM, dlt645_catch_alarm);
 	alarm(alarm_t);
@@ -75,7 +86,7 @@ int main(int argc, char *argv[])
 			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
 
-			mf_newendpoint(eih->addr, CHILD_APP_NAME, CHILD_APP_PATH, 1);
+			mf_newendpoint(eih->addr, CHILD_APP_NAME, getpath2fifophy(), 1);
 
 			dlt645_sys_msg_send(EP_MSG_CONNECT, eih->addr, DIRDN, NULL, 0);
 

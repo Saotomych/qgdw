@@ -12,14 +12,8 @@
 #include "../common/ts_print.h"
 #include "../common/iec61850.h"
 #include "../common/xml.h"
+#include "../common/paths.h"
 #include "log_db.h"
-
-char prepath[] = {"/rw/mx00"};
-char pathul[] = {"unitlinks"};
-char pathphy[] = {"phyints"};
-char pathmain[] = {"mainapp"};
-char pathconfig[] = {"configs"};
-char mainlink[] = {"main"};
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
@@ -36,10 +30,12 @@ char buf[5];
 int lenname;
 char *cidname;
 
+	init_allpaths();
+
 	// Make config name
-	lenname = strlen(prepath) + strlen(pathconfig) + strlen(IECCONFIG) + 3;
+	lenname = strlen(getpath2configs()) + strlen(IECCONFIG) + 3;
 	cidname = malloc(lenname);
-	ts_sprintf(cidname, "%s/%s/%s", prepath, pathconfig, IECCONFIG);
+	ts_sprintf(cidname, "%s%s", getpath2configs(), IECCONFIG);
 
 	// Parsing cid, create virtualization structures from common iec61850 configuration
 	if (cid_build(cidname)){
@@ -51,6 +47,9 @@ char *cidname;
 
 	// Cross connection of IEC structures
 	crossconnection();
+
+	// open log env and db
+	log_db_env_open();
 
 	// Start of virtualize functions
 	chldpid = virt_start("startiec");
@@ -64,11 +63,8 @@ char *cidname;
 	signal(SIGALRM, catch_alarm);
 	alarm(ALARM_PER);
 
-	signal(SIGTERM, sighandler);
+//	signal(SIGTERM, sighandler);
 	signal(SIGINT, sighandler);
-
-	// open log env and db
-	log_db_env_open();
 
 	// Cycle data routing in rcv_data
 	do{

@@ -9,6 +9,8 @@
 
 int main(int argc, char *argv[])
 {
+	init_allpaths();
+
 	exit(0);
 }
 

@@ -9,6 +9,7 @@
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
+#include "../common/paths.h"
 #include "menu.h"
 
 static menu *allmenus[MAXMENU];
@@ -106,7 +107,6 @@ char *p;
 char servsyms[] = {" >~"};
 
 menu *num_menu = allmenus[maxmenus];
-//varrec *nextvarrec;
 
 			if ((maxmenus) >= MAXMENU) return num_menu;
 
@@ -336,12 +336,17 @@ menu *num_menu = allmenus[maxmenus];
 	         num_menu->count_item = count_item;
 	         num_menu->bgnmenuy = num_menu->pitems[(int) num_menu->first_item]->rect.y;
 
-		 	for (i = 0; i < count_item; i++){
+	         // Make name of font in memory
+	         num_menu->fontname = malloc(strlen(getpath2fonts()) + strlen(FONTNAME) + 1);
+	         strcpy(num_menu->fontname, getpath2fonts());
+	         strcat(num_menu->fontname, FONTNAME);
+
+	         for (i = 0; i < count_item; i++){
 		 		if (num_menu->pitems[i]->vr){
 		 			num_menu->fvarrec = num_menu->pitems[i]->vr;
 		 			break;
 		 		}
-		 	}
+	         }
 
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
@@ -379,6 +384,7 @@ menu* num_menu;
 	GrUnmapWindow(num_menu->main_window);
 	GrDestroyWindow(num_menu->main_window);
 	free(num_menu->ptxtmenu);
+	free(num_menu->fontname);
 	free(num_menu);
 
 	maxmenus--;

@@ -11,6 +11,7 @@
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
 #include "../common/ts_print.h"
+#include "../common/paths.h"
 #include "hmi.h"
 #include "menu.h"
 
@@ -132,7 +133,7 @@ char *papp;
 }
 
 // ----------------------------------------------------------------------------------
-// Parser of file /rw/mx00/configs/lowlevel.cfg
+// Parser of file lowlevel.cfg
 int lowlevel_parser(char *fllname){
 char *p;
 int i, len = 1;
@@ -283,14 +284,6 @@ void mainloop()
  }
 
 //---------------------------------------------------------------------------------
-char prepath[] = {"/rw/mx00"};
-char pathul[] = {"unitlinks"};
-char pathphy[] = {"phyints"};
-char pathmain[] = {"mainapp"};
-char pathconfig[] = {"configs"};
-char mainlink[] = {"main"};
-struct stat fst;
-
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
 int main(int argc, char **argv)
@@ -299,11 +292,13 @@ int i;
 char *fname;
 pid_t chldpid;
 
+	init_allpaths();
+
 	//---*** Init IEC61850 ***---//
 	// Make config name
- 	i = strlen(prepath) + strlen(pathconfig) + strlen(IECCONFIG) + 3;
+	i = strlen(getpath2configs()) + strlen(IECCONFIG) + 3;
 	fname = malloc(i);
-	sprintf(fname, "%s/%s/%s", prepath, pathconfig, IECCONFIG);
+	sprintf(fname, "%s%s", getpath2configs(), IECCONFIG);
 
 	// Parsing cid, create virtualization structures from common iec61850 configuration
 	if (cid_build(fname)){
@@ -318,18 +313,30 @@ pid_t chldpid;
 	// Parse config files: addr.cfg, lowlevel.cfg, m700env, наличие icd и cid
 
 	// Make fullname for lowlevel.cfg
-	i = strlen(prepath) + strlen(pathconfig) + strlen("lowlevel.cfg") + 3;
+	i = strlen(getpath2configs()) + strlen("lowlevel.cfg") + 3;
 	fname = malloc(i);
-	sprintf(fname, "%s/%s/%s", prepath, pathconfig, "lowlevel.cfg");
+	sprintf(fname, "%s%s", getpath2configs(), "lowlevel.cfg");
 	// Parse lowlevel config file
 	if (lowlevel_parser(fname)) ts_printf(STDOUT_FILENO, "IEC61850: lowlevel file reading error\n");
+	free(fname);
+
+	// Parse Tariffes
+	i = strlen(getpath2configs()) + strlen("tarif.xml") + 3;
+	fname = malloc(i);
+	sprintf(fname, "%s%s", getpath2configs(), "tarif.xml");
+	// Parse lowlevel config file
+	if (tarif_parser(fname)) ts_printf(STDOUT_FILENO, "Tarif: configuration file reading error\n");
 	free(fname);
 
 	// Setup environment variables from device environment
 	env_parser();
 
 	// Parse about config file
-	if (about_parser("/tmp/about/about.me")) ts_printf(STDOUT_FILENO, "IEC61850: about.me file reading error\n");
+	i = strlen(getpath2about()) + strlen("about.me") + 3;
+	fname = malloc(i);
+	sprintf(fname, "%s%s", getpath2about(), "about.me");
+	if (about_parser(fname)) ts_printf(STDOUT_FILENO, "HMI: about.me file reading error\n");
+	free(fname);
 
 	// Parse vars from menu.c
 	menu_parser(defvalues, sizeof(defvalues) / sizeof (value));
@@ -340,10 +347,9 @@ pid_t chldpid;
 	// Register all variables in varcontroller
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
-	tarif_parser("/rw/mx00/configs/tarif.xml");
 
 	// Multififo init
-	chldpid = mf_init("/rw/mx00/mainapp", "startiec", rcvdata);
+	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){

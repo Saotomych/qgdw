@@ -16,12 +16,10 @@
 #include "../common/ts_print.h"
 #include "../common/asdu.h"
 #include "../common/iec61850.h"
+#include "../common/paths.h"
 #include "log_db.h"
 
 #define VIRT_ASDU_MAXSIZE 	512
-#define RTC_DEV_NAME		"/dev/rtc1"
-#define TIME_DEV_L_LIMIT	5*60
-#define TIME_DEV_H_LIMIT	29*60
 
 /* Timer parameters */
 static uint8_t alarm_t = ALARM_PER;
@@ -30,15 +28,13 @@ static time_t time_dev = 0;
 /* RTC precision adjustment variables and constants */
 static time_t time_adj = 0;
 
+#define RTC_DEV_NAME		"/dev/rtc1"
+#define TIME_DEV_L_LIMIT	5*60
+#define TIME_DEV_H_LIMIT	29*60
 #define ADJ_RESOLUTION		3050		// by the Epson RTC driver
 #define CLOCK_FREQ			32768		// by the Epson RTC driver
 #define ADJ_TIME_DIFF		6*3600		// 6 hours
 
-/* log_db timers variables and constants */
-#define LOG_T_LOAD_PROFILE	60
-#define LOG_T_CONSUM_ARCH	120//1800
-static time_t t_load_profile = 0;
-static time_t t_consum_arch = 0;
 
 // DATA
 typedef struct _DATAMAP{
@@ -140,7 +136,6 @@ ep_data_header edh;
 void start_collect_data()
 {
 	SCADA_CH *sch = (SCADA_CH *) fscadach.next;
-	time_t sys_time = time(NULL);
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	//sch = sch->l.next;
@@ -153,9 +148,8 @@ void start_collect_data()
 		sch = sch->l.next;
 	}
 
-	// set log_db timers initial values (logging with delayed start)
-	t_load_profile = sys_time;
-	t_consum_arch = sys_time - LOG_T_CONSUM_ARCH + 60;
+	// set log_db timers initial values
+	log_db_init_timers();
 }
 
 int get_rtc_time(const char *dev_name, time_t *t_val)
@@ -269,7 +263,7 @@ void catch_alarm(int sig)
 {
 	struct timeval cor_time;
 	time_t rtc_time, sys_time;
-	int res;
+	int res, i;
 	SCADA_CH *sch;
 
 	sys_time = time(NULL);
@@ -299,32 +293,40 @@ void catch_alarm(int sig)
 		}
 	}
 
-	if(t_load_profile > 0 && difftime(sys_time, t_load_profile) >= LOG_T_LOAD_PROFILE)
+	for(i=0; i<LOG_SERV_PRM_SIZE; i++)
 	{
-		sch = (SCADA_CH*) fscadach.next;
-		while(sch)
+		if(log_serv_prm_list[i].add_timer > 0 && difftime(sys_time, log_serv_prm_list[i].add_timer) >= log_serv_prm_list[i].add_period)
 		{
-			if(!is_scada(sch->ASDUaddr)) log_db_load_profile_add_rec(sch->ASDUaddr, sch->log_rec);
-			sch = sch->l.next;
+			sch = (SCADA_CH*) fscadach.next;
+			while(sch)
+			{
+				if(!is_scada(sch->ASDUaddr))
+				{
+					log_db_add_var_rec(sch->ASDUaddr, sch->log_rec, log_serv_prm_list[i].db_req, log_serv_prm_list[i].db_flds, log_serv_prm_list[i].flds_num);
+				}
+				sch = sch->l.next;
+			}
+			// update timer
+			log_serv_prm_list[i].add_timer = sys_time;
 		}
-		// update timer
-		t_load_profile = sys_time;
 	}
 
-	if(t_consum_arch > 0 && difftime(sys_time, t_consum_arch) >= LOG_T_CONSUM_ARCH)
+	for(i=0; i<LOG_SERV_PRM_SIZE; i++)
 	{
-		sch = (SCADA_CH*) fscadach.next;
-		while(sch)
+		if(log_serv_prm_list[i].export_timer > 0 && difftime(sys_time, log_serv_prm_list[i].export_timer) >= log_serv_prm_list[i].export_period)
 		{
-			if(!is_scada(sch->ASDUaddr)) log_db_consum_arch_add_rec(sch->ASDUaddr, sch->log_rec);
-			sch = sch->l.next;
+			char file_name[64] = {0};
+
+			log_db_export_data(log_serv_prm_list[i].db_req, sys_time, file_name);
+
+			log_db_clean_old_data(log_serv_prm_list[i].db_req, sys_time, log_serv_prm_list[i].storage_deep);
+
+			// update timer
+			log_serv_prm_list[i].export_timer = sys_time;
 		}
-		// update timer
-		t_consum_arch = sys_time;
 	}
 
 	signal(sig, catch_alarm);
-
 	alarm(alarm_t);
 }
 
@@ -693,9 +695,7 @@ void create_alldo(void){
 VIRT_ASDU *sasdu = NULL;
 ASDU_DATAMAP *pdm = NULL;
 int adr;
-frame_dobj fr_do;
-
-	memset(fr_do.name, 0, DOBJ_NAMESIZE);
+frame_dobj fr_do = FRAME_DOBJ_INITIALIZER;
 
 	// Setup of unitlinks for getting DATA OBJECTS
 	// get VIRT_ASDU => get LN_TYPE => get DATA_OBJECT list => write list to unitlink
@@ -728,6 +728,7 @@ frame_dobj fr_do;
 
 int virt_start(char *appname){
 FILE *fmcfg;
+char *fname;
 int clen, ret;
 struct stat fst;
 pid_t chldpid;
@@ -737,11 +738,15 @@ SCADA_CH *sch = (SCADA_CH *) &fscadach;
 char *chld_app;
 //
 // Read mainmap.cfg into memory
-	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
+	fname = malloc(strlen(getpath2configs()) + strlen("mainmap.cfg") + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, "mainmap.cfg");
+
+	if (stat(fname, &fst) == -1){
 		ts_printf(STDOUT_FILENO, "IEC Virt: 'mainmap.cfg' file not found\n");
 	}
 	MCFGfile =  malloc(fst.st_size+1);
-	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
+	fmcfg = fopen(fname, "r");
 	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
 	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
 	if (clen != fst.st_size) ret = -1;
@@ -750,11 +755,12 @@ char *chld_app;
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo
-			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata);
+			chldpid = mf_init(getpath2fifomain(), appname, rcvdata);
 			ret = chldpid;
 		}
 	}
 	free(MCFGfile);
+	free(fname);
 	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
@@ -778,7 +784,7 @@ char *chld_app;
 		if (pchld_app_end) *pchld_app_end = 0;
 
 		// New endpoint
-		mf_newendpoint(sch->ASDUaddr, chld_app, "/rw/mx00/unitlinks", 0);
+		mf_newendpoint(sch->ASDUaddr, chld_app, getpath2fifoul(), 0);
 
 		free(chld_app);
 		sleep(1);	// Delay for forming next level endpoint

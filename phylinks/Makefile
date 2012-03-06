@@ -1,7 +1,7 @@
 -include ../common/common.mk
 
-OBJS_TCP = phy_tcp.o multififo.o ts_print.o
-OBJS_TTY = phy_tty.o multififo.o ts_print.o
+OBJS_TCP = phy_tcp.o multififo.o ts_print.o getpaths.o
+OBJS_TTY = phy_tty.o multififo.o ts_print.o getpaths.o
 CCFLAGS += -c -O0 -g3 -Wall
 LDFLAGS += -Wl
 
@@ -19,8 +19,12 @@ phy_tty.o: phy_tty.c
 
 multififo.o: ../common/multififo.c
 	$(CC) $(CCFLAGS) ../common/multififo.c -o multififo.o
+
 ts_print.o: ../common/ts_print.c
 	$(CC) $(CCFLAGS) ../common/ts_print.c -o ts_print.o
+
+getpaths.o: ../common/getpaths.c
+	$(CC) $(CCFLAGS) ../common/getpaths.c -o getpaths.o
 
 rebuild: clean all
 

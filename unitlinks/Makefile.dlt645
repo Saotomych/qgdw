@@ -12,7 +12,8 @@ SRCS = src/dlt645.c \
        ../common/asdu.c \
        src/p_num.c \
        ../common/multififo.c \
-       ../common/ts_print.c
+       ../common/ts_print.c \
+       ../common/getpaths.c
 
 OBJS = obj/dlt645.o \
        obj/dlt_frame.o \
@@ -20,7 +21,8 @@ OBJS = obj/dlt645.o \
        obj/asdu.o \
        obj/p_num.o \
        obj/multififo.o \
-       obj/ts_print.o
+       obj/ts_print.o \
+       obj/getpaths.o
 
 CCSYSTEM = $(shell $(CC) -dumpmachine)
 
@@ -69,6 +71,9 @@ obj/multififo.o : ../common/multififo.c
 
 obj/ts_print.o: ../common/ts_print.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/getpaths.o: ../common/getpaths.c
+	$(CC) $(CCFLAGS) ../common/getpaths.c -o getpaths.o
 
 clean :
 ifeq ($(findstring linux, $(CCSYSTEM)), linux)

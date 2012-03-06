@@ -190,7 +190,7 @@ int getframefalse(struct channel *ch){
 }
 
 int mf_testrunningapp(char *name){
-char *par[3];
+char *par[3] = {NULL};
 char pidof[] = {"/bin/pidof"};
 char buf[160] = {0};
 int ret, pid, wait_st;
@@ -625,7 +625,7 @@ int sys_close(struct channel *ch){
 //			- endpoint registers
 //			- send endpoint to application
 int init_read(struct channel *ch){
-ep_init_header eih_in;
+ep_init_header eih_in = EP_INIT_HEADER_INITIALIZER;
 int len = 0, rdlen;
 
 //	ts_printf(STDOUT_FILENO, "\n-----\nMFI %s: INIT READ %s\nActions:\n", appname, ch->appname);
@@ -881,16 +881,14 @@ void mf_exit(){
 int mf_newendpoint (u32 addr, char* chld_name, char *pathinit, u32 ep_num){
 int ret, wrlen;
 //int dninit;
-ep_init_header eih_out;
+ep_init_header eih_out = EP_INIT_HEADER_INITIALIZER;
 struct channel *ch=0;
 struct endpoint *ep=0;
 char fname[160] = {0};
-char *par[2] = {NULL, NULL};
+char *par[2] = {NULL};
 
 	par[0] = chld_name;
 	par[1] = NULL;
-
-	memset(eih_out.appname, 0, APP_NAME_LEN);
 
 	ret = mf_testrunningapp(chld_name);
 

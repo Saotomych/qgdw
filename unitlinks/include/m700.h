@@ -19,6 +19,7 @@
 #include "../../common/common.h"
 #include "../../common/asdu.h"
 #include "../../common/multififo.h"
+#include "../../common/paths.h"
 
 
 #ifdef __cplusplus
@@ -33,11 +34,9 @@ extern "C" {
  */
 
 #define APP_NAME				"unitlink-m700"
-#define APP_PATH 				"/rw/mx00/unitlinks"
 #define CHILD_APP_NAME			"phy_tty"
-#define CHILD_APP_PATH 			"/rw/mx00/phyints"
-#define APP_CFG					"/rw/mx00/configs/lowlevel.cfg"
-#define APP_MAP					"/rw/mx00/configs/m700map.cfg"
+#define APP_CFG					"lowlevel.cfg"
+#define APP_MAP					"m700map.cfg"
 
 #define ALARM_PER				1		/* timers check period (sec) */
 
