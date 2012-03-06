@@ -349,7 +349,7 @@ pid_t chldpid;
 
 
 	// Multififo init
-	chldpid = mf_init(getpath2fifomain, "hmi700", rcvdata);
+	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){

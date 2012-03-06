@@ -29,7 +29,6 @@ extern "C" {
 
 /* Constants and byte flags/masks */
 #define APP_NAME	"unitlink-iec101"
-#define APP_PATH 	"/rw/mx00/unitlinks"
 
 /*
  *

@@ -9,6 +9,7 @@
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
+#include "../common/paths.h"
 #include "menu.h"
 
 static menu *allmenus[MAXMENU];
