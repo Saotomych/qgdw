@@ -114,12 +114,15 @@ typedef struct ep_init_header {
 	uint32_t numep;
 } __attribute__ ((packed)) ep_init_header;
 
+#define EP_INIT_HEADER_INITIALIZER { {0}, 0, 0 }
 
 typedef struct frame_dobj {
 	ep_data_header	edh;
 	uint32_t		id;			/* device's internal identifier of data unit */
 	char 			name[DOBJ_NAMESIZE];
 } __attribute__ ((packed)) frame_dobj;
+
+#define FRAME_DOBJ_INITIALIZER { {0,0,0,0}, 0, {0} }
 
 /* Just List */
 typedef struct _LIST{
