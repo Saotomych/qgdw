@@ -17,7 +17,6 @@
 char prepath[] = {"/rw/mx00"};
 char pathul[] = {"unitlinks"};
 char pathphy[] = {"phyints"};
-char pathmain[] = {"mainapp"};
 char pathconfig[] = {"configs"};
 char mainlink[] = {"main"};
 

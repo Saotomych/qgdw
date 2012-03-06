@@ -1,6 +1,6 @@
 -include ../common/common.mk
 
-OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o ts_print.o log_db.o tarif.o
+OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o ts_print.o log_db.o tarif.o getpaths.o
 BDB_INC = -I../../BerkeleyDB.4.4/include
 BDB_LIB = -L../../BerkeleyDB.4.4/lib
 ifeq ($(ARCH), arm)
@@ -29,6 +29,8 @@ log_db.o: log_db.c
 	$(CC) $(CCFLAGS) log_db.c -o log_db.o
 tarif.o: ../common/tarif.c
 	$(CC) $(CCFLAGS) ../common/tarif.c -o tarif.o
+getpaths.o: ../common/getpaths.c
+	$(CC) $(CCFLAGS) ../common/getpaths.c -o getpaths.o
 
 all: startiec
 

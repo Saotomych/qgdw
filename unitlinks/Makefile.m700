@@ -11,14 +11,16 @@ SRCS = src/m700.c \
        ../common/asdu.c \
        src/p_num.c \
        ../common/multififo.c \
-       ../common/ts_print.c
+       ../common/ts_print.c \
+       ../common/getpaths.c
 
 OBJS = obj/m700.o \
        obj/m700_frame.o \
        obj/asdu.o \
        obj/p_num.o \
        obj/multififo.o \
-       obj/ts_print.o
+       obj/ts_print.o \
+       obj/getpaths.o
 
 CCSYSTEM = $(shell $(CC) -dumpmachine)
 
@@ -63,6 +65,9 @@ obj/multififo.o : ../common/multififo.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 obj/ts_print.o: ../common/ts_print.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+obj/getpaths.o: ../common/getpaths.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :

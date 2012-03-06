@@ -12,6 +12,7 @@
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
+#include "../common/ts_print.h"
 #include "menu.h"
 
 LNODE *actlnode;			// Global variable, change in menu only
