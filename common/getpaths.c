@@ -11,6 +11,7 @@ static char defprepath[] = {"/rw/mx00/"};
 static char defpathbin[] = {"bin"};
 static char defpathconfig[] = {"configs"};
 static char defpathlibs[] = {"lib"};
+static char defpathlog[] = {"log"};
 static char defpathmenu[] = {"menus"};
 static char defpathfonts[] = {"pcf"};
 static char defpathul[] = {"unitlinks"};
@@ -22,8 +23,9 @@ static char *basepath;		// Path to all project from environment MXPATH or defaul
 static char *pathbin;		// Path to binary files from environment MXBINPATH or default
 static char *pathconfig;	// Path to config files from environment MXCFGPATH or default
 static char *pathlibs;		// Path to project library files from environment MXLIBPATH or default
-static char *pathmenus;	// Path to project visible menu files from environment MXMENUPATH or default
-static char *pathfonts;	// Path to project visible fonts files from environment MXFNTPATH or default
+static char *pathlog;		// Path to project log files from environment MXLOGPATH or default
+static char *pathmenus;		// Path to project visible menu files from environment MXMENUPATH or default
+static char *pathfonts;		// Path to project visible fonts files from environment MXFNTPATH or default
 static char *pathul;		// Path to unitlink's named fifo buffers (MXFIFOUL)
 static char *pathphy;		// Path to physical link's named fifo buffers (MXFIFOPHY)
 static char *pathmain;		// Path to main iec soft's named fifo buffers (MXFIFOMAIN)
@@ -33,7 +35,7 @@ static int lenbasepath;
 
 static char *makepath(char *envname, char *defptr){
 char *ptr, *eptr;
-char lenname = lenbasepath;
+int lenname = lenbasepath;
 
 	eptr = getenv(envname);
 	if (eptr == NULL){
@@ -77,6 +79,7 @@ void init_allpaths(){
 	pathbin = makepath("MXBINPATH", defpathbin);
 	pathconfig = makepath("MXCFGPATH", defpathconfig);
 	pathlibs = makepath("MXLIBPATH", defpathlibs);
+	pathlog = makepath("MXLOGPATH", defpathlog);
 	pathmenus = makepath("MXMENUPATH", defpathmenu);
 	pathfonts = makepath("MXFNTPATH", defpathfonts);
 	pathul = makepath("MXFIFOUL", defpathul);
@@ -99,6 +102,10 @@ char *getpath2configs(){
 
 char *getpath2libs(){
 	return pathlibs;
+}
+
+char *getpath2log(){
+	return pathlog;
 }
 
 char *getpath2menu(){

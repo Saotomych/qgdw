@@ -13,6 +13,7 @@ extern char *getpath2base(void);
 extern char *getpath2bin(void);
 extern char *getpath2configs(void);
 extern char *getpath2libs(void);
+extern char *getpath2log(void);
 extern char *getpath2menu(void);
 extern char *getpath2fonts(void);
 extern char *getpath2fifoul(void);
