@@ -75,9 +75,6 @@ void vc_init(pvalue vt, int len){
 	fvarrec.prev = NULL;
 	fvarrec.next = NULL;
 
-	// TODO Multififo init
-
-
 }
 
 static varrec* newappvarrec(value *val){
@@ -425,12 +422,10 @@ varrec *prevvr;
 
 	while((vr->l.next != fvr) && (vr->l.prev)){
 
-		// TODO Unsubscribe variable if needed
-
 		// Free and switch to next varrec
 		prevvr = vr->l.prev;
-		// Unsubscribe value
-//		if (vr->prop & BOOKING) unbook(vr);
+		// TODO Unsubscribe variable if needed
+//		if (vr->prop & BOOKING)	unbook(vr);
 		// Free memory of value
 		if (vr->prop & NEEDFREE) free(vr->val->val);
 		if (vr->name) free(vr->name);

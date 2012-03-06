@@ -10,7 +10,7 @@
 #include "../common/multififo.h"
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
-//#include "../common/ts_print.h"
+#include "../common/ts_print.h"
 #include "hmi.h"
 #include "menu.h"
 
@@ -200,6 +200,47 @@ char words[][6] = {
 
 }
 
+// -- Multififo receive data --
+int rcvdata(int len){
+char *buff, *sendbuff;
+int adr, dir, rdlen, fullrdlen;
+int offset, fld_idx;
+ep_data_header *edh, *sedh;
+
+	buff = malloc(len);
+	if(!buff) return -1;
+
+	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
+
+	ts_printf(STDOUT_FILENO, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+
+	// set offset to zero before loop
+	offset = 0;
+
+	while(offset < fullrdlen){
+		if(fullrdlen - offset < sizeof(ep_data_header)){
+			ts_printf(STDOUT_FILENO, "HMI: Found not full ep_data_header\n");
+			free(buff);
+			return 0;
+		}
+
+		edh = (struct ep_data_header *) (buff + offset);				// set start structure
+
+		// Incoming data will be working
+		switch(edh->sys_msg){
+
+		}
+
+		// move over the data
+		offset += sizeof(ep_data_header);
+		offset += edh->len;
+	}
+
+	free(buff);
+
+	return 0;
+}
+
 // ----------------------------------------------------------------------------------
 void mainloop()
 {
@@ -256,6 +297,7 @@ int main(int argc, char **argv)
 {
 int i;
 char *fname;
+pid_t chldpid;
 
 	//---*** Init IEC61850 ***---//
 	// Make config name
@@ -300,7 +342,10 @@ char *fname;
 
 	tarif_parser("configs/tarif.xml");
 
-//---*** Init visual control ***---//
+	// Multififo init
+	chldpid = mf_init("/rw/mx00/mainapp", "startiec", rcvdata);
+
+	//---*** Init visual control ***---//
 	if (init_menu()){
 		ts_printf(STDOUT_FILENO, "Configuration of LNODEs nor found\n");
 		exit(1);
