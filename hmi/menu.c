@@ -44,10 +44,10 @@ static menu *num_menu;     //указатель на структуру меню
 static char tmpstring[100];			// For temporary operations
 static char *devtypetext;		// Text of device type
 
-static char lnmenunames[][16] = {
-		{"menus/itemti"},
-		{"menus/itemts"},
-		{"menus/itemtu"},
+static char lnmenunames[][32] = {
+		{"/rw/mx00/menus/itemti"},
+		{"/rw/mx00/menus/itemts"},
+		{"/rw/mx00/menus/itemtu"},
 };
 
 static value menuvalues[] = {
@@ -762,7 +762,7 @@ struct tm *ttm;
 	if (!actlnode) exit(1);
 
 	// Open first menu
-	num_menu = create_menu("menus/itemti");
+	num_menu = create_menu("/rw/mx00/menus/itemti");
 	if (num_menu) {
 		call_action(NODIRECT, num_menu);		// Refresh variables
 		draw_menu();
