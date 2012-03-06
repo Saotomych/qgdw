@@ -17,6 +17,7 @@ static char defpathul[] = {"unitlinks"};
 static char defpathphy[] = {"phyints"};
 static char defpathmain[] = {"mainapp"};
 static char defpathabout[] = {"about"};
+static char defpathlog[] = {"log"};
 
 static char *basepath;		// Path to all project from environment MXPATH or default
 static char *pathbin;		// Path to binary files from environment MXBINPATH or default
@@ -28,6 +29,7 @@ static char *pathul;		// Path to unitlink's named fifo buffers (MXFIFOUL)
 static char *pathphy;		// Path to physical link's named fifo buffers (MXFIFOPHY)
 static char *pathmain;		// Path to main iec soft's named fifo buffers (MXFIFOMAIN)
 static char *pathabout;		// Path to about files (MXABOUTPATH)
+static char *pathlog;		// Path to log (MXLOGPATH)
 
 static int lenbasepath;
 
@@ -83,6 +85,7 @@ void init_allpaths(){
 	pathphy = makepath("MXFIFOPHY", defpathphy);
 	pathmain = makepath("MXFIFOMAIN", defpathmain);
 	pathabout = makepath("MXABOUTPATH", defpathabout);
+	pathlog = makepath("MXLOGPATH", defpathlog);
 }
 
 char *getpath2base(){
@@ -123,4 +126,8 @@ char *getpath2fifomain(){
 
 char *getpath2about(){
 	return pathabout;
+}
+
+char *getpath2log(){
+	return pathlog;
 }

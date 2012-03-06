@@ -16,6 +16,7 @@
 #include "../common/ts_print.h"
 #include "../common/asdu.h"
 #include "../common/iec61850.h"
+#include "../common/paths.h"
 #include "log_db.h"
 
 #define VIRT_ASDU_MAXSIZE 	512
@@ -728,6 +729,7 @@ frame_dobj fr_do;
 
 int virt_start(char *appname){
 FILE *fmcfg;
+char *fname;
 int clen, ret;
 struct stat fst;
 pid_t chldpid;
@@ -737,11 +739,15 @@ SCADA_CH *sch = (SCADA_CH *) &fscadach;
 char *chld_app;
 //
 // Read mainmap.cfg into memory
-	if (stat("/rw/mx00/configs/mainmap.cfg", &fst) == -1){
+	fname = malloc(strlen(getpath2configs()) + strlen("mainmap.cfg") + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, "mainmap.cfg");
+
+	if (stat(fname, &fst) == -1){
 		ts_printf(STDOUT_FILENO, "IEC Virt: 'mainmap.cfg' file not found\n");
 	}
 	MCFGfile =  malloc(fst.st_size+1);
-	fmcfg = fopen("/rw/mx00/configs/mainmap.cfg", "r");
+	fmcfg = fopen(fname, "r");
 	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
 	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
 	if (clen != fst.st_size) ret = -1;
@@ -750,11 +756,12 @@ char *chld_app;
 		if (asdu_parser()) ret = -1;
 		else{
 			// Run multififo
-			chldpid = mf_init("/rw/mx00/mainapp", appname, rcvdata);
+			chldpid = mf_init(getpath2fifomain(), appname, rcvdata);
 			ret = chldpid;
 		}
 	}
 	free(MCFGfile);
+	free(fname);
 	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
@@ -778,7 +785,7 @@ char *chld_app;
 		if (pchld_app_end) *pchld_app_end = 0;
 
 		// New endpoint
-		mf_newendpoint(sch->ASDUaddr, chld_app, "/rw/mx00/unitlinks", 0);
+		mf_newendpoint(sch->ASDUaddr, chld_app, getpath2fifoul(), 0);
 
 		free(chld_app);
 		sleep(1);	// Delay for forming next level endpoint

@@ -19,5 +19,5 @@ extern char *getpath2fifoul(void);
 extern char *getpath2fifophy(void);
 extern char *getpath2fifomain(void);
 extern char *getpath2about(void);
-
+extern char *getpath2log(void);
 #endif /* PATHS_H_ */

@@ -10,8 +10,7 @@
 #include "log_db.h"
 #include "../common/common.h"
 #include "../common/ts_print.h"
-
-
+#include "../common/paths.h"
 
 /*
  *
@@ -19,7 +18,6 @@
  *
  */
 
-#define LOG_DB_ENV_DIR			"/rw/mx00/log/"
 #define LOG_DB_FILE_NAME		"/rw/mx00/log/log.db"
 #define	LOG_DB_LOAD_PROFILE		"load_profile"
 #define	LOG_DB_CONSUM_ARCH		"consum_arch"
@@ -224,6 +222,7 @@ int log_db_open_db(DB_ENV *log_env, DB **log_db, char *file_name, char *db_name)
 int log_db_env_open()
 {
 	int ret;
+	char *fname;
 
 	if(db_env) return -1;
 
@@ -234,18 +233,24 @@ int log_db_env_open()
 	    return -1;
 	}
 
-	ret = db_env->open(db_env, LOG_DB_ENV_DIR, DB_CREATE | DB_INIT_MPOOL | DB_PRIVATE, 0);
+	ret = db_env->open(db_env, getpath2log(), DB_CREATE | DB_INIT_MPOOL | DB_PRIVATE, 0);
 	if(ret != 0)
 	{
 	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - DB_ENV open failed: %s (%d)\n", db_strerror(ret), ret);
 	    return -1;
 	}
 
-	ret = log_db_open_db(db_env, &db_load_profile, LOG_DB_FILE_NAME, LOG_DB_LOAD_PROFILE);
+	fname = malloc(strlen(getpath2log()) + strlen(LOG_DB_FILE_NAME) + 1);
+	strcpy(fname, getpath2log());
+	strcat(fname, LOG_DB_FILE_NAME);
+
+	ret = log_db_open_db(db_env, &db_load_profile, fname, LOG_DB_LOAD_PROFILE);
 	if(ret != 0) goto err;
 
-	ret = log_db_open_db(db_env, &db_consum_arch, LOG_DB_FILE_NAME, LOG_DB_CONSUM_ARCH);
+	ret = log_db_open_db(db_env, &db_consum_arch, fname, LOG_DB_CONSUM_ARCH);
 	if(ret != 0) goto err;
+
+	free(fname);
 
 	return 0;
 
