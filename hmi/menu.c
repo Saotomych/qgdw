@@ -742,13 +742,10 @@ struct tm *ttm;
 	m_mon = mtime_tm.tm_mon + 1;
 
 	// Init base menu names
-	lnmenunames[0][0] = 0;
 	strcpy(lnmenunames[0], getpath2menu());
 	strcat(lnmenunames[0], "itemti");
-	lnmenunames[1][0] = 0;
 	strcpy(lnmenunames[1], getpath2menu());
 	strcat(lnmenunames[1], "itemts");
-	lnmenunames[2][0] = 0;
 	strcpy(lnmenunames[2], getpath2menu());
 	strcat(lnmenunames[2], "itemtu");
 

@@ -14,13 +14,12 @@
 #define MAXLEVEL 		3
 
 #define APP_NAME		"manager"
-#define APP_PATH 		"/rw/mx00/mainapp"
-#define CHILD_APP_PATH 	"/rw/mx00/unitlinks"
-#define ADDR_FILE		"/rw/mx00/configs/addr.cfg"
-#define LLEVEL_FILE		"/rw/mx00/configs/lowlevel.cfg"
-#define ICD_FILE		"/rw/mx00/configs/ieclevel.ssd"
-#define MAP_FILE 		"/rw/mx00/configs/icdmap.cfg"
-#define MAC_FILE		"/tmp/about/setenv.sh"
+#define ADDR_FILE		"addr.cfg"
+#define LLEVEL_FILE		"lowlevel.cfg"
+#define LLEVEL_FILEBAK	"lowlevel.bak"
+#define ICD_FILE		"ieclevel.icd"
+#define ICD_FILEBAK		"ieclevel.bak"
+#define MAC_FILE		"setenv.sh"
 
 // Timer constants
 #define EP_INIT_TIME	2		/* delay for EP initialization */
