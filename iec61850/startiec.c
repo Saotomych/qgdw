@@ -30,6 +30,8 @@ char buf[5];
 int lenname;
 char *cidname;
 
+	init_allpaths();
+
 	// Make config name
 	lenname = strlen(getpath2configs()) + strlen(IECCONFIG) + 3;
 	cidname = malloc(lenname);

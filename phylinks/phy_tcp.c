@@ -370,6 +370,8 @@ fd_set rd_socks;
 fd_set ex_socks;
 int maxdesc;
 
+	init_allpaths();
+
 	if (createroutetable() == -1){
 		printf("Phylink TCP/IP: Config file not found\n");
 		return 0;

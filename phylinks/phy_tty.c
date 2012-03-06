@@ -372,6 +372,8 @@ ep_data_header *edh;
 struct timeval tv;	// for sockets select
 char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 0x13, 0x00, 0xDF, 0x16};
 
+	init_allpaths();
+
 	if (createroutetable() == -1){
 		printf("Phylink TTY: config file not found\n");
 		return 0;

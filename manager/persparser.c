@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/mount.h>
 #include "../common/common.h"
+#include "../common/paths.h"
 
 #define WIN		1
 #define DOS		2

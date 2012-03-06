@@ -508,6 +508,8 @@ uint8_t i, scen;
 FILE* fdesc;
 char *fname;
 
+	init_allpaths();
+
 // Backup previous lowlevel.cfg and ieclevel.icd
 	fname = malloc(strlen(getpath2configs()) + strlen(LLEVEL_FILEBAK) + 1);
 	llevelfile = malloc(strlen(getpath2configs()) + strlen(LLEVEL_FILE) + 1);
