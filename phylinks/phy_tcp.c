@@ -22,6 +22,7 @@
 #define CONNECT 0x43
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
+static pthread_mutex_t socket_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 struct phy_route *myprs[MAXEP];	// One phy_route for one endpoint
 struct phy_route *firstpr;
@@ -288,7 +289,9 @@ int offset;
 
 		switch(edh->sys_msg){
 		case EP_USER_DATA:	// Write data to socket
+				pthread_mutex_lock(&socket_mtx);
 				if(rdlen-offset >= edh->len && pr->state == 1) sendall(pr->socdesc, tai.buf, edh->len, 0);
+				pthread_mutex_unlock(&socket_mtx);
 				break;
 
 		case EP_MSG_RECONNECT:	// Disconnect and connect according to connect rules for this endpoint
@@ -468,6 +471,7 @@ int maxdesc;
 
    	    		if (myprs[i]->state == 1){
 			    	if (FD_ISSET(pr->socdesc, &rd_socks)){
+						pthread_mutex_lock(&socket_mtx);
 		    			// Receive frame
 		    			rdlen = recv(pr->socdesc, outbuf + sizeof(ep_data_header), 1024  - sizeof(ep_data_header), 0);
 		    			if (rdlen == -1){
@@ -487,8 +491,9 @@ int maxdesc;
 		    					mf_toendpoint(outbuf, rdlen + sizeof(ep_data_header), pr->asdu, DIRUP);
 		    				}
 			    		}
+						pthread_mutex_unlock(&socket_mtx);
 
-		    			// exit loop
+						// exit loop
 	    				break;
 			    	}
 
