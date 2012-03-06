@@ -30,7 +30,7 @@
 
 #define FGCOLOR	BLACK
 #define BGCOLOR	WHITE
-#define FONTNAME "pcf/7x13.pcf.gz"
+#define FONTNAME "/rw/mx00/pcf/7x13.pcf.gz"
 
 #define MAXMENU 5
 #define MAXITEM 40
