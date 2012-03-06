@@ -7,7 +7,7 @@
 
 #include "common.h"
 
-static char defprepath[] = {"/rw/mx00"};
+static char defprepath[] = {"/rw/mx00/"};
 static char defpathbin[] = {"bin"};
 static char defpathconfig[] = {"configs"};
 static char defpathlibs[] = {"lib"};
@@ -15,7 +15,8 @@ static char defpathmenu[] = {"menus"};
 static char defpathfonts[] = {"pcf"};
 static char defpathul[] = {"unitlinks"};
 static char defpathphy[] = {"phyints"};
-static char defpathmain[] = {"main"};
+static char defpathmain[] = {"mainapp"};
+static char defpathabout[] = {"about"};
 
 static char *basepath;		// Path to all project from environment MXPATH or default
 static char *pathbin;		// Path to binary files from environment MXBINPATH or default
@@ -26,6 +27,7 @@ static char *pathfonts;	// Path to project visible fonts files from environment 
 static char *pathul;		// Path to unitlink's named fifo buffers (MXFIFOUL)
 static char *pathphy;		// Path to physical link's named fifo buffers (MXFIFOPHY)
 static char *pathmain;		// Path to main iec soft's named fifo buffers (MXFIFOMAIN)
+static char *pathabout;		// Path to about files (MXABOUTPATH)
 
 static int lenbasepath;
 
@@ -36,20 +38,23 @@ char lenname = lenbasepath;
 	eptr = getenv(envname);
 	if (eptr == NULL){
 		// Set default path
-		lenname += strlen(defptr) + 1;
+		lenname += strlen(defptr) + 2;
 		ptr = malloc(lenname);
 		strcpy(ptr, basepath);
 		strcat(ptr, defptr);
+		strcat(ptr, "/");
 	}else{
 		if ((*eptr == '.') || (*eptr == '/')){
-			lenname = strlen(eptr) + 1;
+			lenname = strlen(eptr) + 2;
 			ptr = malloc(lenname);
 			strcpy(ptr, eptr);
+			strcat(ptr, "/");
 		}else{
-			lenname += strlen(eptr) + 1;
+			lenname += strlen(eptr) + 2;
 			ptr = malloc(lenname);
 			strcpy(ptr, basepath);
 			strcat(ptr, eptr);
+			strcat(ptr, "/");
 		}
 	}
 
@@ -77,6 +82,7 @@ void init_allpaths(){
 	pathul = makepath("MXFIFOUL", defpathul);
 	pathphy = makepath("MXFIFOPHY", defpathphy);
 	pathmain = makepath("MXFIFOMAIN", defpathmain);
+	pathabout = makepath("MXABOUTPATH", defpathabout);
 }
 
 char *getpath2base(){
@@ -115,3 +121,6 @@ char *getpath2fifomain(){
 	return pathmain;
 }
 
+char *getpath2about(){
+	return pathabout;
+}

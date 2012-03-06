@@ -30,7 +30,7 @@
 
 #define FGCOLOR	BLACK
 #define BGCOLOR	WHITE
-#define FONTNAME "/rw/mx00/pcf/7x13.pcf.gz"
+#define FONTNAME "7x13.pcf.gz"
 
 #define MAXMENU 5
 #define MAXITEM 40
@@ -65,6 +65,7 @@ typedef struct _menu{
 	GR_WINDOW_ID main_window;
 	GR_FONT_ID	font;
 	GR_RECT rect;
+	char *fontname;
 	item **pitems;
 	char *ptxtmenu;     // pointer to menu dimension of texts
 	int num_item;   //текущий пункт меню

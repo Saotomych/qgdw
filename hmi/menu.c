@@ -13,7 +13,9 @@
 #include "../common/iec61850.h"
 #include "../common/tarif.h"
 #include "../common/ts_print.h"
+#include "../common/paths.h"
 #include "menu.h"
+
 
 LNODE *actlnode;			// Global variable, change in menu only
 tarif *acttarif;			// Global variable, change in menu only
@@ -45,11 +47,7 @@ static menu *num_menu;     //указатель на структуру меню
 static char tmpstring[100];			// For temporary operations
 static char *devtypetext;		// Text of device type
 
-static char lnmenunames[][32] = {
-		{"/rw/mx00/menus/itemti"},
-		{"/rw/mx00/menus/itemts"},
-		{"/rw/mx00/menus/itemtu"},
-};
+static char lnmenunames[3][32];
 
 static value menuvalues[] = {
 		// Time variables
@@ -238,7 +236,7 @@ static void draw_menu()
 				GrMapWindow(*main_window);      //Make a window visible on the screen
 	        }
 
-			num_menu->font = GrCreateFontEx(FONTNAME, FONT_HEIGHT, FONT_WIDTH, 0);
+			num_menu->font = GrCreateFontEx(num_menu->fontname, FONT_HEIGHT, FONT_WIDTH, 0);
 			GrSetFontAttr(num_menu->font, GR_TFANTIALIAS | GR_TFKERNING, 0);
 
 			redraw_screen(NULL);
@@ -743,9 +741,16 @@ struct tm *ttm;
 	j_mon = jtime_tm.tm_mon + 1;
 	m_mon = mtime_tm.tm_mon + 1;
 
-	// Set start LN
-//	call_action(0xf801, "changetypeln", &parameters);
-	// Start LN ready
+	// Init base menu names
+	lnmenunames[0][0] = 0;
+	strcpy(lnmenunames[0], getpath2menu());
+	strcat(lnmenunames[0], "itemti");
+	lnmenunames[1][0] = 0;
+	strcpy(lnmenunames[1], getpath2menu());
+	strcat(lnmenunames[1], "itemts");
+	lnmenunames[2][0] = 0;
+	strcpy(lnmenunames[2], getpath2menu());
+	strcat(lnmenunames[2], "itemtu");
 
 	// First actual LNODE init
 	actlnode = (LNODE*) fln.next;					// Try set first LLN0
@@ -763,7 +768,7 @@ struct tm *ttm;
 	if (!actlnode) exit(1);
 
 	// Open first menu
-	num_menu = create_menu("/rw/mx00/menus/itemti");
+	num_menu = create_menu(lnmenunames[0]);
 	if (num_menu) {
 		call_action(NODIRECT, num_menu);		// Refresh variables
 		draw_menu();

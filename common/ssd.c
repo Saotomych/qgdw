@@ -266,7 +266,7 @@ char *key=0, *par=0;
 void cid_create_attrtype(const char *pTag){			// call parse attrtype
 char *p;
 char *key=0, *par=0;
-	flastatype = create_next_struct_in_list(&(flastatype->l), sizeof(ATYPE));
+	flastatype = (ATYPE*) create_next_struct_in_list(&(flastatype->l), sizeof(ATYPE));
 
 	// Parse parameters for dobjtype
 	p = (char*) pTag;
@@ -287,7 +287,7 @@ char *key=0, *par=0;
 void cid_create_bda(const char *pTag){			// call parse baseattrtype
 char *p;
 char *key=0, *par=0;
-	flastbattr = create_next_struct_in_list(&(flastbattr->l), sizeof(BATTR));
+	flastbattr = (BATTR*) create_next_struct_in_list(&(flastbattr->l), sizeof(BATTR));
 
 	// Parse parameters for attr
 	p = (char*) pTag;
