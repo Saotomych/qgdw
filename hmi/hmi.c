@@ -202,10 +202,10 @@ char words[][6] = {
 
 // -- Multififo receive data --
 int rcvdata(int len){
-char *buff, *sendbuff;
+char *buff;
 int adr, dir, rdlen, fullrdlen;
-int offset, fld_idx;
-ep_data_header *edh, *sedh;
+int offset;
+ep_data_header *edh;
 
 	buff = malloc(len);
 	if(!buff) return -1;
@@ -340,7 +340,7 @@ pid_t chldpid;
 	// Register all variables in varcontroller
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
-	tarif_parser("configs/tarif.xml");
+	tarif_parser("/rw/mx00/configs/tarif.xml");
 
 	// Multififo init
 	chldpid = mf_init("/rw/mx00/mainapp", "startiec", rcvdata);
