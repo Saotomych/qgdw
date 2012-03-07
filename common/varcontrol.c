@@ -11,11 +11,6 @@
 #include "asdu.h"
 #include "varcontrol.h"
 
-//static LIST fdefvt   = {NULL, NULL};		// first  varrec
-
-//static LIST fvarbook = {NULL, NULL};		// first varbook for future
-//static varbook *actvb;						// actual varbook for future
-
 static int varrec_number;	// Argument counter for actual booking
 static LIST fvarrec;
 static varrec *lastvr;
@@ -441,6 +436,27 @@ varrec *prevvr;
 	return 0;
 }
 
-void vc_checkvars(){
+void vc_subscribe_dataset(varrec *vr){
+ep_data_header edh;
+char *bookbuf;
+
+	while(vr){
+		// Need subscribe
+		if (vr->prop & BOOKING){
+			edh.adr = IDHMI;
+			edh.sys_msg = EP_MSG_BOOK;
+			edh.len = sizeof(int) + strlen(vr->name->fc) + 1;
+			bookbuf = malloc(edh.len);
+			*((int*)bookbuf) = (int) vr;
+
+			// Send subscribe this varrec
+			mf_toendpoint((char*) &edh, edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+		}
+		// Next varrec
+		vr = vr->l.next;
+	}
+}
+
+void vc_unsubscribe_dataset(varrec *vr){
 
 }

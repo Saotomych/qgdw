@@ -101,8 +101,8 @@
  */
 
 typedef struct ep_data_header {
-	uint16_t 		adr;		/* link (ASDU) address */
-	uint16_t		numep;		/* endpoint number of receiver */
+	uint32_t 		adr;		/* link (ASDU) address */
+	uint32_t		numep;		/* endpoint number of receiver */
 	uint32_t		sys_msg;	/* user data (0)/system message(1..n) */
 	uint32_t		len;		/* length of the data following the header */
 } __attribute__ ((packed)) ep_data_header;

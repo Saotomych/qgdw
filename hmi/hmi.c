@@ -350,6 +350,8 @@ pid_t chldpid;
 
 	// Multififo init
 	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
+	// Set endpoint for datasets
+	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){

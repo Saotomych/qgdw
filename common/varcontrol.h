@@ -10,7 +10,10 @@
 
 #include "iec61850.h"
 
+// application IDs  (equal ASDU)
+#define IDHMI			0x10000
 
+// varrec properties
 #define BOOKING		0x100
 #define TRUEVALUE	0x080
 #define ISBOOKED	0x040
@@ -99,5 +102,7 @@ extern void vc_init(pvalue vt, int len);
 //extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
 extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
 extern int vc_destroyvarreclist(varrec *fvr);
+extern void vc_subscribe_dataset(varrec *vr);
+extern void vc_unsubscribe_dataset(varrec *vr);
 
 #endif /* VARCONTROL_H_ */
