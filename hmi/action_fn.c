@@ -342,6 +342,7 @@ char *act = actmenu->pitems[actmenu->num_item]->action;
 
 	// Separate keys and call action
 	switch(direct){
+	case 0x102:
 	case 0xf800:
 				 for (i=0; i < sizeof(actfactset) / sizeof(fact); i++){
 					if (!strcmp(actfactset[i].action, act)){
@@ -349,6 +350,8 @@ char *act = actmenu->pitems[actmenu->num_item]->action;
 					}
 				 }
 				 break;
+
+	case 0x103:
 	case 0xf801:
 				 for (i=0; i < (sizeof(actfactset) / sizeof(fact)); i++){
 					 if (!strcmp(actfactset[i].action, act)){

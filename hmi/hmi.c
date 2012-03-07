@@ -5,6 +5,7 @@
  *      Author: dmitry & Alex AVAlon
  */
 
+#include <linux/input.h>
 #include "../common/common.h"
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
@@ -23,6 +24,8 @@
 
 static LIST fldextinfo = {NULL, NULL};
 static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
+
+int fkeyb;
 
 // Synonyms for global variables
 // Defvalues included: m700env, about.me
@@ -242,43 +245,62 @@ ep_data_header *edh;
 	return 0;
 }
 
+void main_switch(GR_EVENT *event){
+
+	switch (event->type) {
+
+	case GR_EVENT_TYPE_EXPOSURE:
+		if (event->exposure.wid == GR_ROOT_WINDOW_ID){
+			ts_printf(STDOUT_FILENO, "Root exposure event 0x%04X\n", event->exposure.wid);
+			redraw_screen(&event);
+		}
+		break;
+
+	case GR_EVENT_TYPE_KEY_DOWN:
+		key_pressed(event);
+			break;
+
+	case GR_EVENT_TYPE_KEY_UP:
+		key_rised(event);
+		break;
+
+	case GR_EVENT_TYPE_UPDATE:
+		ts_printf(STDOUT_FILENO, "Window event update\n");
+		break;
+
+		case GR_EVENT_TYPE_CLOSE_REQ:
+			GrClose();
+			exit(0);
+		}
+}
+
 // ----------------------------------------------------------------------------------
 void mainloop()
 {
-	GR_EVENT event;
-	//GR_WM_PROPERTIES props;ы
+GR_EVENT event;
+//GR_WM_PROPERTIES props;
+struct input_event ev[16];
+size_t evlen;
 
 	memset(&event, 0, sizeof(GR_EVENT));
 
 	while (1) {
  		wm_handle_event(&event);
- 		GrGetNextEvent(&event);
- 				switch (event.type) {
+ 		GrGetNextEventTimeout(&event, 100L);
 
- 				case GR_EVENT_TYPE_EXPOSURE:
- 					if (event.exposure.wid == GR_ROOT_WINDOW_ID){
- 	 					ts_printf(STDOUT_FILENO, "Root exposure event 0x%04X\n", event.exposure.wid);
- 	 					redraw_screen(&event);
- 					}
- 					break;
-
- 				case GR_EVENT_TYPE_KEY_DOWN:
- 					key_pressed(&event);
- 					break;
-
-				case GR_EVENT_TYPE_KEY_UP:
-					key_rised(&event);
-					break;
-
-				case GR_EVENT_TYPE_UPDATE:
-					ts_printf(STDOUT_FILENO, "Window event update\n");
-					break;
-
- 				case GR_EVENT_TYPE_CLOSE_REQ:
- 					GrClose();
- 					exit(0);
- 				}
- 		}
+ 		// Read of keyboard
+ 		if (fkeyb){
+ 			evlen = read(fkeyb, ev, sizeof(ev)) / sizeof(struct input_event);
+ 			if (evlen != 0xFFFFFFF){
+				if (ev[0].value){
+					printf("KEY: %X, %X, %X\n", ev[0].value, ev[0].type, ev[0].code);
+					event.type = GR_EVENT_TYPE_KEY_DOWN;
+					event.keystroke.ch = ev[0].code;
+					main_switch(&event);
+				}
+ 			}else main_switch(&event);
+ 		}else main_switch(&event);
+	}
 
  	GrClose();
  }
@@ -347,11 +369,12 @@ pid_t chldpid;
 	// Register all variables in varcontroller
 	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 
+	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
 	// Multififo init
-	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
+//	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
 	// Set endpoint for datasets
-	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
+//	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){
