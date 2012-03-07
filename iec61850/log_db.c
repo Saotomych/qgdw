@@ -51,7 +51,7 @@ char* log_fld_list[] = {
 
 	"AphsA",
 	"AphsB",
-	"VphsC",
+	"AphsC",
 
 	"PFphsA",
 	"PFphsB",
@@ -86,7 +86,7 @@ char* log_load_profile_flds[] = {
 
 	"AphsA",
 	"AphsB",
-	"VphsC",
+	"AphsC",
 
 	"PFphsA",
 	"PFphsB",
