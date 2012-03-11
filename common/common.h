@@ -94,6 +94,10 @@
 #define SLAVE_START_INST		100
 #define ASDU_START_INST			100
 
+// Exit codes
+#define NO_CONFIG_FILE	1
+
+
 /*
  *
  * Structures

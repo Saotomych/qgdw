@@ -84,7 +84,9 @@ typedef struct _VARREC{
 	LIST l;
 	fcdarec *name;	// Can see as pointer to pointer to full name already
 	value *val;		// Values and types of variable
-	int iarg;
+	int asdu;		// ASDU of the LD, for fast detect LD events
+	int iarg;		// Index of this varrec, for fast identify with otherside varrec
+	int id;			// ID of va from mainmap.cfg, for fast identify with otherside varrec
 	int prop;		// properties: const, var, booking, true value.
 	int time;		// time from last refresh value, usec
 } varrec, *pvarrec;
@@ -98,8 +100,9 @@ typedef struct _VARBOOK{
 	int	prop;
 } varbook, *pvarbook;
 
-extern void vc_init(pvalue vt, int len);
-//extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
+extern int vc_init(void);
+extern int vc_get_map_by_name(char *name, uint32_t *mid);
+extern int vc_get_type_by_name(char *name, char *type);
 extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
 extern int vc_destroyvarreclist(varrec *fvr);
 extern void vc_subscribe_dataset(varrec *vr);

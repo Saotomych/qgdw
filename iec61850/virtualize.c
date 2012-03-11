@@ -17,6 +17,7 @@
 #include "../common/asdu.h"
 #include "../common/iec61850.h"
 #include "../common/paths.h"
+#include "../common/varcontrol.h"
 #include "log_db.h"
 
 #define VIRT_ASDU_MAXSIZE 	512
@@ -71,59 +72,9 @@ typedef struct _SCADA_ASDU{
 	VIRT_ASDU *pscada;
 } SCADA_ASDU;
 
-// Pointer to full mapping config as text
-char *MCFGfile;
-
 // Variables for asdu actions
 static LIST fasdu, fasdutype, fdm, fscada, fscadach;
 
-// Get mapping parameters from special config file 'mainmap.cfg' of real ASDU frames from meters
-int get_map_by_name(char *name, uint32_t *mid){
-char *p;
-
-	p = strstr(MCFGfile, name);
-	if (!p) return -1;
-	while((*p != 0xA) && (p != MCFGfile)) p--;
-	while(*p <= '0') p++;
-	*mid = atoi(p);
-
-	return 0;
-}
-
-// Find DA with name and ptr equals to name and ptr DTYPE
-// Return int equal string typedef
-int get_type_by_name(char *name, char *type){
-DTYPE *adtype;
-ATTR *dattr = (ATTR*) &fattr;
-char *p1;
-int ret = 0;
-
-	// Find DTYPE by type
-	adtype = (DTYPE*) fdtype.next;
-	while(adtype){
-		if (!strcmp(adtype->dtype.id, type)) break;
-		adtype = adtype->l.next;
-	}
-
-	if (adtype){
-		// Find ATTR by name & ptr to type
-		dattr = (ATTR*) fattr.next;
-		while((dattr) && (!ret)){
-			if (&adtype->dtype == dattr->attr.pmydatatype){
-				// Own type
-				if (!strcmp(dattr->attr.name, name)){
-					// Name yes. Detect btype and convert to INT
-					p1 = dattr->attr.btype;
-					if (strstr(p1, "Struct")) ret = 1;
-					else ret = -1;
-				}
-			}
-			dattr = dattr->l.next;
-		}
-	}else ret = -1;
-
-	return ret;
-}
 
 void send_sys_msg(int adr, int msg){
 ep_data_header edh;
@@ -560,7 +511,7 @@ SCADA_CH *actscadach;
 	return 0;
 }
 
-int asdu_parser(void){
+static int asdu_parser(void){
 SCADA_ASDU *actscada;
 SCADA_CH *actscadach;
 VIRT_ASDU *actasdu;
@@ -605,9 +556,9 @@ DOBJ *adobj;
 						// Fill ASDU_DATAMAP
 						actasdudm->mydobj = adobj;
 						actasdudm->scadaid = atoi(adobj->dobj.options);
-						if (!get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
+						if (!vc_get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
 							// find by DOType->DA.name = mag => DOType->DA.btype
-							actasdudm->value_type = get_type_by_name("mag", adobj->dobj.type);
+							actasdudm->value_type = vc_get_type_by_name("mag", adobj->dobj.type);
 							ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
 									adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
 						}else ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
@@ -691,7 +642,7 @@ DOBJ *adobj;
 }
 
 // Load data to low level
-void create_alldo(void){
+static void create_alldo(void){
 VIRT_ASDU *sasdu = NULL;
 ASDU_DATAMAP *pdm = NULL;
 int adr;
@@ -726,30 +677,32 @@ frame_dobj fr_do = FRAME_DOBJ_INITIALIZER;
 	}
 }
 
+void create_varctrl(void){
+LNODE *actln = (LNODE*) fln.next;
+DOBJ *actdo;
+char doname[32];
+
+	while(actln){
+		actdo = actln->ln.pmytype->pfdobj;
+		while(actdo){
+			// Addon 'mag.f' is temporary
+			ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);
+			vc_addvarrec(actln, doname, NULL);
+			actdo = actdo->l.next;
+		}
+		actln = actln->l.next;
+	}
+}
+
 int virt_start(char *appname){
-FILE *fmcfg;
-char *fname;
-int clen, ret;
-struct stat fst;
+int ret;
 pid_t chldpid;
 char *pchld_app_end;
 
 SCADA_CH *sch = (SCADA_CH *) &fscadach;
 char *chld_app;
 //
-// Read mainmap.cfg into memory
-	fname = malloc(strlen(getpath2configs()) + strlen("mainmap.cfg") + 1);
-	strcpy(fname, getpath2configs());
-	strcat(fname, "mainmap.cfg");
-
-	if (stat(fname, &fst) == -1){
-		ts_printf(STDOUT_FILENO, "IEC Virt: 'mainmap.cfg' file not found\n");
-	}
-	MCFGfile =  malloc(fst.st_size+1);
-	fmcfg = fopen(fname, "r");
-	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
-	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
-	if (clen != fst.st_size) ret = -1;
+	if (vc_init() == 0) exit(NO_CONFIG_FILE);
 	else{
 		// Building mapping meter asdu to cid asdu
 		if (asdu_parser()) ret = -1;
@@ -759,8 +712,6 @@ char *chld_app;
 			ret = chldpid;
 		}
 	}
-	free(MCFGfile);
-	free(fname);
 	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
@@ -793,6 +744,8 @@ char *chld_app;
 	}
 
 	create_alldo();
+
+	create_varctrl();
 
 	start_collect_data();
 

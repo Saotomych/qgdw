@@ -10,12 +10,64 @@
 #include "multififo.h"
 #include "asdu.h"
 #include "varcontrol.h"
+#include "paths.h"
 
 static int varrec_number;	// Argument counter for actual booking
 static LIST fvarrec;
 static varrec *lastvr;
 
+// Pointer to full mapping config as text
+static char *MCFGfile;
+
 extern LIST* create_next_struct_in_list(LIST *plist, int size);
+
+// Get mapping parameters from special config file 'mainmap.cfg' of real ASDU frames from meters
+int vc_get_map_by_name(char *name, uint32_t *mid){
+char *p;
+
+	p = strstr(MCFGfile, name);
+	if (!p) return -1;
+	while((*p != 0xA) && (p != MCFGfile)) p--;
+	while(*p <= '0') p++;
+	*mid = atoi(p);
+
+	return 0;
+}
+
+// Find DA with name and ptr equals to name and ptr DTYPE
+// Return int equal string typedef
+int vc_get_type_by_name(char *name, char *type){
+DTYPE *adtype;
+ATTR *dattr = (ATTR*) &fattr;
+char *p1;
+int ret = 0;
+
+	// Find DTYPE by type
+	adtype = (DTYPE*) fdtype.next;
+	while(adtype){
+		if (!strcmp(adtype->dtype.id, type)) break;
+		adtype = adtype->l.next;
+	}
+
+	if (adtype){
+		// Find ATTR by name & ptr to type
+		dattr = (ATTR*) fattr.next;
+		while((dattr) && (!ret)){
+			if (&adtype->dtype == dattr->attr.pmydatatype){
+				// Own type
+				if (!strcmp(dattr->attr.name, name)){
+					// Name yes. Detect btype and convert to INT
+					p1 = dattr->attr.btype;
+					if (strstr(p1, "Struct")) ret = 1;
+					else ret = -1;
+				}
+			}
+			dattr = dattr->l.next;
+		}
+	}else ret = -1;
+
+	return ret;
+}
 
 static varrec* init_varrec(varrec *vr){
 	if (!vr) return NULL;
@@ -64,11 +116,30 @@ void vc_setcallback(){
 }
 
 // Make memory allocation for all variables, read values and set pointers
-void vc_init(pvalue vt, int len){
+int vc_init(){
+FILE *fmcfg;
+char *fname;
+int clen, ret;
+struct stat fst;
 
 	lastvr = (varrec*) &fvarrec;
 	fvarrec.prev = NULL;
 	fvarrec.next = NULL;
+
+// Read mainmap.cfg into memory
+	fname = malloc(strlen(getpath2configs()) + strlen("mainmap.cfg") + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, "mainmap.cfg");
+
+	if (stat(fname, &fst) == -1){
+		ts_printf(STDOUT_FILENO, "IEC Virt: 'mainmap.cfg' file not found\n");
+	}
+	MCFGfile =  malloc(fst.st_size+1);
+	fmcfg = fopen(fname, "r");
+	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
+	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
+
+	if (clen != fst.st_size) ret = -1;
 
 }
 
@@ -170,6 +241,8 @@ char keywords[][10] = {
 						vr = newiecvarrec();
 						if (vr){
 							vr->name->fc = varname;
+							vr->asdu = 0;
+							vr->id = 0;
 							vr->val->name = varname;
 							// Value initialize
 							vr->val->val = pied->desc;	// IED.desc as default
@@ -195,6 +268,8 @@ char keywords[][10] = {
 						vr = newiecvarrec();
 						if (vr){
 							vr->name->fc = varname;
+							vr->asdu = atoi(pld->inst);
+							vr->id = 0;
 							vr->val->name = varname;
 							// Value initialize
 							// Set val if 'inst'
@@ -249,6 +324,8 @@ char keywords[][10] = {
 						if (vr){
 
 							vr->name->fc = varname;
+							vr->asdu = atoi(actln->ln.pmyld->inst);
+							vr->id = 0;
 							vr->val->name = varname;
 							vr->val->idx = IECBASE + DOdesc;
 
@@ -292,6 +369,7 @@ char keywords[][10] = {
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = BOOKING| NEEDFREE;
+								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
 								// TODO Subscribe DO value
 
 								return vr;
@@ -331,6 +409,7 @@ char keywords[][10] = {
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = BOOKING | NEEDFREE;
+								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
 								// TODO Subscribe DA value
 
 								return vr;
@@ -391,6 +470,7 @@ char keywords[][10] = {
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = BOOKING | NEEDFREE;
+								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
 								// TODO Subscribe BDA value
 
 								return vr;

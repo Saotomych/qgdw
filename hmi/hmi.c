@@ -367,7 +367,8 @@ pid_t chldpid;
 	for(i=0; i < (sizeof(defvalues)/sizeof(value) - 1); i++) defvalues[i].idx = i;
 
 	// Register all variables in varcontroller
-	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
+//	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
+	vc_init();
 
 	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
