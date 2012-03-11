@@ -11,6 +11,7 @@
 #include "asdu.h"
 #include "varcontrol.h"
 #include "paths.h"
+#include "ts_print.h"
 
 static int varrec_number;	// Argument counter for actual booking
 static LIST fvarrec;
@@ -119,7 +120,7 @@ void vc_setcallback(){
 int vc_init(){
 FILE *fmcfg;
 char *fname;
-int clen, ret;
+int clen, ret = 0;
 struct stat fst;
 
 	lastvr = (varrec*) &fvarrec;
@@ -141,6 +142,7 @@ struct stat fst;
 
 	if (clen != fst.st_size) ret = -1;
 
+	return ret;
 }
 
 static varrec* newappvarrec(value *val){
