@@ -323,8 +323,6 @@ char keywords[][10] = {
 							vr->name->lnClass = actln->ln.lnclass;
 							vr->name->lnInst = actln->ln.lninst;
 							vr->name->prefix = actln->ln.prefix;
-							vr->name->doName = po;
-							vr->name->daName = pa;
 							vr->asdu = atoi(actln->ln.pmyld->inst);
 							vr->id = 0;
 							vr->val->name = malloc(strlen(varname));
@@ -351,6 +349,8 @@ char keywords[][10] = {
 									}
 								}
 							}
+							vr->name->doName = po;
+							vr->name->daName = pa;
 
 							// Find po as DO.name
 							if (pln->ln.pmytype) pdo = pln->ln.pmytype->pfdobj;
