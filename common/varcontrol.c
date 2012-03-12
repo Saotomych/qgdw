@@ -185,7 +185,7 @@ varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	}
 }
 
-// To book concrete variable by name
+// Add concrete variable of actln by name
 // Input data: name of variable
 // Return pointer to value record and properties
 varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr){
@@ -243,9 +243,16 @@ char keywords[][10] = {
 						vr = newiecvarrec();
 						if (vr){
 							vr->name->fc = varname;
+							vr->name->ldinst = pld->inst;
+							vr->name->lnClass = actln->ln.lnclass;
+							vr->name->lnInst = actln->ln.lninst;
+							vr->name->prefix = actln->ln.prefix;
+							vr->name->doName = NULL;
+							vr->name->daName = NULL;
 							vr->asdu = 0;
 							vr->id = 0;
-							vr->val->name = varname;
+							vr->val->name = malloc(strlen(varname));
+							strcpy(vr->val->name, varname);
 							// Value initialize
 							vr->val->val = pied->desc;	// IED.desc as default
 							vr->val->idx = IECBASE + IEDdesc;
@@ -270,9 +277,16 @@ char keywords[][10] = {
 						vr = newiecvarrec();
 						if (vr){
 							vr->name->fc = varname;
+							vr->name->ldinst = pld->inst;
+							vr->name->lnClass = actln->ln.lnclass;
+							vr->name->lnInst = actln->ln.lninst;
+							vr->name->prefix = actln->ln.prefix;
+							vr->name->doName = NULL;
+							vr->name->daName = NULL;
 							vr->asdu = atoi(pld->inst);
 							vr->id = 0;
-							vr->val->name = varname;
+							vr->val->name = malloc(strlen(varname));
+							strcpy(vr->val->name, varname);
 							// Value initialize
 							// Set val if 'inst'
 							vr->val->val = pld->inst;	// LD.inst as default
@@ -299,37 +313,44 @@ char keywords[][10] = {
 			// if LN has DO.name - book this variable
 			case 3: // LN
 
-				// Find all fields: po, pa, ptag
-					p = strstr(varname, ":");
-					if (p){
-						// Set po to data object tag
-						p++; po = p;
-						p = strstr(p, ".");
-						if (p){
-							// Data object found
-							// Set pa to data attribute as variant
-							*p = 0;	p++; pa = p;
-							p = strstr(p, ".");
-							if (p){
-								// Field for data attribute found
-								*p = 0;	p++; pba = p;
-								// Find next '.'
-								p = strstr(p, ".");
-								if (p) *p = 0;
-							}
-						}
-					}else return NULL;
-
 					if (actln){
 						// Register new value in varrec LIST
 						vr = newiecvarrec();
 						if (vr){
 
 							vr->name->fc = varname;
+							vr->name->ldinst = pld->inst;
+							vr->name->lnClass = actln->ln.lnclass;
+							vr->name->lnInst = actln->ln.lninst;
+							vr->name->prefix = actln->ln.prefix;
+							vr->name->doName = po;
+							vr->name->daName = pa;
 							vr->asdu = atoi(actln->ln.pmyld->inst);
 							vr->id = 0;
-							vr->val->name = varname;
+							vr->val->name = malloc(strlen(varname));
+							strcpy(vr->val->name, varname);
 							vr->val->idx = IECBASE + DOdesc;
+
+							// Find all fields: po, pa, ptag
+							p = strstr(vr->val->name, ":");
+							if (p){
+								// Set po to data object tag
+								p++; po = p;
+								p = strstr(p, ".");
+								if (p){
+									// Data object found
+									// Set pa to data attribute as variant
+									*p = 0;	p++; pa = p;
+									p = strstr(p, ".");
+									if (p){
+										// Field for data attribute found
+										*p = 0;	p++; pba = p;
+										// Find next '.'
+										p = strstr(p, ".");
+										if (p) *p = 0;
+									}
+								}
+							}
 
 							// Find po as DO.name
 							if (pln->ln.pmytype) pdo = pln->ln.pmytype->pfdobj;

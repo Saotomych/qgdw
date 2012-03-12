@@ -680,15 +680,18 @@ frame_dobj fr_do = FRAME_DOBJ_INITIALIZER;
 void create_varctrl(void){
 LNODE *actln = (LNODE*) fln.next;
 DOBJ *actdo;
-char doname[32];
+char *doname;
 
 	while(actln){
-		actdo = actln->ln.pmytype->pfdobj;
-		while(actdo){
-			// Addon 'mag.f' is temporary
-			ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);
-			vc_addvarrec(actln, doname, NULL);
-			actdo = actdo->l.next;
+		if (actln->ln.pmytype){
+			actdo = actln->ln.pmytype->pfdobj;
+			while(actdo){
+				// Addon '.mag.f' is temporary
+				doname = malloc(strlen(actdo->dobj.name)  + 10);
+				ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);
+				vc_addvarrec(actln, doname, NULL);
+				actdo = actdo->l.next;
+			}
 		}
 		actln = actln->l.next;
 	}
@@ -702,7 +705,7 @@ char *pchld_app_end;
 SCADA_CH *sch = (SCADA_CH *) &fscadach;
 char *chld_app;
 //
-	if (vc_init() == 0) exit(NO_CONFIG_FILE);
+	if (vc_init()) exit(NO_CONFIG_FILE);
 	else{
 		// Building mapping meter asdu to cid asdu
 		if (asdu_parser()) ret = -1;
@@ -712,6 +715,10 @@ char *chld_app;
 			ret = chldpid;
 		}
 	}
+
+	// Create places for incoming data
+	create_varctrl();
+
 	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
@@ -744,8 +751,6 @@ char *chld_app;
 	}
 
 	create_alldo();
-
-	create_varctrl();
 
 	start_collect_data();
 
