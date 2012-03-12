@@ -681,11 +681,12 @@ void create_varctrl(void){
 LNODE *actln = (LNODE*) fln.next;
 DOBJ *actdo;
 char *doname;
+int i;
 
 	while(actln){
 		if (actln->ln.pmytype){
 			actdo = actln->ln.pmytype->pfdobj;
-			while(actdo){
+			for (i = 0; i < actln->ln.pmytype->maxdobj; i++){
 				// Addon '.mag.f' is temporary
 				doname = malloc(strlen(actdo->dobj.name)  + 10);
 				ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);

@@ -222,7 +222,8 @@ char keywords[][10] = {
 							vr = newappvarrec(&defvr[x]);
 							if (vr){
 								vr->name->fc = varname;
-								vr->val->name = varname;
+								vr->val->name = malloc(strlen(varname));
+								strcpy(vr->val->name, varname);
 								return vr;
 							}
 							else{
@@ -525,6 +526,7 @@ varrec *prevvr;
 		// TODO Unsubscribe variable if needed
 //		if (vr->prop & BOOKING)	unbook(vr);
 		// Free memory of value
+		free(vr->val->name);
 		if (vr->prop & NEEDFREE) free(vr->val->val);
 		if (vr->name) free(vr->name);
 		if (vr->val) free(vr->val);
