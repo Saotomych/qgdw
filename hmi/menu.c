@@ -719,7 +719,6 @@ GR_EVENT *event = (GR_EVENT*) arg;
 						redraw_screen(NULL);
 					}
 					break;
-
 	}
 
 }
