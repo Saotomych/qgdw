@@ -379,7 +379,7 @@ pid_t chldpid;
 
 	//---*** Init visual control ***---//
 	if (init_menu()){
-		ts_printf(STDOUT_FILENO, "Configuration of LNODEs nor found\n");
+		ts_printf(STDOUT_FILENO, "Configuration of LNODEs not found\n");
 		exit(1);
 	}
 	mainloop();

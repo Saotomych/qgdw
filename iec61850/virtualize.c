@@ -699,7 +699,7 @@ int i;
 }
 
 int virt_start(char *appname){
-int ret;
+int ret = -1;
 pid_t chldpid;
 char *pchld_app_end;
 
@@ -724,36 +724,36 @@ char *chld_app;
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	sch = sch->l.next;
-	while(sch){
+//	while(sch){
+//
+//		ts_printf(STDOUT_FILENO, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
+//
+//		// Create config_device
+//		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
+//		strcpy(chld_app, sch->myld->ld.desc);
+//
+//		// By agreement with icd and ssd connection
+//		// ld.desc = unitlink-name/dispather name - device type
+//		// Unitlinks will starts as realname
+//		pchld_app_end = strstr(chld_app, "/");
+//		if (pchld_app_end) *pchld_app_end = 0;	// Makes Unitlink's name as zero-string
+////		pchld_app_end++;	// (in future) equals to beginning of text meter description for HMI
+//
+//		pchld_app_end = strstr(chld_app, ".");
+//		if (pchld_app_end) *pchld_app_end = 0;
+//
+//		// New endpoint
+//		mf_newendpoint(sch->ASDUaddr, chld_app, getpath2fifoul(), 0);
+//
+//		free(chld_app);
+//		sleep(1);	// Delay for forming next level endpoint
+//
+//		sch = sch->l.next;
+//	}
 
-		ts_printf(STDOUT_FILENO, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
+//	create_alldo();
 
-		// Create config_device
-		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
-		strcpy(chld_app, sch->myld->ld.desc);
-
-		// By agreement with icd and ssd connection
-		// ld.desc = unitlink-name/dispather name - device type
-		// Unitlinks will starts as realname
-		pchld_app_end = strstr(chld_app, "/");
-		if (pchld_app_end) *pchld_app_end = 0;	// Makes Unitlink's name as zero-string
-//		pchld_app_end++;	// (in future) equals to beginning of text meter description for HMI
-
-		pchld_app_end = strstr(chld_app, ".");
-		if (pchld_app_end) *pchld_app_end = 0;
-
-		// New endpoint
-		mf_newendpoint(sch->ASDUaddr, chld_app, getpath2fifoul(), 0);
-
-		free(chld_app);
-		sleep(1);	// Delay for forming next level endpoint
-
-		sch = sch->l.next;
-	}
-
-	create_alldo();
-
-	start_collect_data();
+//	start_collect_data();
 
 	return ret;
 }

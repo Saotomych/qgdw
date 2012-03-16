@@ -18,7 +18,7 @@ static LIST fvarrec;
 static varrec *lastvr;
 
 // Pointer to full mapping config as text
-static char *MCFGfile;
+char *MCFGfile;
 
 extern LIST* create_next_struct_in_list(LIST *plist, int size);
 
@@ -138,9 +138,11 @@ struct stat fst;
 	MCFGfile =  malloc(fst.st_size+1);
 	fmcfg = fopen(fname, "r");
 	clen = fread(MCFGfile, 1, (size_t) (fst.st_size), fmcfg);
-	MCFGfile[fst.st_size] = '\0'; // make it null terminating string
+	MCFGfile[fst.st_size] = 0; // make it null terminating string
 
 	if (clen != fst.st_size) ret = -1;
+
+	free(fname);
 
 	return ret;
 }

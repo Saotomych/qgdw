@@ -7,7 +7,8 @@
 
 #include "common.h"
 
-static char defprepath[] = {"/rw/mx00/"};
+//static char defprepath[] = {"/rw/mx00/"};
+static char defprepath[] = {"/home/alex/PRJS/qgdw/"};
 static char defpathbin[] = {"bin"};
 static char defpathconfig[] = {"configs"};
 static char defpathlibs[] = {"lib"};

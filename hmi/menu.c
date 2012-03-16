@@ -47,7 +47,7 @@ static menu *num_menu;     //указатель на структуру меню
 static char tmpstring[100];			// For temporary operations
 static char *devtypetext;		// Text of device type
 
-static char lnmenunames[3][32];
+static char lnmenunames[3][64];
 
 static value menuvalues[] = {
 		// Time variables
