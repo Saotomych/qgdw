@@ -421,7 +421,7 @@ int i;
 
 	// Create menu structures
 	psmenu = do_openfilemenu(txtmenu);
-
+	vc_subscribe_dataset(psmenu->fvarrec);
 	//	txtmenu set as menu.ptxtmenu and free in destroy_menu
 
 	return psmenu;

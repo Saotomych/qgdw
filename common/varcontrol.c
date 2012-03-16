@@ -557,7 +557,7 @@ char *bookbuf;
 			*((int*)bookbuf) = (int) vr;
 
 			// Send subscribe this varrec
-//			mf_toendpoint((char*) &edh, edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+			mf_toendpoint((char*) &edh, edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
 		}
 		// Next varrec
 		vr = vr->l.next;

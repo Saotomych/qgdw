@@ -909,7 +909,7 @@ char *par[2] = {NULL};
 			ts_printf(STDOUT_FILENO, "MFI %s: inotify_init failed: %d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
-		usleep(100000);
+//		usleep(100000);
 	}else{
 		ts_printf(STDOUT_FILENO, "MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 	}
@@ -970,15 +970,15 @@ char *par[2] = {NULL};
 	// Write config to init channel
 	wrlen = write(mychs[0]->descout, (char*) &eih_out, sizeof(ep_init_header));
 
-//	ts_printf(STDOUT_FILENO, "\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
-//	ts_printf(STDOUT_FILENO, "- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
+	ts_printf(STDOUT_FILENO, "\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+	ts_printf(STDOUT_FILENO, "- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
 	while (mf_waitevent(fname, 160, 5000) != 1);
 
 	mychs[0]->descout = 0;
 	ep->ready = 3;
 
-//	ts_printf(STDOUT_FILENO, "MFI %s: connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
+	ts_printf(STDOUT_FILENO, "MFI %s: connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
 
 	return 0;
 }
