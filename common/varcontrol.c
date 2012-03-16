@@ -516,6 +516,14 @@ char keywords[][10] = {
 	return NULL;
 }
 
+void vc_freevarrec(varrec *vr){
+	free(vr->val->name);
+	if (vr->prop & NEEDFREE) free(vr->val->val);
+	if (vr->name) free(vr->name);
+	if (vr->val) free(vr->val);
+	free(vr);
+}
+
 // To delete booking of concrete variable by name
 int vc_destroyvarreclist(varrec *fvr){
 varrec *vr = lastvr;
@@ -528,11 +536,7 @@ varrec *prevvr;
 		// TODO Unsubscribe variable if needed
 //		if (vr->prop & BOOKING)	unbook(vr);
 		// Free memory of value
-		free(vr->val->name);
-		if (vr->prop & NEEDFREE) free(vr->val->val);
-		if (vr->name) free(vr->name);
-		if (vr->val) free(vr->val);
-		free(vr);
+		vc_freevarrec(vr);
 		vr = prevvr;
 		lastvr = vr;
 		varrec_number--;
@@ -543,6 +547,8 @@ varrec *prevvr;
 	return 0;
 }
 
+
+// Make subscribe to all remote variables of last menu
 void vc_subscribe_dataset(varrec *vr, time_t *t, LNODE *actln){
 varbook *vb;
 char *varname;
@@ -569,6 +575,7 @@ uint32_t len;
 													actln->ln.lnclass,
 													actln->ln.lninst,
 													vr->name->fc);
+
 			vb->edh.adr = IDHMI;
 			vb->edh.sys_msg = EP_MSG_BOOK;
 			vb->edh.len = len;
@@ -578,12 +585,47 @@ uint32_t len;
 
 			// Send subscribe this varrec
 			mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+
+			free(bookbuf);
 		}
 		// Next varrec
 		vr = vr->l.next;
 	}
 }
 
-void vc_unsubscribe_dataset(varrec *vr){
+// Make unsubscribe remote variables from end to vr->name->fc
+void vc_unsubscribe_dataset(varrec *vr, LNODE *actln){
+varbook *vb;
+char *varname;
+u08 *bookbuf;
+uint32_t len;
+
+	len = sizeof(varbook) + 7 - sizeof(ep_data_header)
+											  + strlen(actln->ln.ldinst)
+											  + strlen(actln->ln.prefix)
+											  + strlen(actln->ln.lnclass)
+											  + strlen(actln->ln.lninst)
+											  + strlen(vr->name->fc);  // with start ep_data_header
+
+	bookbuf = malloc(sizeof(ep_data_header) + len);
+	vb = (varbook*) bookbuf;
+	varname = (char*) (bookbuf + sizeof(varbook));
+	ts_sprintf(varname, "%s/%s.%s.%s.%s\n", actln->ln.ldinst,
+											actln->ln.prefix,
+											actln->ln.lnclass,
+											actln->ln.lninst,
+											vr->name->fc);
+
+	vb->edh.adr = IDHMI;
+	vb->edh.sys_msg = EP_MSG_UNBOOK;
+	vb->edh.len = len;
+	vb->edh.numep = 0;
+	vb->lenname = strlen(varname);
+	vb->time = 0;
+
+	// Send subscribe this varrec
+	mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+
+	free(bookbuf);
 
 }

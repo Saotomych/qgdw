@@ -75,6 +75,9 @@ typedef struct _SCADA_ASDU{
 // Variables for asdu actions
 static LIST fasdu, fasdutype, fdm, fscada, fscadach;
 
+// Last varrec for datasets control
+static varrec *lastvarrec = NULL;
+
 
 void send_sys_msg(int adr, int msg){
 ep_data_header edh;
@@ -365,8 +368,9 @@ asdu *pasdu, *psasdu;
 ASDU_DATAMAP *pdm;
 SCADA_ASDU *actscada;
 SCADA_CH *actscadach;
-// For EP_MSG_BOOK
+// For EP_MSG_BOOK & UNBOOK
 LNODE *actln;
+varrec *actvr, *prevvr;
 uint32_t adr1;
 char lnname[40];
 char *pname;
@@ -506,7 +510,7 @@ char *pname;
 
 		case EP_MSG_BOOK:
 			pname = buff + offset + sizeof(varbook);
-			ts_printf(STDOUT_FILENO, "IEC61850 set subscribe for value %s\n", pname);
+			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
 			adr1 = atoi(pname);
 			actln = fln.next;
 
@@ -520,10 +524,35 @@ char *pname;
 					actln = actln->l.next;
 			}
 
-			ts_printf(STDOUT_FILENO, "IEC61850 found LN %s\n", lnname);
+			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
 
-			vc_addvarrec(actln, strstr(buff + offset + sizeof(varbook), "LN:") + 3, NULL);
+			lastvarrec = vc_addvarrec(actln, strstr(buff + offset + sizeof(varbook), "LN:") + 3, NULL);
 			break;
+
+		case EP_MSG_UNBOOK:
+			pname = buff + offset + sizeof(varbook);
+			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
+			pname = strstr(pname, "LN:");
+
+			actvr = lastvarrec;
+			while((actvr) && (strcmp(actvr->name->fc, pname))){
+				prevvr = actvr->l.prev;
+				// Free varrec
+				vc_freevarrec(actvr);
+				actvr = prevvr;
+			}
+
+			if (actvr){
+				prevvr = actvr->l.prev;
+				vc_freevarrec(actvr);
+				actvr = prevvr;
+			}
+
+			if (actvr) ts_printf(STDOUT_FILENO, "IEC61850: last varrec %s\n", actvr->name->fc);
+			else ts_printf(STDOUT_FILENO, "IEC61850: all varrec was free\n");
+
+			break;
+
 		}
 
 		// move over the data

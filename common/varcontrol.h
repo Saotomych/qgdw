@@ -106,6 +106,7 @@ extern int vc_get_type_by_name(char *name, char *type);
 extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
 extern int vc_destroyvarreclist(varrec *fvr);
 extern void vc_subscribe_dataset(varrec *vr, time_t *t, LNODE *actln);
-extern void vc_unsubscribe_dataset(varrec *vr);
+extern void vc_freevarrec(varrec *vr);
+extern void vc_unsubscribe_dataset(varrec *vr, LNODE *actln);
 
 #endif /* VARCONTROL_H_ */

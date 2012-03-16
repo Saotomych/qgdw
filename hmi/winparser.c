@@ -375,6 +375,7 @@ menu* num_menu;
 
 	call_epiloque(actmenu);
 
+	vc_unsubscribe_dataset(num_menu->fvarrec, actlnode);
 	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
 	GrDestroyFont(num_menu->font);
 
