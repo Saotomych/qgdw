@@ -560,7 +560,7 @@ uint32_t len;
 									  + strlen(actln->ln.prefix)
 									  + strlen(actln->ln.lnclass)
 									  + strlen(actln->ln.lninst)
-									  + strlen(&vr->name->fc[3]);  // with start ep_data_header
+									  + strlen(vr->name->fc);  // with start ep_data_header
 			bookbuf = malloc(sizeof(ep_data_header) + len);
 			vb = (varbook*) bookbuf;
 			varname = (char*) (bookbuf + sizeof(varbook));
@@ -568,7 +568,7 @@ uint32_t len;
 													actln->ln.prefix,
 													actln->ln.lnclass,
 													actln->ln.lninst,
-													&vr->name->fc[3]);
+													vr->name->fc);
 			vb->edh.adr = IDHMI;
 			vb->edh.sys_msg = EP_MSG_BOOK;
 			vb->edh.len = len;

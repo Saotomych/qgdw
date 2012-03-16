@@ -365,7 +365,11 @@ asdu *pasdu, *psasdu;
 ASDU_DATAMAP *pdm;
 SCADA_ASDU *actscada;
 SCADA_CH *actscadach;
-
+// For EP_MSG_BOOK
+LNODE *actln;
+uint32_t adr1;
+char lnname[40];
+char *pname;
 
 	buff = malloc(len);
 
@@ -501,8 +505,24 @@ SCADA_CH *actscadach;
 			break;
 
 		case EP_MSG_BOOK:
-			ts_printf(STDOUT_FILENO, "IEC61850 set subscribe for value %s\n",
-					buff + offset + sizeof(varbook));
+			pname = buff + offset + sizeof(varbook);
+			ts_printf(STDOUT_FILENO, "IEC61850 set subscribe for value %s\n", pname);
+			adr1 = atoi(pname);
+			actln = fln.next;
+
+			// Find first LN with equal ldinst
+			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
+
+			// Find LN with other equal parameters
+			while(actln){
+					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
+					if (strstr(pname, lnname)) break;
+					actln = actln->l.next;
+			}
+
+			ts_printf(STDOUT_FILENO, "IEC61850 found LN %s\n", lnname);
+
+			vc_addvarrec(actln, strstr(buff + offset + sizeof(varbook), "LN:") + 3, NULL);
 			break;
 		}
 
