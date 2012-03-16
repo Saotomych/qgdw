@@ -26,6 +26,7 @@ int hpp[2];
 static int d_inoty = 0;
 
 // Control channel
+char *sufsema = {"-sema"};
 char *sufinit = {"-init"};
 char *sufdn = {"-dn"};
 char *sufup = {"-up"};
@@ -842,6 +843,7 @@ int ret;
 struct channel *initch = 0;
 pthread_t in_thread;
 pthread_attr_t in_thread_attr;
+char fname[160] = {0};
 
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
@@ -865,6 +867,13 @@ pthread_attr_t in_thread_attr;
 	ret = pthread_attr_setstacksize(&in_thread_attr, INOTIFYTHR_STACKSIZE);
 	ret = pthread_create(&in_thread, &in_thread_attr, inotify_thr, NULL);
 
+	// Create file semaphore
+	strcpy(fname, pathinit);
+	strcat(fname,"/");
+	strcat(fname, a_name);
+	strcat(fname, sufsema);
+	fopen(fname, "w");
+
 //	signal(SIGQUIT, sighandler_sigquit);
 //	signal(SIGCHLD, sighandler_sigchld);
 
@@ -886,6 +895,7 @@ struct channel *ch=0;
 struct endpoint *ep=0;
 char fname[160] = {0};
 char *par[2] = {NULL};
+struct stat fstt;
 
 	par[0] = chld_name;
 	par[1] = NULL;
@@ -896,6 +906,14 @@ char *par[2] = {NULL};
 
 	if (!ret){
 		// lowlevel application not running
+
+		// remove file semaphore
+		strcpy(fname, pathinit);
+		strcat(fname,"/");
+		strcat(fname, chld_name);
+		strcat(fname, sufsema);
+		remove(fname);
+
 		// running it
 		ret = fork();
 		if (ret < 0){
@@ -904,12 +922,16 @@ char *par[2] = {NULL};
 			exit(0);
 		}
 		if (!ret){
-			// child process
+
+			// run child process
 			execv(chld_name, par);
 			ts_printf(STDOUT_FILENO, "MFI %s: inotify_init failed: %d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
-//		usleep(100000);
+
+		// wait file semaphore
+		while(stat(fname, &fstt) == -1);
+//		was: usleep(1000);
 	}else{
 		ts_printf(STDOUT_FILENO, "MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 	}

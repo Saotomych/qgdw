@@ -134,4 +134,10 @@ typedef struct _LIST{
 	void *prev;
 } LIST;
 
+typedef struct _varbook{
+	ep_data_header 	edh;
+	time_t			time;
+	uint32_t		lenname;
+} __attribute__ ((packed)) varbook;
+
 #endif /* COMMON_H_ */

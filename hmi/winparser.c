@@ -16,6 +16,7 @@ static menu *allmenus[MAXMENU];
 static int maxmenus = 0;
 
 extern LNODE *actlnode;
+extern time_t jourtime;
 
 //------------------------------------------------------------------------------------
 // Definition for function keys
@@ -350,6 +351,8 @@ menu *num_menu = allmenus[maxmenus];
 
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
+
+   	 		 vc_subscribe_dataset(num_menu->fvarrec, &jourtime, actlnode);
 
    	 	 	 return num_menu;
 }

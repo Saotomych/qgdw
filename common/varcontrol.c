@@ -543,21 +543,41 @@ varrec *prevvr;
 	return 0;
 }
 
-void vc_subscribe_dataset(varrec *vr){
-ep_data_header edh;
-char *bookbuf;
+void vc_subscribe_dataset(varrec *vr, time_t *t, LNODE *actln){
+varbook *vb;
+char *varname;
+u08 *bookbuf;
+uint32_t len;
 
 	while(vr){
 		// Need subscribe
 		if (vr->prop & BOOKING){
-			edh.adr = IDHMI;
-			edh.sys_msg = EP_MSG_BOOK;
-			edh.len = sizeof(int) + strlen(vr->name->fc) + 1;
-			bookbuf = malloc(edh.len);
-			*((int*)bookbuf) = (int) vr;
+			// make full name LDinst.LNprefix.LNclass.LNdesc.
+			// ready part = DOname.DAname.BDAname.JRNoffset
+
+			len = sizeof(varbook) + 7 - sizeof(ep_data_header)
+									  + strlen(actln->ln.ldinst)
+									  + strlen(actln->ln.prefix)
+									  + strlen(actln->ln.lnclass)
+									  + strlen(actln->ln.lninst)
+									  + strlen(&vr->name->fc[3]);  // with start ep_data_header
+			bookbuf = malloc(sizeof(ep_data_header) + len);
+			vb = (varbook*) bookbuf;
+			varname = (char*) (bookbuf + sizeof(varbook));
+			ts_sprintf(varname, "%s/%s.%s.%s.%s\n", actln->ln.ldinst,
+													actln->ln.prefix,
+													actln->ln.lnclass,
+													actln->ln.lninst,
+													&vr->name->fc[3]);
+			vb->edh.adr = IDHMI;
+			vb->edh.sys_msg = EP_MSG_BOOK;
+			vb->edh.len = len;
+			vb->edh.numep = 0;
+			vb->lenname = strlen(varname);
+			vb->time = *t;
 
 			// Send subscribe this varrec
-			mf_toendpoint((char*) &edh, edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+			mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
 		}
 		// Next varrec
 		vr = vr->l.next;

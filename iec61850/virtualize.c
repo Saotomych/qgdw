@@ -499,6 +499,11 @@ SCADA_CH *actscadach;
 			sync_time( *(time_t*)(buff + offset + sizeof(ep_data_header)) );
 
 			break;
+
+		case EP_MSG_BOOK:
+			ts_printf(STDOUT_FILENO, "IEC61850 set subscribe for value %s\n",
+					buff + offset + sizeof(varbook));
+			break;
 		}
 
 		// move over the data

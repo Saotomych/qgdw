@@ -92,20 +92,20 @@ typedef struct _VARREC{
 } varrec, *pvarrec;
 
 // Structure for fast working events while variable was changed
-typedef struct _VARBOOK{
-	LIST l;
-	int idvar;		// it's pointer to var in other application. = val
-	int idtype;		// it's var type
-	void *val;
-	int	prop;
-} varbook, *pvarbook;
+//typedef struct _VARBOOK{
+//	LIST l;
+//	int idvar;		// it's pointer to var in other application. = val
+//	int idtype;		// it's var type
+//	void *val;
+//	int	prop;
+//} varbook, *pvarbook;
 
 extern int vc_init(void);
 extern int vc_get_map_by_name(char *name, uint32_t *mid);
 extern int vc_get_type_by_name(char *name, char *type);
 extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
 extern int vc_destroyvarreclist(varrec *fvr);
-extern void vc_subscribe_dataset(varrec *vr);
+extern void vc_subscribe_dataset(varrec *vr, time_t *t, LNODE *actln);
 extern void vc_unsubscribe_dataset(varrec *vr);
 
 #endif /* VARCONTROL_H_ */
