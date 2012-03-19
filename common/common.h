@@ -137,7 +137,24 @@ typedef struct _LIST{
 typedef struct _varbook{
 	ep_data_header 	edh;
 	time_t			time;
+	uint32_t		uid;
+	uint32_t		id;
+	uint32_t		type;
 	uint32_t		lenname;
 } __attribute__ ((packed)) varbook;
+
+typedef struct _varevent{
+	ep_data_header 	edh;
+	time_t			time;
+	uint32_t		uid;
+	uint32_t		vallen;
+
+	union {
+		uint32_t	ui;					/* unsigned integer representation */
+		int32_t		i;					/* integer representation */
+		float		f;					/* float representation */
+	} value;							/* transferring value (e.g. measured value, counter readings, etc.) */
+
+} __attribute__ ((packed)) varevent;
 
 #endif /* COMMON_H_ */

@@ -321,7 +321,6 @@ menu *num_menu = allmenus[maxmenus];
 	            	*p = 0;
 	            	p += 5;
 	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, defvalues);
-//	            	if (num_menu->pitems[i]->vr) nextvarrec = num_menu->pitems[i]->vr;
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{

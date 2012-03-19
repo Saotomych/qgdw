@@ -210,6 +210,8 @@ char *buff;
 int adr, dir, rdlen, fullrdlen;
 int offset;
 ep_data_header *edh;
+varevent *ave;
+varrec *avr;
 
 	buff = malloc(len);
 	if(!buff) return -1;
@@ -233,6 +235,13 @@ ep_data_header *edh;
 		// Incoming data will be working
 		switch(edh->sys_msg){
 
+		case EP_MSG_BOOKEVENT:
+			ave = (varevent*) buff + offset;
+			ts_printf(STDOUT_FILENO, "%.2F\n", ave->value.f);
+			avr = (varrec*) ave->uid;
+			*((float*) (avr->val->val)) = ave->value.f;
+
+			break;
 		}
 
 		// move over the data

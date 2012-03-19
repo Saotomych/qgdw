@@ -89,16 +89,8 @@ typedef struct _VARREC{
 	int id;			// ID of va from mainmap.cfg, for fast identify with otherside varrec
 	int prop;		// properties: const, var, booking, true value.
 	int time;		// time from last refresh value, usec
+	uint32_t	uid;	// unique ID of value, it's equal pointer to varrec in HMI
 } varrec, *pvarrec;
-
-// Structure for fast working events while variable was changed
-//typedef struct _VARBOOK{
-//	LIST l;
-//	int idvar;		// it's pointer to var in other application. = val
-//	int idtype;		// it's var type
-//	void *val;
-//	int	prop;
-//} varbook, *pvarbook;
 
 extern int vc_init(void);
 extern int vc_get_map_by_name(char *name, uint32_t *mid);
@@ -108,5 +100,6 @@ extern int vc_destroyvarreclist(varrec *fvr);
 extern void vc_subscribe_dataset(varrec *vr, time_t *t, LNODE *actln);
 extern void vc_freevarrec(varrec *vr);
 extern void vc_unsubscribe_dataset(varrec *vr, LNODE *actln);
+extern varrec* vc_getfirst_varrec(void);
 
 #endif /* VARCONTROL_H_ */

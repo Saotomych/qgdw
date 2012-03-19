@@ -561,13 +561,12 @@ uint32_t len;
 			// make full name LDinst.LNprefix.LNclass.LNdesc.
 			// ready part = DOname.DAname.BDAname.JRNoffset
 
-			len = sizeof(varbook) + 7 - sizeof(ep_data_header)
-									  + strlen(actln->ln.ldinst)
+			len = sizeof(varbook) + 7 + strlen(actln->ln.ldinst)
 									  + strlen(actln->ln.prefix)
 									  + strlen(actln->ln.lnclass)
 									  + strlen(actln->ln.lninst)
 									  + strlen(vr->name->fc);  // with start ep_data_header
-			bookbuf = malloc(sizeof(ep_data_header) + len);
+			bookbuf = malloc(len);
 			vb = (varbook*) bookbuf;
 			varname = (char*) (bookbuf + sizeof(varbook));
 			ts_sprintf(varname, "%s/%s.%s.%s.%s\n", actln->ln.ldinst,
@@ -578,10 +577,12 @@ uint32_t len;
 
 			vb->edh.adr = IDHMI;
 			vb->edh.sys_msg = EP_MSG_BOOK;
-			vb->edh.len = len;
+			vb->edh.len = len - sizeof(ep_data_header);
 			vb->edh.numep = 0;
 			vb->lenname = strlen(varname);
 			vb->time = *t;
+			vb->id = vr->id;
+			vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
 
 			// Send subscribe this varrec
 			mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
@@ -600,32 +601,31 @@ char *varname;
 u08 *bookbuf;
 uint32_t len;
 
-	len = sizeof(varbook) + 7 - sizeof(ep_data_header)
-											  + strlen(actln->ln.ldinst)
-											  + strlen(actln->ln.prefix)
-											  + strlen(actln->ln.lnclass)
-											  + strlen(actln->ln.lninst)
-											  + strlen(vr->name->fc);  // with start ep_data_header
+	len = sizeof(varbook) + 1 + strlen(vr->name->fc);  // with start ep_data_header
 
-	bookbuf = malloc(sizeof(ep_data_header) + len);
+	bookbuf = malloc(len);
 	vb = (varbook*) bookbuf;
 	varname = (char*) (bookbuf + sizeof(varbook));
-	ts_sprintf(varname, "%s/%s.%s.%s.%s\n", actln->ln.ldinst,
-											actln->ln.prefix,
-											actln->ln.lnclass,
-											actln->ln.lninst,
-											vr->name->fc);
+	ts_sprintf(varname, "%s", vr->name->fc);
 
 	vb->edh.adr = IDHMI;
 	vb->edh.sys_msg = EP_MSG_UNBOOK;
-	vb->edh.len = len;
+	vb->edh.len = len - sizeof(ep_data_header);
 	vb->edh.numep = 0;
 	vb->lenname = strlen(varname);
 	vb->time = 0;
+	vb->id = vr->id;
 
-	// Send subscribe this varrec
+	ts_printf(STDOUT_FILENO, "HMI: unsubscribe\n");
+
+	// Send unsubscribe all varrec
 	mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
 
 	free(bookbuf);
 
+}
+
+varrec* vc_getfirst_varrec(void){
+
+	return fvarrec.next;
 }

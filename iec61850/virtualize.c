@@ -76,7 +76,7 @@ typedef struct _SCADA_ASDU{
 static LIST fasdu, fasdutype, fdm, fscada, fscadach;
 
 // Last varrec for datasets control
-static varrec *lastvarrec = NULL;
+//static varrec *lastvarrec = NULL;
 
 
 void send_sys_msg(int adr, int msg){
@@ -371,9 +371,14 @@ SCADA_CH *actscadach;
 // For EP_MSG_BOOK & UNBOOK
 LNODE *actln;
 varrec *actvr, *prevvr;
+varbook *avb;
+varevent *ave;
 uint32_t adr1;
 char lnname[40];
 char *pname;
+int recjour;
+time_t time;
+uint32_t valtype;
 
 	buff = malloc(len);
 
@@ -482,6 +487,18 @@ char *pname;
 //				else{
 //					ts_printf(STDOUT_FILENO, "IEC61850 error: id %d very big\n", pdu->id);
 //				}
+
+				// Find varrec and set event
+				actvr = vc_getfirst_varrec();
+				while(actvr){
+					if (actvr->asdu != pdm->meterid){
+						actvr = actvr->l.next;
+						continue;
+					}
+					if (actvr->id == avb->id) break;
+					actvr = actvr->l.next;
+				}
+
 				// Next pdu
 				pdu++;
 				rdlen -= sizeof(data_unit);
@@ -509,7 +526,9 @@ char *pname;
 			break;
 
 		case EP_MSG_BOOK:
+
 			pname = buff + offset + sizeof(varbook);
+			avb = buff + offset;
 			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
 			adr1 = atoi(pname);
 			actln = fln.next;
@@ -520,13 +539,58 @@ char *pname;
 			// Find LN with other equal parameters
 			while(actln){
 					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
+					pname[avb->lenname] = 0;
 					if (strstr(pname, lnname)) break;
 					actln = actln->l.next;
 			}
 
 			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
 
-			lastvarrec = vc_addvarrec(actln, strstr(buff + offset + sizeof(varbook), "LN:") + 3, NULL);
+			pname = strstr(pname, "(");
+			if (pname == NULL){
+				// Find varrec for this variable
+				actvr = vc_getfirst_varrec();
+				while(actvr){
+					if (actvr->asdu != actln->ln.ldinst){
+						actvr = actvr->l.next;
+						continue;
+					}
+					if (actvr->id == avb->id) break;
+				}
+				actvr->uid = avb->uid;
+				actvr->prop |= BOOKING;
+				valtype = actvr->val->idtype;
+//				val = vc_getvalbytype (actvr->val->val);
+
+			}else{
+//				// Call Journal constant and return by multififo
+//				recjour = atoi(pname+1);
+//				time = atoi(((varbook*) (buff + offset))->time);
+//				jour_getvar(actln->ln.ldinst, recjour, time);
+				time = 435345386;
+				valtype = avb->type;
+//				val = jour_getval(avb);
+			}
+
+			// Send variable to HMI
+			len = sizeof(varevent);		// Now int only
+			sendbuff = malloc(len);
+			sedh = (ep_data_header*) sendbuff;
+			ave = (varevent*) sendbuff;
+			sedh->adr = IDHMI;
+			sedh->sys_msg = EP_MSG_BOOKEVENT;
+			sedh->len = len - sizeof(ep_data_header);
+			ave->uid = avb->uid;
+			ave->time = 0;
+
+			// By type
+			ave->vallen = sizeof(float);
+			realloc(sendbuff, sizeof(varevent)+ sizeof(float));
+			ave->value.f = 1234.7654;
+
+			mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRUP);
+			free(sendbuff);
+
 			break;
 
 		case EP_MSG_UNBOOK:
@@ -534,22 +598,10 @@ char *pname;
 			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
 			pname = strstr(pname, "LN:");
 
-			actvr = lastvarrec;
-			while((actvr) && (strcmp(actvr->name->fc, pname))){
-				prevvr = actvr->l.prev;
-				// Free varrec
-				vc_freevarrec(actvr);
-				actvr = prevvr;
-			}
+			actvr = vc_getfirst_varrec();
+			if (actvr) actvr->prop &= ~BOOKING;
 
-			if (actvr){
-				prevvr = actvr->l.prev;
-				vc_freevarrec(actvr);
-				actvr = prevvr;
-			}
-
-			if (actvr) ts_printf(STDOUT_FILENO, "IEC61850: last varrec %s\n", actvr->name->fc);
-			else ts_printf(STDOUT_FILENO, "IEC61850: all varrec was free\n");
+			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unsubscribed\n");
 
 			break;
 
@@ -744,7 +796,7 @@ int i;
 				// Addon '.mag.f' is temporary
 				doname = malloc(strlen(actdo->dobj.name)  + 10);
 				ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);
-				vc_addvarrec(actln, doname, NULL);
+				vc_addvarrec(actln, doname, NULL)->prop &= ~BOOKING;
 				actdo = actdo->l.next;
 			}
 		}
