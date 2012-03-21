@@ -106,6 +106,7 @@ void start_collect_data()
 	log_db_init_timers();
 }
 
+// --- Time function ---
 int get_rtc_time(const char *dev_name, time_t *t_val)
 {
 	struct rtc_time rtc_tm;
@@ -357,17 +358,206 @@ int sync_time(time_t srv_time)
 	return res;
 }
 
+// --- End Time function
+
+// --- rcvdata call this function
+
+char *add_header2scada(char *buff, ep_data_header *edh){
+data_unit *pdu = (data_unit*) (buff + sizeof(data_unit));
+ep_data_header *pdh = (ep_data_header*) buff;
+
+	pdh->adr = 0;
+	pdh->sys_msg = EP_USER_DATA;
+	pdh->len = sizeof(asdu);
+
+	return (char*) pdu;
+}
+
+char *add_header2hmi(char *buff){
+varevent *pve = (varevent*) (buff + sizeof(varevent));
+ep_data_header *pdh = (ep_data_header*) buff;
+
+	pdh->adr = IDHMI;
+	pdh->len = 0;
+	pdh->sys_msg = EP_MSG_BOOKEVENT;
+
+	return (char*) pve;
+}
+
+data_unit *add_asdu(char *buff, asdu* pasdu){
+asdu *psasdu =  (asdu*) buff;
+
+	memcpy(psasdu, pasdu, sizeof(asdu));
+	psasdu->size = 0;
+
+	return (psasdu->data);
+}
+
+uint32_t add_dataunit(data_unit *pdu, data_unit **pspdu, ep_data_header *edh){
+VIRT_ASDU *sasdu = (VIRT_ASDU*) fasdu.next;
+data_unit *spdu = *pspdu;
+SCADA_CH *actscadach;
+ASDU_DATAMAP *pdm;
+asdu *pasdu = (asdu*) (edh + 1);
+
+uint32_t  fld_idx;
+
+	if (pdu->id <= (VIRT_ASDU_MAXSIZE - 4)){
+		// save current data unit value for log_db
+		if(strlen(pdu->name) > 0){
+			actscadach = (SCADA_CH*) fscadach.next;
+			while(actscadach && actscadach->ASDUaddr != pasdu->adr)	actscadach = actscadach->l.next;
+
+			if(actscadach){
+				// SCADA_CH was found
+				fld_idx = log_db_get_fld_idx(pdu->name);
+				if(fld_idx >= 0){
+					actscadach->log_rec[fld_idx] = pdu->value.ui;
+				}
+			}
+		}
+
+		// Mapping id
+		pdm = (ASDU_DATAMAP*) &fdm;
+		while ((pdm) && (pdm->meterid != pdu->id))
+		{
+			pdm = pdm->l.next;
+		}
+		if (pdm){
+			// TODO Find type of variable & Convert type on fly
+			// Remap variable pdu->id -> id (for SCADA_ASDU)
+
+			// find VIRT_ASDU
+			while ( (sasdu) && sasdu->myln->ln.pmyld &&
+					!(atoi(sasdu->myln->ln.pmyld->inst) == edh->adr &&
+					strstr(pdm->mydobj->dobj.pmynodetype->id, sasdu->myln->ln.lntype)) )
+			{
+				sasdu = sasdu->l.next;
+			}
+
+			if(sasdu){
+				pdu->id =  sasdu->baseoffset + pdm->scadaid;
+				memcpy(spdu, pdu, sizeof(data_unit));
+				(*pspdu)++; 	// Next pdu
+				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+				return 0;
+			}
+			else{
+				ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
+			}
+		}
+		else{
+			ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
+		}
+	}
+	else{
+		ts_printf(STDOUT_FILENO, "IEC61850 error: id %d very big\n", pdu->id);
+	}
+
+
+	return 1;
+}
+
+uint32_t add_varevent(data_unit *pdu, varevent **ppve, ep_data_header *edh){
+varrec* actvr;
+varevent *pve = *ppve;
+asdu *pasdu = (asdu*) (edh + 1);
+
+		// Find varrec and set event
+		actvr = vc_getfirst_varrec();
+		while(actvr){
+			if (actvr->asdu != pasdu->adr){
+				actvr = actvr->l.next;
+				continue;
+			}
+			if (actvr->id == pdu->id){
+				actvr->time = pdu->time_tag;
+				*((float*)(actvr->val->val)) = pdu->value.f;
+
+				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
+				if (actvr->prop & BOOKING){
+					pve->value.f = pdu->value.f;
+					pve->time = pdu->time_tag;
+					pve->vallen = sizeof(float);
+					(*ppve)++; 	// Next varevent
+					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
+
+					return 0;
+				}
+			}
+			actvr = actvr->l.next;
+		}
+
+		return 1;
+}
+
+data_unit *get_next_dataunit(data_unit *pdu, ep_data_header *edh){
+uint32_t len = edh->len;
+uint32_t len2 = (int32_t) pdu - (int32_t) edh - sizeof(ep_data_header);
+
+	if (len2 < len) return pdu++;
+
+	return 0;
+}
+
+// Send data to all registered SCADA_CHs
+void send_asdu2scada(char *sendbuf, uint32_t len){
+ep_data_header *sedh = (ep_data_header*) sendbuf;
+asdu *psasdu = (asdu*) (sedh + 1);
+SCADA_ASDU *actscada;
+
+	sedh->len = sizeof(asdu) + sizeof(data_unit) * len;
+
+	if (len){
+		actscada = (SCADA_ASDU*) fscada.next;
+		while(actscada){
+			sedh->adr = atoi(actscada->pscada->myln->ln.pmyld->inst);
+			psasdu->adr = sedh->adr;
+			mf_toendpoint(sendbuf, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRDN);
+			ts_printf(STDOUT_FILENO, "IEC61850: %d data_units sent to SCADA adr = %d\n", psasdu->size, sedh->adr);
+			actscada = actscada->l.next;
+		}
+	}
+}
+
+void send_varevent2hmi(char *sendbuf, uint32_t len){
+ep_data_header *eph = (ep_data_header*) sendbuf;
+
+	eph->len = sizeof(varevent) * len;
+
+	mf_toendpoint(sendbuf, eph->len + sizeof(ep_data_header), IDHMI, DIRUP);
+
+}
+
+// 3. Find LN by Name
+LNODE *find_lnbyname(){
+LNODE* ln = (LNODE*) fln.next;
+
+	return ln;
+}
+
+// 4. Find local varrec by Name
+void send_varrecbyname2hmi(){
+
+}
+
+// 5. Find journal var by Name
+void send_jourrecbyname2hmi(){
+
+}
+
 int rcvdata(int len){
 char *buff, *sendbuff;
-int adr, dir, rdlen, fullrdlen;
-int offset, fld_idx;
+char *senddm, *sendve;
+varevent *pve;
+int cntdm, cntve;
+
+int adr, dir, fullrdlen;
+int offset;
 ep_data_header *edh, *sedh;
-data_unit *pdu, *spdu;
-VIRT_ASDU *sasdu = (VIRT_ASDU*) fasdu.next;
-asdu *pasdu, *psasdu;
-ASDU_DATAMAP *pdm;
-SCADA_ASDU *actscada;
-SCADA_CH *actscadach;
+data_unit *pdu;
+data_unit *pdm;
+
 // For EP_MSG_BOOK & UNBOOK
 LNODE *actln;
 varrec *actvr;
@@ -403,139 +593,29 @@ float val;
 
 		switch(edh->sys_msg){
 		case EP_USER_DATA:
-			rdlen = edh->len;
-			pasdu = (asdu*) (buff + offset + sizeof(ep_data_header));
-			rdlen -= sizeof(asdu);
-
-
-			ts_printf(STDOUT_FILENO, "IEC61850: Values for ASDU = %d received\n", edh->adr);
-
-			// TODO broadcast request, etc.
-
-			// Making up Buffer for send to HMI
-			ave = malloc(sizeof(varevent));
-			ave->edh.adr = IDHMI;
-			ave->edh.len = sizeof(varevent) - sizeof(ep_data_header);
-			ave->edh.sys_msg = EP_MSG_BOOKEVENT;
 
 			// Making up Buffer for send to SCADA_ASDU.
 			// It has data objects having mapping only
-			sendbuff = malloc(len);
-			sedh = (ep_data_header*) sendbuff;
-			sedh->sys_msg = EP_USER_DATA;
-			sedh->len = sizeof(asdu);
+			senddm = malloc(len);
+			sendve = malloc(len);
 
-			psasdu = (asdu*) (sendbuff + sizeof(ep_data_header));
-			memcpy(psasdu, pasdu, sizeof(asdu));
-			psasdu->size = 0;
-			spdu = (data_unit*) ((void*)psasdu + sizeof(asdu));
-			pdu = (void*) pasdu + sizeof(asdu);
-
-			while(rdlen > 0){
-				if (pdu->id <= (VIRT_ASDU_MAXSIZE - 4)){
-	 				// TODO Copy variable to data struct IEC61850
-					// TODO Find type of variable and convert type on fly
-
-					// save current data unit value for log_db
-					if(strlen(pdu->name) > 0)
-					{
-						actscadach = (SCADA_CH*) fscadach.next;
-						while(actscadach && actscadach->ASDUaddr != pasdu->adr)
-						{
-							actscadach = actscadach->l.next;
-						}
-
-						if(actscadach)
-						{
-							// SCADA_CH was found
-							fld_idx = log_db_get_fld_idx(pdu->name);
-
-							if(fld_idx >= 0)
-							{
-								actscadach->log_rec[fld_idx] = pdu->value.ui;
-							}
-						}
-					}
-
-					// Mapping id
-					pdm = (ASDU_DATAMAP*) &fdm;
-					while ((pdm) && (pdm->meterid != pdu->id))
-					{
-						pdm = pdm->l.next;
-					}
-					if (pdm){
-						// TODO Find type of variable & Convert type on fly
-						// Remap variable pdu->id -> id (for SCADA_ASDU)
-
-						// find VIRT_ASDU
-						while ( (sasdu) && sasdu->myln->ln.pmyld &&
-								!(atoi(sasdu->myln->ln.pmyld->inst) == edh->adr &&
-								strstr(pdm->mydobj->dobj.pmynodetype->id, sasdu->myln->ln.lntype)) )
-						{
-							sasdu = sasdu->l.next;
-						}
-
-						if(sasdu){
-							pdu->id =  sasdu->baseoffset + pdm->scadaid;
-							memcpy(spdu, pdu, sizeof(data_unit));
-							spdu++;
-							psasdu->size++;
-							sedh->len += sizeof(data_unit);
-							ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
-						}
-						else{
-							ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
-						}
-					}
-//					else{
-//						ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
-//					}
-				}
-//				else{
-//					ts_printf(STDOUT_FILENO, "IEC61850 error: id %d very big\n", pdu->id);
-//				}
-
-				// Find varrec and set event
-				actvr = vc_getfirst_varrec();
-				while(actvr){
-					if (actvr->asdu != psasdu->adr){
-						actvr = actvr->l.next;
-						continue;
-					}
-					if (actvr->id == pdm->meterid){
-						actvr->time = pdu->time_tag;
-						*((float*)(actvr->val->val)) = pdu->value.f;
-						ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
-						if (actvr->prop & BOOKING){
-							ave->time = pdu->time_tag;
-							ave->vallen = sizeof(float);
-							ave->value.f = pdu->value.f;
-							mf_toendpoint((char*) ave, sizeof(varevent), IDHMI, DIRUP);
-							ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
-						}
-					}
-					actvr = actvr->l.next;
-				}
-
-				// Next pdu
-				pdu++;
-				rdlen -= sizeof(data_unit);
+			pdu = (data_unit*) (edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
+			pdm = (data_unit*) add_header2scada(senddm, edh);					// Outgoing data_units
+			pdm = add_asdu((char*) pdm, (asdu*)(edh + sizeof(ep_data_header)));
+			pve = (varevent*) add_header2hmi(sendve);							// Outgoing varevents
+			cntdm = 0; cntve = 0;
+			while (pdu){
+				cntdm += (add_dataunit(pdu, &pdm, edh) ? 0 : sizeof(data_unit));
+				cntve += (add_varevent(pdu, &pve, edh) ? 0 : sizeof(varevent));
+				pdu = get_next_dataunit(pdu, edh);
 			}
 
-			// Send data to all registered SCADA_CHs
-			if (psasdu->size){
-				actscada = (SCADA_ASDU*) fscada.next;
-				while(actscada){
-					sedh->adr = atoi(actscada->pscada->myln->ln.pmyld->inst);
-					psasdu->adr = sedh->adr;
-					mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRDN);
-					ts_printf(STDOUT_FILENO, "IEC61850: %d data_units sent to SCADA adr = %d\n", psasdu->size, sedh->adr);
-					actscada = actscada->l.next;
-				}
-			}
+			send_asdu2scada(senddm, cntdm);
+			send_varevent2hmi(sendve, cntve);
 
-			free(sendbuff);
-			free(ave);
+			free(sendve);
+			free(senddm);
+
 
 			break;
 

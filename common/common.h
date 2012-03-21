@@ -144,7 +144,6 @@ typedef struct _varbook{
 } __attribute__ ((packed)) varbook;
 
 typedef struct _varevent{
-	ep_data_header 	edh;
 	time_t			time;
 	uint32_t		uid;
 	uint32_t		vallen;
