@@ -2,6 +2,8 @@ all : mkdirs unitlinks phylinks iec61850 manager hmi
 	
 clean : unitlinks-clean u-tsts-clean phylinks-clean iec61850-clean manager-clean hmi-clean
 
+rebuild: clean all
+
 mkdirs :
 	if test -d bin; then echo "directory bin already exists"; else mkdir bin; fi
 
