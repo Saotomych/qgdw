@@ -6,6 +6,7 @@
  */
 
 #include <linux/input.h>
+#include <windows.h>
 #include "../common/common.h"
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
@@ -26,6 +27,8 @@ static LIST fldextinfo = {NULL, NULL};
 static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
 int fkeyb;
+
+static volatile uint32_t MFMessage = 0;
 
 // Synonyms for global variables
 // Defvalues included: m700env, about.me
@@ -204,6 +207,35 @@ char words[][6] = {
 
 }
 
+void main_switch(GR_EVENT *event){
+
+	switch (event->type) {
+
+	case GR_EVENT_TYPE_EXPOSURE:
+		if (event->exposure.wid == GR_ROOT_WINDOW_ID){
+			ts_printf(STDOUT_FILENO, "Root exposure event 0x%04X\n", event->exposure.wid);
+			redraw_screen(&event);
+		}
+		break;
+
+	case GR_EVENT_TYPE_KEY_DOWN:
+		key_pressed(event);
+			break;
+
+	case GR_EVENT_TYPE_KEY_UP:
+		key_rised(event);
+		break;
+
+	case GR_EVENT_TYPE_UPDATE:
+		ts_printf(STDOUT_FILENO, "Window event update\n");
+		break;
+
+		case GR_EVENT_TYPE_CLOSE_REQ:
+			GrClose();
+			exit(0);
+		}
+}
+
 // -- Multififo receive data --
 int rcvdata(int len){
 char *buff;
@@ -237,9 +269,10 @@ varrec *avr;
 
 		case EP_MSG_BOOKEVENT:
 			ave = (varevent*) buff + offset;
-			ts_printf(STDOUT_FILENO, "%.2F\n", ave->value.f);
 			avr = (varrec*) ave->uid;
+			ts_printf(STDOUT_FILENO, "HMI!!!: get value %.2F as %s\n", ave->value.f, avr->name->fc);
 			*((float*) (avr->val->val)) = ave->value.f;
+			MFMessage = GR_EVENT_TYPE_EXPOSURE;
 
 			break;
 		}
@@ -254,34 +287,6 @@ varrec *avr;
 	return 0;
 }
 
-void main_switch(GR_EVENT *event){
-
-	switch (event->type) {
-
-	case GR_EVENT_TYPE_EXPOSURE:
-		if (event->exposure.wid == GR_ROOT_WINDOW_ID){
-			ts_printf(STDOUT_FILENO, "Root exposure event 0x%04X\n", event->exposure.wid);
-			redraw_screen(&event);
-		}
-		break;
-
-	case GR_EVENT_TYPE_KEY_DOWN:
-		key_pressed(event);
-			break;
-
-	case GR_EVENT_TYPE_KEY_UP:
-		key_rised(event);
-		break;
-
-	case GR_EVENT_TYPE_UPDATE:
-		ts_printf(STDOUT_FILENO, "Window event update\n");
-		break;
-
-		case GR_EVENT_TYPE_CLOSE_REQ:
-			GrClose();
-			exit(0);
-		}
-}
 
 // ----------------------------------------------------------------------------------
 void mainloop()
@@ -309,6 +314,14 @@ size_t evlen;
 				}
  			}else main_switch(&event);
  		}else main_switch(&event);
+
+ 		// Check my events
+ 		if (MFMessage){
+			event.type = MFMessage;
+			MFMessage = 0;
+			main_switch(&event);
+ 		}
+
 	}
 
  	GrClose();

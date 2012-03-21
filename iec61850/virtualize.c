@@ -370,7 +370,7 @@ SCADA_ASDU *actscada;
 SCADA_CH *actscadach;
 // For EP_MSG_BOOK & UNBOOK
 LNODE *actln;
-varrec *actvr, *prevvr;
+varrec *actvr;
 varbook *avb;
 varevent *ave;
 uint32_t adr1;
@@ -379,6 +379,7 @@ char *pname;
 int recjour;
 time_t time;
 uint32_t valtype;
+float val;
 
 	buff = malloc(len);
 
@@ -410,6 +411,12 @@ uint32_t valtype;
 			ts_printf(STDOUT_FILENO, "IEC61850: Values for ASDU = %d received\n", edh->adr);
 
 			// TODO broadcast request, etc.
+
+			// Making up Buffer for send to HMI
+			ave = malloc(sizeof(varevent));
+			ave->edh.adr = IDHMI;
+			ave->edh.len = sizeof(varevent) - sizeof(ep_data_header);
+			ave->edh.sys_msg = EP_MSG_BOOKEVENT;
 
 			// Making up Buffer for send to SCADA_ASDU.
 			// It has data objects having mapping only
@@ -491,11 +498,22 @@ uint32_t valtype;
 				// Find varrec and set event
 				actvr = vc_getfirst_varrec();
 				while(actvr){
-					if (actvr->asdu != pdm->meterid){
+					if (actvr->asdu != psasdu->adr){
 						actvr = actvr->l.next;
 						continue;
 					}
-					if (actvr->id == avb->id) break;
+					if (actvr->id == pdm->meterid){
+						actvr->time = pdu->time_tag;
+						*((float*)(actvr->val->val)) = pdu->value.f;
+						ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
+						if (actvr->prop & BOOKING){
+							ave->time = pdu->time_tag;
+							ave->vallen = sizeof(float);
+							ave->value.f = pdu->value.f;
+							mf_toendpoint((char*) ave, sizeof(varevent), IDHMI, DIRUP);
+							ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
+						}
+					}
 					actvr = actvr->l.next;
 				}
 
@@ -517,6 +535,7 @@ uint32_t valtype;
 			}
 
 			free(sendbuff);
+			free(ave);
 
 			break;
 
@@ -551,15 +570,22 @@ uint32_t valtype;
 				// Find varrec for this variable
 				actvr = vc_getfirst_varrec();
 				while(actvr){
-					if (actvr->asdu != actln->ln.ldinst){
+					if (actvr->asdu != atoi(actln->ln.ldinst)){
 						actvr = actvr->l.next;
 						continue;
 					}
 					if (actvr->id == avb->id) break;
+					actvr = actvr->l.next;
 				}
-				actvr->uid = avb->uid;
-				actvr->prop |= BOOKING;
-				valtype = actvr->val->idtype;
+				if (actvr){
+					actvr->uid = avb->uid;
+					actvr->prop |= BOOKING;
+					valtype = actvr->val->idtype;
+					val = *((float*)(actvr->val->val));
+					time = actvr->time;
+					ts_printf(STDOUT_FILENO, "IEC61850: asdu %d of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
+				}
+
 //				val = vc_getvalbytype (actvr->val->val);
 
 			}else{
@@ -573,7 +599,7 @@ uint32_t valtype;
 			}
 
 			// Send variable to HMI
-			len = sizeof(varevent);		// Now int only
+			len = sizeof(varevent);
 			sendbuff = malloc(len);
 			sedh = (ep_data_header*) sendbuff;
 			ave = (varevent*) sendbuff;
@@ -581,14 +607,13 @@ uint32_t valtype;
 			sedh->sys_msg = EP_MSG_BOOKEVENT;
 			sedh->len = len - sizeof(ep_data_header);
 			ave->uid = avb->uid;
-			ave->time = 0;
+			ave->time = time;
 
 			// By type
 			ave->vallen = sizeof(float);
-			realloc(sendbuff, sizeof(varevent)+ sizeof(float));
-			ave->value.f = 1234.7654;
+			ave->value.f = val;
 
-			mf_toendpoint(sendbuff, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRUP);
+			mf_toendpoint(sendbuff, len, sedh->adr, DIRUP);
 			free(sendbuff);
 
 			break;
@@ -788,6 +813,7 @@ LNODE *actln = (LNODE*) fln.next;
 DOBJ *actdo;
 char *doname;
 int i;
+varrec *vr;
 
 	while(actln){
 		if (actln->ln.pmytype){
@@ -796,7 +822,8 @@ int i;
 				// Addon '.mag.f' is temporary
 				doname = malloc(strlen(actdo->dobj.name)  + 10);
 				ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);
-				vc_addvarrec(actln, doname, NULL)->prop &= ~BOOKING;
+				vr = vc_addvarrec(actln, doname, NULL);
+				vr->prop &= ~BOOKING;
 				actdo = actdo->l.next;
 			}
 		}
@@ -830,36 +857,36 @@ char *chld_app;
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	sch = sch->l.next;
-//	while(sch){
-//
-//		ts_printf(STDOUT_FILENO, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
-//
-//		// Create config_device
-//		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
-//		strcpy(chld_app, sch->myld->ld.desc);
-//
-//		// By agreement with icd and ssd connection
-//		// ld.desc = unitlink-name/dispather name - device type
-//		// Unitlinks will starts as realname
-//		pchld_app_end = strstr(chld_app, "/");
-//		if (pchld_app_end) *pchld_app_end = 0;	// Makes Unitlink's name as zero-string
-////		pchld_app_end++;	// (in future) equals to beginning of text meter description for HMI
-//
-//		pchld_app_end = strstr(chld_app, ".");
-//		if (pchld_app_end) *pchld_app_end = 0;
-//
-//		// New endpoint
-//		mf_newendpoint(sch->ASDUaddr, chld_app, getpath2fifoul(), 0);
-//
-//		free(chld_app);
-//		sleep(1);	// Delay for forming next level endpoint
-//
-//		sch = sch->l.next;
-//	}
+	while(sch){
 
-//	create_alldo();
+		ts_printf(STDOUT_FILENO, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
 
-//	start_collect_data();
+		// Create config_device
+		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);
+		strcpy(chld_app, sch->myld->ld.desc);
+
+		// By agreement with icd and ssd connection
+		// ld.desc = unitlink-name/dispather name - device type
+		// Unitlinks will starts as realname
+		pchld_app_end = strstr(chld_app, "/");
+		if (pchld_app_end) *pchld_app_end = 0;	// Makes Unitlink's name as zero-string
+//		pchld_app_end++;	// (in future) equals to beginning of text meter description for HMI
+
+		pchld_app_end = strstr(chld_app, ".");
+		if (pchld_app_end) *pchld_app_end = 0;
+
+		// New endpoint
+		mf_newendpoint(sch->ASDUaddr, chld_app, getpath2fifoul(), 0);
+
+		free(chld_app);
+		sleep(1);	// Delay for forming next level endpoint
+
+		sch = sch->l.next;
+	}
+
+	create_alldo();
+
+	start_collect_data();
 
 	return ret;
 }
