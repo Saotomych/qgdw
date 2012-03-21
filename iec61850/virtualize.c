@@ -583,7 +583,7 @@ float val;
 					valtype = actvr->val->idtype;
 					val = *((float*)(actvr->val->val));
 					time = actvr->time;
-					ts_printf(STDOUT_FILENO, "IEC61850: asdu %d of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
+					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
 				}
 
 //				val = vc_getvalbytype (actvr->val->val);
@@ -595,7 +595,7 @@ float val;
 //				jour_getvar(actln->ln.ldinst, recjour, time);
 				time = 435345386;
 				valtype = avb->type;
-//				val = jour_getval(avb);
+				val = 104;
 			}
 
 			// Send variable to HMI
