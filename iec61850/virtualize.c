@@ -445,14 +445,14 @@ uint32_t  fld_idx;
 				memcpy(spdu, pdu, sizeof(data_unit));
 				spdu->id =  sasdu->baseoffset + pdm->scadaid;
 				(*pspdu)++; 	// Next pdu
-				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+//				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
 				return 1;
 			}else{
 				ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
 			}
 		}
 		else{
-			ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
+			ts_printf(STDOUT_FILENO, "IEC61850 error: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
 		}
 	}
 	else{
@@ -479,13 +479,13 @@ asdu *pasdu = (asdu*) (edh + 1);
 				actvr->time = pdu->time_tag;
 				*((float*)(actvr->val->val)) = pdu->value.f;
 
-				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
+//				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
 				if (actvr->prop & BOOKING){
 					pve->value.f = pdu->value.f;
 					pve->time = pdu->time_tag;
 					pve->vallen = sizeof(float);
 					(*ppve)++; 	// Next varevent
-					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
+//					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
 
 					return 1;
 				}
@@ -505,10 +505,11 @@ int32_t len = (uint32_t) pdu - (uint32_t) edh - sizeof(ep_data_header) - sizeof(
 }
 
 // Send data to all registered SCADA_CHs
-void send_asdu2scada(char *sendbuf, uint32_t len){
+uint32_t send_asdu2scada(char *sendbuf, uint32_t len){
 ep_data_header *sedh = (ep_data_header*) sendbuf;
 asdu *psasdu = (asdu*) (sedh + 1);
 SCADA_ASDU *actscada;
+uint32_t cnt = 0;
 
 	sedh->len = sizeof(asdu) + sizeof(data_unit) * len;
 	psasdu->size = len;
@@ -519,19 +520,25 @@ SCADA_ASDU *actscada;
 			sedh->adr = atoi(actscada->pscada->myln->ln.pmyld->inst);
 			psasdu->adr = sedh->adr;
 			mf_toendpoint(sendbuf, sizeof(ep_data_header) + sedh->len, sedh->adr, DIRDN);
-			ts_printf(STDOUT_FILENO, "IEC61850: %d data_units sent to SCADA adr = %d\n", psasdu->size, sedh->adr);
 			actscada = actscada->l.next;
+			cnt++;
 		}
 	}
+
+	return cnt;
 }
 
-void send_varevent2hmi(char *sendbuf, uint32_t len){
+uint32_t send_varevent2hmi(char *sendbuf, uint32_t len){
 ep_data_header *eph = (ep_data_header*) sendbuf;
+uint32_t cnt;
 
 	eph->len = sizeof(varevent) * len;
 
-	mf_toendpoint(sendbuf, eph->len + sizeof(ep_data_header), IDHMI, DIRUP);
 
+	cnt = mf_toendpoint(sendbuf, eph->len + sizeof(ep_data_header), IDHMI, DIRUP);
+	if (cnt == -1) return 0;
+
+	return ((cnt - sizeof(ep_data_header)) / sizeof(varevent));
 }
 
 // 3. Find LN by Name
@@ -552,17 +559,15 @@ void send_jourrecbyname2hmi(){
 }
 
 int rcvdata(int len){
+static uint32_t Transaction = 0;
 char *buff;
 int offset;
 ep_data_header *edh;
-
 char *senddm, *sendve;
 varevent *pve;
 data_unit *pdu;
 data_unit *pdm;
-
 int cntdm, cntve, cntdu;
-
 int adr, dir, fullrdlen;
 
 // For EP_MSG_BOOK & UNBOOK
@@ -584,14 +589,15 @@ float val;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
-	ts_printf(STDOUT_FILENO, "IEC61850: Data received. Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+	ts_printf(STDOUT_FILENO, "IEC61850: Transaction %d\n", Transaction++);
+	ts_printf(STDOUT_FILENO, "IEC61850: Data received . Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
 
 	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < fullrdlen){
 		if(fullrdlen - offset < sizeof(ep_data_header)){
-			ts_printf(STDOUT_FILENO, "IEC61850: Found not full ep_data_header\n");
+			ts_printf(STDOUT_FILENO, "IEC61850 error: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
 		}
@@ -612,35 +618,30 @@ float val;
 					(char*) ((uint32_t) edh + sizeof(ep_data_header)),  // Receiving ASDU
 					sizeof(asdu));
 			pve = (varevent*) add_header2hmi(sendve);					// Outgoing varevents
-
-			ts_printf(STDOUT_FILENO, "IEC61850: pdm = 0x%02X; pve = 0x%02X; pdu = 0x%02X\n", pdm, pve, pdu);
-
 			pdm = add_asdu((char*) pdm, (asdu*)(edh + sizeof(ep_data_header)));
 			cntdm = 0; cntve = 0; cntdu = 0;
-
-			ts_printf(STDOUT_FILENO, "IEC61850: pdm = 0x%02X; pve = 0x%02X; pdu = 0x%02X\n", pdm, pve, pdu);
-
 			while (pdu){
 				cntdm += add_dataunit(pdu, &pdm, edh);
 				cntve += add_varevent(pdu, &pve, edh);
 				pdu = get_next_dataunit(pdu, edh);
 				cntdu++;
-
-				ts_printf(STDOUT_FILENO, "IEC61850: in cycle pdm = 0x%02X; pve = 0x%02X; pdu = 0x%02X\n", pdm, pve, pdu);
-
 			}
 
-			ts_printf(STDOUT_FILENO, "\nIEC61850: Statistics:\n");
+			// Print Stats and send data to MF
+			ts_printf(STDOUT_FILENO, "IEC61850: Statistics:\n");
 			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_units\n", cntdu);
-			ts_printf(STDOUT_FILENO, "IEC61850: send to scada %d data_units\n", cntdm);
-			ts_printf(STDOUT_FILENO, "IEC61850: send to HMI %d varevents\n\n", cntve);
-
-			if (cntdm) send_asdu2scada(senddm, cntdm);
-			if (cntve) send_varevent2hmi(sendve, cntve);
+			if (cntdm){
+				ts_printf(STDOUT_FILENO, "IEC61850: sent to %d SCADA %d data_unit(s)\n", cntdm, send_asdu2scada(senddm, cntdm));
+			}
+			if (cntve){
+				cntve = send_varevent2hmi(sendve, cntve);
+				if (cntve) ts_printf(STDOUT_FILENO, "IEC61850: sent to HMI %d varevent(s)\n", cntve);
+				else ts_printf(STDOUT_FILENO, "IEC61850 error: MF channel to HMI closed\n");
+			}
+			ts_printf(STDOUT_FILENO, "\n");
 
 			free(sendve);
 			free(senddm);
-
 
 			break;
 
