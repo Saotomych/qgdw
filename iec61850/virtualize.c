@@ -656,59 +656,59 @@ float val;
 
 		case EP_MSG_BOOK:
 
-//			pname = buff + offset + sizeof(varbook);
-//			avb = buff + offset;
-//			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
-//			adr1 = atoi(pname);
-//			actln = fln.next;
-//
-//			// Find first LN with equal ldinst
-//			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
-//
-//			// Find LN with other equal parameters
-//			while(actln){
-//					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
-//					pname[avb->lenname] = 0;
-//					if (strstr(pname, lnname)) break;
-//					actln = actln->l.next;
-//			}
-//
-//			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
-//
-//			pname = strstr(pname, "(");
-//			if (pname == NULL){
-//				// Find varrec for this variable
-//				actvr = vc_getfirst_varrec();
-//				while(actvr){
-//					if (actvr->asdu != atoi(actln->ln.ldinst)){
-//						actvr = actvr->l.next;
-//						continue;
-//					}
-//					if (actvr->id == avb->id) break;
-//					actvr = actvr->l.next;
-//				}
-//				if (actvr){
-//					actvr->uid = avb->uid;
-//					actvr->prop |= BOOKING;
-//					valtype = actvr->val->idtype;
-//					val = *((float*)(actvr->val->val));
-//					time = actvr->time;
-//					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
-//				}
-//
+			pname = buff + offset + sizeof(varbook);
+			avb = buff + offset;
+			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
+			adr1 = atoi(pname);
+			actln = fln.next;
 
-//			}else{
-////				// Call Journal constant and return by multififo
-////				recjour = atoi(pname+1);
-////				time = atoi(((varbook*) (buff + offset))->time);
-////				jour_getvar(actln->ln.ldinst, recjour, time);
-//
-//				time = 435345386;
-//				valtype = avb->type;
-//				val = 104;
-//			}
-//
-//			// Send variable to HMI
+			// Find first LN with equal ldinst
+			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
+
+			// Find LN with other equal parameters
+			while(actln){
+					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
+					pname[avb->lenname] = 0;
+					if (strstr(pname, lnname)) break;
+					actln = actln->l.next;
+			}
+
+			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
+
+			pname = strstr(pname, "(");
+			if (pname == NULL){
+				// Find varrec for this variable
+				actvr = vc_getfirst_varrec();
+				while(actvr){
+					if (actvr->asdu != atoi(actln->ln.ldinst)){
+						actvr = actvr->l.next;
+						continue;
+					}
+					if (actvr->id == avb->id) break;
+					actvr = actvr->l.next;
+				}
+				if (actvr){
+					actvr->uid = avb->uid;
+					actvr->prop |= BOOKING;
+					valtype = actvr->val->idtype;
+					val = *((float*)(actvr->val->val));
+					time = actvr->time;
+					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
+				}
+
+
+			}else{
+//				// Call Journal constant and return by multififo
+//				recjour = atoi(pname+1);
+//				time = atoi(((varbook*) (buff + offset))->time);
+//				jour_getvar(actln->ln.ldinst, recjour, time);
+
+				time = 435345386;
+				valtype = avb->type;
+				val = 104;
+			}
+
+			// Send variable to HMI
 //			len = sizeof(varevent);
 //			sendbuff = malloc(len);
 //			sedh = (ep_data_header*) sendbuff;
@@ -729,14 +729,14 @@ float val;
 			break;
 
 		case EP_MSG_UNBOOK:
-//			pname = buff + offset + sizeof(varbook);
-//			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
-//			pname = strstr(pname, "LN:");
-//
-//			actvr = vc_getfirst_varrec();
-//			if (actvr) actvr->prop &= ~BOOKING;
-//
-//			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unsubscribed\n");
+			pname = buff + offset + sizeof(varbook);
+			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
+			pname = strstr(pname, "LN:");
+
+			actvr = vc_getfirst_varrec();
+			if (actvr) actvr->prop &= ~BOOKING;
+
+			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unsubscribed\n");
 
 			break;
 

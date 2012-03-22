@@ -270,6 +270,11 @@ varrec *avr;
 			ave = (varevent*) buff + offset;
 			avr = (varrec*) ave->uid;
 			ts_printf(STDOUT_FILENO, "HMI!!!: get value %.2F as %s\n", ave->value.f, avr->name->fc);
+
+			// TODO Make getting group varevents
+
+			// TODO Make type filter
+
 			*((float*) (avr->val->val)) = ave->value.f;
 			MFMessage = GR_EVENT_TYPE_EXPOSURE;
 
@@ -388,15 +393,14 @@ pid_t chldpid;
 	for(i=0; i < (sizeof(defvalues)/sizeof(value) - 1); i++) defvalues[i].idx = i;
 
 	// Register all variables in varcontroller
-//	vc_init(defvalues, sizeof(defvalues) / sizeof (value));
 	vc_init();
 
 	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
 	// Multififo init
-//	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
+	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
 //	// Set endpoint for datasets
-//	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
+	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){
