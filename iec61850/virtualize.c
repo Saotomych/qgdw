@@ -542,21 +542,31 @@ uint32_t cnt;
 }
 
 // 3. Find LN by Name
-LNODE *find_lnbyname(){
-LNODE* ln = (LNODE*) fln.next;
+varrec *find_varrecbyname(char* pname){
+varrec *vr;
+LNODE *ln = (LNODE*) fln.next;
 
-	return ln;
+	return vr;
 }
 
-// 4. Find local varrec by Name
-void send_varrecbyname2hmi(){
+uint32_t get_logvarevent(char *pname, varbook *vb, varevent **pve){
+varevent *ve = *pve;
 
+	return 0;
 }
 
-// 5. Find journal var by Name
-void send_jourrecbyname2hmi(){
+uint32_t get_actvarevent(varrec *actvr, varbook *vb, varevent **pve){
+varevent *ve = *pve;
 
+	return 0;
 }
+
+char *get_logstring(char *pname){
+char *lstr;
+
+	return lstr;
+}
+
 
 int rcvdata(int len){
 static uint32_t Transaction = 0;
@@ -574,7 +584,7 @@ int adr, dir, fullrdlen;
 LNODE *actln;
 varrec *actvr;
 varbook *avb;
-varevent *ave;
+varevent *actve;
 uint32_t adr1;
 char lnname[40];
 char *pname;
@@ -630,7 +640,7 @@ float val;
 				cntdu++;
 			}
 
-			// Print Stats and send data to MF
+			// Print Statistics and send data to MF
 			ts_printf(STDOUT_FILENO, "IEC61850: Statistics:\n");
 			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_units\n", cntdu);
 			if (cntdm){
@@ -656,58 +666,84 @@ float val;
 
 		case EP_MSG_BOOK:
 
-			pname = buff + offset + sizeof(varbook);
-			avb = buff + offset;
+			// Init pointers
+			avb = (varbook*) ((int32_t) edh + sizeof(ep_data_header));
+			pname = (char*) ((int32_t) avb + sizeof(varbook));
+
 			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
-			adr1 = atoi(pname);
-			actln = fln.next;
 
-			// Find first LN with equal ldinst
-			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
+			actve = malloc(sizeof(varevent));
 
-			// Find LN with other equal parameters
-			while(actln){
-					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
-					pname[avb->lenname] = 0;
-					if (strstr(pname, lnname)) break;
-					actln = actln->l.next;
-			}
-
-			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
-
-			pname = strstr(pname, "(");
-			if (pname == NULL){
-				// Find varrec for this variable
-				actvr = vc_getfirst_varrec();
-				while(actvr){
-					if (actvr->asdu != atoi(actln->ln.ldinst)){
-						actvr = actvr->l.next;
-						continue;
-					}
-					if (actvr->id == avb->id) break;
-					actvr = actvr->l.next;
+			// Detect LOG or ACTUAL variable
+			if (strstr(pname, "(")){
+				// Get varevent from journal by name
+				if (get_logvarevent(pname, avb, &actve)){
+					// If log record not found then break subscribe process
+					free (actve);
+					break;
 				}
-				if (actvr){
-					actvr->uid = avb->uid;
-					actvr->prop |= BOOKING;
-					valtype = actvr->val->idtype;
-					val = *((float*)(actvr->val->val));
-					time = actvr->time;
-					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
-				}
-
-
 			}else{
-//				// Call Journal constant and return by multififo
-//				recjour = atoi(pname+1);
-//				time = atoi(((varbook*) (buff + offset))->time);
-//				jour_getvar(actln->ln.ldinst, recjour, time);
-
-				time = 435345386;
-				valtype = avb->type;
-				val = 104;
+				// Get varevent by name
+				actvr = find_varrecbyname(pname);
+				get_actvarevent(actvr, avb, &actve);
 			}
 
+			// Create send buffer
+			sendve = malloc(sizeof(ep_data_header) + sizeof(varevent) + actve->vallen);
+			memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent));
+			if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
+									          get_logstring(pname), actve->vallen);
+
+			free(actve);
+			send_varevent2hmi((char*) sendve, 1);	// Send 1 varevent to HMI
+
+//
+//			adr1 = atoi(pname);
+//			actln = fln.next;
+//			// Find first LN with equal ldinst
+//			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
+//
+//			// Find LN with other equal parameters
+//			while(actln){
+//					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
+//					pname[avb->lenname] = 0;
+//					if (strstr(pname, lnname)) break;
+//					actln = actln->l.next;
+//			}
+//
+//			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
+//
+//			pname = strstr(pname, "(");
+//			if (pname == NULL){
+//				// Find varrec for this variable
+//				actvr = vc_getfirst_varrec();
+//				while(actvr){
+//					if (actvr->asdu != atoi(actln->ln.ldinst)){
+//						actvr = actvr->l.next;
+//						continue;
+//					}
+//					if (actvr->id == avb->id) break;
+//					actvr = actvr->l.next;
+//				}
+//				if (actvr){
+//					actvr->uid = avb->uid;
+//					actvr->prop |= BOOKING;
+//					valtype = actvr->val->idtype;
+//					val = *((float*)(actvr->val->val));
+//					time = actvr->time;
+//					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
+//				}
+//			}else{
+////				// Call Journal constant and return by multififo
+////				recjour = atoi(pname+1);
+////				time = atoi(((varbook*) (buff + offset))->time);
+////				jour_getvar(actln->ln.ldinst, recjour, time);
+//
+//				time = 435345386;
+//				valtype = avb->type;
+//				val = 104;
+//			}
+//
 			// Send variable to HMI
 //			len = sizeof(varevent);
 //			sendbuff = malloc(len);
