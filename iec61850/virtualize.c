@@ -390,9 +390,14 @@ asdu *psasdu =  (asdu*) buff;
 	memcpy(psasdu, pasdu, sizeof(asdu));
 	psasdu->size = 0;
 
-	return (psasdu->data);
+	return (data_unit*) (psasdu + sizeof(asdu));
 }
 
+// Function find data_unit into map table and add remapped data_unit to SCADA frame
+// In: pointer to data_unit from LD, pointer to pointer to new data_unit for SCADA, income ep_data_header
+// Return:
+// If data_unit was added to frame as new remapped data_unit for SCADA => return 1;
+// If data_unit.id wasn't found in map table and don't added to frame for SCADA => return 0;
 uint32_t add_dataunit(data_unit *pdu, data_unit **pspdu, ep_data_header *edh){
 VIRT_ASDU *sasdu = (VIRT_ASDU*) fasdu.next;
 data_unit *spdu = *pspdu;
@@ -403,6 +408,7 @@ asdu *pasdu = (asdu*) (edh + 1);
 uint32_t  fld_idx;
 
 	if (pdu->id <= (VIRT_ASDU_MAXSIZE - 4)){
+
 		// save current data unit value for log_db
 		if(strlen(pdu->name) > 0){
 			actscadach = (SCADA_CH*) fscadach.next;
@@ -418,7 +424,7 @@ uint32_t  fld_idx;
 		}
 
 		// Mapping id
-		pdm = (ASDU_DATAMAP*) &fdm;
+		pdm = (ASDU_DATAMAP*) fdm.next;
 		while ((pdm) && (pdm->meterid != pdu->id))
 		{
 			pdm = pdm->l.next;
@@ -430,19 +436,18 @@ uint32_t  fld_idx;
 			// find VIRT_ASDU
 			while ( (sasdu) && sasdu->myln->ln.pmyld &&
 					!(atoi(sasdu->myln->ln.pmyld->inst) == edh->adr &&
-					strstr(pdm->mydobj->dobj.pmynodetype->id, sasdu->myln->ln.lntype)) )
+					(!strcmp(pdm->mydobj->dobj.pmynodetype->id, sasdu->myln->ln.lntype))) )
 			{
 				sasdu = sasdu->l.next;
 			}
 
 			if(sasdu){
-				pdu->id =  sasdu->baseoffset + pdm->scadaid;
 				memcpy(spdu, pdu, sizeof(data_unit));
+				spdu->id =  sasdu->baseoffset + pdm->scadaid;
 				(*pspdu)++; 	// Next pdu
 				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
-				return 0;
-			}
-			else{
+				return 1;
+			}else{
 				ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
 			}
 		}
@@ -455,7 +460,7 @@ uint32_t  fld_idx;
 	}
 
 
-	return 1;
+	return 0;
 }
 
 uint32_t add_varevent(data_unit *pdu, varevent **ppve, ep_data_header *edh){
@@ -482,20 +487,19 @@ asdu *pasdu = (asdu*) (edh + 1);
 					(*ppve)++; 	// Next varevent
 					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
 
-					return 0;
+					return 1;
 				}
 			}
 			actvr = actvr->l.next;
 		}
 
-		return 1;
+		return 0;
 }
 
 data_unit *get_next_dataunit(data_unit *pdu, ep_data_header *edh){
-uint32_t len = edh->len;
-uint32_t len2 = (int32_t) pdu - (int32_t) edh - sizeof(ep_data_header);
+int32_t len = (uint32_t) pdu - (uint32_t) edh - sizeof(ep_data_header) - sizeof(asdu);
 
-	if (len2 < len) return pdu++;
+	if (len > 0) return pdu++;
 
 	return 0;
 }
@@ -507,6 +511,7 @@ asdu *psasdu = (asdu*) (sedh + 1);
 SCADA_ASDU *actscada;
 
 	sedh->len = sizeof(asdu) + sizeof(data_unit) * len;
+	psasdu->size = len;
 
 	if (len){
 		actscada = (SCADA_ASDU*) fscada.next;
@@ -547,16 +552,18 @@ void send_jourrecbyname2hmi(){
 }
 
 int rcvdata(int len){
-char *buff, *sendbuff;
+char *buff;
+int offset;
+ep_data_header *edh;
+
 char *senddm, *sendve;
 varevent *pve;
-int cntdm, cntve;
-
-int adr, dir, fullrdlen;
-int offset;
-ep_data_header *edh, *sedh;
 data_unit *pdu;
 data_unit *pdm;
+
+int cntdm, cntve, cntdu;
+
+int adr, dir, fullrdlen;
 
 // For EP_MSG_BOOK & UNBOOK
 LNODE *actln;
@@ -589,7 +596,7 @@ float val;
 			return 0;
 		}
 
-		edh = (struct ep_data_header *) (buff + offset);				// set start structure
+		edh = (ep_data_header *) (buff + offset);				// set start structure
 
 		switch(edh->sys_msg){
 		case EP_USER_DATA:
@@ -599,19 +606,37 @@ float val;
 			senddm = malloc(len);
 			sendve = malloc(len);
 
-			pdu = (data_unit*) (edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
-			pdm = (data_unit*) add_header2scada(senddm, edh);					// Outgoing data_units
+			pdu = (data_unit*) ((uint32_t) edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
+			pdm = (data_unit*) add_header2scada(senddm, edh);			// Outgoing data_units
+			memcpy( (char*) pdm, 										// ASDU for sending
+					(char*) ((uint32_t) edh + sizeof(ep_data_header)),  // Receiving ASDU
+					sizeof(asdu));
+			pve = (varevent*) add_header2hmi(sendve);					// Outgoing varevents
+
+			ts_printf(STDOUT_FILENO, "IEC61850: pdm = 0x%02X; pve = 0x%02X; pdu = 0x%02X\n", pdm, pve, pdu);
+
 			pdm = add_asdu((char*) pdm, (asdu*)(edh + sizeof(ep_data_header)));
-			pve = (varevent*) add_header2hmi(sendve);							// Outgoing varevents
-			cntdm = 0; cntve = 0;
+			cntdm = 0; cntve = 0; cntdu = 0;
+
+			ts_printf(STDOUT_FILENO, "IEC61850: pdm = 0x%02X; pve = 0x%02X; pdu = 0x%02X\n", pdm, pve, pdu);
+
 			while (pdu){
-				cntdm += (add_dataunit(pdu, &pdm, edh) ? 0 : sizeof(data_unit));
-				cntve += (add_varevent(pdu, &pve, edh) ? 0 : sizeof(varevent));
+				cntdm += add_dataunit(pdu, &pdm, edh);
+				cntve += add_varevent(pdu, &pve, edh);
 				pdu = get_next_dataunit(pdu, edh);
+				cntdu++;
+
+				ts_printf(STDOUT_FILENO, "IEC61850: in cycle pdm = 0x%02X; pve = 0x%02X; pdu = 0x%02X\n", pdm, pve, pdu);
+
 			}
 
-			send_asdu2scada(senddm, cntdm);
-			send_varevent2hmi(sendve, cntve);
+			ts_printf(STDOUT_FILENO, "\nIEC61850: Statistics:\n");
+			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_units\n", cntdu);
+			ts_printf(STDOUT_FILENO, "IEC61850: send to scada %d data_units\n", cntdm);
+			ts_printf(STDOUT_FILENO, "IEC61850: send to HMI %d varevents\n\n", cntve);
+
+			if (cntdm) send_asdu2scada(senddm, cntdm);
+			if (cntve) send_varevent2hmi(sendve, cntve);
 
 			free(sendve);
 			free(senddm);
@@ -626,95 +651,94 @@ float val;
 
 		case EP_MSG_BOOK:
 
-			pname = buff + offset + sizeof(varbook);
-			avb = buff + offset;
-			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
-			adr1 = atoi(pname);
-			actln = fln.next;
+//			pname = buff + offset + sizeof(varbook);
+//			avb = buff + offset;
+//			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
+//			adr1 = atoi(pname);
+//			actln = fln.next;
+//
+//			// Find first LN with equal ldinst
+//			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
+//
+//			// Find LN with other equal parameters
+//			while(actln){
+//					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
+//					pname[avb->lenname] = 0;
+//					if (strstr(pname, lnname)) break;
+//					actln = actln->l.next;
+//			}
+//
+//			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
+//
+//			pname = strstr(pname, "(");
+//			if (pname == NULL){
+//				// Find varrec for this variable
+//				actvr = vc_getfirst_varrec();
+//				while(actvr){
+//					if (actvr->asdu != atoi(actln->ln.ldinst)){
+//						actvr = actvr->l.next;
+//						continue;
+//					}
+//					if (actvr->id == avb->id) break;
+//					actvr = actvr->l.next;
+//				}
+//				if (actvr){
+//					actvr->uid = avb->uid;
+//					actvr->prop |= BOOKING;
+//					valtype = actvr->val->idtype;
+//					val = *((float*)(actvr->val->val));
+//					time = actvr->time;
+//					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
+//				}
+//
 
-			// Find first LN with equal ldinst
-			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
-
-			// Find LN with other equal parameters
-			while(actln){
-					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
-					pname[avb->lenname] = 0;
-					if (strstr(pname, lnname)) break;
-					actln = actln->l.next;
-			}
-
-			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
-
-			pname = strstr(pname, "(");
-			if (pname == NULL){
-				// Find varrec for this variable
-				actvr = vc_getfirst_varrec();
-				while(actvr){
-					if (actvr->asdu != atoi(actln->ln.ldinst)){
-						actvr = actvr->l.next;
-						continue;
-					}
-					if (actvr->id == avb->id) break;
-					actvr = actvr->l.next;
-				}
-				if (actvr){
-					actvr->uid = avb->uid;
-					actvr->prop |= BOOKING;
-					valtype = actvr->val->idtype;
-					val = *((float*)(actvr->val->val));
-					time = actvr->time;
-					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
-				}
-
-//				val = vc_getvalbytype (actvr->val->val);
-
-			}else{
-//				// Call Journal constant and return by multififo
-//				recjour = atoi(pname+1);
-//				time = atoi(((varbook*) (buff + offset))->time);
-//				jour_getvar(actln->ln.ldinst, recjour, time);
-				time = 435345386;
-				valtype = avb->type;
-				val = 104;
-			}
-
-			// Send variable to HMI
-			len = sizeof(varevent);
-			sendbuff = malloc(len);
-			sedh = (ep_data_header*) sendbuff;
-			ave = (varevent*) sendbuff;
-			sedh->adr = IDHMI;
-			sedh->sys_msg = EP_MSG_BOOKEVENT;
-			sedh->len = len - sizeof(ep_data_header);
-			ave->uid = avb->uid;
-			ave->time = time;
-
-			// By type
-			ave->vallen = sizeof(float);
-			ave->value.f = val;
-
-			mf_toendpoint(sendbuff, len, sedh->adr, DIRUP);
-			free(sendbuff);
+//			}else{
+////				// Call Journal constant and return by multififo
+////				recjour = atoi(pname+1);
+////				time = atoi(((varbook*) (buff + offset))->time);
+////				jour_getvar(actln->ln.ldinst, recjour, time);
+//
+//				time = 435345386;
+//				valtype = avb->type;
+//				val = 104;
+//			}
+//
+//			// Send variable to HMI
+//			len = sizeof(varevent);
+//			sendbuff = malloc(len);
+//			sedh = (ep_data_header*) sendbuff;
+//			ave = (varevent*) sendbuff;
+//			sedh->adr = IDHMI;
+//			sedh->sys_msg = EP_MSG_BOOKEVENT;
+//			sedh->len = len - sizeof(ep_data_header);
+//			ave->uid = avb->uid;
+//			ave->time = time;
+//
+//			// By type
+//			ave->vallen = sizeof(float);
+//			ave->value.f = val;
+//
+//			mf_toendpoint(sendbuff, len, sedh->adr, DIRUP);
+//			free(sendbuff);
 
 			break;
 
 		case EP_MSG_UNBOOK:
-			pname = buff + offset + sizeof(varbook);
-			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
-			pname = strstr(pname, "LN:");
-
-			actvr = vc_getfirst_varrec();
-			if (actvr) actvr->prop &= ~BOOKING;
-
-			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unsubscribed\n");
+//			pname = buff + offset + sizeof(varbook);
+//			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
+//			pname = strstr(pname, "LN:");
+//
+//			actvr = vc_getfirst_varrec();
+//			if (actvr) actvr->prop &= ~BOOKING;
+//
+//			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unsubscribed\n");
 
 			break;
 
 		}
 
 		// move over the data
-		offset += sizeof(ep_data_header);
-		offset += edh->len;
+		offset += sizeof(ep_data_header) + edh->len;
 	}
 
 	free(buff);
@@ -935,7 +959,7 @@ char *chld_app;
 
 	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
 
-	//	Execute all low level application for devices by LDevice (SCADA_CH)
+//	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	sch = sch->l.next;
 	while(sch){
 

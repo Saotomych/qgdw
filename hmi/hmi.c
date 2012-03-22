@@ -6,7 +6,6 @@
  */
 
 #include <linux/input.h>
-#include <windows.h>
 #include "../common/common.h"
 #include "../common/varcontrol.h"
 #include "../common/multififo.h"
@@ -26,7 +25,7 @@
 static LIST fldextinfo = {NULL, NULL};
 static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
-int fkeyb;
+int fkeyb = 0;
 
 static volatile uint32_t MFMessage = 0;
 
@@ -303,7 +302,7 @@ size_t evlen;
  		GrGetNextEventTimeout(&event, 100L);
 
  		// Read of keyboard
- 		if (fkeyb){
+ 		if (fkeyb != -1){
  			evlen = read(fkeyb, ev, sizeof(ev)) / sizeof(struct input_event);
  			if (evlen != 0xFFFFFFF){
 				if (ev[0].value){
@@ -395,9 +394,9 @@ pid_t chldpid;
 	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
 	// Multififo init
-	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
-	// Set endpoint for datasets
-	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
+//	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
+//	// Set endpoint for datasets
+//	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){
