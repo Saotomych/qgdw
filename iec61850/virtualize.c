@@ -612,6 +612,7 @@ float val;
 			senddm = malloc(len);
 			sendve = malloc(len);
 
+			// Init of  buffers
 			pdu = (data_unit*) ((uint32_t) edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
 			pdm = (data_unit*) add_header2scada(senddm, edh);			// Outgoing data_units
 			memcpy( (char*) pdm, 										// ASDU for sending
@@ -620,6 +621,8 @@ float val;
 			pve = (varevent*) add_header2hmi(sendve);					// Outgoing varevents
 			pdm = add_asdu((char*) pdm, (asdu*)(edh + sizeof(ep_data_header)));
 			cntdm = 0; cntve = 0; cntdu = 0;
+
+			// Remap and Event cycle
 			while (pdu){
 				cntdm += add_dataunit(pdu, &pdm, edh);
 				cntve += add_varevent(pdu, &pve, edh);
@@ -640,6 +643,7 @@ float val;
 			}
 			ts_printf(STDOUT_FILENO, "\n");
 
+			// Free buffers
 			free(sendve);
 			free(senddm);
 
