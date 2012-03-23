@@ -351,7 +351,7 @@ menu *num_menu = allmenus[maxmenus];
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
 
-   	 		 vc_subscribe_dataset(num_menu->fvarrec, &jourtime, actlnode);
+   	 		 vc_attach_dataset(num_menu->fvarrec, &jourtime, actlnode);
 
    	 	 	 return num_menu;
 }
@@ -374,7 +374,7 @@ menu* num_menu;
 
 	call_epiloque(actmenu);
 
-	vc_unsubscribe_dataset(num_menu->fvarrec, actlnode);
+	vc_unattach_dataset(num_menu->fvarrec, actlnode);
 	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
 	GrDestroyFont(num_menu->font);
 

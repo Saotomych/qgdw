@@ -13,7 +13,7 @@
 #include "paths.h"
 #include "ts_print.h"
 
-static int varrec_number;	// Argument counter for actual booking
+static int varrec_number;	// Argument counter for actual attaching
 static LIST fvarrec;
 static varrec *lastvr;
 
@@ -82,15 +82,6 @@ static varrec* init_varrec(varrec *vr){
 		return NULL;
 	}
 	return vr;
-}
-
-static char* type_test(char *ptype){
-	if (!strcmp(ptype, "VisString255")) return ptype;
-	if (!strcmp(ptype, "INT32")) return ptype;
-	if (!strcmp(ptype, "FLOAT32")) return ptype;
-	if (!strcmp(ptype, "Quality")) return ptype;
-	if (!strcmp(ptype, "Timestamp")) return ptype;
-	return NULL;
 }
 
 static int get_type_idx(char *ptype){
@@ -187,6 +178,15 @@ varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	}
 }
 
+char* vc_typetest(char *ptype){
+	if (!strcmp(ptype, "VisString255")) return ptype;
+	if (!strcmp(ptype, "INT32")) return ptype;
+	if (!strcmp(ptype, "FLOAT32")) return ptype;
+	if (!strcmp(ptype, "Quality")) return ptype;
+	if (!strcmp(ptype, "Timestamp")) return ptype;
+	return NULL;
+}
+
 // Add concrete variable of actln by name
 // Input data: name of variable
 // Return pointer to value record and properties
@@ -200,6 +200,8 @@ ATTR *pda;
 BATTR *pbda;
 LNODE *pln = actln;
 char *p, *po=0, *pa=0, *pba=0;
+uint32_t varlen = strlen(varname);
+
 char keywords[][10] = {
 		{"APP:"},
 		{"IED:"},
@@ -224,7 +226,7 @@ char keywords[][10] = {
 							vr = newappvarrec(&defvr[x]);
 							if (vr){
 								vr->name->fc = varname;
-								vr->val->name = malloc(strlen(varname));
+								vr->val->name = malloc(varlen);
 								strcpy(vr->val->name, varname);
 								return vr;
 							}
@@ -254,7 +256,7 @@ char keywords[][10] = {
 							vr->name->daName = NULL;
 							vr->asdu = 0;
 							vr->id = 0;
-							vr->val->name = malloc(strlen(varname));
+							vr->val->name = malloc(varlen);
 							strcpy(vr->val->name, varname);
 							// Value initialize
 							vr->val->val = pied->desc;	// IED.desc as default
@@ -288,7 +290,7 @@ char keywords[][10] = {
 							vr->name->daName = NULL;
 							vr->asdu = atoi(pld->inst);
 							vr->id = 0;
-							vr->val->name = malloc(strlen(varname));
+							vr->val->name = malloc(varlen);
 							strcpy(vr->val->name, varname);
 							// Value initialize
 							// Set val if 'inst'
@@ -313,7 +315,7 @@ char keywords[][10] = {
 					break;
 
 			// if LN without DO/DA.name - Set const of field as text
-			// if LN has DO.name - book this variable
+			// if LN has DO.name - attach this variable
 			case 3: // LN
 
 					if (actln){
@@ -328,7 +330,7 @@ char keywords[][10] = {
 							vr->name->prefix = actln->ln.prefix;
 							vr->asdu = atoi(actln->ln.pmyld->inst);
 							vr->id = 0;
-							vr->val->name = malloc(strlen(varname));
+							vr->val->name = malloc(varlen);
 							strcpy(vr->val->name, varname);
 							vr->val->idx = IECBASE + DOdesc;
 
@@ -386,7 +388,7 @@ char keywords[][10] = {
 							}
 
 							// po is DO.name
-							vr->val->val = type_test(pdo->dobj.type);
+							vr->val->val = vc_typetest(pdo->dobj.type);
 							if (vr->val->val){
 								// DO.name is value with var type
 								// Set vr->val->val to value
@@ -394,9 +396,9 @@ char keywords[][10] = {
 								vr->val->idtype = get_type_idx(vr->val->val);
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
-								vr->prop = BOOKING| NEEDFREE;
+								vr->prop = ATTACHING| NEEDFREE;
 								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
-								// TODO Subscribe DO value
+								// TODO Attach DO value
 
 								return vr;
 							}
@@ -426,7 +428,7 @@ char keywords[][10] = {
 							}
 
 							// pa is DA.name
-							vr->val->val = type_test(pda->attr.btype);
+							vr->val->val = vc_typetest(pda->attr.btype);
 							if (vr->val->val){
 								// DA.name is value with var type
 								// Set vr->val->val to value
@@ -434,9 +436,9 @@ char keywords[][10] = {
 								vr->val->idtype = get_type_idx(vr->val->val);
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
-								vr->prop = BOOKING | NEEDFREE;
+								vr->prop = ATTACHING | NEEDFREE;
 								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
-								// TODO Subscribe DA value
+								// TODO Attach DA value
 
 								return vr;
 							}
@@ -487,7 +489,7 @@ char keywords[][10] = {
 							}
 
 							// pba is BDA.name
-							vr->val->val = type_test(pbda->battr.btype);
+							vr->val->val = vc_typetest(pbda->battr.btype);
 							if (vr->val->val){
 								// BDA.name is value with var type
 								// Set vr->val->val to value
@@ -495,9 +497,9 @@ char keywords[][10] = {
 								vr->val->idtype = get_type_idx(vr->val->val);
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
-								vr->prop = BOOKING | NEEDFREE;
+								vr->prop = ATTACHING | NEEDFREE;
 								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
-								// TODO Subscribe BDA value
+								// TODO Attach BDA value
 
 								return vr;
 							}
@@ -524,7 +526,7 @@ void vc_freevarrec(varrec *vr){
 	free(vr);
 }
 
-// To delete booking of concrete variable by name
+// To delete attaching of concrete variable by name
 int vc_destroyvarreclist(varrec *fvr){
 varrec *vr = lastvr;
 varrec *prevvr;
@@ -533,8 +535,8 @@ varrec *prevvr;
 
 		// Free and switch to next varrec
 		prevvr = vr->l.prev;
-		// TODO Unsubscribe variable if needed
-//		if (vr->prop & BOOKING)	unbook(vr);
+		// TODO Unattach variable if needed
+//		if (vr->prop & ATTACHING)	unattach(vr);
 		// Free memory of value
 		vc_freevarrec(vr);
 		vr = prevvr;
@@ -548,80 +550,85 @@ varrec *prevvr;
 }
 
 
-// Make subscribe to all remote variables of last menu
-void vc_subscribe_dataset(varrec *vr, time_t *t, LNODE *actln){
-varbook *vb;
+// Make attach to all remote variables of last menu
+void vc_attach_dataset(varrec *vr, time_t *t, LNODE *actln){
+ep_data_header *edh;
+varattach *vb;
 char *varname;
-u08 *bookbuf;
+u08 *varbuf;
 uint32_t len;
 
 	while(vr){
-		// Need subscribe
-		if (vr->prop & BOOKING){
+		// Need attach
+		if (vr->prop & ATTACHING){
 			// make full name LDinst.LNprefix.LNclass.LNdesc.
 			// ready part = DOname.DAname.BDAname.JRNoffset
 
-			len = sizeof(varbook) + 7 + strlen(actln->ln.ldinst)
+			len = sizeof(ep_data_header) + sizeof(varattach) + 7 + strlen(actln->ln.ldinst)
 									  + strlen(actln->ln.prefix)
 									  + strlen(actln->ln.lnclass)
 									  + strlen(actln->ln.lninst)
 									  + strlen(vr->name->fc);  // with start ep_data_header
-			bookbuf = malloc(len);
-			vb = (varbook*) bookbuf;
-			varname = (char*) (bookbuf + sizeof(varbook));
-			ts_sprintf(varname, "%s/%s.%s.%s.%s\n", actln->ln.ldinst,
+
+			varbuf = malloc(len);
+			edh = (ep_data_header*) varbuf;
+			vb = (varattach*) ((char*) edh + sizeof(ep_data_header));
+			varname = (char*) ((char*) vb + sizeof(varattach));
+			ts_sprintf(varname, "%s/%s.%s.%s.%s", actln->ln.ldinst,
 													actln->ln.prefix,
 													actln->ln.lnclass,
 													actln->ln.lninst,
-													vr->name->fc);
+													&(vr->name->fc)[3]);
 
-			vb->edh.adr = IDHMI;
-			vb->edh.sys_msg = EP_MSG_BOOK;
-			vb->edh.len = len - sizeof(ep_data_header);
-			vb->edh.numep = 0;
+			edh->adr = IDHMI;
+			edh->sys_msg = EP_MSG_ATTACH;
+			edh->len = len - sizeof(ep_data_header);
+			edh->numep = 0;
 			vb->lenname = strlen(varname);
 			vb->time = *t;
 			vb->id = vr->id;
 			vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
 
-			// Send subscribe this varrec
-			mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+			// Send attach this varrec
+			mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
 
-			free(bookbuf);
+			free(varbuf);
 		}
 		// Next varrec
 		vr = vr->l.next;
 	}
 }
 
-// Make unsubscribe remote variables from end to vr->name->fc
-void vc_unsubscribe_dataset(varrec *vr, LNODE *actln){
-varbook *vb;
+// Make unattach remote variables from end to vr->name->fc
+void vc_unattach_dataset(varrec *vr, LNODE *actln){
+ep_data_header *edh;
+varattach *vb;
 char *varname;
-u08 *bookbuf;
+u08 *varbuf;
 uint32_t len;
 
-	len = sizeof(varbook) + 1 + strlen(vr->name->fc);  // with start ep_data_header
+	len = sizeof(varattach) + 1 + strlen(vr->name->fc);  // with start ep_data_header
 
-	bookbuf = malloc(len);
-	vb = (varbook*) bookbuf;
-	varname = (char*) (bookbuf + sizeof(varbook));
+	varbuf = malloc(len);
+	edh = (ep_data_header*) varbuf;
+	vb = (varattach*) ((char*) edh + sizeof(ep_data_header));
+	varname = (char*) (varbuf + sizeof(varattach));
 	ts_sprintf(varname, "%s", vr->name->fc);
 
-	vb->edh.adr = IDHMI;
-	vb->edh.sys_msg = EP_MSG_UNBOOK;
-	vb->edh.len = len - sizeof(ep_data_header);
-	vb->edh.numep = 0;
+	edh->adr = IDHMI;
+	edh->sys_msg = EP_MSG_ATTACH;
+	edh->len = len - sizeof(ep_data_header);
+	edh->numep = 0;
 	vb->lenname = strlen(varname);
 	vb->time = 0;
 	vb->id = vr->id;
 
-	ts_printf(STDOUT_FILENO, "HMI: unsubscribe\n");
+	ts_printf(STDOUT_FILENO, "HMI: unattach\n");
 
-	// Send unsubscribe all varrec
-	mf_toendpoint((char*) bookbuf, vb->edh.len + sizeof(ep_data_header), IDHMI, DIRDN);
+	// Send unattach all varrec
+	mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
 
-	free(bookbuf);
+	free(varbuf);
 
 }
 

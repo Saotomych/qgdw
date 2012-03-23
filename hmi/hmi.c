@@ -266,7 +266,7 @@ varrec *avr;
 		// Incoming data will be working
 		switch(edh->sys_msg){
 
-		case EP_MSG_BOOKEVENT:
+		case EP_MSG_VAREVENT:
 //			ave = (varevent*) buff + offset;
 //			avr = (varrec*) ave->uid;
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get value %.2F as %s\n", ave->value.f, avr->name->fc);

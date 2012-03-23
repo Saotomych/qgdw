@@ -68,9 +68,9 @@
 #define EP_MSG_DCOLL_STOP		16		/* stop data collection - up2down */
 #define EP_MSG_TEST_CONN		17		/* test device connection - up2down */
 #define EP_MSG_DEV_ONLINE		18		/* device is online - down2up */
-#define EP_MSG_BOOK				20		/* to book data for event - up2down */
-#define EP_MSG_UNBOOK			21		/* to delete data from event - up2down */
-#define EP_MSG_BOOKEVENT		22		/* event variable has changed - down2 up */
+#define EP_MSG_ATTACH			20		/* to attach data for event - up2down */
+#define EP_MSG_UNATTACH			21		/* to unattach data from event - up2down */
+#define EP_MSG_VAREVENT			22		/* event variable has changed - down2 up */
 
 // Messages for initialize endpoints
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
@@ -134,13 +134,13 @@ typedef struct _LIST{
 	void *prev;
 } LIST;
 
-typedef struct _varbook{
+typedef struct _varattach{
 	time_t			time;
 	uint32_t		uid;
 	uint32_t		id;
 	uint32_t		type;
 	uint32_t		lenname;
-} __attribute__ ((packed)) varbook;
+} __attribute__ ((packed)) varattach;
 
 typedef struct _varevent{
 	time_t			time;
@@ -151,7 +151,7 @@ typedef struct _varevent{
 		uint32_t	ui;					/* unsigned integer representation */
 		int32_t		i;					/* integer representation */
 		float		f;					/* float representation */
-		char *		ptr;				/* pointer to text string */
+		time_t		tm;					/* time in seconds */
 	} value;							/* transferring value (e.g. measured value, counter readings, etc.) */
 
 } __attribute__ ((packed)) varevent;

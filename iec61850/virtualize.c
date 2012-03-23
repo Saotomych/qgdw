@@ -7,6 +7,7 @@
  *  This module make virtualization procedure for all data_types going from/to unitlinks
  *
  */
+#define _GNU_SOURCE
 
 #include <linux/rtc.h>
 #include <sys/ioctl.h>
@@ -379,7 +380,7 @@ ep_data_header *pdh = (ep_data_header*) buff;
 
 	pdh->adr = IDHMI;
 	pdh->len = 0;
-	pdh->sys_msg = EP_MSG_BOOKEVENT;
+	pdh->sys_msg = EP_MSG_VAREVENT;
 
 	return (char*) pve;
 }
@@ -480,7 +481,7 @@ asdu *pasdu = (asdu*) (edh + 1);
 				*((float*)(actvr->val->val)) = pdu->value.f;
 
 //				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
-				if (actvr->prop & BOOKING){
+				if (actvr->prop & ATTACHING){
 					pve->value.f = pdu->value.f;
 					pve->time = pdu->time_tag;
 					pve->vallen = sizeof(float);
@@ -541,28 +542,154 @@ uint32_t cnt;
 	return ((cnt - sizeof(ep_data_header)) / sizeof(varevent));
 }
 
-// 3. Find LN by Name
-varrec *find_varrecbyname(char* pname){
-varrec *vr;
-LNODE *ln = (LNODE*) fln.next;
+// 3. Find varrec by Name
 
-	return vr;
+// prefix - optional
+uint32_t check_prefix(char *p, char *prefix){
+char tstr[20];
+uint32_t i = 0;
+
+	if ((prefix == NULL) && (strcmp(p, "(null)"))) return 0;
+
+	while(*p != '.'){
+		tstr[i] = *p; p++; i++;
+	}
+	tstr[i] = 0;
+
+	return strcmp(tstr, prefix);
 }
 
-uint32_t get_logvarevent(char *pname, varbook *vb, varevent **pve){
+// lnclass - mandatory
+uint32_t check_lnclass(char *p, char *lnclass){
+char tstr[20];
+uint32_t i = 0;
+
+	p = strchr(p, '.') + 1;
+
+	while(*p != '.'){
+		tstr[i] = *p; p++; i++;
+	}
+	tstr[i] = 0;
+
+	return strcmp(tstr, lnclass);
+}
+
+// lninst - optional
+uint32_t check_lninst(char *p, char *lninst){
+char tstr[20];
+uint32_t i = 0;
+
+	if ((lninst == NULL) && (strcmp(p, "(null)"))) return 0;
+
+	p = strchr(p, '.') + 1;
+	p = strchr(p, '.') + 1;
+
+	while(*p != '.'){
+		tstr[i] = *p; p++; i++;
+	}
+	tstr[i] = 0;
+
+	return strcmp(tstr, lninst);
+}
+
+varrec *find_varrecbyname(varattach *avb){
+varrec *actvr;
+char *pname = (char*) ((int32_t) avb + sizeof(varattach));
+LNODE *actln = (LNODE*) fln.next;
+uint32_t ldinst;
+char *tptr;
+
+	ldinst = atoi(pname);
+
+	// Find LN by 4 equal parameters: ldinst, lnclass, prefix, lninst
+	while(actln){
+
+		// Compare ldinst
+		if (atoi(actln->ln.ldinst) == ldinst){
+			tptr = strchr(pname, '/');
+			if (tptr){
+				// Compare prefix
+				tptr++;
+				if ((!check_prefix(tptr, actln->ln.prefix))
+					&&	(!check_lnclass(tptr, actln->ln.lnclass))
+					&& (!check_lninst(tptr, actln->ln.lninst))) break;
+			}
+		}
+		actln = actln->l.next;
+	}
+
+//	if (actln) {
+//		ts_printf(STDOUT_FILENO, "IEC61850: found LN %s/%s.%s.%s\n", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
+//	}else{
+//		ts_printf(STDOUT_FILENO, "IEC61850 error: LN %p not found \n", pname);
+//		return NULL;
+//	}
+
+	// Find varrec for this variable
+	actvr = vc_getfirst_varrec();
+	ldinst = atoi(actln->ln.ldinst);
+	tptr = strchr(tptr, '.') + 1;
+	tptr = strchr(tptr, '.') + 1;
+	tptr = strchr(tptr, '.') + 1;
+
+	while(actvr){
+		if ((actvr->asdu == ldinst) && (!strcmp(tptr, &actvr->name->fc[3]))) break;
+		actvr = actvr->l.next;
+	}
+
+	return actvr;
+}
+
+uint32_t get_logvarevent(varattach *avb, varevent **pve){
 varevent *ve = *pve;
+char *pname = (char*) ((int32_t) avb + sizeof(varattach));
+
 
 	return 0;
 }
 
-uint32_t get_actvarevent(varrec *actvr, varbook *vb, varevent **pve){
-varevent *ve = *pve;
+uint32_t get_actvarevent(varrec *actvr, varattach *avb, varevent **pve){
+varevent *ave = *pve;
+
+	// Set varrec as booked
+	if ((actvr == NULL) || (avb == NULL) || (ave == NULL)) return 1;
+
+	actvr->uid = avb->uid;
+	actvr->prop |= ATTACHING;
+
+	// Init varevent
+	ave->uid = actvr->uid;
+	ave->time = actvr->time;
+
+	// Set value by type
+	// Types: STRING; INT32; FLOAT32; QUALITY; TIMESTAMP;
+	// vallen demand for STRING only
+	ave->vallen = 0;
+	switch(actvr->val->idtype){
+	case QUALITY:
+	case INT32:
+		ave->value.i = *((int32_t*) (actvr->val->val));
+		break;
+
+	case FLOAT32:
+		ave->value.f = *((float*) (actvr->val->val));
+		break;
+
+	case TIMESTAMP:
+		ave->value.i = *((time_t*) (actvr->val->val));
+		break;
+
+	case STRING:
+		ave->value.i = *((int32_t*) (actvr->val->val));		// it's pointer to string for full event creation
+		ave->vallen = strlen((char*) (actvr->val->val));
+		break;
+	}
 
 	return 0;
 }
 
 char *get_logstring(char *pname){
-char *lstr;
+char *lstr = NULL;
 
 	return lstr;
 }
@@ -580,18 +707,11 @@ data_unit *pdm;
 int cntdm, cntve, cntdu;
 int adr, dir, fullrdlen;
 
-// For EP_MSG_BOOK & UNBOOK
-LNODE *actln;
+// For EP_MSG_ATTACH & UNATTACH
 varrec *actvr;
-varbook *avb;
+varattach *avb;
 varevent *actve;
-uint32_t adr1;
-char lnname[40];
 char *pname;
-int recjour;
-time_t time;
-uint32_t valtype;
-float val;
 
 	buff = malloc(len);
 
@@ -664,115 +784,55 @@ float val;
 
 			break;
 
-		case EP_MSG_BOOK:
+		case EP_MSG_ATTACH:
 
 			// Init pointers
-			avb = (varbook*) ((int32_t) edh + sizeof(ep_data_header));
-			pname = (char*) ((int32_t) avb + sizeof(varbook));
+			avb = (varattach*) ((int32_t) edh + sizeof(ep_data_header));
+			pname = (char*) ((int32_t) avb + sizeof(varattach));
 
-			ts_printf(STDOUT_FILENO, "IEC61850: set subscribe for value %s\n", pname);
+			ts_printf(STDOUT_FILENO, "IEC61850: set attach for value %s\n", pname);
 
 			actve = malloc(sizeof(varevent));
 
 			// Detect LOG or ACTUAL variable
 			if (strstr(pname, "(")){
 				// Get varevent from journal by name
-				if (get_logvarevent(pname, avb, &actve)){
-					// If log record not found then break subscribe process
+				if (get_logvarevent(avb, &actve)){
+					// If log record not found then break attach process
 					free (actve);
 					break;
 				}
 			}else{
 				// Get varevent by name
-				actvr = find_varrecbyname(pname);
-				get_actvarevent(actvr, avb, &actve);
+				actvr = find_varrecbyname(avb);
+				if (actvr){
+					if (get_actvarevent(actvr, avb, &actve))
+						ts_printf(STDOUT_FILENO, "IEC61850 error: %s not attach to HMI \n\n", pname);
+					else
+						ts_printf(STDOUT_FILENO, "IEC61850: %s attach to HMI \n\n", pname);
+				}
 			}
 
 			// Create send buffer
 			sendve = malloc(sizeof(ep_data_header) + sizeof(varevent) + actve->vallen);
 			memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent));
-			if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
-									          get_logstring(pname), actve->vallen);
+//			if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
+//									          get_logstring(pname), actve->vallen);
 
 			free(actve);
 			send_varevent2hmi((char*) sendve, 1);	// Send 1 varevent to HMI
 
-//
-//			adr1 = atoi(pname);
-//			actln = fln.next;
-//			// Find first LN with equal ldinst
-//			while((actln) && (atoi(actln->ln.ldinst) != adr1)) actln = actln->l.next;
-//
-//			// Find LN with other equal parameters
-//			while(actln){
-//					sprintf(lnname, "%s/%s.%s.%s", actln->ln.ldinst, actln->ln.prefix, actln->ln.lnclass, actln->ln.lninst);
-//					pname[avb->lenname] = 0;
-//					if (strstr(pname, lnname)) break;
-//					actln = actln->l.next;
-//			}
-//
-//			ts_printf(STDOUT_FILENO, "IEC61850: found LN %s\n", lnname);
-//
-//			pname = strstr(pname, "(");
-//			if (pname == NULL){
-//				// Find varrec for this variable
-//				actvr = vc_getfirst_varrec();
-//				while(actvr){
-//					if (actvr->asdu != atoi(actln->ln.ldinst)){
-//						actvr = actvr->l.next;
-//						continue;
-//					}
-//					if (actvr->id == avb->id) break;
-//					actvr = actvr->l.next;
-//				}
-//				if (actvr){
-//					actvr->uid = avb->uid;
-//					actvr->prop |= BOOKING;
-//					valtype = actvr->val->idtype;
-//					val = *((float*)(actvr->val->val));
-//					time = actvr->time;
-//					ts_printf(STDOUT_FILENO, "IEC61850: asdu %s of %s has booked to HMI \n", actln->ln.ldinst, actvr->name->fc);
-//				}
-//			}else{
-////				// Call Journal constant and return by multififo
-////				recjour = atoi(pname+1);
-////				time = atoi(((varbook*) (buff + offset))->time);
-////				jour_getvar(actln->ln.ldinst, recjour, time);
-//
-//				time = 435345386;
-//				valtype = avb->type;
-//				val = 104;
-//			}
-//
-			// Send variable to HMI
-//			len = sizeof(varevent);
-//			sendbuff = malloc(len);
-//			sedh = (ep_data_header*) sendbuff;
-//			ave = (varevent*) sendbuff;
-//			sedh->adr = IDHMI;
-//			sedh->sys_msg = EP_MSG_BOOKEVENT;
-//			sedh->len = len - sizeof(ep_data_header);
-//			ave->uid = avb->uid;
-//			ave->time = time;
-//
-//			// By type
-//			ave->vallen = sizeof(float);
-//			ave->value.f = val;
-//
-//			mf_toendpoint(sendbuff, len, sedh->adr, DIRUP);
-//			free(sendbuff);
-
 			break;
 
-		case EP_MSG_UNBOOK:
-			pname = buff + offset + sizeof(varbook);
-			ts_printf(STDOUT_FILENO, "IEC61850: set unsubscribe for dataset from value %s\n", pname);
+		case EP_MSG_UNATTACH:
+			pname = buff + offset + sizeof(varattach);
+			ts_printf(STDOUT_FILENO, "IEC61850: set unattach for dataset from value %s\n", pname);
 			pname = strstr(pname, "LN:");
 
 			actvr = vc_getfirst_varrec();
-			if (actvr) actvr->prop &= ~BOOKING;
+			if (actvr) actvr->prop &= ~ATTACHING;
 
-			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unsubscribed\n");
+			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unattachd\n");
 
 			break;
 
@@ -953,23 +1013,62 @@ frame_dobj fr_do = FRAME_DOBJ_INITIALIZER;
 	}
 }
 
+
+// Create varrec list for any DO, DO.DA, DO.DA.BDA with real type: VisString255, INT32, FLOAT32, Quality or Timestamp
+// It's store of values and properties
 void create_varctrl(void){
 LNODE *actln = (LNODE*) fln.next;
 DOBJ *actdo;
+ATTR *actda;
+BATTR *actbda;
 char *doname;
-int i;
+int i, a, b;
 varrec *vr;
 
 	while(actln){
 		if (actln->ln.pmytype){
 			actdo = actln->ln.pmytype->pfdobj;
 			for (i = 0; i < actln->ln.pmytype->maxdobj; i++){
-				// Addon '.mag.f' is temporary
-				doname = malloc(strlen(actdo->dobj.name)  + 10);
-				ts_sprintf(doname, "LN:%s.mag.f", actdo->dobj.name);
-				vr = vc_addvarrec(actln, doname, NULL);
-				vr->prop &= ~BOOKING;
+
+				if (vc_typetest(actdo->dobj.type)){
+					doname = malloc(strlen(actdo->dobj.name)  + 10);
+					ts_sprintf(doname, "LN:%s", actdo->dobj.name);
+					vr = vc_addvarrec(actln, doname, NULL);
+					vr->prop &= ~ATTACHING;
+//					ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+				}else{
+					actda = actdo->dobj.pmytype->pfattr;
+					for (a = 0; a < actdo->dobj.pmytype->maxattr; a++){
+						if (vc_typetest(actda->attr.btype)){
+							doname = malloc(strlen(actdo->dobj.name) + strlen(actda->attr.name) + 10);
+							ts_sprintf(doname, "LN:%s.%s", actdo->dobj.name, actda->attr.name);
+							vr = vc_addvarrec(actln, doname, NULL);
+							vr->prop &= ~ATTACHING;
+//							ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+						}else{
+							actbda = actda->attr.pmyattrtype->pfbattr;
+							for (b = 0; b < actda->attr.pmyattrtype->maxbattr; b++){
+								if (vc_typetest(actbda->battr.btype)){
+									doname = malloc(strlen(actdo->dobj.name) + strlen(actda->attr.name)
+												  + strlen(actbda->battr.name) + 10);
+									ts_sprintf(doname, "LN:%s.%s.%s", actdo->dobj.name, actda->attr.name, actbda->battr.name);
+									vr = vc_addvarrec(actln, doname, NULL);
+									vr->prop &= ~ATTACHING;
+//									ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+								}
+
+								actbda = actbda->l.next;
+
+							}
+						}
+
+						actda = actda->l.next;
+
+					}
+				}
+
 				actdo = actdo->l.next;
+
 			}
 		}
 		actln = actln->l.next;
