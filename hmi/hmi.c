@@ -235,14 +235,60 @@ void main_switch(GR_EVENT *event){
 		}
 }
 
+uint32_t setvarbyevent(varevent *ave){
+varrec *avr;
+char *pstr;
+
+	if (ave){
+
+		avr = (varrec*) ave->uid;
+
+		switch(avr->val->idtype){
+		case QUALITY:
+		case INT32:
+			*((int32_t*) (avr->val->val)) = ave->value.i;
+			ts_printf(STDOUT_FILENO, "HMI!!!: get int value %d as %s\n", ave->value.i, avr->name->fc);
+			break;
+
+		case FLOAT32:
+			*((float*) (avr->val->val)) = ave->value.f;
+			ts_printf(STDOUT_FILENO, "HMI!!!: get float value %.2F as %s\n", ave->value.f, avr->name->fc);
+			break;
+
+		case TIMESTAMP:
+			*((time_t*) (avr->val->val)) = (time_t) ave->value.i;
+			break;
+
+		case STRING:
+			pstr = (char*)((uint32_t) ave + ave->vallen);
+			strncpy((char*) (avr->val->val), pstr, ave->vallen);
+			ts_printf(STDOUT_FILENO, "HMI!!!: get string value %s as %s\n", (char*) (ave->value.i), avr->name->fc);
+			break;
+		}
+
+	}
+
+	return 0;
+}
+
+varevent *get_nextvarevent(ep_data_header *edh, varevent *ave){
+
+	if (ave->vallen) ave = (varevent*) ((uint32_t) ave + ave->vallen);
+	ave++;
+
+	if ( ((uint32_t) ave - (uint32_t) edh - sizeof(ep_data_header) - edh->len) <= 0) return NULL;
+
+	return ave;
+}
+
 // -- Multififo receive data --
 int rcvdata(int len){
 char *buff;
-int adr, dir, rdlen, fullrdlen;
-int offset;
+int  adr, dir;
+uint32_t fullrdlen;
+uint32_t offset;
 ep_data_header *edh;
 varevent *ave;
-varrec *avr;
 
 	buff = malloc(len);
 	if(!buff) return -1;
@@ -267,16 +313,15 @@ varrec *avr;
 		switch(edh->sys_msg){
 
 		case EP_MSG_VAREVENT:
-//			ave = (varevent*) buff + offset;
-//			avr = (varrec*) ave->uid;
-//			ts_printf(STDOUT_FILENO, "HMI!!!: get value %.2F as %s\n", ave->value.f, avr->name->fc);
-//
-//			// TODO Make getting group varevents
-//
-//			// TODO Make type filter
-//
-//			*((float*) (avr->val->val)) = ave->value.f;
-//			MFMessage = GR_EVENT_TYPE_EXPOSURE;
+			edh = (ep_data_header*) (buff + offset);
+			ave = (varevent*)((char*) edh + sizeof(ep_data_header));
+
+			do{
+				setvarbyevent(ave);
+				ave = get_nextvarevent(edh, ave);
+			}while(ave);
+
+			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
 
 			break;
 		}
@@ -322,6 +367,7 @@ size_t evlen;
  		// Check my events
  		if (MFMessage){
 			event.type = MFMessage;
+			event.exposure.wid = GR_ROOT_WINDOW_ID;
 			MFMessage = 0;
 			main_switch(&event);
  		}

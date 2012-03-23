@@ -478,13 +478,16 @@ asdu *pasdu = (asdu*) (edh + 1);
 			}
 			if (actvr->id == pdu->id){
 				actvr->time = pdu->time_tag;
+
+				// TODO make all types
 				*((float*)(actvr->val->val)) = pdu->value.f;
 
 //				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
 				if (actvr->prop & ATTACHING){
 					pve->value.f = pdu->value.f;
 					pve->time = pdu->time_tag;
-					pve->vallen = sizeof(float);
+					pve->vallen = 0;
+					pve->uid = actvr->uid;
 					(*ppve)++; 	// Next varevent
 //					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
 
@@ -658,7 +661,8 @@ varevent *ave = *pve;
 	actvr->prop |= ATTACHING;
 
 	// Init varevent
-	ave->uid = actvr->uid;
+	ave->uid = avb->uid;
+	actvr->uid = avb->uid;
 	ave->time = actvr->time;
 
 	// Set value by type
