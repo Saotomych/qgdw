@@ -393,7 +393,7 @@ char keywords[][10] = {
 								// DO.name is value with var type
 								// Set vr->val->val to value
 								vr->val->idx = IECBASE + IECVALUE;
-								vr->val->idtype = get_type_idx(vr->val->val);
+								vr->val->idtype = get_type_idx(pdo->dobj.type);
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = ATTACHING| NEEDFREE;
@@ -433,7 +433,7 @@ char keywords[][10] = {
 								// DA.name is value with var type
 								// Set vr->val->val to value
 								vr->val->idx = IECBASE + IECVALUE;
-								vr->val->idtype = get_type_idx(vr->val->val);
+								vr->val->idtype = get_type_idx(pda->attr.btype);
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = ATTACHING | NEEDFREE;
@@ -494,7 +494,7 @@ char keywords[][10] = {
 								// BDA.name is value with var type
 								// Set vr->val->val to value
 								vr->val->idx = IECBASE + IECVALUE;
-								vr->val->idtype = get_type_idx(vr->val->val);
+								vr->val->idtype = get_type_idx(pbda->battr.btype);
 								vr->val->val = malloc(sizeof_idx(vr->val->idtype));
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = ATTACHING | NEEDFREE;

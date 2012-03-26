@@ -471,28 +471,52 @@ asdu *pasdu = (asdu*) (edh + 1);
 
 		// Find varrec and set event
 		actvr = vc_getfirst_varrec();
-		while(actvr){
-			if (actvr->asdu != pasdu->adr){
-				actvr = actvr->l.next;
-				continue;
-			}
+//		while(actvr){
+//			if (actvr->asdu != pasdu->adr){
+//				actvr = actvr->l.next;
+//				continue;
+//			}
+
+		while ((actvr) && (actvr->asdu != pasdu->adr)) actvr = actvr->l.next;
+		while ((actvr) && (actvr->asdu == (int) pasdu->adr)){
+
 			if (actvr->id == pdu->id){
 				actvr->time = pdu->time_tag;
 
 				// TODO make all types
 				*((float*)(actvr->val->val)) = pdu->value.f;
 
+//				ts_printf(STDOUT_FILENO, "IEC61850: Store value: %s = %f\n", actvr->val->name, pdu->value.f);
 //				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
+
 				if (actvr->prop & ATTACHING){
-					pve->value.f = pdu->value.f;
-					pve->time = pdu->time_tag;
+					switch(actvr->val->idtype){
+					case QUALITY:
+					case INT32:
+						pve->value.i = *((int32_t*) (actvr->val->val));
+						break;
+
+					case FLOAT32:
+						pve->value.f = *((float*) (actvr->val->val));
+						break;
+
+					case TIMESTAMP:
+						pve->value.i = *((time_t*) (actvr->val->val));
+						break;
+
+					case STRING:
+						pve->value.i = *((int32_t*) (actvr->val->val));		// it's pointer to string for full event creation
+						pve->vallen = strlen((char*) (actvr->val->val));
+						break;
+					}
+					pve->time = actvr->time;
 					pve->vallen = 0;
 					pve->uid = actvr->uid;
 					(*ppve)++; 	// Next varevent
 //					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
-
 					return 1;
 				}
+//				return 0;
 			}
 			actvr = actvr->l.next;
 		}
@@ -537,6 +561,7 @@ ep_data_header *eph = (ep_data_header*) sendbuf;
 uint32_t cnt;
 
 	eph->len = sizeof(varevent) * len;
+	eph->adr = IDHMI;
 
 
 	cnt = mf_toendpoint(sendbuf, eph->len + sizeof(ep_data_header), IDHMI, DIRUP);
@@ -657,13 +682,16 @@ varevent *ave = *pve;
 	// Set varrec as booked
 	if ((actvr == NULL) || (avb == NULL) || (ave == NULL)) return 1;
 
+	// Init varrec
 	actvr->uid = avb->uid;
 	actvr->prop |= ATTACHING;
 
 	// Init varevent
 	ave->uid = avb->uid;
-	actvr->uid = avb->uid;
 	ave->time = actvr->time;
+
+//	ts_printf(STDOUT_FILENO, "IEC61850: Find value: %s = %f\n", actvr->val->name, *((float*) (actvr->val->val)));
+//	ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
 
 	// Set value by type
 	// Types: STRING; INT32; FLOAT32; QUALITY; TIMESTAMP;
@@ -820,6 +848,8 @@ char *pname;
 			// Create send buffer
 			sendve = malloc(sizeof(ep_data_header) + sizeof(varevent) + actve->vallen);
 			memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent));
+			add_header2hmi(sendve);
+			// Add string value
 //			if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
 

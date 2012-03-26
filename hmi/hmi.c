@@ -371,7 +371,6 @@ size_t evlen;
 			MFMessage = 0;
 			main_switch(&event);
  		}
-
 	}
 
  	GrClose();
