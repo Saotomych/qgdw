@@ -5,7 +5,7 @@
  */
  
 #include "../include/iec101.h"
-
+#include "../../common/paths.h"
 
 int main(int argc, char *argv[])
 {

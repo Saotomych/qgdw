@@ -177,7 +177,7 @@ int i, x, y, maxday, wday, day;
 	// Numbers to end of first line days
 	day = 1;
 	for (i = wday; i < 7; i++){
-		ts_sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
+		ts_sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 9 : 16), day);
 		pmenu += strlen(pmenu);
 		x += 20; day++;
 	}
@@ -187,7 +187,7 @@ int i, x, y, maxday, wday, day;
 		x = 2;
 		y += MENUSTEP;
 		for (i = 0; (i < 7) && (day <= maxday); i++, day++){
-			ts_sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 8 : 16), day);
+			ts_sprintf(pmenu, "menu %d %d %d a %d\n", ((day < 10) ? x+6 : x), y, ((day < 10) ? 9 : 16), day);
 			pmenu += strlen(pmenu);
 			x += 20;
 		}
@@ -421,7 +421,6 @@ int i;
 
 	// Create menu structures
 	psmenu = do_openfilemenu(txtmenu);
-
 	//	txtmenu set as menu.ptxtmenu and free in destroy_menu
 
 	return psmenu;

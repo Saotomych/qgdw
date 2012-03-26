@@ -47,7 +47,7 @@ static menu *num_menu;     //указатель на структуру меню
 static char tmpstring[100];			// For temporary operations
 static char *devtypetext;		// Text of device type
 
-static char lnmenunames[3][32];
+static char lnmenunames[3][64];
 
 static value menuvalues[] = {
 		// Time variables
@@ -104,7 +104,7 @@ int idtype;
 				idtype = pitem->vr->val->idtype;
 
 				if (idtype & FLOAT32){
-					ts_sprintf(wintext, "%s%f%s", pitem->text, *((float*) (pitem->vr->val->val)), pitem->endtext);
+					ts_sprintf(wintext, "%s%09.2F%s", pitem->text, *((float*) (pitem->vr->val->val)), pitem->endtext);
 				}
 
 				if (idtype & INT32){
@@ -679,29 +679,37 @@ int i;
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
 
+	ts_printf(STDOUT_FILENO, "HMI: Key press 0x%04X\n", event->keystroke.ch);
+
 	switch(event->keystroke.ch){
 
+	case 0x102:
 	case 0xf800:	// Key left
 					if (num_menu->keyleft) num_menu->keyleft((GR_EVENT*) arg);
 					break;
 
+	case 0x103:
 	case 0xf801:	// Key right
 					if (num_menu->keyright) num_menu->keyright((GR_EVENT*) arg);
 					break;
 
+	case 0x101:
 	case 0xf802:	// Key up
 					if (num_menu->keyup) num_menu->keyup((GR_EVENT*) arg);
 					break;
 
+	case 0x104:
 	case 0xf803:	// Key down
 					if (num_menu->keydown) num_menu->keydown((GR_EVENT*) arg);
 					break;
 
+	case 0x106:
 	case 0x0D:		// Key ENTER
 	case 0x20:		// Dynamic menu change our variable
 					if (num_menu->keyenter) num_menu->keyenter((GR_EVENT*) arg);
 					break;
 
+	case 0x105:
 	case 0x1B:		// Key MENU / ESC
 					num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 					if (!num_menu){
@@ -711,7 +719,6 @@ GR_EVENT *event = (GR_EVENT*) arg;
 						redraw_screen(NULL);
 					}
 					break;
-
 	}
 
 }

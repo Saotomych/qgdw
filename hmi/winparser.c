@@ -16,6 +16,7 @@ static menu *allmenus[MAXMENU];
 static int maxmenus = 0;
 
 extern LNODE *actlnode;
+extern time_t jourtime;
 
 //------------------------------------------------------------------------------------
 // Definition for function keys
@@ -320,7 +321,6 @@ menu *num_menu = allmenus[maxmenus];
 	            	*p = 0;
 	            	p += 5;
 	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, defvalues);
-//	            	if (num_menu->pitems[i]->vr) nextvarrec = num_menu->pitems[i]->vr;
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{
@@ -351,6 +351,8 @@ menu *num_menu = allmenus[maxmenus];
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
 
+   	 		 vc_attach_dataset(num_menu->fvarrec, &jourtime, actlnode);
+
    	 	 	 return num_menu;
 }
 
@@ -372,7 +374,10 @@ menu* num_menu;
 
 	call_epiloque(actmenu);
 
-	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
+	if (num_menu->fvarrec){
+		vc_unattach_dataset(num_menu->fvarrec, actlnode);
+		vc_destroyvarreclist((varrec*) num_menu->fvarrec);
+	}
 	GrDestroyFont(num_menu->font);
 
 	for (i=0; i < num_menu->count_item; i++){

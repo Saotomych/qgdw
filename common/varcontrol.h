@@ -10,10 +10,13 @@
 
 #include "iec61850.h"
 
+// application IDs  (equal ASDU)
+#define IDHMI			0x10000
 
-#define BOOKING		0x100
+// varrec properties
+#define ATTACHING	0x100
 #define TRUEVALUE	0x080
-#define ISBOOKED	0x040
+#define ISATTACHED	0x040
 #define INTERNAL	0x020
 #define NEEDFREE	0x010
 
@@ -81,23 +84,23 @@ typedef struct _VARREC{
 	LIST l;
 	fcdarec *name;	// Can see as pointer to pointer to full name already
 	value *val;		// Values and types of variable
-	int iarg;
-	int prop;		// properties: const, var, booking, true value.
+	int asdu;		// ASDU of the LD, for fast detect LD events
+	int iarg;		// Index of this varrec, for fast identify with otherside varrec
+	int id;			// ID of va from mainmap.cfg, for fast identify with otherside varrec
+	int prop;		// properties: const, var, attaching, true value.
 	int time;		// time from last refresh value, usec
+	uint32_t	uid;	// unique ID of value, it's equal pointer to varrec in HMI
 } varrec, *pvarrec;
 
-// Structure for fast working events while variable was changed
-typedef struct _VARBOOK{
-	LIST l;
-	int idvar;		// it's pointer to var in other application. = val
-	int idtype;		// it's var type
-	void *val;
-	int	prop;
-} varbook, *pvarbook;
-
-extern void vc_init(pvalue vt, int len);
-//extern varrec *vc_addvarrec(LNODE *actln, char *varname, varrec *actvr, value *defvr);
+extern int vc_init(void);
+extern int vc_get_map_by_name(char *name, uint32_t *mid);
+extern int vc_get_type_by_name(char *name, char *type);
+extern char* vc_typetest(char *ptype);
 extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
 extern int vc_destroyvarreclist(varrec *fvr);
+extern void vc_attach_dataset(varrec *vr, time_t *t, LNODE *actln);
+extern void vc_freevarrec(varrec *vr);
+extern void vc_unattach_dataset(varrec *vr, LNODE *actln);
+extern varrec* vc_getfirst_varrec(void);
 
 #endif /* VARCONTROL_H_ */

@@ -200,11 +200,19 @@ static int __init ewdt_init(void)
 {
 	int ret = 0;
 
+	// extremal set reset_pin of wdt on start
+	at91_set_GPIO_periph(AT91_PIN_PC10, 0);
+	at91_set_gpio_output(AT91_PIN_PC10, 0);
+	at91_set_gpio_value(AT91_PIN_PC10, 1);
+
 	ewdt_nmajor = 131;
 	ret = register_chrdev(ewdt_nmajor, "ewdt", &ewdt_fops);
 	if (ret < 0){
 		return ret;
 	}
+
+	// reset reset_pin of wdt
+	at91_set_gpio_value(AT91_PIN_PC10, 0);
 
     init_timer(&ewdt_timer);
 	ewdt_timer.expires = jiffies + HZ/TICKSMAX;

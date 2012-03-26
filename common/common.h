@@ -68,9 +68,9 @@
 #define EP_MSG_DCOLL_STOP		16		/* stop data collection - up2down */
 #define EP_MSG_TEST_CONN		17		/* test device connection - up2down */
 #define EP_MSG_DEV_ONLINE		18		/* device is online - down2up */
-#define EP_MSG_BOOK				20		/* to book data for event - up2down */
-#define EP_MSG_UNBOOK			21		/* to delete data from event - up2down */
-#define EP_MSG_BOOKEVENT		22		/* event variable has changed - down2 up */
+#define EP_MSG_ATTACH			20		/* to attach data for event - up2down */
+#define EP_MSG_UNATTACH			21		/* to unattach data from event - up2down */
+#define EP_MSG_VAREVENT			22		/* event variable has changed - down2 up */
 
 #define EP_MSG_LOG_DEV_EVENT	25		/* device log event - down2up */
 #define EP_MSG_LOG_APP_EVENT	26		/* application log event - down2up */
@@ -97,6 +97,10 @@
 #define SLAVE_START_INST		100
 #define ASDU_START_INST			100
 
+// Exit codes
+#define NO_CONFIG_FILE	1
+
+
 /*
  *
  * Structures
@@ -104,8 +108,8 @@
  */
 
 typedef struct ep_data_header {
-	uint16_t 		adr;		/* link (ASDU) address */
-	uint16_t		numep;		/* endpoint number of receiver */
+	uint32_t 		adr;		/* link (ASDU) address */
+	uint32_t		numep;		/* endpoint number of receiver */
 	uint32_t		sys_msg;	/* user data (0)/system message(1..n) */
 	uint32_t		len;		/* length of the data following the header */
 } __attribute__ ((packed)) ep_data_header;
@@ -132,5 +136,27 @@ typedef struct _LIST{
 	void *next;
 	void *prev;
 } LIST;
+
+typedef struct _varattach{
+	time_t			time;
+	uint32_t		uid;
+	uint32_t		id;
+	uint32_t		type;
+	uint32_t		lenname;
+} __attribute__ ((packed)) varattach;
+
+typedef struct _varevent{
+	time_t			time;
+	uint32_t		uid;
+	uint32_t		vallen;
+
+	union {
+		uint32_t	ui;					/* unsigned integer representation */
+		int32_t		i;					/* integer representation */
+		float		f;					/* float representation */
+		time_t		tm;					/* time in seconds */
+	} value;							/* transferring value (e.g. measured value, counter readings, etc.) */
+
+} __attribute__ ((packed)) varevent;
 
 #endif /* COMMON_H_ */
