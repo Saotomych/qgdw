@@ -744,6 +744,7 @@ varrec *actvr;
 varattach *avb;
 varevent *actve;
 char *pname;
+uint32_t *uids;
 
 	buff = malloc(len);
 
@@ -859,14 +860,19 @@ char *pname;
 			break;
 
 		case EP_MSG_UNATTACH:
-			pname = buff + offset + sizeof(varattach);
 			ts_printf(STDOUT_FILENO, "IEC61850: set unattach for dataset from value %s\n", pname);
-			pname = strstr(pname, "LN:");
 
-			actvr = vc_getfirst_varrec();
-			if (actvr) actvr->prop &= ~ATTACHING;
+			cntdm = edh->len;
+			uids = (uint32_t*) (buff + sizeof(ep_data_header));
+			while(cntdm){
+				actvr = vc_getfirst_varrec();
+				while ((actvr) && (actvr->uid != *uids)) actvr = actvr->l.next;
+				if (actvr) actvr->prop &= ~ATTACHING;
+				// change counters and pointers
+				cntdm-=sizeof(int); uids++;
+			}
 
-			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unattachd\n");
+			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unattached\n");
 
 			break;
 

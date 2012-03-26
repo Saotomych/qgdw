@@ -600,33 +600,37 @@ uint32_t len;
 }
 
 // Make unattach remote variables from end to vr->name->fc
-void vc_unattach_dataset(varrec *vr, LNODE *actln){
+void vc_unattach_dataset(varrec *fvr, LNODE *actln){
 ep_data_header *edh;
-varattach *vb;
-char *varname;
+varrec *vr;
+uint32_t *uids;
 u08 *varbuf;
-uint32_t len;
+uint32_t len = 0;
 
-	len = sizeof(varattach) + 1 + strlen(vr->name->fc);  // with start ep_data_header
+	vr = fvr;
+	while(vr){
+		len += sizeof(int);
+		vr = vr->l.next;
+	}
 
-	varbuf = malloc(len);
+	varbuf = malloc(len + sizeof(ep_data_header));
 	edh = (ep_data_header*) varbuf;
-	vb = (varattach*) ((char*) edh + sizeof(ep_data_header));
-	varname = (char*) (varbuf + sizeof(varattach));
-	ts_sprintf(varname, "%s", vr->name->fc);
-
 	edh->adr = IDHMI;
-	edh->sys_msg = EP_MSG_ATTACH;
-	edh->len = len - sizeof(ep_data_header);
+	edh->sys_msg = EP_MSG_UNATTACH;
+	edh->len = len;
 	edh->numep = 0;
-	vb->lenname = strlen(varname);
-	vb->time = 0;
-	vb->id = vr->id;
+
+	vr = fvr; uids = varbuf + sizeof(ep_data_header);
+	while(vr){
+		*uids = vr->uid;
+		uids++;
+		vr = vr->l.next;
+	}
 
 	ts_printf(STDOUT_FILENO, "HMI: unattach\n");
 
 	// Send unattach all varrec
-	mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
+	mf_toendpoint((char*) varbuf, len + sizeof(ep_data_header), IDHMI, DIRDN);
 
 	free(varbuf);
 
