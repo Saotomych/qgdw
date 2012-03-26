@@ -22,7 +22,6 @@
 #include "../../common/asdu.h"
 #include "iec_asdu.h"
 #include "../../common/multififo.h"
-#include "../../common/paths.h"
 
 
 #ifdef __cplusplus
@@ -113,6 +112,7 @@ uint16_t iec104_get_dobj_item(iec104_ep_ext* ep_ext, uint32_t iec104_id);
 uint16_t iec104_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
 uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
 
+uint16_t iec104_log_msg_send(uint16_t adr, char *msg);
 
 uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext);
 uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext);

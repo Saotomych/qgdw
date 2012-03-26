@@ -72,6 +72,9 @@
 #define EP_MSG_UNATTACH			21		/* to unattach data from event - up2down */
 #define EP_MSG_VAREVENT			22		/* event variable has changed - down2 up */
 
+#define EP_MSG_LOG_DEV_EVENT	25		/* device log event - down2up */
+#define EP_MSG_LOG_APP_EVENT	26		/* application log event - down2up */
+
 // Messages for initialize endpoints
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
 #define EP_MSG_EPRDY			0xF2	/* !internal multififo message! - down2up */

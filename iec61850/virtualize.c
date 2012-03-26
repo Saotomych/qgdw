@@ -37,6 +37,11 @@ static time_t time_adj = 0;
 #define CLOCK_FREQ			32768		// by the Epson RTC driver
 #define ADJ_TIME_DIFF		6*3600		// 6 hours
 
+// log databases
+extern log_db load_profile_db;
+extern log_db consum_arch_db;
+extern log_db dev_event_db;
+extern log_db app_event_db;
 
 // DATA
 typedef struct _DATAMAP{
@@ -65,7 +70,7 @@ typedef struct _SCADA_CH{
 	LIST l;
 	LDEVICE *myld;
 	uint32_t ASDUaddr;			// use find_by_int, get from IED.options
-	uint32_t log_rec[LOG_FLD_NUM];
+	uint32_t *log_rec;
 } SCADA_CH;
 
 typedef struct _SCADA_ASDU{
@@ -86,10 +91,10 @@ ep_data_header edh;
 
 void start_collect_data()
 {
+	time_t sys_time = time(NULL);
 	SCADA_CH *sch = (SCADA_CH *) fscadach.next;
 
 	//	Execute all low level application for devices by LDevice (SCADA_CH)
-	//sch = sch->l.next;
 	while(sch)
 	{
 		send_sys_msg(sch->ASDUaddr, EP_MSG_DCOLL_START);
@@ -100,7 +105,7 @@ void start_collect_data()
 	}
 
 	// set log_db timers initial values
-	log_db_init_timers();
+	log_db_init_timers(sys_time);
 }
 
 // --- Time function ---
@@ -211,15 +216,45 @@ int is_scada(uint32_t adr)
 	return 0;
 }
 
+int get_dobj_idx(char *dobj_name)
+{
+	DOBJ *adobj = (DOBJ *) fdo.next;
+	int i = 0;
+
+	while(adobj)
+	{
+		if(strcmp(adobj->dobj.name, dobj_name) == 0) return i;
+		i++;
+		adobj = adobj->l.next;
+	}
+
+	return -1;
+}
+
+int get_dobj_num()
+{
+	DOBJ *adobj = (DOBJ *) fdo.next;
+	int i = 0;
+
+	while(adobj)
+	{
+		i++;
+		adobj = adobj->l.next;
+	}
+
+	return i;
+}
+
 void catch_alarm(int sig)
 {
 	struct timeval cor_time;
 	time_t rtc_time, sys_time;
-	int res, i;
+	int res;
 	SCADA_CH *sch;
 
 	sys_time = time(NULL);
 
+	// check if system time adjustment needed
 	if(time_dev != 0)
 	{
 		res = get_rtc_time(RTC_DEV_NAME, &rtc_time);
@@ -245,38 +280,41 @@ void catch_alarm(int sig)
 		}
 	}
 
-	for(i=0; i<LOG_SERV_PRM_SIZE; i++)
+	// check data DBs for adding records time
+	if(load_profile_db.add_timer > 0 && difftime(sys_time, load_profile_db.add_timer) >= load_profile_db.add_period)
 	{
-		if(log_serv_prm_list[i].add_timer > 0 && difftime(sys_time, log_serv_prm_list[i].add_timer) >= log_serv_prm_list[i].add_period)
+		sch = (SCADA_CH*) fscadach.next;
+		while(sch)
 		{
-			sch = (SCADA_CH*) fscadach.next;
-			while(sch)
+			if(!is_scada(sch->ASDUaddr))
 			{
-				if(!is_scada(sch->ASDUaddr))
-				{
-					log_db_add_var_rec(sch->ASDUaddr, sch->log_rec, log_serv_prm_list[i].db_req, log_serv_prm_list[i].db_flds, log_serv_prm_list[i].flds_num);
-				}
-				sch = sch->l.next;
+				load_profile_db.add_var_rec(&load_profile_db, sch->ASDUaddr, sch->log_rec);
 			}
-			// update timer
-			log_serv_prm_list[i].add_timer = sys_time;
+			sch = sch->l.next;
 		}
+
+		// update timer
+		load_profile_db.add_timer = sys_time;
 	}
 
-	for(i=0; i<LOG_SERV_PRM_SIZE; i++)
+	if(consum_arch_db.add_timer > 0 && difftime(sys_time, consum_arch_db.add_timer) >= consum_arch_db.add_period)
 	{
-		if(log_serv_prm_list[i].export_timer > 0 && difftime(sys_time, log_serv_prm_list[i].export_timer) >= log_serv_prm_list[i].export_period)
+		sch = (SCADA_CH*) fscadach.next;
+		while(sch)
 		{
-			char file_name[64] = {0};
-
-			log_db_export_data(log_serv_prm_list[i].db_req, sys_time, file_name);
-
-			log_db_clean_old_data(log_serv_prm_list[i].db_req, sys_time, log_serv_prm_list[i].storage_deep);
-
-			// update timer
-			log_serv_prm_list[i].export_timer = sys_time;
+			if(!is_scada(sch->ASDUaddr))
+			{
+				consum_arch_db.add_var_rec(&consum_arch_db, sch->ASDUaddr, sch->log_rec);
+			}
+			sch = sch->l.next;
 		}
+
+		// update timer
+		consum_arch_db.add_timer =sys_time;
 	}
+
+	// check DBs for maintenance time
+	log_db_maintain_databases(sys_time);
 
 	signal(sig, catch_alarm);
 	alarm(alarm_t);
@@ -413,7 +451,7 @@ uint32_t  fld_idx;
 
 			if(actscadach){
 				// SCADA_CH was found
-				fld_idx = log_db_get_fld_idx(pdu->name);
+				fld_idx = get_dobj_idx(pdu->name);
 				if(fld_idx >= 0){
 					actscadach->log_rec[fld_idx] = pdu->value.ui;
 				}
@@ -810,9 +848,15 @@ uint32_t *uids;
 
 			break;
 
+		case EP_MSG_LOG_DEV_EVENT:
+			if(dev_event_db.db) dev_event_db.add_event(&dev_event_db, edh->adr, buff + offset + sizeof(ep_data_header), edh->len);
+			break;
+		case EP_MSG_LOG_APP_EVENT:
+			if(app_event_db.db) app_event_db.add_event(&dev_event_db, 0, buff + offset + sizeof(ep_data_header), edh->len);
+			break;
+
 		case EP_MSG_TIME_SYNC:
 			sync_time( *(time_t*)(buff + offset + sizeof(ep_data_header)) );
-
 			break;
 
 		case EP_MSG_ATTACH:
@@ -898,6 +942,8 @@ LNODE *aln;
 LNTYPE *alnt;
 DOBJ *adobj;
 
+int dobj_num;
+
 	ts_printf(STDOUT_FILENO, "ASDU: Start ASDU mapping to parse\n");
 
 	// Create VIRT_ASDU_TYPE list
@@ -951,6 +997,7 @@ DOBJ *adobj;
 	// Create  SCADA_CH list
 	actscadach = (SCADA_CH*) &fscadach;
 	ald = (LDEVICE*) fld.next;
+	dobj_num = get_dobj_num();
 	while(ald)
 	{
 		if(ald->ld.inst){
@@ -959,7 +1006,7 @@ DOBJ *adobj;
 			// Fill SCADA_CH
 			actscadach->myld = ald;
 			actscadach->ASDUaddr = atoi(ald->ld.inst);
-			memset(actscadach->log_rec, 0, sizeof(actscadach->log_rec)); // initialize array members with zeros
+			actscadach->log_rec = calloc(dobj_num, sizeof(uint32_t)); // initialize array log record fields
 
 			ts_printf(STDOUT_FILENO, "ASDU: ready SCADA_CH addr=%d for LDEVICE inst=%s \n", actscadach->ASDUaddr, ald->ld.inst);
 		}

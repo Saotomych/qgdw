@@ -6,6 +6,8 @@
  
 
 #include "../include/iec104.h"
+#include "../../common/ts_print.h"
+#include "../../common/paths.h"
 
 /*End-point extensions array */
 static iec104_ep_ext *ep_exts[MAXEP] = {0};
@@ -644,6 +646,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
+			iec104_log_msg_send(ep_ext->adr, "Connection established");
 
 			iec104_init_ep_ext(ep_ext);
 
@@ -669,6 +672,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
+			iec104_log_msg_send(ep_ext->adr, "Connection failed");
 
 			iec104_init_ep_ext(ep_ext);
 
@@ -681,6 +685,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 #ifdef _DEBUG
 			printf("%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
+			iec104_log_msg_send(ep_ext->adr, "Connection lost");
 
 			iec104_init_ep_ext(ep_ext);
 
@@ -699,6 +704,30 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 	}
 
 	return RES_SUCCESS;
+}
+
+uint16_t iec104_log_msg_send(uint16_t adr, char *msg)
+{
+	uint16_t res;
+	int buf_len;
+	char *buf = NULL;
+
+	buf = malloc(strlen(APP_NAME) + strlen(msg) + 5);
+
+	if(!buf) return RES_MEM_ALLOC;
+
+	if(adr > 0)
+	{
+		buf_len = ts_sprintf(buf, "%s", msg) + 1;
+		res = iec104_sys_msg_send(EP_MSG_LOG_DEV_EVENT, adr, DIRUP, (unsigned char *)buf, buf_len);
+	}
+	else
+	{
+		buf_len = ts_sprintf(buf, "%s: %s", APP_NAME, msg) + 1;
+		res = iec104_sys_msg_send(EP_MSG_LOG_APP_EVENT, adr, DIRUP, (unsigned char *)buf, buf_len);
+	}
+
+	return res;
 }
 
 
