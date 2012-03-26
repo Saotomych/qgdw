@@ -560,7 +560,7 @@ asdu *pasdu = (asdu*) (edh + 1);
 }
 
 data_unit *get_next_dataunit(data_unit *pdu, ep_data_header *edh){
-int32_t len = (uint32_t) pdu - (uint32_t) edh - edh->len - sizeof(ep_data_header);
+int32_t len = (uint32_t) pdu - (uint32_t) edh - edh->len - sizeof(ep_data_header) + sizeof(data_unit);
 
 	pdu++;
 	if (len < 0) return pdu;
