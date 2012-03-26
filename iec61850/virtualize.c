@@ -364,7 +364,7 @@ int sync_time(time_t srv_time)
 // --- rcvdata call this function
 
 char *add_header2scada(char *buff, ep_data_header *edh){
-data_unit *pdu = (data_unit*) (buff + sizeof(data_unit));
+data_unit *pdu = (data_unit*) (buff + sizeof(ep_data_header));
 ep_data_header *pdh = (ep_data_header*) buff;
 
 	pdh->adr = 0;
@@ -391,7 +391,7 @@ asdu *psasdu =  (asdu*) buff;
 	memcpy(psasdu, pasdu, sizeof(asdu));
 	psasdu->size = 0;
 
-	return (data_unit*) (psasdu + sizeof(asdu));
+	return (data_unit*) ((char*)psasdu + sizeof(asdu));
 }
 
 // Function find data_unit into map table and add remapped data_unit to SCADA frame
@@ -446,7 +446,7 @@ uint32_t  fld_idx;
 				memcpy(spdu, pdu, sizeof(data_unit));
 				spdu->id =  sasdu->baseoffset + pdm->scadaid;
 				(*pspdu)++; 	// Next pdu
-//				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
 				return 1;
 			}else{
 				ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
@@ -746,7 +746,7 @@ varevent *actve;
 char *pname;
 uint32_t *uids;
 
-	buff = malloc(len);
+	if (len) buff = malloc(len);
 
 	if(!buff) return -1;
 
