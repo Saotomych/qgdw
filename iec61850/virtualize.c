@@ -479,8 +479,8 @@ uint32_t  fld_idx;
 			if(sasdu){
 				memcpy(spdu, pdu, sizeof(data_unit));
 				spdu->id =  sasdu->baseoffset + pdm->scadaid;
-				(*pspdu)++; 	// Next pdu
 				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+				(*pspdu)++; 	// Next pdu
 				return 1;
 			}else{
 				ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
@@ -494,6 +494,7 @@ uint32_t  fld_idx;
 		ts_printf(STDOUT_FILENO, "IEC61850 error: id %d very big\n", pdu->id);
 	}
 
+	(*pspdu)++; 	// Next pdu
 
 	return 0;
 }
@@ -559,10 +560,10 @@ asdu *pasdu = (asdu*) (edh + 1);
 }
 
 data_unit *get_next_dataunit(data_unit *pdu, ep_data_header *edh){
-int32_t len = (uint32_t) pdu - (uint32_t) edh + edh->len - sizeof(ep_data_header) - sizeof(asdu) - sizeof(data_unit);
+int32_t len = (uint32_t) pdu - (uint32_t) edh - edh->len + sizeof(data_unit);
 
 	pdu++;
-	if (len > 0) return pdu;
+	if (len < 0) return pdu;
 
 	return 0;
 }
@@ -807,8 +808,8 @@ uint32_t *uids;
 
 			// Making up Buffer for send to SCADA_ASDU.
 			// It has data objects having mapping only
-			senddm = malloc(len);
-			sendve = malloc(len);
+			senddm = malloc(fullrdlen);
+			sendve = malloc(fullrdlen);
 
 			// Init of  buffers
 			pdu = (data_unit*) ((uint32_t) edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
@@ -821,7 +822,6 @@ uint32_t *uids;
 			cntdm = 0; cntve = 0; cntdu = 0;
 
 			// Remap and Event cycle
-			edh->len -= sizeof(asdu);
 			while (pdu){
 				cntdm += add_dataunit(pdu, &pdm, edh);
 				cntve += add_varevent(pdu, &pve, edh);
