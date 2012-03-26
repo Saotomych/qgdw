@@ -374,8 +374,10 @@ menu* num_menu;
 
 	call_epiloque(actmenu);
 
-	vc_unattach_dataset(num_menu->fvarrec, actlnode);
-	vc_destroyvarreclist((varrec*) num_menu->fvarrec);
+	if (num_menu->fvarrec){
+		vc_unattach_dataset(num_menu->fvarrec, actlnode);
+		vc_destroyvarreclist((varrec*) num_menu->fvarrec);
+	}
 	GrDestroyFont(num_menu->font);
 
 	for (i=0; i < num_menu->count_item; i++){

@@ -443,9 +443,9 @@ pid_t chldpid;
 	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
 	// Multififo init
-	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
+//	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
 //	// Set endpoint for datasets
-	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
+//	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){
