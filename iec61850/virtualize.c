@@ -854,6 +854,7 @@ uint32_t *uids;
 //			if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
 
+			free(sendve);
 			free(actve);
 			send_varevent2hmi((char*) sendve, 1);	// Send 1 varevent to HMI
 

@@ -247,12 +247,12 @@ char *pstr;
 		case QUALITY:
 		case INT32:
 			*((int32_t*) (avr->val->val)) = ave->value.i;
-			ts_printf(STDOUT_FILENO, "HMI!!!: get int value %d as %s\n", ave->value.i, avr->name->fc);
+//			ts_printf(STDOUT_FILENO, "HMI!!!: get int value %d as %s\n", ave->value.i, avr->name->fc);
 			break;
 
 		case FLOAT32:
 			*((float*) (avr->val->val)) = ave->value.f;
-			ts_printf(STDOUT_FILENO, "HMI!!!: get float value %.2F as %s\n", ave->value.f, avr->name->fc);
+//			ts_printf(STDOUT_FILENO, "HMI!!!: get float value %.2F as %s\n", ave->value.f, avr->name->fc);
 			break;
 
 		case TIMESTAMP:
@@ -262,7 +262,7 @@ char *pstr;
 		case STRING:
 			pstr = (char*)((uint32_t) ave + ave->vallen);
 			strncpy((char*) (avr->val->val), pstr, ave->vallen);
-			ts_printf(STDOUT_FILENO, "HMI!!!: get string value %s as %s\n", (char*) (ave->value.i), avr->name->fc);
+//			ts_printf(STDOUT_FILENO, "HMI!!!: get string value %s as %s\n", (char*) (ave->value.i), avr->name->fc);
 			break;
 		}
 
