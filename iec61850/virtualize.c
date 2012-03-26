@@ -76,10 +76,6 @@ typedef struct _SCADA_ASDU{
 // Variables for asdu actions
 static LIST fasdu, fasdutype, fdm, fscada, fscadach;
 
-// Last varrec for datasets control
-//static varrec *lastvarrec = NULL;
-
-
 void send_sys_msg(int adr, int msg){
 ep_data_header edh;
 	edh.adr = adr;
@@ -525,9 +521,10 @@ asdu *pasdu = (asdu*) (edh + 1);
 }
 
 data_unit *get_next_dataunit(data_unit *pdu, ep_data_header *edh){
-int32_t len = (uint32_t) pdu - (uint32_t) edh - sizeof(ep_data_header) - sizeof(asdu);
+int32_t len = (uint32_t) pdu - (uint32_t) edh + edh->len - sizeof(ep_data_header) - sizeof(asdu) - sizeof(data_unit);
 
-	if (len > 0) return pdu++;
+	pdu++;
+	if (len > 0) return pdu;
 
 	return 0;
 }
@@ -786,6 +783,7 @@ uint32_t *uids;
 			cntdm = 0; cntve = 0; cntdu = 0;
 
 			// Remap and Event cycle
+			edh->len -= sizeof(asdu);
 			while (pdu){
 				cntdm += add_dataunit(pdu, &pdm, edh);
 				cntve += add_varevent(pdu, &pve, edh);
