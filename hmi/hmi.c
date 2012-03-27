@@ -22,7 +22,7 @@
 #define FGCOLOR BLACK
 #define BGCOLOR	WHITE
 
-static LIST fldextinfo = {NULL, NULL};
+LIST fldextinfo = {NULL, NULL};
 static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
 int fkeyb = 0;
@@ -61,12 +61,18 @@ value defvalues[] = {
 		{25, "APP:jmin", NULL, NULL, 0, 0},
 		{26, "APP:jsec", NULL, NULL, 0, 0},
 		// IEC variables
-		{27, "APP:ldtypetext", NULL, NULL, 0 ,0},
+		{27, "APP:lnclasstext", NULL, NULL, 0 ,0},
 		// Filter variables
 		{28, "APP:interval", NULL, NULL, 0 ,0},
 		// Tarif variables
 		{29, "APP:tarifid", NULL, "-", 0, STRING},
 		{30, "APP:tarifname", NULL, "не выбран", 0, STRING},
+		// String variables
+		{31, "APP:devicetype", NULL, NULL, 0, 0},
+		{32, "APP:deviceaddr", NULL, NULL, 0, 0},
+		{33, "APP:deviceport", NULL, NULL, 0, 0},
+		{34, "APP:devicestat", NULL, NULL, 0, 0},
+		{35, "APP:devicecode", NULL, NULL, 0, 0},
 		{0, NULL, NULL, NULL, 0, 0},
 };
 
@@ -443,9 +449,9 @@ pid_t chldpid;
 	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
 	// Multififo init
-	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
+//	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
 //	// Set endpoint for datasets
-	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
+//	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//
 	if (init_menu()){

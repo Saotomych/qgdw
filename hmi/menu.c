@@ -16,6 +16,10 @@
 #include "../common/paths.h"
 #include "menu.h"
 
+extern struct _lntxt{
+	char ln[5];
+	char lntext[50];
+} lntxts[];
 
 LNODE *actlnode;			// Global variable, change in menu only
 tarif *acttarif;			// Global variable, change in menu only
@@ -28,6 +32,11 @@ int intervals[] = {1,5,10,15,20,30,60};
 int *pinterval = intervals;		// Time Interval for view journal records
 int *ptarifid = NULL;
 char *ptarifname = NULL;
+char *pdevtype = NULL;
+char *pdevaddr = NULL;
+char *pdevport = NULL;
+char *pdevstat = NULL;
+char *pdevcode = NULL;
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
@@ -47,7 +56,7 @@ static menu *num_menu;     //указатель на структуру меню
 static char tmpstring[100];			// For temporary operations
 static char *devtypetext;		// Text of device type
 
-static char lnmenunames[3][64];
+static char lnmenunames[10][64];
 
 static value menuvalues[] = {
 		// Time variables
@@ -68,11 +77,17 @@ static value menuvalues[] = {
 		{0, "APP:jmin", 	&(jtime_tm.tm_min), "XX", 		INT32DIG2,	STRING},
 		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
-		{0, "APP:ldtypetext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
+		{0, "APP:lnclasstext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
 		{0, "APP:interval", &pinterval, "нет", PTRINT32, STRING},
 		// Tarif variables
 		{0, "APP:tarifid", &ptarifid, "-", PTRINT32, STRING},
 		{0, "APP:tarifname", &ptarifname, "все тарифы", PTRSTRING, STRING},
+		// String variables
+		{0, "APP:devicetype", &pdevtype, "SCADA", PTRSTRING, STRING},
+		{0, "APP:deviceaddr", &pdevaddr, "не найден", PTRSTRING, STRING},
+		{0, "APP:deviceport", &pdevport, "не найден", PTRSTRING, STRING},
+		{0, "APP:devicestat", &pdevstat, "оффлайн", PTRSTRING, STRING},
+		{0, "APP:devicecode", &pdevcode, "не считан", PTRSTRING, STRING},
 };
 
 //------------------------------------------------------------------------------------
@@ -734,6 +749,7 @@ void key_rised(void *arg)
 //int init_menu(fact *factsetting, int len)
 int init_menu(){
 struct tm *ttm;
+int i, z;
 
 	if (!fln.next) return 1;
 
@@ -749,12 +765,10 @@ struct tm *ttm;
 	m_mon = mtime_tm.tm_mon + 1;
 
 	// Init base menu names
-	strcpy(lnmenunames[0], getpath2menu());
-	strcat(lnmenunames[0], "itemti");
-	strcpy(lnmenunames[1], getpath2menu());
-	strcat(lnmenunames[1], "itemts");
-	strcpy(lnmenunames[2], getpath2menu());
-	strcat(lnmenunames[2], "itemtu");
+	z = get_quanoftypes();
+	for (i=0; i < z; i++){
+		ts_sprintf(lnmenunames[i], "%s/item%s", getpath2menu(), lntxts[i].ln);
+	}
 
 	// First actual LNODE init
 	actlnode = (LNODE*) fln.next;					// Try set first LLN0
@@ -766,10 +780,10 @@ struct tm *ttm;
 	acttarif->id = 0;
 
 	// Set first actual LN
-	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
-	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
-	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
-	if (!actlnode) exit(1);
+//	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
+//	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
+//	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
+//	if (!actlnode) exit(1);
 
 	// Open first menu
 	num_menu = create_menu(lnmenunames[0]);

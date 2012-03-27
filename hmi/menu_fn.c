@@ -96,34 +96,34 @@ int x, y = 0;
 	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
 	y += MENUSTEP; x = MENUSTEP;
-	while(pln){
-		if (!strcmp(pln->ln.lnclass, lnclasses[0])){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			pmenu += strlen(pmenu);
-			y += MENUSTEP;
-		}
-		pln = pln->l.next;
-	}
-
-	pln = (LNODE*) fln.next;
-	while(pln){
-		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			pmenu += strlen(pmenu);
-			y += MENUSTEP;
-		}
-		pln = pln->l.next;
-	}
-
-	pln = (LNODE*) fln.next;
-	while(pln){
-		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			pmenu += strlen(pmenu);
-			y += MENUSTEP;
-		}
-		pln = pln->l.next;
-	}
+//	while(pln){
+//		if (!strcmp(pln->ln.lnclass, lntxts[0].ln)){
+//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+//			pmenu += strlen(pmenu);
+//			y += MENUSTEP;
+//		}
+//		pln = pln->l.next;
+//	}
+//
+//	pln = (LNODE*) fln.next;
+//	while(pln){
+//		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
+//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+//			pmenu += strlen(pmenu);
+//			y += MENUSTEP;
+//		}
+//		pln = pln->l.next;
+//	}
+//
+//	pln = (LNODE*) fln.next;
+//	while(pln){
+//		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
+//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+//			pmenu += strlen(pmenu);
+//			y += MENUSTEP;
+//		}
+//		pln = pln->l.next;
+//	}
 
 	*pmenu = 0;
 

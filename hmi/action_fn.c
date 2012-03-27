@@ -20,26 +20,48 @@ extern int idlnmenuname;
 extern int *pinterval;
 extern int intervals;
 
+extern LIST fldextinfo;
+
 // Values for change visible lnode types
 // For indication
-static char lntypes[][50] = {
-		{"Телеизмерения"},
-		{"Телесигнализация"},
-		{"Телеуправление"},
-};
-// For filter
-char lnclasses[][5] = {
-		{"MMXU"},
-		{"MSQI"},
-		{"MMTR"},
+//static char lntypes[][50] = {
+//		{"Телеизмерения"},
+//		{"Телесигнализация"},
+//		{"Телеуправление"},
+//};
+//// For filter
+//char lnclasses[][5] = {
+//		{"LLN0"},
+//		{"MMXU"},
+//		{"MMTR"},
+//		{"MSQI"},
+//		{"MSTA"},
+//		{"ITCI"},
+//		{"ITMI"},
+//};
+
+struct _lntxt{
+	char ln[5];
+	char lntext[50];
+} lntxts[] = {
+		{"LLN0", "Системная информация"},
+		{"MMXU", "Текущие значения"},
+		{"MMTR", "Суммарные значения"},
+		{"MSQI", "Параметры сети"},
+		{"MSTA", "Средние значения"},
+		{"ITCI", "Телеуправление"},
+		{"ITMI", "Телесигнализация"},
 };
 
 static void refreshvars(menu *actmenu){
 int i, idx, lnclassnum;
+LNODE *pln;
+ldextinfo *actldei;
 
 // Set ID main menu of type ln
-	for (lnclassnum = 0; lnclassnum < 3; lnclassnum++){
-		if (!strcmp(lnclasses[lnclassnum], actlnode->ln.lnclass)) break;
+	idx = get_quanoftypes();
+	for (lnclassnum = 0; lnclassnum < idx; lnclassnum++){
+		if (!strcmp(lntxts[lnclassnum].ln, actlnode->ln.lnclass)) break;
 	}
 	idlnmenuname = lnclassnum;
 
@@ -61,16 +83,51 @@ int i, idx, lnclassnum;
 				// Set text of type LN
 				if (idx == 27){
 					// Type text change
-					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntypes[lnclassnum];
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) lntxts[lnclassnum].lntext;
 				}
+
 				if (idx == 29){
 					if (acttarif->id){
 						*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) &acttarif->id;
 					}else *((int*)(actmenu->pitems[i]->vr->val->val)) = 0;
 				}
+
 				if (idx == 30){
 					*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) acttarif->name;
 				}
+
+				if (idx == 31){
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = 0;
+					pln = actlnode; idx = atoi(pln->ln.ldinst);
+					while ((pln) && (idx == atoi(pln->ln.ldinst))){
+						if (pln->ln.prefix){
+							*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) pln->ln.prefix;
+							break;
+						}
+						pln = pln->l.next;
+					}
+				}
+
+				if (idx == 32){
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = 0;
+					actldei = (ldextinfo *) &fldextinfo;
+					idx = atoi(actlnode->ln.ldinst);
+					while ((actldei) && (idx != actldei->asduadr)) actldei = actldei->l.next;
+					if (actldei){
+						*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) actldei->addr;
+					}
+				}
+
+				if (idx == 33){
+					*((int*)(actmenu->pitems[i]->vr->val->val)) = 0;
+					actldei = (ldextinfo *) &fldextinfo;
+					idx = atoi(actlnode->ln.ldinst);
+					while ((actldei) && (idx != actldei->asduadr)) actldei = actldei->l.next;
+					if (actldei){
+						*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) actldei->portmode;
+					}
+				}
+
 			}
 		}
 	}
@@ -155,12 +212,12 @@ LNODE *pln = *pbln;
 char *lntype;
 int i;
 
-	for (i = 0; i < 3; i++){
-		if (!strcmp(lnclasses[i], pln->ln.lnclass)) break;
+	for (i = 0; i < sizeof(lntxts); i++){
+		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
 	if (i) i--;
 	else i = 2;
-	lntype = lnclasses[i];
+	lntype = lntxts[i].lntext;
 
 	pln = (LNODE*) fln.next;
 	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
@@ -176,12 +233,12 @@ LNODE *pln = *pbln;
 char *lntype;
 int i;
 
-	for (i = 0; i < 3; i++){
-		if (!strcmp(lnclasses[i], pln->ln.lnclass)) break;
+	for (i = 0; i < sizeof(lntxts); i++){
+		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
 	i++;
 	if (i >= 3) i = 0;
-	lntype = lnclasses[i];
+	lntype = lntxts[i].lntext;
 
 	pln = (LNODE*) fln.next;
 	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
@@ -191,6 +248,18 @@ int i;
 //	num_menu = create_menu(lnmenunames[i]);
 
 	return REMAKEMENU;
+}
+
+// Function change pointer (arg[0]) to pointer to LN of this LNtype but next LD
+// if next LD not include this LNtype then pointer set to first LN (LLN0)
+int next_ld(void *arg){
+
+}
+
+// Function change pointer (arg[0]) to pointer to LN of this LNtype but previous LD
+// if previous LD not include this LNtype then pointer set to first LN (LLN0)
+int prev_ld(void *arg){
+
 }
 
 int next_day(void *arg){
@@ -323,6 +392,7 @@ int next_tarif(void *arg){
 fact actfactset[] = {
 		{"changeln", (void*) prev_ln, (void*) next_ln},
 		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
+		{"changeld", (void*) prev_ld, (void*) next_ld},
 		{"change1day", (void*) prev_jourday, (void*) next_jourday},
 		{"change1min", (void*) prev_jourmin, (void*) next_jourmin},
 		{"change1mainday", (void*) prev_mainday, (void*) next_mainday},
@@ -370,7 +440,7 @@ LNODE* setdef_lnode(int lnclass, menu *actmenu){
 LNODE *ln = (LNODE*) &fln.next;
 	while (ln){
 		if (ln->ln.lnclass){
-			if (!strcmp(ln->ln.lnclass, lnclasses[lnclass])){
+			if (!strcmp(ln->ln.lnclass, lntxts[lnclass].ln)){
 				actlnode = ln;
 				return ln;
 			}
@@ -381,3 +451,7 @@ LNODE *ln = (LNODE*) &fln.next;
 	return   NULL;
 }
 
+uint32_t get_quanoftypes(){
+
+	return (sizeof(lntxts) / sizeof(struct _lntxt));
+}
