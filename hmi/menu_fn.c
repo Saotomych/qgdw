@@ -19,6 +19,7 @@ extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
 extern int intervals[];
 extern char lnclasses[][5];
+extern LIST fldextinfo;
 
 static struct _mons{
 	char *meng;
@@ -51,25 +52,25 @@ static char *days[7] = {
 
 //char menutxt[8192];
 
-// Menu of LNODES
+// Menu of LDEVICES
 char* ChangeLN(char *arg){
 char *txtmenu = arg;
 char *pmenu = arg;
 LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
-char *lnodefilter = (char*) pln->ln.lnclass;
+char *lnodefilter = "MMXU";
 
 	pln = (LNODE*) fln.next; x = 0;
-	ts_sprintf(pmenu, "main 16 33 128 126\n");
+	ts_sprintf(pmenu, "main 4 33 155 126\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys enter:setlnbyclass\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
-	y += MENUSTEP; x = MENUSTEP;
+	y += MENUSTEP; x = 4;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, lnodefilter)){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(pmenu, "menu %d %d a a Адр: %s Тип: %s\n", x, y, pln->ln.ldinst, pln->ln.prefix);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}

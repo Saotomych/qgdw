@@ -643,15 +643,13 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
 void setlnbyclass(GR_EVENT *event){
 LNODE *pln = (LNODE*) fln.next;
-char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
+char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text + 8;
+int adr = atoi(itemtext);	// LD address
 
 	while(pln){
-		if (!strcmp(pln->ln.lnclass, actlnode->ln.lnclass)){
-			ts_sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			if (!strcmp(itemtext, tmpstring)){
+		if (atoi(pln->ln.ldinst) == adr){
 				actlnode = pln;
 				break;
-			}
 		}
 		pln = pln->l.next;
 	}
@@ -659,7 +657,13 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	// Return to previous menu
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	// Refresh menu by new values
-	call_action(NODIRECT, num_menu);		// Refresh variables
+	call_action(NODIRECT, num_menu);		// Refresh variables for set right main menu
+	num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
+	if (!num_menu){
+		num_menu = create_menu(lnmenunames[idlnmenuname]);
+		call_action(NODIRECT, num_menu);		// Refresh variables for set all vars
+	}
+	if (num_menu) draw_menu();
 }
 
 void setinterval(GR_EVENT *event){
