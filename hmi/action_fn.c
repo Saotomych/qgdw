@@ -305,34 +305,6 @@ int inst = atoi(pln->ln.ldinst);
 	return 0;
 }
 
-//// Function change pointer (arg[0]) to pointer to LN of this LNtype but next LD
-//// if next LD not include this LNtype then pointer set to first LN (LLN0)
-//int next_ld(void *arg){
-//LNODE **pbln =  (LNODE**) &actlnode;
-//LNODE *pln = *pbln;
-//int i;
-//
-//	i = atoi(pln->ln.ldinst);
-//	while ((pln) && (i == atoi(pln->ln.ldinst))) pln = pln->l.next;
-//	if (pln) *pbln = pln;
-//
-//	return REMAKEMENU;
-//}
-//
-//// Function change pointer (arg[0]) to pointer to LN of this LNtype but previous LD
-//// if previous LD not include this LNtype then pointer set to first LN (LLN0)
-//int prev_ld(void *arg){
-//LNODE **pbln =  (LNODE**) &actlnode;
-//LNODE *pln = *pbln;
-//int i;
-//
-//	i = atoi(pln->ln.ldinst);
-//	while ((pln) && (i == atoi(pln->ln.ldinst))) pln = pln->l.prev;
-//	if (pln) *pbln = pln;
-//
-//	return REMAKEMENU;
-//}
-
 int next_day(void *arg){
 time_t time = (time_t) arg;
 struct tm *ttm;
@@ -525,4 +497,14 @@ LNODE *ln = (LNODE*) &fln.next;
 uint32_t get_quanoftypes(){
 
 	return (sizeof(lntxts) / sizeof(struct _lntxt));
+}
+
+char *get_textbylnclass(char* lnclass){
+int i, z;
+	z = sizeof(lntxts) / sizeof(struct _lntxt);
+	for (i = 0; i < z; i++){
+		if (!strcmp(lntxts[i].ln, lnclass)) break;
+	}
+	if (i < z) return lntxts[i].lntext;
+	else return NULL;
 }

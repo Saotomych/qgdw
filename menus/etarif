@@ -1,4 +1,4 @@
-text 5 0 a a Профиль нагрузки
+text 5 0 a a Энергия по тарифам
 menu 0 20 60 a Дата >jourdate~change1day
 text 60 20 15 a &var:APP:jday
 text 75 20 22 a .&var:APP:jmondig

@@ -85,17 +85,35 @@ char *lnodefilter = (char*) pln->ln.lnclass;
 char* ChangeLNType(char *arg){
 char *txtmenu = arg;
 char *pmenu = arg;
+char *ptxt;
 LNODE *pln = (LNODE*) actlnode;
-int x, y = 0;
+int x, y = 0, inst;
 
-	pln = (LNODE*) fln.next; x = 2;
-	ts_sprintf(pmenu, "main 16 15 128 145\n");
+	pln = actlnode; x = 2;
+	ts_sprintf(pmenu, "main 4 48 155 111\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys enter:setlnbytype\n");
 	pmenu += strlen(pmenu);
-	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
+	ts_sprintf(pmenu, "text %d %d a a Выбор меню\n", x, y);
 	pmenu += strlen(pmenu);
-	y += MENUSTEP; x = MENUSTEP;
+	y += MENUSTEP; x = 4;
+
+	// Find LLN0
+
+	inst = atoi(pln->ln.ldinst);
+	while ((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+	// Make text menu
+	while ((pln) && (inst == atoi(pln->ln.ldinst))){
+		ptxt = get_textbylnclass(pln->ln.lnclass);
+		if (ptxt){
+			ts_sprintf(pmenu, "menu %d %d a a %s\n", x, y, ptxt);
+			pmenu += strlen(pmenu);
+			y += MENUSTEP;
+		}
+		pln = pln->l.next;
+	}
+
 //	while(pln){
 //		if (!strcmp(pln->ln.lnclass, lntxts[0].ln)){
 //			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
