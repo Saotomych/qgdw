@@ -508,3 +508,13 @@ int i, z;
 	if (i < z) return lntxts[i].lntext;
 	else return NULL;
 }
+
+char *get_lnclassbytext(char* ptext){
+int i, z;
+	z = sizeof(lntxts) / sizeof(struct _lntxt);
+	for (i = 0; i < z; i++){
+		if (!strcmp(lntxts[i].lntext, ptext)) break;
+	}
+	if (i < z) return lntxts[i].ln;
+	else return NULL;
+}

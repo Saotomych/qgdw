@@ -94,6 +94,7 @@ extern void key_rised(void *arg);
 extern int call_action(int direct, menu *actmenu);
 extern uint32_t get_quanoftypes(void);
 extern char *get_textbylnclass(char* lnclass);
+extern char *get_lnclassbytext(char* ptext);
 
 extern LNODE* setdef_lnode(int lnclass, menu *actmenu);
 

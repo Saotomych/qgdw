@@ -610,14 +610,21 @@ struct tm *ttm;
 }
 
 void setlnbytype(GR_EVENT *event){
-LNODE *pln = (LNODE*) fln.next;
+LNODE *pln = actlnode;
 char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
+	itemtext = get_lnclassbytext(itemtext);
+
+	// Find LLN0
+	while((pln) && (pln->ln.lnclass)) pln=pln->l.prev;
+
+
 	while(pln){
-		ts_sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-		if (!strcmp(itemtext, tmpstring)){
-			actlnode = pln;
-			break;
+		if (pln->ln.lnclass){
+			if (!strcmp(itemtext, pln->ln.lnclass)){
+				actlnode = pln;
+				break;
+			}
 		}
 		pln = pln->l.next;
 	}
