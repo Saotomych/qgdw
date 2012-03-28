@@ -291,19 +291,22 @@ int stepy, y, itemy, itemh;
 // Keys functions
 
 void default_left(GR_EVENT *event){
-int ret;
+int ret, num_item;
 struct tm *ttm;
 
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
-
+		num_item = num_menu->num_item;
 		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
 				num_menu = create_menu(lnmenunames[idlnmenuname]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
 			}
-			if (num_menu) draw_menu();
+			if (num_menu){
+				num_menu->num_item = num_item;
+				draw_menu();
+			}
 		}
 
 		if (ret == REDRAWTIMEJOUR){
@@ -329,19 +332,22 @@ struct tm *ttm;
 }
 
 void default_right(GR_EVENT *event){
-int ret;
+int ret, num_item;
 struct tm *ttm;
 
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
-
+		num_item = num_menu->num_item;
 		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
 				num_menu = create_menu(lnmenunames[idlnmenuname]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
 			}
-			if (num_menu) draw_menu();
+			if (num_menu){
+				num_menu->num_item = num_item;
+				draw_menu();
+			}
 		}
 
 		if (ret == REDRAWTIMEJOUR){

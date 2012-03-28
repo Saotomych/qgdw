@@ -165,7 +165,7 @@ int l;
 
 //---*** Set of action functions ***---//
 // Function change pointer of LNODE to pointer of next LNODE with equal class by filter
-int next_ld(void *arg){
+int next_ln(void *arg){
 LNODE **pbln = (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *filter = pln->ln.lnclass;
@@ -176,16 +176,17 @@ char *filter = pln->ln.lnclass;
 			pln = pln->l.next;
 			if (!strcmp(pln->ln.lnclass, filter)){
 				*pbln = pln;
-				return REDRAW;
+				return REMAKEMENU;
 			}
 		}while (pln->l.next);
 	}
 
 	return 0;
+
 }
 
 // Function change pointer (arg[0]) to pointer of previous LNODE with equal class
-int prev_ld(void *arg){
+int prev_ln(void *arg){
 LNODE **pbln = (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *filter = pln->ln.lnclass;
@@ -197,12 +198,52 @@ char *filter = pln->ln.lnclass;
 			pln = pln->l.prev;
 			if (!strcmp(pln->ln.lnclass, filter)){
 				*pbln = pln;
-				return REDRAW;
+				return REMAKEMENU;
 			}
 		}while (pln->l.prev);
 	}
 
 	return 0;
+
+}
+
+int next_ld(void *arg){
+LNODE **pbln = (LNODE**) &actlnode;
+LNODE *pln = *pbln;
+char *filter = pln->ln.lnclass;
+int inst = atoi(pln->ln.ldinst);
+int idx;
+
+// Position to LLN0 of next LD
+	while((pln) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.next;
+	if (pln) *pbln = pln;
+	else return 0;
+
+	idx = atoi(pln->ln.ldinst);
+	while ((pln) && (strcmp(filter, pln->ln.lnclass))) pln = pln->l.next;
+	if ((pln) && (idx == atoi(pln->ln.ldinst))) *pbln = pln;
+
+	return REMAKEMENU;
+}
+
+int prev_ld(void *arg){
+LNODE **pbln = (LNODE**) &actlnode;
+LNODE *pln = *pbln;
+char *filter = pln->ln.lnclass;
+int inst = atoi(pln->ln.ldinst);
+int idx;
+
+// Position to LLN0 of previous LD
+	while((pln) && (pln->ln.lnclass) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+	while((pln) && (pln->ln.lnclass) && strcmp("LLN0", pln->ln.lnclass)) pln=pln->l.prev;
+	if ((pln) && (pln->ln.lnclass)) *pbln = pln;
+	else return 0;
+
+	idx = atoi(pln->ln.ldinst);
+	while ((pln) && (strcmp(filter, pln->ln.lnclass))) pln = pln->l.next;
+	if ((pln) && (idx == atoi(pln->ln.ldinst))) *pbln = pln;
+
+	return REMAKEMENU;
 }
 
 // Function change pointer (arg[0]) to pointer of first LNODE with next class in array of classes
@@ -217,14 +258,16 @@ int i, idx;
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
 	if (i) i--;
-	else i = 2;
-	lntype = lntxts[i].lntext;
+	lntype = lntxts[i].ln;
 
-	pln = (LNODE*) fln.next;
-	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
-	if (pln) *pbln = pln;
+	idx = atoi(pln->ln.ldinst);
+	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.prev;
+	if ((pln) && (idx == atoi(pln->ln.ldinst))){
+		*pbln = pln;
+		return REMAKEMENU;
+	}
 
-	return REMAKEMENU;
+	return 0;
 }
 
 // Function change pointer (arg[0]) to pointer of first LNODE with previous class in array of classes
@@ -239,17 +282,17 @@ int i, idx;
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
 	i++;
-	if (i >= 3) i = 0;
-	lntype = lntxts[i].lntext;
+	if (i >= idx) i = 0;
+	lntype = lntxts[i].ln;
 
-	pln = (LNODE*) fln.next;
+	idx = atoi(pln->ln.ldinst);
 	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
-	if (pln) *pbln = pln;
+	if ((pln) && (idx == atoi(pln->ln.ldinst))){
+		*pbln = pln;
+		return REMAKEMENU;
+	}
 
-//	destroy_menu(DIR_SIDEBKW);
-//	num_menu = create_menu(lnmenunames[i]);
-
-	return REMAKEMENU;
+	return 0;
 }
 
 //// Function change pointer (arg[0]) to pointer to LN of this LNtype but next LD
