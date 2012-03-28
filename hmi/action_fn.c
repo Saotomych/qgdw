@@ -252,6 +252,7 @@ LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
 int i, idx;
+int inst = atoi(pln->ln.ldinst);
 
 	idx = get_quanoftypes();
 	for (i = 0; i < idx; i++){
@@ -260,8 +261,12 @@ int i, idx;
 	if (i) i--;
 	lntype = lntxts[i].ln;
 
+	// Find LLN0
 	idx = atoi(pln->ln.ldinst);
-	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.prev;
+	while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+	// Find prev LN by class
+	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
 	if ((pln) && (idx == atoi(pln->ln.ldinst))){
 		*pbln = pln;
 		return REMAKEMENU;
@@ -276,6 +281,7 @@ LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
 int i, idx;
+int inst = atoi(pln->ln.ldinst);
 
 	idx = get_quanoftypes();
 	for (i = 0; i < idx; i++){
@@ -285,7 +291,11 @@ int i, idx;
 	if (i >= idx) i = 0;
 	lntype = lntxts[i].ln;
 
+	// Find LLN0
 	idx = atoi(pln->ln.ldinst);
+	while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+	// Find next LN by class
 	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
 	if ((pln) && (idx == atoi(pln->ln.ldinst))){
 		*pbln = pln;
