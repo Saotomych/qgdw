@@ -772,6 +772,7 @@ char *senddm, *sendve;
 varevent *pve;
 data_unit *pdu;
 data_unit *pdm;
+asdu *pda;
 int cntdm, cntve, cntdu;
 int adr, dir, fullrdlen;
 
@@ -813,12 +814,9 @@ uint32_t *uids;
 
 			// Init of  buffers
 			pdu = (data_unit*) ((uint32_t) edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
-			pdm = (data_unit*) add_header2scada(senddm, edh);			// Outgoing data_units
-			memcpy( (char*) pdm, 										// ASDU for sending
-					(char*) ((uint32_t) edh + sizeof(ep_data_header)),  // Receiving ASDU
-					sizeof(asdu));
-			pve = (varevent*) add_header2hmi(sendve);					// Outgoing varevents
-			pdm = add_asdu((char*) pdm, (asdu*)(edh + sizeof(ep_data_header)));
+			pda = (asdu*) add_header2scada(senddm, edh);			// Outgoing asdu
+			pve = (varevent*) add_header2hmi(sendve);				// Outgoing varevents
+			pdm = add_asdu((char*) pda, (asdu*)((uint32_t) edh + sizeof(ep_data_header)));
 			cntdm = 0; cntve = 0; cntdu = 0;
 
 			// Remap and Event cycle
@@ -831,9 +829,9 @@ uint32_t *uids;
 
 			// Print Statistics and send data to MF
 			ts_printf(STDOUT_FILENO, "IEC61850: Statistics:\n");
-			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_units\n", cntdu);
+			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_unit(s)\n", cntdu);
 			if (cntdm){
-				ts_printf(STDOUT_FILENO, "IEC61850: sent to %d SCADA %d data_unit(s)\n", cntdm, send_asdu2scada(senddm, cntdm));
+				ts_printf(STDOUT_FILENO, "IEC61850: sent %d data_unit(s) to %d SCADA\n", cntdm, send_asdu2scada(senddm, cntdm));
 			}
 			if (cntve){
 				cntve = send_varevent2hmi(sendve, cntve);
