@@ -200,7 +200,7 @@ ATTR *pda;
 BATTR *pbda;
 LNODE *pln = actln;
 char *p, *po=0, *pa=0, *pba=0;
-uint32_t varlen = strlen(varname);
+uint32_t varlen = strlen(varname) + 1;
 
 char keywords[][10] = {
 		{"APP:"},
