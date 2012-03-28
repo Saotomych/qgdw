@@ -1110,6 +1110,7 @@ BATTR *actbda;
 char *doname;
 int i, a, b;
 varrec *vr;
+uint32_t id;
 
 	while(actln){
 		if (actln->ln.pmytype){
@@ -1119,18 +1120,28 @@ varrec *vr;
 				if (vc_typetest(actdo->dobj.type)){
 					doname = malloc(strlen(actdo->dobj.name)  + 10);
 					ts_sprintf(doname, "LN:%s", actdo->dobj.name);
-					vr = vc_addvarrec(actln, doname, NULL);
-					vr->prop &= ~ATTACHING;
-//					ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+
+					vc_get_map_by_name(actdo->dobj.name, &id);
+					ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
+					if (id){
+						vr = vc_addvarrec(actln, doname, NULL);
+						vr->prop &= ~ATTACHING;
+						ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+					}
 				}else{
 					actda = actdo->dobj.pmytype->pfattr;
 					for (a = 0; a < actdo->dobj.pmytype->maxattr; a++){
 						if (vc_typetest(actda->attr.btype)){
 							doname = malloc(strlen(actdo->dobj.name) + strlen(actda->attr.name) + 10);
 							ts_sprintf(doname, "LN:%s.%s", actdo->dobj.name, actda->attr.name);
-							vr = vc_addvarrec(actln, doname, NULL);
-							vr->prop &= ~ATTACHING;
-//							ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+
+							vc_get_map_by_name(actdo->dobj.name, &id);
+							ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
+							if (id){
+								vr = vc_addvarrec(actln, doname, NULL);
+								vr->prop &= ~ATTACHING;
+								ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+							}
 						}else{
 							actbda = actda->attr.pmyattrtype->pfbattr;
 							for (b = 0; b < actda->attr.pmyattrtype->maxbattr; b++){
@@ -1138,9 +1149,14 @@ varrec *vr;
 									doname = malloc(strlen(actdo->dobj.name) + strlen(actda->attr.name)
 												  + strlen(actbda->battr.name) + 10);
 									ts_sprintf(doname, "LN:%s.%s.%s", actdo->dobj.name, actda->attr.name, actbda->battr.name);
-									vr = vc_addvarrec(actln, doname, NULL);
-									vr->prop &= ~ATTACHING;
-//									ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+
+									vc_get_map_by_name(actdo->dobj.name, &id);
+									ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
+									if (id){
+										vr = vc_addvarrec(actln, doname, NULL);
+										vr->prop &= ~ATTACHING;
+										ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+									}
 								}
 
 								actbda = actbda->l.next;

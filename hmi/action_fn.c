@@ -165,7 +165,7 @@ int l;
 
 //---*** Set of action functions ***---//
 // Function change pointer of LNODE to pointer of next LNODE with equal class by filter
-int next_ln(void *arg){
+int next_ld(void *arg){
 LNODE **pbln = (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *filter = pln->ln.lnclass;
@@ -185,7 +185,7 @@ char *filter = pln->ln.lnclass;
 }
 
 // Function change pointer (arg[0]) to pointer of previous LNODE with equal class
-int prev_ln(void *arg){
+int prev_ld(void *arg){
 LNODE **pbln = (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *filter = pln->ln.lnclass;
@@ -210,9 +210,10 @@ int prev_type_ln(void *arg){
 LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
-int i;
+int i, idx;
 
-	for (i = 0; i < sizeof(lntxts); i++){
+	idx = get_quanoftypes();
+	for (i = 0; i < idx; i++){
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
 	if (i) i--;
@@ -231,9 +232,10 @@ int next_type_ln(void *arg){
 LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
-int i;
+int i, idx;
 
-	for (i = 0; i < sizeof(lntxts); i++){
+	idx = get_quanoftypes();
+	for (i = 0; i < idx; i++){
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
 	i++;
@@ -250,17 +252,33 @@ int i;
 	return REMAKEMENU;
 }
 
-// Function change pointer (arg[0]) to pointer to LN of this LNtype but next LD
-// if next LD not include this LNtype then pointer set to first LN (LLN0)
-int next_ld(void *arg){
-
-}
-
-// Function change pointer (arg[0]) to pointer to LN of this LNtype but previous LD
-// if previous LD not include this LNtype then pointer set to first LN (LLN0)
-int prev_ld(void *arg){
-
-}
+//// Function change pointer (arg[0]) to pointer to LN of this LNtype but next LD
+//// if next LD not include this LNtype then pointer set to first LN (LLN0)
+//int next_ld(void *arg){
+//LNODE **pbln =  (LNODE**) &actlnode;
+//LNODE *pln = *pbln;
+//int i;
+//
+//	i = atoi(pln->ln.ldinst);
+//	while ((pln) && (i == atoi(pln->ln.ldinst))) pln = pln->l.next;
+//	if (pln) *pbln = pln;
+//
+//	return REMAKEMENU;
+//}
+//
+//// Function change pointer (arg[0]) to pointer to LN of this LNtype but previous LD
+//// if previous LD not include this LNtype then pointer set to first LN (LLN0)
+//int prev_ld(void *arg){
+//LNODE **pbln =  (LNODE**) &actlnode;
+//LNODE *pln = *pbln;
+//int i;
+//
+//	i = atoi(pln->ln.ldinst);
+//	while ((pln) && (i == atoi(pln->ln.ldinst))) pln = pln->l.prev;
+//	if (pln) *pbln = pln;
+//
+//	return REMAKEMENU;
+//}
 
 int next_day(void *arg){
 time_t time = (time_t) arg;
@@ -390,9 +408,9 @@ int next_tarif(void *arg){
 
 // Array of structures "synonym to function"
 fact actfactset[] = {
-		{"changeln", (void*) prev_ln, (void*) next_ln},
-		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
 		{"changeld", (void*) prev_ld, (void*) next_ld},
+		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
+//		{"changeld", (void*) prev_ld, (void*) next_ld},
 		{"change1day", (void*) prev_jourday, (void*) next_jourday},
 		{"change1min", (void*) prev_jourmin, (void*) next_jourmin},
 		{"change1mainday", (void*) prev_mainday, (void*) next_mainday},

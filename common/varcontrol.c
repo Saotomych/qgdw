@@ -26,6 +26,7 @@ extern LIST* create_next_struct_in_list(LIST *plist, int size);
 int vc_get_map_by_name(char *name, uint32_t *mid){
 char *p;
 
+	*mid = 0;
 	p = strstr(MCFGfile, name);
 	if (!p) return -1;
 	while((*p != 0xA) && (p != MCFGfile)) p--;
@@ -519,6 +520,13 @@ char keywords[][10] = {
 }
 
 void vc_freevarrec(varrec *vr){
+varrec *prevvr = vr->l.prev;
+
+	if (prevvr){
+		prevvr->l.next = NULL;
+		lastvr = prevvr;
+	}
+
 	free(vr->val->name);
 	if (vr->prop & NEEDFREE) free(vr->val->val);
 	if (vr->name) free(vr->name);
@@ -620,7 +628,8 @@ uint32_t len = 0;
 	edh->len = len;
 	edh->numep = 0;
 
-	vr = fvr; uids = varbuf + sizeof(ep_data_header);
+	vr = fvr;
+	uids = (uint32_t*)(varbuf + sizeof(ep_data_header));
 	while(vr){
 		*uids = vr->uid;
 		uids++;

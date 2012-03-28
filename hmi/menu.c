@@ -87,7 +87,7 @@ static value menuvalues[] = {
 		{0, "APP:deviceaddr", &pdevaddr, "не найден", PTRSTRING, STRING},
 		{0, "APP:deviceport", &pdevport, "не найден", PTRSTRING, STRING},
 		{0, "APP:devicestat", &pdevstat, "оффлайн", PTRSTRING, STRING},
-		{0, "APP:devicecode", &pdevcode, "не считан", PTRSTRING, STRING},
+		{0, "APP:devicecode", &pdevcode, "нет", PTRSTRING, STRING},
 };
 
 //------------------------------------------------------------------------------------
