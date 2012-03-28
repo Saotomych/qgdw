@@ -727,6 +727,8 @@ uint16_t iec104_log_msg_send(uint16_t adr, char *msg)
 		res = iec104_sys_msg_send(EP_MSG_LOG_APP_EVENT, adr, DIRUP, (unsigned char *)buf, buf_len);
 	}
 
+	free(buf);
+
 	return res;
 }
 
