@@ -419,6 +419,7 @@ int itemy, itemh, i;
 		if (ttm->tm_mon) ttm->tm_mon--;
 		else { ttm->tm_mon = 11; ttm->tm_year--;}
 		tmptime = mktime(ttm);
+		call_epiloque(num_menu);
 		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 		default_enter(NULL);
 	}else{
@@ -455,6 +456,7 @@ int itemy, itemh, i;
 		if (ttm->tm_mon < 11) ttm->tm_mon++;
 		else { ttm->tm_mon = 0; ttm->tm_year++;}
 		tmptime = mktime(ttm);
+		call_epiloque(num_menu);
 		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 		default_enter(NULL);
 	}else{
@@ -531,6 +533,7 @@ int itemy, itemh, i;
 void date_enter(GR_EVENT *event){
 struct tm *ttm;
 
+	call_epiloque(num_menu);
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 
 	ttm	= localtime(&jourtime);
@@ -594,6 +597,7 @@ char *pdig = num_menu->pitems[num_menu->num_item]->text;
 void time_enter(GR_EVENT *event){
 struct tm *ttm;
 
+	call_epiloque(num_menu);
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 
 	ttm	= localtime(&jourtime);

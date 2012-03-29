@@ -372,8 +372,6 @@ menu* num_menu;
 		exit(2);
 	}
 
-	call_epiloque(actmenu);
-
 	if (num_menu->fvarrec){
 		vc_unattach_dataset(num_menu->fvarrec, actlnode);
 		vc_destroyvarreclist((varrec*) num_menu->fvarrec);
