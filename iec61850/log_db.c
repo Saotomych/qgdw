@@ -913,6 +913,7 @@ int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t
 {
 	DBT key, data;
 	DBC *cursor = NULL;
+	uint32_t *rec_adr;
 	time_t rec_time;
 	int ret, idx;
 
@@ -941,7 +942,9 @@ int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t
     {
 		rec_time = ntohl( *((uint32_t*)key.data) );
 
-    	if(rec_time >= *log_time) break;
+		rec_adr = (uint32_t*)data.data;
+
+		if(*rec_adr == adr && rec_time >= *log_time) break;
     }
 
 	if(ret == 0)
@@ -968,6 +971,7 @@ int log_db_get_event(log_db *db_req, uint32_t adr, time_t *log_time, char **msg,
 	DBT key, data;
 	DBC *cursor = NULL;
 	uint32_t *rec_adr;
+	time_t rec_time;
 	int ret;
 
 	if(!db_env || !db_req || !db_req->db || db_req->flds_num != 0 || !log_time || !msg || !len) return -1;
@@ -991,13 +995,16 @@ int log_db_get_event(log_db *db_req, uint32_t adr, time_t *log_time, char **msg,
     {
 		*log_time = ntohl( *((uint32_t*)key.data) );
 
+		rec_time = ntohl( *((uint32_t*)key.data) );
+
 		rec_adr = (uint32_t*)data.data;
 
-		if(*rec_adr == adr) break;
+		if(*rec_adr == adr && rec_time >= *log_time) break;
     }
 
 	if(ret == 0)
 	{
+		*log_time = rec_time;
 		*msg = (char*) malloc(data.size - sizeof(uint32_t));
 		memcpy((void*) *msg, (void*) ((char*)data.data+sizeof(uint32_t)), data.size - sizeof(uint32_t));
 		*len = data.size - sizeof(uint32_t);
