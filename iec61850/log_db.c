@@ -10,7 +10,6 @@
 #include "../common/common.h"
 #include "../common/ts_print.h"
 #include "../common/paths.h"
-#include "../common/xml.h"
 
 /*
  *
@@ -18,15 +17,13 @@
  *
  */
 
+#define LOG_DB_CFG_NAME			"logdb.cfg"
 #define LOG_DB_FILE_NAME		"log.bdb"
 #define	LOG_DB_LOAD_PROFILE		"load_profile"
 #define	LOG_DB_CONSUM_ARCH		"consum_arch"
 #define	LOG_DB_DEV_EVENT		"dev_event_log"
 #define	LOG_DB_APP_EVENT		"app_event_log"
 #define	LOG_DB_EXPORT			"export_log"
-
-#define LOAD_PROFILE_FLD_NUM 25
-#define CONSUM_ARCH_FLD_NUM 4
 
 #define DB_LOG_SYNC_PERIOD				600			// 10 minutes
 #define DB_LOG_LOAD_PROFILE_ADD			60			// 1 minute
@@ -36,7 +33,7 @@
 #define DB_LOG_CONSUM_ARCH_EXPORT		86400		// 24 hours
 #define DB_LOG_CONSUM_ARCH_DEEP			15552000 	// 180 days
 #define DB_LOG_EVENT_EXPORT				86400		// 24 hours
-#define DB_LOG_EVENT_DEEP				10368000 	// 120 dayss
+#define DB_LOG_EVENT_DEEP				10368000 	// 120 days
 
 
 static DB_ENV *db_env = NULL;
@@ -47,55 +44,14 @@ log_db consum_arch_db;
 log_db dev_event_db;
 log_db app_event_db;
 
+static log_db *actdb = NULL;
+
 static time_t db_sync_period = DB_LOG_SYNC_PERIOD;
 static time_t db_sync_timer = 0;
 
 static pthread_mutex_t db_log_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-char* log_load_profile_flds[] = {
-	"SupWh",
-	"DmdWh",
-
-	"SupVArh",
-	"DmdVArh",
-
-	"WphsA",
-	"WphsB",
-	"WphsC",
-	"TotW",
-
-	"VArphsA",
-	"VArphsB",
-	"VArphsC",
-	"TotVAr",
-
-	"VAphsA",
-	"VAphsB",
-	"VAphsC",
-	"TotVA",
-
-	"PhVphsA",
-	"PhVphsB",
-	"PhVphsC",
-
-	"AphsA",
-	"AphsB",
-	"AphsC",
-
-	"PFphsA",
-	"PFphsB",
-	"PFphsC"
-};
-
-char* log_consum_arch_flds[] = {
-	"SupWh",
-	"DmdWh",
-
-	"SupVArh",
-	"DmdVArh"
-};
-
-
+static uint8_t end_script;
 
 
 /*
@@ -112,14 +68,262 @@ char* log_consum_arch_flds[] = {
 
 extern int get_dobj_idx(char *dobj_name);
 
+
 void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec);
 int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value);
 void log_db_add_event(log_db *db_req, uint32_t adr, char *msg, int len);
+int log_db_get_event(log_db *db_req, uint32_t adr, time_t *rec_time, char **msg, int *len);
+
+
+int log_db_get_fld_idx(log_db *db_req, const char *var_name)
+{
+	int i;
+
+	for(i=0; i<db_req->flds_num; i++)
+	{
+		if(strcmp(db_req->flds_list+i*DOBJ_NAMESIZE, var_name) == 0) return i;
+	}
+	return -1;
+}
+
+
+int log_db_add_fld(log_db *db_req, const char *var_name)
+{
+	int ret;
+	char *fld_new = NULL;
+
+	ret = log_db_get_fld_idx(db_req, var_name);
+
+	if(ret != -1) return 0;
+
+	fld_new = (char*) realloc((void*) db_req->flds_list, DOBJ_NAMESIZE * (db_req->flds_num + 1));
+
+	if(!fld_new) return -1;
+
+	db_req->flds_list = fld_new;
+	strcpy(db_req->flds_list + db_req->flds_num*DOBJ_NAMESIZE, var_name);
+	db_req->flds_num++;
+
+	return 0;
+}
+
+
+typedef struct _XML_Name{
+	char *Name;
+	void(*Function)(const char *pTag);
+} XML_Name;
+
+
+void log_db_xml_dbsync_tag(const char *pTag);
+void log_db_xml_database_tag(const char *pTag);
+void log_db_xml_var_tag(const char *pTag);
+void log_db_xml_end_tag(const char *pTag);
+
+
+static const XML_Name XTags[] = {
+	{"DBSync", log_db_xml_dbsync_tag},
+	{"Database", log_db_xml_database_tag},
+	{"Var", log_db_xml_var_tag},
+	{"/LogConfig", log_db_xml_end_tag}
+};
+
+
+void log_db_open_tag(const char *pS)
+{
+	const char *pT=pS;
+	u08 s, i;
+
+	while(*pS < 'A') pS++;
+	pS--;
+	if ((*pS != '?') && (*pS != '/')) pS++;
+
+	for(i = 0; i < sizeof(XTags)/sizeof(XML_Name); i++)
+	{
+	    s=0; pS=pT;
+	    while(*pS == XTags[i].Name[s])
+	    {
+	        pS++; s++;
+	    }
+	    if((XTags[i].Name[s] == 0) && (*pS <= 'A'))
+	    {
+	    	XTags[i].Function(pS);
+	    	break;
+	    }
+	}
+}
+
+
+void log_db_xml_parser(const char *XMLScript)
+{
+	const char *pS=XMLScript;
+
+	end_script = 0;
+	while (!end_script)
+	{
+		if (*(pS++) == '<') log_db_open_tag(pS);
+	}
+}
+
+
+int log_db_config_build(const char *filename)
+{
+	char *config_file;
+	FILE *fcid;
+	int cfglen, ret = 0;
+	struct stat fst;
+
+	// Get size of main config file
+	if (stat(filename, &fst) == -1)
+	{
+		ts_printf(STDOUT_FILENO, "IEC61850: Log configuration file not found\n");
+		return -1;
+	}
+
+	config_file = malloc(fst.st_size + 1);
+
+	// Loading main config file
+	fcid = fopen(filename, "r");
+	cfglen = fread(config_file, 1, (size_t) (fst.st_size), fcid);
+	fclose(fcid);
+	config_file[fst.st_size] = '\0'; // make it null terminating string
+	if(!strstr(config_file, "</LogConfig>"))
+	{
+		ts_printf(STDOUT_FILENO, "IEC61850: Log configuration file is incomplete\n");
+		free(config_file);
+		return -1;
+	}
+	else
+		ts_printf(STDOUT_FILENO, "IEC61850: Log configuration file parsing started\n");
+
+
+	if(cfglen == fst.st_size)
+		log_db_xml_parser(config_file);
+	else
+		ret = -1;
+
+	free(config_file);
+
+	return ret;
+}
+
+
+// In: p - pointer to string
+// Out: key - pointer to string with key of SCL file
+//      par - pointer to string par for this key without ""
+char* log_db_get_next_parameter(char *p, char **key, char **par)
+{
+	int mode=0;
+
+	*key = p;
+	while (*p != '>')
+	{
+		if (!mode)
+		{
+			// Key mode
+			if (*p == '='){
+				mode = 1;	// switch to par mode
+				*p = 0;
+			}
+		}
+		else
+		{
+			// Par mode
+			if (*p == '"'){
+				if (mode == 2){
+					*p = 0;
+					return p+1;		// key + par ready
+				}
+				if (mode == 1){
+					mode = 2;
+					*par = p+1;
+				}
+			}
+		}
+		p++;
+	}
+
+	return 0;
+}
+
+
+void log_db_xml_dbsync_tag(const char *pTag)			// call parse DBSync
+{
+	char *p;
+	char *key=0, *par=0;
+
+	p = (char*) pTag;
+	do
+	{
+		p = log_db_get_next_parameter(p, &key, &par);
+		if(p && strstr((char*) key, "period")) db_sync_period = atoi(par);
+	}
+	while(p);
+
+	ts_printf(STDOUT_FILENO, "IEC61850: Database synchronization period = %d\n", db_sync_period);
+}
+
+
+void log_db_xml_database_tag(const char *pTag)
+{
+	char *p;
+	char *key=0, *par=0;
+
+	p = (char*) pTag;
+	do
+	{
+		p = log_db_get_next_parameter(p, &key, &par);
+		if(p)
+		{
+			if(strstr((char*) key, "name"))
+			{
+				if(strstr(par, LOG_DB_LOAD_PROFILE)) actdb = &load_profile_db;
+				else if(strstr(par, LOG_DB_CONSUM_ARCH)) actdb = &consum_arch_db;
+				else if(strstr(par, LOG_DB_DEV_EVENT)) actdb = &dev_event_db;
+				else if(strstr(par, LOG_DB_APP_EVENT)) actdb = &app_event_db;
+			}
+			else if(strstr((char*) key, "add_period") && actdb)
+				actdb->add_period = atoi(par);
+			else if(strstr((char*) key, "export_period") && actdb)
+				actdb->export_period = atoi(par);
+			else if(strstr((char*) key, "storage_deep") && actdb)
+				actdb->storage_deep = atoi(par);
+		}
+	}
+	while(p);
+
+	if(actdb && actdb->db) ts_printf(STDOUT_FILENO, "IEC61850: Database \"%s\" parameters: add_period = %d, export_peiod = %d, storage_deep = %d\n", actdb->db->dname, actdb->add_period, actdb->export_period, (int)actdb->storage_deep);
+}
+
+
+void log_db_xml_var_tag(const char *pTag)
+{
+	char *p;
+	char *key=0, *par=0;
+
+	p = (char*) pTag;
+	do
+	{
+		p = log_db_get_next_parameter(p, &key, &par);
+
+		if(p && strstr((char*) key, "name") && actdb) log_db_add_fld(actdb, par);
+	}
+	while(p);
+
+	if(actdb) ts_printf(STDOUT_FILENO, "IEC61850: Variable \"%s\" for database \"%s\" added\n", par, actdb->db->dname);
+}
+
+
+void log_db_xml_end_tag(const char *pTag)
+{
+	end_script=1;
+	ts_printf(STDOUT_FILENO, "IEC61850: Stop Log configuration file to parse\n");
+}
+
 
 void log_db_config_read(const char *file_name)
 {
-	load_profile_db.flds = log_load_profile_flds;
-	load_profile_db.flds_num = LOAD_PROFILE_FLD_NUM;
+	load_profile_db.flds_list = NULL;
+	load_profile_db.flds_num = 0;
 	load_profile_db.add_period = DB_LOG_LOAD_PROFILE_ADD;
 	load_profile_db.add_timer = 0;
 	load_profile_db.export_period = DB_LOG_LOAD_PROFILE_EXPORT;
@@ -128,9 +332,10 @@ void log_db_config_read(const char *file_name)
 	load_profile_db.add_var_rec = log_db_add_var_rec;
 	load_profile_db.get_var = log_db_get_var;
 	load_profile_db.add_event = log_db_add_event;
+	load_profile_db.get_event = log_db_get_event;
 
-	consum_arch_db.flds = log_consum_arch_flds;
-	consum_arch_db.flds_num = CONSUM_ARCH_FLD_NUM;
+	consum_arch_db.flds_list = NULL;
+	consum_arch_db.flds_num = 0;
 	consum_arch_db.add_period = DB_LOG_CONSUM_ARCH_ADD;
 	consum_arch_db.add_timer = 0;
 	consum_arch_db.export_period = DB_LOG_CONSUM_ARCH_EXPORT;
@@ -139,8 +344,9 @@ void log_db_config_read(const char *file_name)
 	consum_arch_db.add_var_rec = log_db_add_var_rec;
 	consum_arch_db.get_var = log_db_get_var;
 	consum_arch_db.add_event = log_db_add_event;
+	consum_arch_db.get_event = log_db_get_event;
 
-	dev_event_db.flds = NULL;
+	dev_event_db.flds_list = NULL;
 	dev_event_db.flds_num = 0;
 	dev_event_db.add_period = 0;
 	dev_event_db.add_timer = 0;
@@ -150,8 +356,9 @@ void log_db_config_read(const char *file_name)
 	dev_event_db.add_var_rec = log_db_add_var_rec;
 	dev_event_db.get_var = log_db_get_var;
 	dev_event_db.add_event = log_db_add_event;
+	dev_event_db.get_event = log_db_get_event;
 
-	app_event_db.flds = NULL;
+	app_event_db.flds_list = NULL;
 	app_event_db.flds_num = 0;
 	app_event_db.add_period = 0;
 	app_event_db.add_timer = 0;
@@ -161,8 +368,9 @@ void log_db_config_read(const char *file_name)
 	app_event_db.add_var_rec = log_db_add_var_rec;
 	app_event_db.get_var = log_db_get_var;
 	app_event_db.add_event = log_db_add_event;
+	app_event_db.get_event = log_db_get_event;
 
-
+	log_db_config_build(file_name);
 }
 
 
@@ -189,7 +397,7 @@ void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec)
 
 	for(i=1;i<=db_req->flds_num;i++)
 	{
-		fld_idx = get_dobj_idx(db_req->flds[i-1]);
+		fld_idx = get_dobj_idx(db_req->flds_list + (i-1)*DOBJ_NAMESIZE);
 
 		if(fld_idx >= 0)
 		{
@@ -262,6 +470,8 @@ void log_db_add_event(log_db *db_req, uint32_t adr, char *msg, int len)
 	memcpy((void*)(buf+sizeof(uint32_t)), (void*)msg, len);
 
 	log_db_add_event_ll(db_req->db, (void*)buf, sizeof(uint32_t) + len);
+
+	free(buf);
 }
 
 
@@ -291,8 +501,30 @@ int log_db_open_db(DB_ENV *env_req, DB **db_req, char *file_name, char *db_name,
 	else
 	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Database %s opened\n", db_name);
 
-
 	return 0;
+}
+
+
+void log_db_close_db(log_db *db_req , DB_ENV *env_req)
+{
+	if(db_req->db)
+	{
+		db_req->db->close(db_req->db, 0);
+		db_req->db = NULL;
+	}
+
+	if(db_req->flds_list)
+	{
+		free(db_req->flds_list);
+		db_req->flds_list = NULL;
+		db_req->flds_num = 0;
+	}
+
+	db_req->add_period = 0;
+	db_req->add_timer = 0;
+	db_req->export_period = 0;
+	db_req->export_timer = 0;
+	db_req->storage_deep = 0;
 }
 
 
@@ -300,6 +532,7 @@ int log_db_env_open()
 {
 	int ret;
 	struct stat sb;
+	char *fname;
 
 	if(db_env) return -1;
 
@@ -351,7 +584,13 @@ int log_db_env_open()
 	ret = log_db_open_db(db_env, &db_export_log, LOG_DB_FILE_NAME, LOG_DB_EXPORT, 0);
 	if(ret != 0) goto err;
 
-	log_db_config_read(NULL);
+	fname = malloc(strlen(getpath2configs()) + strlen(LOG_DB_CFG_NAME) + 1);
+	strcpy(fname, getpath2configs());
+	strcat(fname, LOG_DB_CFG_NAME);
+
+	log_db_config_read(fname);
+
+	free(fname);
 
 	return 0;
 
@@ -369,29 +608,10 @@ void log_db_env_close()
 
 	pthread_mutex_lock(&db_log_mtx);
 
-	if(load_profile_db.db)
-	{
-		load_profile_db.db->close(load_profile_db.db, 0);
-		load_profile_db.db = NULL;
-	}
-
-	if(consum_arch_db.db)
-	{
-		consum_arch_db.db->close(consum_arch_db.db, 0);
-		consum_arch_db.db = NULL;
-	}
-
-	if(dev_event_db.db)
-	{
-		dev_event_db.db->close(dev_event_db.db, 0);
-		dev_event_db.db = NULL;
-	}
-
-	if(app_event_db.db)
-	{
-		app_event_db.db->close(app_event_db.db, 0);
-		app_event_db.db = NULL;
-	}
+	log_db_close_db(&load_profile_db, db_env);
+	log_db_close_db(&consum_arch_db, db_env);
+	log_db_close_db(&dev_event_db, db_env);
+	log_db_close_db(&app_event_db, db_env);
 
 	if(db_export_log)
 	{
@@ -689,18 +909,6 @@ void log_db_maintain_databases(time_t in_time)
 }
 
 
-int log_db_get_var_idx(log_db *db_req, char *var_name)
-{
-	int i;
-
-	for(i=0; i<db_req->flds_num; i++)
-	{
-		if(strcmp(db_req->flds[i], var_name) == 0) return i;
-	}
-	return -1;
-}
-
-
 int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value)
 {
 	DBT key, data;
@@ -710,7 +918,7 @@ int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t
 
 	if(!db_env || !db_req || !db_req->db || db_req->flds_num == 0 || !var_name || len == 0 || !log_time || !value) return -1;
 
-	idx = log_db_get_var_idx(db_req, var_name);
+	idx = log_db_get_fld_idx(db_req, var_name);
 
 	if(idx < 0) return -1;
 
@@ -755,3 +963,54 @@ int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t
 }
 
 
+int log_db_get_event(log_db *db_req, uint32_t adr, time_t *log_time, char **msg, int *len)
+{
+	DBT key, data;
+	DBC *cursor = NULL;
+	uint32_t *rec_adr;
+	int ret;
+
+	if(!db_env || !db_req || !db_req->db || db_req->flds_num != 0 || !log_time || !msg || !len) return -1;
+
+    ret = db_req->db->cursor(db_req->db, NULL, &cursor, 0);
+
+	if(ret != 0)
+	{
+	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
+
+	    return -1;
+	}
+
+    memset(&key, 0, sizeof(DBT));
+    memset(&data, 0, sizeof(DBT));
+
+	pthread_mutex_lock(&db_log_mtx);
+
+	// go through log records in the loop
+	while((ret = cursor->c_get(cursor, &key, &data, DB_NEXT)) == 0)
+    {
+		*log_time = ntohl( *((uint32_t*)key.data) );
+
+		rec_adr = (uint32_t*)data.data;
+
+		if(*rec_adr == adr) break;
+    }
+
+	if(ret == 0)
+	{
+		*msg = (char*) malloc(data.size - sizeof(uint32_t));
+		memcpy((void*) *msg, (void*) ((char*)data.data+sizeof(uint32_t)), data.size - sizeof(uint32_t));
+		*len = data.size - sizeof(uint32_t);
+	}
+	else
+	{
+		ret = -1;
+	}
+
+	pthread_mutex_unlock(&db_log_mtx);
+
+	cursor->c_close(cursor);
+	cursor = NULL;
+
+	return ret;
+}

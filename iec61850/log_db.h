@@ -30,12 +30,11 @@ extern "C" {
  * Structures
  *
  */
-
 typedef struct log_db log_db;
 
 struct log_db {
 	DB		*db;
-	char	**flds;
+	char	*flds_list;
 	int		flds_num;
 	time_t	add_period;
 	time_t	add_timer;
@@ -45,6 +44,7 @@ struct log_db {
 	void	(*add_var_rec)(log_db *db_req, uint32_t adr, uint32_t *log_rec);
 	int		(*get_var)(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value);
 	void	(*add_event)(log_db *db_req, uint32_t adr, char *msg, int len);
+	int		(*get_event)(log_db *db_req, uint32_t adr, time_t *log_time, char **msg, int *len);
 };
 
 
@@ -59,7 +59,6 @@ void log_db_env_close();
 void log_db_init_timers(time_t init_time);
 
 void log_db_maintain_databases(time_t cut_time);
-
 
 #ifdef __cplusplus
 }
