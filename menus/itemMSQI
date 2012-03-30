@@ -3,12 +3,8 @@ text 40 0 a a УСПД M-700
 text 2 16 a a &var:IED:desc
 menu 2 32 77 a Адр: &var:LD:inst~changeld>lnmenu
 text 80 32 80 a Тип: &var:APP:devicetype
-text 0 a a 6 ~~~~~~~~~~~~~~~~~~~~~~
-text 0 54 a a <
-text 151 54 9 a >
-menu 10 54 142 a &var:APP:lnclasstext~changetypeln>lntypemenu
-text 0 a a 6 ~~~~~~~~~~~~~~~~~~~~~~
-menu 8 a a a Параметры текущие >practual
-menu 8 a a a Параметры за сутки >prday
-menu 8 a a a Архив параметров >prarch
+menu 8 54 142 a &var:APP:lnclasstext~changetypeln>lntypemenu
+menu 2 74 a a 1. Параметры текущие >practual
+menu 2 a a a 2. Параметры за сутки >prday
+menu 2 a a a 3. Архив параметров >prarch
 

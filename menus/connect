@@ -14,16 +14,4 @@ menu a a a a Мощность полная (ВА)
 text a a a a Фаза А: &var:LN:VAphsA.mag.f
 text a a a a Фаза B: &var:LN:VAphsB.mag.f
 text a a a a Фаза С: &var:LN:VAphsC.mag.f
-menu a a a a Энергия активная (кВт/ч)
-text a a a a Фаза А:  
-text a a a a Фаза B: 
-text a a a a Фаза С:
-menu a a a a Энергия реакт. (квар/ч)
-text a a a a Фаза А:
-text a a a a Фаза B:
-text a a a a Фаза С:
-menu a a a a Энергия полная (кВА/ч)
-text a a a a Фаза А:
-text a a a a Фаза B:
-text a a a a Фаза С:
-menu a a a a Частота сети (Гц): 
+menu a a a a Частота сети (Гц): &var:LN:Hz.mag.i

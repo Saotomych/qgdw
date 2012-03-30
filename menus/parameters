@@ -1,5 +1,5 @@
 main 0 0 160 160
-menu 10 0 a a Параметры устройства
+menu 10 0 a a Системные параметры
 text 8 a a a Устройство: &var:APP:devicetype
 text 8 a a a Адрес: &var:APP:deviceaddr
 text 8 a a a Режим: &var:APP:deviceport

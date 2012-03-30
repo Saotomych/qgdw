@@ -1,2 +1,10 @@
 main 0 0 160 160
-text 2 0 a a Текущая энергия
+menu 2 0 a a Текущая энергия
+text 2 16 77 a Адр: &var:LD:inst~changeld>lnmenu
+text 80 16 80 a Тип: &var:APP:devicetype
+text a a a a Активная (кВт/ч)
+text a a a a * &var:LN:TotWh.mag.f
+text a a a a Реактивная (квар/ч)
+text a a a a * &var:LN:TotVArh.mag.f
+text a a a a Энергия полная (ВА/ч)
+text a a a a * &var:LN:TotVAh.mag.f

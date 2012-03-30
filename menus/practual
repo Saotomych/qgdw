@@ -1,2 +1,11 @@
 main 0 0 160 160
-text 2 0 a a Текущие параметры
+menu 2 0 a a Текущие параметры
+text 2 a a a Последовательности
+text 40 a a a Ток
+text 2 a a a Прямая: &var:LN:SeqAc1.mag.f
+text 2 a a a Обратная: &var:LN:SeqAc2.mag.f
+text 2 a a a Нулевая: &var:LN:SeqAc3.mag.f
+text 20 a a a Напряжение
+text 2 a a a Прямая: &var:LN:SeqVc1.mag.f
+text 2 a a a Обратная: &var:LN:SeqVc2.mag.f
+text 2 a a a Нулевая: &var:LN:SeqVc3.mag.f
