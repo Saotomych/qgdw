@@ -7,7 +7,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include "log_db.h"
-#include "../common/common.h"
 #include "../common/ts_print.h"
 #include "../common/paths.h"
 
@@ -70,7 +69,7 @@ extern int get_dobj_idx(char *dobj_name);
 
 
 void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec);
-int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value);
+int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, time_t *log_time, uint32_t *value);
 void log_db_add_event(log_db *db_req, uint32_t adr, char *msg, int len);
 int log_db_get_event(log_db *db_req, uint32_t adr, time_t *rec_time, char **msg, int *len);
 
@@ -909,7 +908,7 @@ void log_db_maintain_databases(time_t in_time)
 }
 
 
-int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value)
+int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, time_t *log_time, uint32_t *value)
 {
 	DBT key, data;
 	DBC *cursor = NULL;
@@ -917,7 +916,7 @@ int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t
 	time_t rec_time;
 	int ret, idx;
 
-	if(!db_env || !db_req || !db_req->db || db_req->flds_num == 0 || !var_name || len == 0 || !log_time || !value) return -1;
+	if(!db_env || !db_req || !db_req->db || db_req->flds_num == 0 || !var_name || !log_time || !value) return -1;
 
 	idx = log_db_get_fld_idx(db_req, var_name);
 
