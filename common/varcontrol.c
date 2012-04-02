@@ -522,9 +522,33 @@ char keywords[][10] = {
 					if (po == NULL) return NULL;
 					po++;
 					x = atoi(po);
+
+					// Find all fields: po, pa, ptag
+					p = strstr(po, ":");
+					if (p){
+						// Set po to data object tag
+						p++; po = p;
+						p = strstr(p, ".");
+						if (p){
+							// Data object found
+							// Set pa to data attribute as variant
+							*p = 0;	p++; pa = p;
+							p = strstr(p, ".");
+							if (p){
+								// Field for data attribute found
+								*p = 0;	p++; pba = p;
+								// Find next '.'
+								p = strstr(p, ".");
+								if (p) *p = 0;
+							}
+						}
+					}
+
 					// Create varrec
 					vr = newiecvarrec(x);
 					if (vr){
+						vr->name->doName = po;
+						vr->name->daName = pa;
 						vr->name->fc = varname;
 						vr->name->ldinst = pld->inst;
 						vr->name->lnClass = actln->ln.lnclass;
@@ -532,34 +556,8 @@ char keywords[][10] = {
 						vr->name->prefix = actln->ln.prefix;
 						vr->asdu = atoi(actln->ln.pmyld->inst);
 						vr->id = 0;
-						vr->val->name = malloc(varlen);
-						strcpy(vr->val->name, varname);
-
-						// Find all fields: po, pa, ptag
-						p = strstr(po, ":");
-						if (p){
-							// Set po to data object tag
-							p++; po = p;
-							p = strstr(p, ".");
-							if (p){
-								// Data object found
-								// Set pa to data attribute as variant
-								*p = 0;	p++; pa = p;
-								p = strstr(p, ".");
-								if (p){
-									// Field for data attribute found
-									*p = 0;	p++; pba = p;
-									// Find next '.'
-									p = strstr(p, ".");
-									if (p) *p = 0;
-								}
-							}
-						}
-						vr->name->doName = po;
-						vr->name->daName = pa;
 
 						// Find type of journal variable
-
 						if (pln->ln.pmytype) pdo = pln->ln.pmytype->pfdobj;
 							else pdo = NULL;
 						while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
@@ -589,6 +587,8 @@ char keywords[][10] = {
 
 						// Set all variables
 						for (i = 0; i < x; i++){
+							vr->val[i].name = malloc(varlen);
+							strcpy(vr->val[i].name, varname);
 							vr->val[i].idx = IECBASE + JRVALUE;
 							vr->val[i].idtype = get_type_idx(po);
 							vr->val[i].val = malloc(sizeof_idx(vr->val[i].idtype));
