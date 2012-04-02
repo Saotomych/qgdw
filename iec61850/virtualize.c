@@ -709,7 +709,7 @@ varevent *ve = *pve;
 char *pname = (char*) ((int32_t) avb + sizeof(varattach));
 
 
-	return 0;
+	return 1;
 }
 
 uint32_t get_actvarevent(varrec *actvr, varattach *avb, varevent **pve){
@@ -780,7 +780,7 @@ int adr, dir, fullrdlen;
 varrec *actvr;
 varattach *avb;
 varevent *actve;
-char *pname;
+char *pname, *p;
 uint32_t *uids;
 
 	if (len) buff = malloc(len);
@@ -865,18 +865,24 @@ uint32_t *uids;
 
 			ts_printf(STDOUT_FILENO, "IEC61850: set attach for value %s\n", pname);
 
-			actve = malloc(sizeof(varevent));
-
 			// Detect LOG or ACTUAL variable
 			if (strstr(pname, "(")){
 				// Get varevent from journal by name
+				// pname view as JR:(first, length):<variable iecname>
+				p = strstr(pname, ":");
+				if (p) p++;
+				else break;
+				len = atoi(p);
+				actve = malloc(sizeof(varevent) * len);
 				if (get_logvarevent(avb, &actve)){
 					// If log record not found then break attach process
-					free (actve);
-					break;
+					ts_printf(STDOUT_FILENO, "IEC61850: attempt of taking journal data OK");
 				}
+				free (actve);
+				break;
 			}else{
 				// Get varevent by name
+				actve = malloc(sizeof(varevent));
 				actvr = find_varrecbyname(avb);
 				if (actvr){
 					if (get_actvarevent(actvr, avb, &actve))
