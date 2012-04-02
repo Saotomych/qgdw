@@ -71,12 +71,12 @@ int ret = 0;
 	return ret;
 }
 
-static varrec* init_varrec(varrec *vr){
+static varrec* init_varrec(varrec *vr, uint32_t vallen){
 	if (!vr) return NULL;
 	vr->name = malloc(sizeof(fcdarec));
 	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
 	else return NULL;
-	vr->val = malloc(sizeof(value));
+	vr->val = malloc(sizeof(value) * vallen);
 	if (vr->val) memset(vr->val, 0, sizeof(value));
 	else{
 		free(vr->name);
@@ -147,21 +147,19 @@ varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	if (vr->name) memset(vr->name, 0, sizeof(fcdarec));
 	vr->val = malloc(sizeof(value));
 	if (vr->val) memcpy(vr->val, val, sizeof(value));
+	vr->maxval = 1;
 	vr->prop = INTERNAL | TRUEVALUE;
-	vr->iarg = varrec_number;
-	varrec_number++;
 	vr->time = 0;
 	return vr;
 }
 
-static varrec* newiecvarrec(void){
+static varrec* newiecvarrec(uint32_t vallen){
 varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	// Initialize varrec
-	if (init_varrec(vr)){	// mallocs for 'fcdarec' and 'value'
+	if (init_varrec(vr, vallen)){	// mallocs for 'fcdarec' and 'value'
 		lastvr = vr;
-		vr->iarg = varrec_number;
-		varrec_number++;
 		vr->time = 0;
+		vr->maxval = vallen;
 		// Copy global variable to local for local changes
 		vr->val->idtype = STRING;
 		vr->val->iddeftype = 0;
@@ -208,6 +206,7 @@ char keywords[][10] = {
 		{"IED:"},
 		{"LD:"},
 		{"LN:"},
+		{"JR:"},
 };
 
 	pld = pln->ln.pmyld;
@@ -246,7 +245,7 @@ char keywords[][10] = {
 			case 1:	// IED:
 					if (pied){
 						// Register new value in varrec LIST
-						vr = newiecvarrec();
+						vr = newiecvarrec(1);
 						if (vr){
 							vr->name->fc = varname;
 							vr->name->ldinst = pld->inst;
@@ -280,7 +279,7 @@ char keywords[][10] = {
 					// Fill varrec as const of application
 					if (pld){
 						// Register new value in varrec LIST
-						vr = newiecvarrec();
+						vr = newiecvarrec(1);
 						if (vr){
 							vr->name->fc = varname;
 							vr->name->ldinst = pld->inst;
@@ -321,7 +320,7 @@ char keywords[][10] = {
 
 					if (actln){
 						// Register new value in varrec LIST
-						vr = newiecvarrec();
+						vr = newiecvarrec(1);
 						if (vr){
 
 							vr->name->fc = varname;
@@ -513,6 +512,95 @@ char keywords[][10] = {
 					}
 
 					break;
+			case 4:		// JR
+					// Get first position and value lenght
+					po = strstr(p, "(");
+					if (po == NULL) return NULL;
+					po++;
+					i = atoi(po);
+					po = strstr(p, ",");
+					if (po == NULL) return NULL;
+					po++;
+					x = atoi(po);
+					// Create varrec
+					vr = newiecvarrec(x);
+					if (vr){
+						vr->name->fc = varname;
+						vr->name->ldinst = pld->inst;
+						vr->name->lnClass = actln->ln.lnclass;
+						vr->name->lnInst = actln->ln.lninst;
+						vr->name->prefix = actln->ln.prefix;
+						vr->asdu = atoi(actln->ln.pmyld->inst);
+						vr->id = 0;
+						vr->val->name = malloc(varlen);
+						strcpy(vr->val->name, varname);
+
+						// Find all fields: po, pa, ptag
+						p = strstr(po, ":");
+						if (p){
+							// Set po to data object tag
+							p++; po = p;
+							p = strstr(p, ".");
+							if (p){
+								// Data object found
+								// Set pa to data attribute as variant
+								*p = 0;	p++; pa = p;
+								p = strstr(p, ".");
+								if (p){
+									// Field for data attribute found
+									*p = 0;	p++; pba = p;
+									// Find next '.'
+									p = strstr(p, ".");
+									if (p) *p = 0;
+								}
+							}
+						}
+						vr->name->doName = po;
+						vr->name->daName = pa;
+
+						// Find type of journal variable
+
+						if (pln->ln.pmytype) pdo = pln->ln.pmytype->pfdobj;
+							else pdo = NULL;
+						while ((pdo) && (strcmp(pdo->dobj.name, po))) pdo = pdo->l.next;
+						if (!pdo) return NULL;
+						vr->val->val = vc_typetest(pdo->dobj.type);
+						if (vr->val->val){
+							po = pdo->dobj.type;
+						}else{
+							if (pdo->dobj.pmytype) pda = pdo->dobj.pmytype->pfattr;
+							else pda = NULL;
+							while ((pda) && (strcmp(pda->attr.name, pa))) pda = pda->l.next;
+							if (!pda) return NULL;
+							vr->val->val = vc_typetest(pda->attr.btype);
+							if (vr->val->val){
+								po = pda->attr.btype;
+							}else{
+								if (pda->attr.pmyattrtype) pbda = pda->attr.pmyattrtype->pfbattr;
+								else pbda = NULL;
+								while ((pbda) && (strcmp(pbda->battr.name, pba))) pbda = pbda->l.next;
+								if (!pbda) return NULL;
+								vr->val->val = vc_typetest(pbda->battr.btype);
+								if (vr->val->val){
+									po = pbda->battr.btype;
+								}
+							}
+						}
+
+						// Set all variables
+						for (i = 0; i < x; i++){
+							vr->val[i].idx = IECBASE + JRVALUE;
+							vr->val[i].idtype = get_type_idx(po);
+							vr->val[i].val = malloc(sizeof_idx(vr->val[i].idtype));
+							memset(vr->val[i].val, 0, sizeof_idx(vr->val[i].idtype));
+							vr->prop = ATTACHING | NEEDFREE;
+						}
+
+					}
+
+					return vr;
+
+					break;
 			}
 		}
 	}
@@ -521,6 +609,7 @@ char keywords[][10] = {
 
 void vc_freevarrec(varrec *vr){
 varrec *prevvr = vr->l.prev;
+int i;
 
 	if (prevvr){
 		prevvr->l.next = NULL;
@@ -528,7 +617,9 @@ varrec *prevvr = vr->l.prev;
 	}
 
 	free(vr->val->name);
-	if (vr->prop & NEEDFREE) free(vr->val->val);
+	if (vr->prop & NEEDFREE){
+		for (i = 0; i < vr->maxval; i++) free(vr->val[i].val);
+	}
 	if (vr->name) free(vr->name);
 	if (vr->val) free(vr->val);
 	free(vr);

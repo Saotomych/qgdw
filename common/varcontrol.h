@@ -57,6 +57,7 @@
 #define DAqchg			20
 
 #define IECVALUE		1000
+#define JRVALUE			5000
 
 // IEC struct
 typedef struct _FCDAREC{
@@ -85,7 +86,7 @@ typedef struct _VARREC{
 	fcdarec *name;	// Can see as pointer to pointer to full name already
 	value *val;		// Values and types of variable
 	int asdu;		// ASDU of the LD, for fast detect LD events
-	int iarg;		// Index of this varrec, for fast identify with otherside varrec
+	int maxval;		// Lenght of value array (defaul = 1)
 	int id;			// ID of va from mainmap.cfg, for fast identify with otherside varrec
 	int prop;		// properties: const, var, attaching, true value.
 	int time;		// time from last refresh value, usec
