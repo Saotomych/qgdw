@@ -313,13 +313,12 @@ varevent *ave;
 			return 0;
 		}
 
-		edh = (struct ep_data_header *) (buff + offset);				// set start structure
+		edh = (ep_data_header *) (buff + offset);				// set start structure
 
 		// Incoming data will be working
 		switch(edh->sys_msg){
 
 		case EP_MSG_VAREVENT:
-			edh = (ep_data_header*) (buff + offset);
 			ave = (varevent*)((char*) edh + sizeof(ep_data_header));
 
 			do{
