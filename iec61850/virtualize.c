@@ -310,7 +310,7 @@ void catch_alarm(int sig)
 		}
 
 		// update timer
-		consum_arch_db.add_timer =sys_time;
+		consum_arch_db.add_timer = sys_time;
 	}
 
 	// check DBs for maintenance time
@@ -850,7 +850,7 @@ uint32_t *uids;
 			if(dev_event_db.db) dev_event_db.add_event(&dev_event_db, edh->adr, buff + offset + sizeof(ep_data_header), edh->len);
 			break;
 		case EP_MSG_LOG_APP_EVENT:
-			if(app_event_db.db) app_event_db.add_event(&dev_event_db, 0, buff + offset + sizeof(ep_data_header), edh->len);
+			if(app_event_db.db) app_event_db.add_event(&app_event_db, 0, buff + offset + sizeof(ep_data_header), edh->len);
 			break;
 
 		case EP_MSG_TIME_SYNC:
