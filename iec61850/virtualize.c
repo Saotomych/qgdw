@@ -310,7 +310,7 @@ void catch_alarm(int sig)
 		}
 
 		// update timer
-		consum_arch_db.add_timer =sys_time;
+		consum_arch_db.add_timer = sys_time;
 	}
 
 	// check DBs for maintenance time

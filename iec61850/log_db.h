@@ -43,7 +43,7 @@ struct log_db {
 	time_t	export_timer;
 	time_t	storage_deep;
 	void	(*add_var_rec)(log_db *db_req, uint32_t adr, uint32_t *log_rec);
-	int		(*get_var)(log_db *db_req, uint32_t adr, char *var_name, time_t *log_time, uint32_t *value);
+	int		(*get_vars)(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars);
 	void	(*add_event)(log_db *db_req, uint32_t adr, char *msg, int len);
 	int		(*get_event)(log_db *db_req, uint32_t adr, time_t *log_time, char **msg, int *len);
 };
