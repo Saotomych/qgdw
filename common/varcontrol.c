@@ -689,7 +689,7 @@ uint32_t len;
 			vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
 
 			// Send attach this varrec
-			mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
+			if (len) mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
 
 			free(varbuf);
 		}

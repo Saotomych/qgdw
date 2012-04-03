@@ -809,6 +809,7 @@ uint32_t *uids;
 
 			// Making up Buffer for send to SCADA_ASDU.
 			// It has data objects having mapping only
+			ts_printf(STDOUT_FILENO, "IEC61850: fullrdlen=%d\n", fullrdlen);
 			senddm = malloc(fullrdlen);
 			sendve = malloc(fullrdlen);
 
@@ -878,31 +879,35 @@ uint32_t *uids;
 					// If log record not found then break attach process
 					ts_printf(STDOUT_FILENO, "IEC61850: attempt of taking journal data OK");
 				}
-				free (actve);
 				break;
 			}else{
 				// Get varevent by name
 				actve = malloc(sizeof(varevent));
 				actvr = find_varrecbyname(avb);
 				if (actvr){
-					if (get_actvarevent(actvr, avb, &actve))
+					if (get_actvarevent(actvr, avb, &actve)){
 						ts_printf(STDOUT_FILENO, "IEC61850 error: %s not attach to HMI \n\n", pname);
-					else
+						len = 0;
+					}else{
 						ts_printf(STDOUT_FILENO, "IEC61850: %s attach to HMI \n\n", pname);
+						len = 1;
+					}
 				}
 			}
 
+			if (len){
 			// Create send buffer
-			sendve = malloc(sizeof(ep_data_header) + sizeof(varevent) + actve->vallen);
-			memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent));
-			add_header2hmi(sendve);
-			// Add string value
-//			if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
+				sendve = malloc(sizeof(ep_data_header) + (sizeof(varevent) + actve->vallen) * len);
+				memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent));
+				add_header2hmi(sendve);
+			// TODO Add string value from journal
+//				if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
+				send_varevent2hmi((char*) sendve, 1);	// Send 1 varevent to HMI
+			}
 
 			free(sendve);
 			free(actve);
-			send_varevent2hmi((char*) sendve, 1);	// Send 1 varevent to HMI
 
 			break;
 

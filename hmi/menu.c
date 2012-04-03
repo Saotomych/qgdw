@@ -121,7 +121,7 @@ int i;
 					idtype = pitem->vr->val[i].idtype;
 
 					if (idtype & FLOAT32){
-						ts_sprintf(wintext, "%s%09.2F%s", pitem->text, *((float*) (pitem->vr->val[i].val)), pitem->endtext);
+						ts_sprintf(wintext, "%s%9.2f%s", pitem->text, *((float*) (pitem->vr->val[i].val)), pitem->endtext);
 					}
 
 					if (idtype & INT32){
