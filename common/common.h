@@ -143,6 +143,7 @@ typedef struct _varattach{
 	uint32_t		id;
 	uint32_t		type;
 	uint32_t		lenname;
+	uint32_t		intr;
 } __attribute__ ((packed)) varattach;
 
 typedef struct _varevent{

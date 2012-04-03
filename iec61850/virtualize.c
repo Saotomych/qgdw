@@ -704,12 +704,29 @@ char *tptr;
 	return actvr;
 }
 
-uint32_t get_logvarevent(varattach *avb, varevent **pve){
+uint32_t get_logvarevent(char *pname, char offset, char len, varattach *avb, varevent **pve){
 varevent *ve = *pve;
-char *pname = (char*) ((int32_t) avb + sizeof(varattach));
+time_t tmin = time(NULL) - (60*60*24);
+time_t tmax = time(NULL) + (60*60*24);
+time_t tbgn = avb->time + (offset * avb->intr);
+int32_t ret;
 
+// Database definition
+log_db *db;
 
-	return 1;
+	if ((avb->time > tmin) && (avb->time < tmax))
+		db = &load_profile_db;
+	else db = &consum_arch_db;
+
+//	(*get_vars)(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars);
+	ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
+
+	if (ret <= 0){
+		ts_printf(STDOUT_FILENO, "IEC61850 Error: database query failed\n");
+		return 0;
+	}
+
+	return ret;
 }
 
 uint32_t get_actvarevent(varrec *actvr, varattach *avb, varevent **pve){
@@ -870,12 +887,17 @@ uint32_t *uids;
 			if (strstr(pname, "(")){
 				// Get varevent from journal by name
 				// pname view as JR:(first, length):<variable iecname>
+				offset = atoi(pname+1);
 				p = strstr(pname, ":");
 				if (p) p++;
 				else break;
 				len = atoi(p);
+				p = strstr(p, ":");
+				if (p) p++;
+				else break;
 				actve = malloc(sizeof(varevent) * len);
-				if (get_logvarevent(avb, &actve)){
+				len = 0;
+				if (get_logvarevent(p, offset, len, avb, &actve)){
 					// If log record not found then break attach process
 					ts_printf(STDOUT_FILENO, "IEC61850: attempt of taking journal data OK");
 				}
@@ -903,7 +925,7 @@ uint32_t *uids;
 			// TODO Add string value from journal
 //				if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
-				send_varevent2hmi((char*) sendve, 1);	// Send 1 varevent to HMI
+				send_varevent2hmi((char*) sendve, len);	// Send 1 varevent to HMI
 			}
 
 			free(sendve);
@@ -912,7 +934,7 @@ uint32_t *uids;
 			break;
 
 		case EP_MSG_UNATTACH:
-			ts_printf(STDOUT_FILENO, "IEC61850: set unattach for dataset from value %s\n", pname);
+			ts_printf(STDOUT_FILENO, "IEC61850: set unattach for dataset from value 0x%X\n", pname);
 
 			cntdm = edh->len;
 			uids = (uint32_t*) (buff + sizeof(ep_data_header));

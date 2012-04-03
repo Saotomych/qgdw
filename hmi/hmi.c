@@ -307,7 +307,7 @@ varevent *ave;
 	offset = 0;
 
 	while(offset < fullrdlen){
-		if(fullrdlen - offset < sizeof(ep_data_header)){
+		if ((fullrdlen - offset) < sizeof(ep_data_header)){
 			ts_printf(STDOUT_FILENO, "HMI: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
