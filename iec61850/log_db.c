@@ -7,7 +7,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include "log_db.h"
-#include "../common/common.h"
 #include "../common/ts_print.h"
 #include "../common/paths.h"
 
@@ -70,7 +69,7 @@ extern int get_dobj_idx(char *dobj_name);
 
 
 void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec);
-int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value);
+int	log_db_get_vars(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars);
 void log_db_add_event(log_db *db_req, uint32_t adr, char *msg, int len);
 int log_db_get_event(log_db *db_req, uint32_t adr, time_t *rec_time, char **msg, int *len);
 
@@ -330,7 +329,7 @@ void log_db_config_read(const char *file_name)
 	load_profile_db.export_timer = 0;
 	load_profile_db.storage_deep = DB_LOG_LOAD_PROFILE_DEEP;
 	load_profile_db.add_var_rec = log_db_add_var_rec;
-	load_profile_db.get_var = log_db_get_var;
+	load_profile_db.get_vars = log_db_get_vars;
 	load_profile_db.add_event = log_db_add_event;
 	load_profile_db.get_event = log_db_get_event;
 
@@ -342,7 +341,7 @@ void log_db_config_read(const char *file_name)
 	consum_arch_db.export_timer = 0;
 	consum_arch_db.storage_deep = DB_LOG_CONSUM_ARCH_DEEP;
 	consum_arch_db.add_var_rec = log_db_add_var_rec;
-	consum_arch_db.get_var = log_db_get_var;
+	consum_arch_db.get_vars = log_db_get_vars;
 	consum_arch_db.add_event = log_db_add_event;
 	consum_arch_db.get_event = log_db_get_event;
 
@@ -354,7 +353,7 @@ void log_db_config_read(const char *file_name)
 	dev_event_db.export_timer = 0;
 	dev_event_db.storage_deep = DB_LOG_EVENT_DEEP;
 	dev_event_db.add_var_rec = log_db_add_var_rec;
-	dev_event_db.get_var = log_db_get_var;
+	dev_event_db.get_vars = log_db_get_vars;
 	dev_event_db.add_event = log_db_add_event;
 	dev_event_db.get_event = log_db_get_event;
 
@@ -366,7 +365,7 @@ void log_db_config_read(const char *file_name)
 	app_event_db.export_timer = 0;
 	app_event_db.storage_deep = DB_LOG_EVENT_DEEP;
 	app_event_db.add_var_rec = log_db_add_var_rec;
-	app_event_db.get_var = log_db_get_var;
+	app_event_db.get_vars = log_db_get_vars;
 	app_event_db.add_event = log_db_add_event;
 	app_event_db.get_event = log_db_get_event;
 
@@ -909,15 +908,16 @@ void log_db_maintain_databases(time_t in_time)
 }
 
 
-int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t *log_time, uint32_t *value)
+int	log_db_get_vars(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars)
 {
 	DBT key, data;
 	DBC *cursor = NULL;
-	uint32_t *rec_adr;
-	time_t rec_time;
+	uint32_t rec_adr;
+	time_t rec_time, st_time = 0;
+	int num_out = 0;
 	int ret, idx;
 
-	if(!db_env || !db_req || !db_req->db || db_req->flds_num == 0 || !var_name || len == 0 || !log_time || !value) return -1;
+	if(!db_env || !db_req || !db_req->db || db_req->flds_num == 0 || !var_name || !log_time || num <= 0 || !vars) return -1;
 
 	idx = log_db_get_fld_idx(db_req, var_name);
 
@@ -938,31 +938,29 @@ int log_db_get_var(log_db *db_req, uint32_t adr, char *var_name, int len, time_t
 	pthread_mutex_lock(&db_log_mtx);
 
 	// go through log records in the loop
-	while((ret = cursor->c_get(cursor, &key, &data, DB_NEXT)) == 0)
+	while((ret = cursor->c_get(cursor, &key, &data, DB_NEXT)) == 0 &&  num_out < num)
     {
 		rec_time = ntohl( *((uint32_t*)key.data) );
+		rec_adr = ntohl( *((uint32_t*)data.data) );
 
-		rec_adr = (uint32_t*)data.data;
+		if(rec_time < log_time || rec_adr != adr) continue;
 
-		if(*rec_adr == adr && rec_time >= *log_time) break;
+		if(rec_time - st_time >= intr)
+		{
+			vars[num_out].value.ui = ntohl( *((uint32_t*)data.data + idx + 1) );
+			vars[num_out].time = rec_time;
+			num_out++;
+
+			st_time = rec_time;
+		}
     }
-
-	if(ret == 0)
-	{
-		*log_time = rec_time;
-		*value = ntohl( *((uint32_t*)data.data + idx) );
-	}
-	else
-	{
-		ret = -1;
-	}
 
 	pthread_mutex_unlock(&db_log_mtx);
 
 	cursor->c_close(cursor);
 	cursor = NULL;
 
-	return ret;
+	return num_out;
 }
 
 
