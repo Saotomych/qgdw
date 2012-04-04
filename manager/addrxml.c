@@ -10,6 +10,7 @@
 
 #include "../common/common.h"
 #include "../common/multififo.h"
+#include "../common/ts_print.h"
 #include "autoconfig.h"
 
 
@@ -60,7 +61,7 @@ int get_mac(char *file_name)
 	}
 	else
 	{
-		printf("Config Manager: \"%s\" file cannot be opened\n", file_name);
+		ts_printf(STDOUT_FILENO, "Config Manager: \"%s\" file cannot be opened\n", file_name);
 		return ret;
 	}
 
@@ -152,7 +153,7 @@ char *p;
 			}
 			else
 			{
-				printf("Config Manager: MAC-addresses does not match\n");
+				ts_printf(STDOUT_FILENO, "Config Manager: MAC-addresses does not match\n");
 			}
 		}
 }
@@ -246,12 +247,12 @@ char sadr[16], *ps = sadr;
 // ssd functions
 
 void TagSetHrdw(const char *pTag){
-	printf("Config Manager: Start ADDR file to parse\n");
+	ts_printf(STDOUT_FILENO, "Config Manager: Start ADDR file to parse\n");
 }
 
 void TagEndHrdw(const char *pTag){
 	EndScript=1;
-	printf("Config Manager: Stop ADDR file to parse\n");
+	ts_printf(STDOUT_FILENO, "Config Manager: Stop ADDR file to parse\n");
 }
 
 void TagSetXml(const char *pTag){

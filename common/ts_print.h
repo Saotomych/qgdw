@@ -8,6 +8,7 @@
 #define _TS_PRINTF_H_
 
 #include <stdarg.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {

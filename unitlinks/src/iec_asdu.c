@@ -713,7 +713,7 @@ uint16_t iec_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *iec_a
 	iec_asdu->attr = iec_asdu->attr & 0xFE;
 
 #ifdef _DEBUG
-	printf("%s: ASDU buffer parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-iec10x", iec_asdu->type, iec_asdu->size, iec_asdu->attr & 0x01);
+	ts_printf(STDOUT_FILENO, "%s: ASDU buffer parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-iec10x", iec_asdu->type, iec_asdu->size, iec_asdu->attr & 0x01);
 #endif
 
 	return res;
@@ -758,7 +758,7 @@ uint16_t iec_asdu_buff_build(unsigned char **buff, uint32_t *buff_len, asdu *iec
 	}
 
 #ifdef _DEBUG
-	printf("%s: ASDU buffer builded OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-iec10x", iec_asdu->type, iec_asdu->size, iec_asdu->attr & 0x01);
+	ts_printf(STDOUT_FILENO, "%s: ASDU buffer builded OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-iec10x", iec_asdu->type, iec_asdu->size, iec_asdu->attr & 0x01);
 #endif
 
 	return res;

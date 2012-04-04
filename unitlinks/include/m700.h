@@ -109,6 +109,7 @@ uint16_t m700_collect_data();
 uint16_t m700_sys_msg_send(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
 uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned char *buff, uint32_t buff_len);
 
+uint16_t m700_log_msg_send(uint16_t adr, char *msg);
 
 uint16_t m700_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t start_time);
 uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext);

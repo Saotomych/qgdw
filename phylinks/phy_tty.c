@@ -188,7 +188,7 @@ int t;
 	if (*pars == 'Y') td->rts = 1;
 
 #ifdef _DEBUG
-	printf("Phylink TTY: parse port %s, %d, %d%d%d, rts:%d\n", td->devname, td->speed, td->bits, td->parity, td->stop, td->rts);
+	ts_printf(STDOUT_FILENO, "Phylink TTY: parse port %s, %d, %d%d%d, rts:%d\n", td->devname, td->speed, td->bits, td->parity, td->stop, td->rts);
 #endif
 }
 
@@ -228,7 +228,7 @@ int i = 1;
 						pr->ep_index = maxpr;
 						pr->state = 0;
 						maxpr++;
-						printf("Phylink TTY: added device connect to %s, asdu = %d, realadr = %d, %d%d%d - %d\n",
+						ts_printf(STDOUT_FILENO, "Phylink TTY: added device connect to %s, asdu = %d, realadr = %d, %d%d%d - %d\n",
 								tdev[pr->devindex].devname, pr->asdu, pr->realaddr, tdev[pr->devindex].bits, tdev[pr->devindex].parity,
 								tdev[pr->devindex].stop, tdev[pr->devindex].rts);
 					}
@@ -258,7 +258,7 @@ int start_ttydevice(TTYDEV *td){
     td->desc = open(td->devname, O_RDWR | O_NOCTTY | O_NDELAY);
 
     if (td->desc == -1) {
-    	printf("Phylink TTY:  Can't open tty device %s\n", td->devname);
+    	ts_printf(STDOUT_FILENO, "Phylink TTY:  Can't open tty device %s\n", td->devname);
     	return -1;
     }
     CommRawSetup(td->desc, td->speed, td->bits, td->parity == 1, td->parity == 2, td->stop > 0, td->rts > 0);
@@ -308,24 +308,24 @@ char ascibuf[300];
 
 			// check if phy_route was found
 			if (!pr){
-				printf("Phylink TTY: This connection not found\n");
+				ts_printf(STDOUT_FILENO, "Phylink TTY: This connection not found\n");
 				offset += edh->len;
 				continue;
 			}
 
 			tai.buf = inoti_buf + offset;	// set pointer to begin data
 
-			printf("Phylink TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
-			printf("Phylink TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
+			ts_printf(STDOUT_FILENO, "Phylink TTY: Data received. Address = %d, Length = %d, Direction = %s.\n", pr->asdu, len, tai.direct == DIRDN? "DIRUP" : "DIRDN");
+			ts_printf(STDOUT_FILENO, "Phylink TTY: adr=%d sysmsg=%d len=%d\n", edh->adr, edh->sys_msg, edh->len);
 
 			switch(edh->sys_msg){
 			case EP_USER_DATA:	// Write data to socket
 					if(rdlen-offset >= edh->len && pr->state == 1) {
 						Hex2ASCII(tai.buf, ascibuf, edh->len);
-						printf("Phylink TTY: Buffer: %s\n", ascibuf);
+						ts_printf(STDOUT_FILENO, "Phylink TTY: Buffer: %s\n", ascibuf);
 
 //						ty = &tdev[pr->devindex];
-//						printf("Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
+//						ts_printf(STDOUT_FILENO, "Device: %s %d%d%d - %d\n", ty->devname, ty->bits, ty->parity, ty->stop, ty->rts);
 
 						writeall(tdev[pr->devindex].desc, tai.buf, edh->len);
 					}
@@ -375,10 +375,10 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 	init_allpaths();
 
 	if (createroutetable() == -1){
-		printf("Phylink TTY: config file not found\n");
+		ts_printf(STDOUT_FILENO, "Phylink TTY: config file not found\n");
 		return 0;
 	}
-	printf("Phylink TTY: config table ready, %d records\n", maxpr);
+	ts_printf(STDOUT_FILENO, "Phylink TTY: config table ready, %d records\n", maxpr);
 
 // Init multififo
 	chldpid = mf_init(getpath2fifophy(),"phy_tty", rcvdata);
@@ -399,7 +399,7 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 		tv.tv_sec = 1;
 	    tv.tv_usec = 0;
 	    ret = select(maxdesc + 1, &rd_desc, NULL, &ex_desc, &tv);
-	    if (ret == -1) printf("Phylink TTY: select error:%d - %s\n",errno, strerror(errno));
+	    if (ret == -1) ts_printf(STDOUT_FILENO, "Phylink TTY: select error:%d - %s\n",errno, strerror(errno));
 	    else
 	    if (ret){
 	    	for (i=0; i<maxtdev; i++){
@@ -409,11 +409,11 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
 		    		// Read device
 		    		rdlen = read(td->desc, outbuf + sizeof(ep_data_header), 300 - sizeof(ep_data_header));
 
-		    		printf("Phylink TTY: Recv data from tty: ");
+		    		ts_printf(STDOUT_FILENO, "Phylink TTY: Recv data from tty: ");
 		    		for(j=0; j<rdlen; j++){
-		    			printf("0x%X ", outbuf[sizeof(ep_data_header) + j]);
+		    			ts_printf(STDOUT_FILENO, "0x%X ", outbuf[sizeof(ep_data_header) + j]);
 		    		}
-		    		printf("\n");
+		    		ts_printf(STDOUT_FILENO, "\n");
 
     				if (rdlen){
     					// Send to all endpoints connected to this device
@@ -421,13 +421,13 @@ char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 
     						pr = myprs[j];
     						if ((pr->state) && (pr->devindex == i)){ 	// connected and live
     							// send buffer to endpoint
-    							printf("Phylink TTY: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", td->desc, i, ret, rdlen);
+    							ts_printf(STDOUT_FILENO, "Phylink TTY: Reading desc = 0x%X, num = %d, ret = %d, rdlen = %d\n", td->desc, i, ret, rdlen);
     							// Send data frame to endpoint
     							edh = (ep_data_header*) outbuf;
     							edh->adr = pr->asdu;
     							edh->sys_msg = EP_USER_DATA;
     							edh->len = rdlen;
-    							printf("Phylink TTY: Send to ASDU num = %d\n", pr->asdu);
+    							ts_printf(STDOUT_FILENO, "Phylink TTY: Send to ASDU num = %d\n", pr->asdu);
     							mf_toendpoint(outbuf, rdlen + sizeof(ep_data_header), pr->asdu, DIRUP);
     						}
 		    			}

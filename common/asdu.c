@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "asdu.h"
+#include "ts_print.h"
 
 
 /*
@@ -167,9 +168,9 @@ uint16_t asdu_add_map_item(asdu_map **m_list, uint32_t proto_id, uint32_t base_i
 
 #ifdef _DEBUG
 	if(num_base == DEC_BASE)
-		printf("%s: New asdu_map added. proto_id = %d, base_id = %d, iec61850 = %s\n", app_name, new_map->proto_id, new_map->base_id, new_map->name);
+		ts_printf(STDOUT_FILENO, "%s: New asdu_map added. proto_id = %d, base_id = %d, iec61850 = %s\n", app_name, new_map->proto_id, new_map->base_id, new_map->name);
 	else
-		printf("%s: New asdu_map added. proto_id = 0x%X, base_id = %d, iec61850 = %s\n", app_name, new_map->proto_id, new_map->base_id, new_map->name);
+		ts_printf(STDOUT_FILENO, "%s: New asdu_map added. proto_id = 0x%X, base_id = %d, iec61850 = %s\n", app_name, new_map->proto_id, new_map->base_id, new_map->name);
 #endif
 
 	return RES_SUCCESS;
@@ -220,9 +221,9 @@ void asdu_map_ids(asdu_map **m_list, asdu *cur_asdu, const char *app_name, uint8
 		if(res_map)
 		{
 			if(num_base == DEC_BASE)
-				printf("%s: Identifier mapped. Address = %d, proto_id = %d, base_id = %d\n", app_name, cur_asdu->adr, res_map->proto_id, res_map->base_id);
+				ts_printf(STDOUT_FILENO, "%s: Identifier mapped. Address = %d, proto_id = %d, base_id = %d\n", app_name, cur_asdu->adr, res_map->proto_id, res_map->base_id);
 			else
-				printf("%s: Identifier mapped. Address = %d, proto_id = 0x%X, base_id = %d\n", app_name, cur_asdu->adr, res_map->proto_id, res_map->base_id);
+				ts_printf(STDOUT_FILENO, "%s: Identifier mapped. Address = %d, proto_id = 0x%X, base_id = %d\n", app_name, cur_asdu->adr, res_map->proto_id, res_map->base_id);
 		}
 #endif
 	}
