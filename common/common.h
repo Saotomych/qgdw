@@ -150,6 +150,7 @@ typedef struct _varevent{
 	time_t			time;
 	uint32_t		uid;
 	uint32_t		vallen;
+	uint32_t		validx;
 
 	union {
 		uint32_t	ui;					/* unsigned integer representation */

@@ -244,30 +244,35 @@ void main_switch(GR_EVENT *event){
 uint32_t setvarbyevent(varevent *ave){
 varrec *avr;
 char *pstr;
+value *actval;
+
+	ts_printf(STDOUT_FILENO, "HMI: varrec address = 0x%X\n", ave->uid);
+	ts_printf(STDOUT_FILENO, "HMI: varrec value index = %d\n", ave->validx);
 
 	if (ave){
 
 		avr = (varrec*) ave->uid;
+		actval = &avr->val[ave->validx];
 
 		switch(avr->val->idtype){
 		case QUALITY:
 		case INT32:
-			*((int32_t*) (avr->val->val)) = ave->value.i;
+			*((int32_t*) (actval->val)) = ave->value.i;
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get int value %d as %s\n", ave->value.i, avr->name->fc);
 			break;
 
 		case FLOAT32:
-			*((float*) (avr->val->val)) = ave->value.f;
+			*((float*) (actval->val)) = ave->value.f;
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get float value %.2F as %s\n", ave->value.f, avr->name->fc);
 			break;
 
 		case TIMESTAMP:
-			*((time_t*) (avr->val->val)) = (time_t) ave->value.i;
+			*((time_t*) (actval->val)) = (time_t) ave->value.i;
 			break;
 
 		case STRING:
 			pstr = (char*)((uint32_t) ave + ave->vallen);
-			strncpy((char*) (avr->val->val), pstr, ave->vallen);
+			strncpy((char*) (actval->val), pstr, ave->vallen);
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get string value %s as %s\n", (char*) (ave->value.i), avr->name->fc);
 			break;
 		}
@@ -277,14 +282,14 @@ char *pstr;
 	return 0;
 }
 
+
 varevent *get_nextvarevent(ep_data_header *edh, varevent *ave){
+int32_t len = (uint32_t) ave - (uint32_t) edh - edh->len - sizeof(ep_data_header) + sizeof(varevent);
 
-	if (ave->vallen) ave = (varevent*) ((uint32_t) ave + ave->vallen);
 	ave++;
+	if (len < 0) return ave;
 
-	if ( ((uint32_t) ave - (uint32_t) edh - sizeof(ep_data_header) - edh->len) <= 0) return NULL;
-
-	return ave;
+	return 0;
 }
 
 // -- Multififo receive data --

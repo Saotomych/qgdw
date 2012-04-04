@@ -408,12 +408,12 @@ ep_data_header *pdh = (ep_data_header*) buff;
 	return (char*) pdu;
 }
 
-char *add_header2hmi(char *buff, int len){
+char *add_header2hmi(char *buff){
 varevent *pve = (varevent*) (buff + sizeof(varevent));
 ep_data_header *pdh = (ep_data_header*) buff;
 
 	pdh->adr = IDHMI;
-	pdh->len = sizeof(varevent) * len;
+	pdh->len = 0;
 	pdh->sys_msg = EP_MSG_VAREVENT;
 
 	return (char*) pve;
@@ -506,11 +506,6 @@ asdu *pasdu = (asdu*) (edh + 1);
 
 		// Find varrec and set event
 		actvr = vc_getfirst_varrec();
-//		while(actvr){
-//			if (actvr->asdu != pasdu->adr){
-//				actvr = actvr->l.next;
-//				continue;
-//			}
 
 		while ((actvr) && (actvr->asdu != pasdu->adr)) actvr = actvr->l.next;
 		while ((actvr) && (actvr->asdu == (int) pasdu->adr)){
@@ -718,7 +713,11 @@ log_db *db;
 	else db = &consum_arch_db;
 
 //	(*get_vars)(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars);
-	ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
+	if (pname){
+		ts_printf(STDOUT_FILENO, "IEC61850: Call DB query: id=%d, name=%s, time=%d, interval=%d, len=%d\n",
+														avb->id, pname, tbgn, avb->intr, len);
+		ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
+	}else ret = 0;
 
 	if (ret <= 0){
 		ts_printf(STDOUT_FILENO, "IEC61850 Error: database query failed\n");
@@ -741,6 +740,7 @@ varevent *ave = *pve;
 	// Init varevent
 	ave->uid = avb->uid;
 	ave->time = actvr->time;
+	ave->validx = 0;
 
 //	ts_printf(STDOUT_FILENO, "IEC61850: Find value: %s = %f\n", actvr->val->name, *((float*) (actvr->val->val)));
 //	ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was find as %s  \n", actvr->id, actvr->name->fc);
@@ -798,6 +798,7 @@ varattach *avb;
 varevent *actve;
 char *pname, *p;
 uint32_t *uids;
+uint32_t i;
 
 	if (len) buff = malloc(len);
 
@@ -832,7 +833,7 @@ uint32_t *uids;
 			// Init of  buffers
 			pdu = (data_unit*) ((uint32_t) edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
 			pda = (asdu*) add_header2scada(senddm, edh);			// Outgoing asdu
-			pve = (varevent*) add_header2hmi(sendve, 1);			// Outgoing varevents, 1 as default
+			pve = (varevent*) add_header2hmi(sendve);			// Outgoing varevents
 			pdm = add_asdu((char*) pda, (asdu*)((uint32_t) edh + sizeof(ep_data_header)));
 			cntdm = 0; cntve = 0; cntdu = 0;
 
@@ -887,7 +888,7 @@ uint32_t *uids;
 				// Get varevent from journal by name
 				// pname view as JR:(first, length):<variable iecname>
 				offset = atoi(pname+1);
-				p = strstr(pname, ":");
+				p = strstr(pname, ",");
 				if (p) p++;
 				else break;
 				len = atoi(p);
@@ -898,9 +899,16 @@ uint32_t *uids;
 				len = get_logvarevent(p, offset, len, avb, &actve);
 				if (len){
 					// If log record not found then break attach process
-					ts_printf(STDOUT_FILENO, "IEC61850: attempt of taking journal data OK");
+					pve = actve;
+					for (i = 0; i < len; i++){
+						pve->uid = avb->uid;
+						pve->validx = i;
+						pve++;
+					}
+					ts_printf(STDOUT_FILENO, "IEC61850: %s journal data OK, attach to HMI. Set %d varevents.\n", pname, len);
+				}else{
+					ts_printf(STDOUT_FILENO, "IEC61850 error: %s journal data failed, attach to HMI\n", pname);
 				}
-				break;
 			}else{
 				// Get varevent by name
 				actve = malloc(sizeof(varevent));
@@ -920,11 +928,11 @@ uint32_t *uids;
 			// Create send buffer
 				sendve = malloc(sizeof(ep_data_header) + (sizeof(varevent) + actve->vallen) * len);
 				memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent) * len);
-				add_header2hmi(sendve, len);
+				add_header2hmi(sendve);
 			// TODO Add string value from journal
 //				if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
-				send_varevent2hmi((char*) sendve, len);	// Send 1 varevent to HMI
+				send_varevent2hmi((char*) sendve, len);	// Send varevents to HMI
 			}
 
 			free(sendve);
@@ -1152,11 +1160,11 @@ uint32_t id;
 					ts_sprintf(doname, "LN:%s", actdo->dobj.name);
 
 					vc_get_map_by_name(actdo->dobj.name, &id);
-					ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
+//					ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
 					if (id){
 						vr = vc_addvarrec(actln, doname, NULL);
 						vr->prop &= ~ATTACHING;
-						ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+//						ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
 					}
 				}else{
 					actda = actdo->dobj.pmytype->pfattr;
@@ -1166,11 +1174,11 @@ uint32_t id;
 							ts_sprintf(doname, "LN:%s.%s", actdo->dobj.name, actda->attr.name);
 
 							vc_get_map_by_name(actdo->dobj.name, &id);
-							ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
+//							ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
 							if (id){
 								vr = vc_addvarrec(actln, doname, NULL);
 								vr->prop &= ~ATTACHING;
-								ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+//								ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
 							}
 						}else{
 							actbda = actda->attr.pmyattrtype->pfbattr;
@@ -1181,11 +1189,11 @@ uint32_t id;
 									ts_sprintf(doname, "LN:%s.%s.%s", actdo->dobj.name, actda->attr.name, actbda->battr.name);
 
 									vc_get_map_by_name(actdo->dobj.name, &id);
-									ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
+//									ts_printf(STDOUT_FILENO, "IEC61850: id %d found\n", id);
 									if (id){
 										vr = vc_addvarrec(actln, doname, NULL);
 										vr->prop &= ~ATTACHING;
-										ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
+//										ts_printf(STDOUT_FILENO, "IEC61850: Add varrec %s - asdu=%d; id=%d; \n", doname, vr->asdu, vr->id);
 									}
 								}
 

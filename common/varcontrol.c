@@ -685,7 +685,7 @@ uint32_t len;
 			edh->numep = 0;
 			vb->lenname = strlen(varname);
 			vb->time = *t;
-			vb->id = vr->id;
+			vb->id = atoi(actln->ln.ldinst);
 			vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
 			vb->intr = intr;
 
