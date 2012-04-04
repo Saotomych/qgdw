@@ -650,7 +650,7 @@ varrec *prevvr;
 
 
 // Make attach to all remote variables of last menu
-void vc_attach_dataset(varrec *vr, time_t *t, LNODE *actln){
+void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln){
 ep_data_header *edh;
 varattach *vb;
 char *varname;
@@ -687,6 +687,7 @@ uint32_t len;
 			vb->time = *t;
 			vb->id = vr->id;
 			vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
+			vb->intr = intr;
 
 			// Send attach this varrec
 			if (len) mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
