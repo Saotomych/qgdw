@@ -408,12 +408,12 @@ ep_data_header *pdh = (ep_data_header*) buff;
 	return (char*) pdu;
 }
 
-char *add_header2hmi(char *buff){
+char *add_header2hmi(char *buff, int len){
 varevent *pve = (varevent*) (buff + sizeof(varevent));
 ep_data_header *pdh = (ep_data_header*) buff;
 
 	pdh->adr = IDHMI;
-	pdh->len = 0;
+	pdh->len = sizeof(varevent) * len;
 	pdh->sys_msg = EP_MSG_VAREVENT;
 
 	return (char*) pve;
@@ -598,7 +598,6 @@ uint32_t cnt;
 
 	eph->len = sizeof(varevent) * len;
 	eph->adr = IDHMI;
-
 
 	cnt = mf_toendpoint(sendbuf, eph->len + sizeof(ep_data_header), IDHMI, DIRUP);
 	if (cnt == -1) return 0;
@@ -833,7 +832,7 @@ uint32_t *uids;
 			// Init of  buffers
 			pdu = (data_unit*) ((uint32_t) edh + sizeof(ep_data_header) + sizeof(asdu));		// Income data_units
 			pda = (asdu*) add_header2scada(senddm, edh);			// Outgoing asdu
-			pve = (varevent*) add_header2hmi(sendve);				// Outgoing varevents
+			pve = (varevent*) add_header2hmi(sendve, 1);			// Outgoing varevents, 1 as default
 			pdm = add_asdu((char*) pda, (asdu*)((uint32_t) edh + sizeof(ep_data_header)));
 			cntdm = 0; cntve = 0; cntdu = 0;
 
@@ -896,8 +895,8 @@ uint32_t *uids;
 				if (p) p++;
 				else break;
 				actve = malloc(sizeof(varevent) * len);
-				len = 0;
-				if (get_logvarevent(p, offset, len, avb, &actve)){
+				len = get_logvarevent(p, offset, len, avb, &actve);
+				if (len){
 					// If log record not found then break attach process
 					ts_printf(STDOUT_FILENO, "IEC61850: attempt of taking journal data OK");
 				}
@@ -920,8 +919,8 @@ uint32_t *uids;
 			if (len){
 			// Create send buffer
 				sendve = malloc(sizeof(ep_data_header) + (sizeof(varevent) + actve->vallen) * len);
-				memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent));
-				add_header2hmi(sendve);
+				memcpy((char*) sendve + sizeof(ep_data_header), (char*) actve, sizeof(varevent) * len);
+				add_header2hmi(sendve, len);
 			// TODO Add string value from journal
 //				if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
