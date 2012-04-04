@@ -13,4 +13,4 @@ text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
 text 0 a a a Время/Актив/Реактив
 text 0 a a a &var:LN:PhVphsC.mag.f
-text 0 a a 64 &var:JR:(-2,4):TotW.mag.f
+text 0 a a 64 &var:JR:(-10,4):TotW.mag.f

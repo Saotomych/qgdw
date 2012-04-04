@@ -780,9 +780,12 @@ char *lstr = NULL;
 
 
 int rcvdata(int len){
+// Don't touch in user cases
 static uint32_t Transaction = 0;
 char *buff;
 int offset;
+
+// Vars for user cases
 ep_data_header *edh;
 char *senddm, *sendve;
 varevent *pve;
@@ -798,7 +801,7 @@ varattach *avb;
 varevent *actve;
 char *pname, *p;
 uint32_t *uids;
-uint32_t i;
+uint32_t i, x;
 
 	if (len) buff = malloc(len);
 
@@ -851,6 +854,7 @@ uint32_t i;
 			if (cntdm){
 				ts_printf(STDOUT_FILENO, "IEC61850: sent %d data_unit(s) to %d SCADA\n", cntdm, send_asdu2scada(senddm, cntdm));
 			}
+
 			if (cntve){
 				cntve = send_varevent2hmi(sendve, cntve);
 				if (cntve) ts_printf(STDOUT_FILENO, "IEC61850: sent to HMI %d varevent(s)\n", cntve);
@@ -884,23 +888,27 @@ uint32_t i;
 			ts_printf(STDOUT_FILENO, "IEC61850: set attach for value %s\n", pname);
 
 			// Detect LOG or ACTUAL variable
-			if (strstr(pname, "(")){
+			p = strchr(pname, '(');
+			if (p){
 				// Get varevent from journal by name
 				// pname view as JR:(first, length):<variable iecname>
-				offset = atoi(pname+1);
-				p = strstr(pname, ",");
-				if (p) p++;
-				else break;
-				len = atoi(p);
-				p = strstr(p, ":");
+				actve = NULL;
+				x = atoi(p + 1);
+				p = strchr(pname, ',');
+				if (p == NULL) break;
+				len = atoi(p + 1);
+				if (!len) break;
+				p = strchr(pname, ':');
 				if (p) p++;
 				else break;
 				actve = malloc(sizeof(varevent) * len);
-				len = get_logvarevent(p, offset, len, avb, &actve);
+				ts_printf(STDOUT_FILENO, "IEC61850: %d, %d\n", x, len);
+				len = get_logvarevent(p, x, len, avb, &actve);
 				if (len){
 					// If log record not found then break attach process
 					pve = actve;
 					for (i = 0; i < len; i++){
+						pve->vallen = 0;
 						pve->uid = avb->uid;
 						pve->validx = i;
 						pve++;
@@ -933,10 +941,10 @@ uint32_t i;
 //				if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
 				send_varevent2hmi((char*) sendve, len);	// Send varevents to HMI
+				free(sendve);
 			}
 
-			free(sendve);
-			free(actve);
+			if (actve) free(actve);
 
 			break;
 
