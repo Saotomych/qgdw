@@ -246,15 +246,15 @@ varrec *avr;
 char *pstr;
 value *actval;
 
-	ts_printf(STDOUT_FILENO, "HMI: varrec address = 0x%X\n", ave->uid);
-	ts_printf(STDOUT_FILENO, "HMI: varrec value index = %d\n", ave->validx);
+//	ts_printf(STDOUT_FILENO, "HMI: varrec address = 0x%X\n", ave->uid);
+//	ts_printf(STDOUT_FILENO, "HMI: varrec value index = %d\n", ave->validx);
 
 	if (ave){
 
 		avr = (varrec*) ave->uid;
 		actval = &avr->val[ave->validx];
 
-		switch(avr->val->idtype){
+		switch(actval->idtype){
 		case QUALITY:
 		case INT32:
 			*((int32_t*) (actval->val)) = ave->value.i;
@@ -306,7 +306,7 @@ varevent *ave;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
-	ts_printf(STDOUT_FILENO, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+	ts_printf(STDOUT_FILENO, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, fullrdlen, dir == DIRDN? "from down" : "from up");
 
 	// set offset to zero before loop
 	offset = 0;
@@ -331,14 +331,14 @@ varevent *ave;
 				ave = get_nextvarevent(edh, ave);
 			}while(ave);
 
-			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
+//			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
 
 			break;
 		}
 
 		// move over the data
-		offset += sizeof(ep_data_header);
-		offset += edh->len;
+		// move over the data
+		offset += sizeof(ep_data_header) + edh->len;
 	}
 
 	free(buff);

@@ -409,7 +409,7 @@ ep_data_header *pdh = (ep_data_header*) buff;
 }
 
 char *add_header2hmi(char *buff){
-varevent *pve = (varevent*) (buff + sizeof(varevent));
+varevent *pve = (varevent*) (buff + sizeof(ep_data_header));
 ep_data_header *pdh = (ep_data_header*) buff;
 
 	pdh->adr = IDHMI;
@@ -542,8 +542,8 @@ asdu *pasdu = (asdu*) (edh + 1);
 					pve->time = actvr->time;
 					pve->vallen = 0;
 					pve->uid = actvr->uid;
+					pve->validx = 0;
 					(*ppve)++; 	// Next varevent
-//					ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable id %d was send to HMI \n", actvr->id);
 					return 1;
 				}
 //				return 0;
@@ -593,7 +593,6 @@ uint32_t cnt;
 
 	eph->len = sizeof(varevent) * len;
 	eph->adr = IDHMI;
-
 	cnt = mf_toendpoint(sendbuf, eph->len + sizeof(ep_data_header), IDHMI, DIRUP);
 	if (cnt == -1) return 0;
 
@@ -829,7 +828,6 @@ uint32_t i, x;
 
 			// Making up Buffer for send to SCADA_ASDU.
 			// It has data objects having mapping only
-			ts_printf(STDOUT_FILENO, "IEC61850: fullrdlen=%d\n", fullrdlen);
 			senddm = malloc(fullrdlen);
 			sendve = malloc(fullrdlen);
 
@@ -856,8 +854,12 @@ uint32_t i, x;
 			}
 
 			if (cntve){
+
+				pve = (varevent*) (sendve + sizeof(ep_data_header));
+				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable's uid 0x%X[%d] was send to HMI \n", pve->uid, pve->validx);
+
 				cntve = send_varevent2hmi(sendve, cntve);
-				if (cntve) ts_printf(STDOUT_FILENO, "IEC61850: sent to HMI %d varevent(s)\n", cntve);
+				if (cntve) ts_printf(STDOUT_FILENO, "IEC61850: sent %d varevent(s) to HMI\n", cntve);
 				else ts_printf(STDOUT_FILENO, "IEC61850 error: MF channel to HMI closed\n");
 			}
 			ts_printf(STDOUT_FILENO, "\n");
@@ -892,6 +894,7 @@ uint32_t i, x;
 			if (p){
 				// Get varevent from journal by name
 				// pname view as JR:(first, length):<variable iecname>
+				len = 0;
 				actve = NULL;
 				x = atoi(p + 1);
 				p = strchr(pname, ',');
@@ -902,13 +905,17 @@ uint32_t i, x;
 				if (p) p++;
 				else break;
 				actve = malloc(sizeof(varevent) * len);
-				ts_printf(STDOUT_FILENO, "IEC61850: %d, %d\n", x, len);
 				len = get_logvarevent(p, x, len, avb, &actve);
 				if (len){
 					// If log record not found then break attach process
 					pve = actve;
 					for (i = 0; i < len; i++){
+
+						// Fake data for debugging
 						pve->vallen = 0;
+						pve->value.f = 12.34 + i;
+
+						// Needed init
 						pve->uid = avb->uid;
 						pve->validx = i;
 						pve++;
@@ -940,7 +947,7 @@ uint32_t i, x;
 			// TODO Add string value from journal
 //				if (actve->vallen) memcpy((char*) sendve + sizeof(ep_data_header) + sizeof(varevent),
 //									          get_logstring(pname), actve->vallen);
-				send_varevent2hmi((char*) sendve, len);	// Send varevents to HMI
+				send_varevent2hmi(sendve, len);	// Send varevents to HMI
 				free(sendve);
 			}
 
