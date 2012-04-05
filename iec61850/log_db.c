@@ -24,15 +24,15 @@
 #define	LOG_DB_APP_EVENT		"app_event_log"
 #define	LOG_DB_EXPORT			"export_log"
 
-#define DB_LOG_SYNC_PERIOD				600			// 10 minutes
-#define DB_LOG_LOAD_PROFILE_ADD			60			// 1 minute
-#define DB_LOG_LOAD_PROFILE_EXPORT		86400		// 24 hours
-#define DB_LOG_LOAD_PROFILE_DEEP		86400		// 24 hours
-#define DB_LOG_CONSUM_ARCH_ADD			1800		// 30 minutes
-#define DB_LOG_CONSUM_ARCH_EXPORT		86400		// 24 hours
-#define DB_LOG_CONSUM_ARCH_DEEP			15552000 	// 180 days
-#define DB_LOG_EVENT_EXPORT				86400		// 24 hours
-#define DB_LOG_EVENT_DEEP				10368000 	// 120 days
+#define LOG_DB_SYNC_PERIOD				600			// 10 minutes
+#define LOG_DB_LOAD_PROFILE_ADD			60			// 1 minute
+#define LOG_DB_LOAD_PROFILE_EXPORT		86400		// 24 hours
+#define LOG_DB_LOAD_PROFILE_DEEP		86400		// 24 hours
+#define LOG_DB_CONSUM_ARCH_ADD			1800		// 30 minutes
+#define LOG_DB_CONSUM_ARCH_EXPORT		86400		// 24 hours
+#define LOG_DB_CONSUM_ARCH_DEEP			15552000 	// 180 days
+#define LOG_DB_EVENT_EXPORT				86400		// 24 hours
+#define LOG_DB_EVENT_DEEP				10368000 	// 120 days
 
 
 static DB_ENV *db_env = NULL;
@@ -45,7 +45,7 @@ log_db app_event_db;
 
 static log_db *actdb = NULL;
 
-static time_t db_sync_period = DB_LOG_SYNC_PERIOD;
+static time_t db_sync_period = LOG_DB_SYNC_PERIOD;
 static time_t db_sync_timer = 0;
 
 static pthread_mutex_t db_log_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -71,7 +71,7 @@ extern int get_dobj_idx(char *dobj_name);
 void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec);
 int	log_db_get_vars(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars);
 void log_db_add_event(log_db *db_req, uint32_t adr, char *msg, int len);
-int log_db_get_event(log_db *db_req, uint32_t adr, time_t *rec_time, char **msg, int *len);
+int log_db_get_events(log_db *db_req, uint32_t adr, time_t st_time, time_t end_time, log_event **events);
 
 
 int log_db_get_fld_idx(log_db *db_req, const char *var_name)
@@ -323,51 +323,51 @@ void log_db_config_read(const char *file_name)
 {
 	load_profile_db.flds_list = NULL;
 	load_profile_db.flds_num = 0;
-	load_profile_db.add_period = DB_LOG_LOAD_PROFILE_ADD;
+	load_profile_db.add_period = LOG_DB_LOAD_PROFILE_ADD;
 	load_profile_db.add_timer = 0;
-	load_profile_db.export_period = DB_LOG_LOAD_PROFILE_EXPORT;
+	load_profile_db.export_period = LOG_DB_LOAD_PROFILE_EXPORT;
 	load_profile_db.export_timer = 0;
-	load_profile_db.storage_deep = DB_LOG_LOAD_PROFILE_DEEP;
+	load_profile_db.storage_deep = LOG_DB_LOAD_PROFILE_DEEP;
 	load_profile_db.add_var_rec = log_db_add_var_rec;
 	load_profile_db.get_vars = log_db_get_vars;
-	load_profile_db.add_event = log_db_add_event;
-	load_profile_db.get_event = log_db_get_event;
+	load_profile_db.add_event = NULL;
+	load_profile_db.get_events = NULL;
 
 	consum_arch_db.flds_list = NULL;
 	consum_arch_db.flds_num = 0;
-	consum_arch_db.add_period = DB_LOG_CONSUM_ARCH_ADD;
+	consum_arch_db.add_period = LOG_DB_CONSUM_ARCH_ADD;
 	consum_arch_db.add_timer = 0;
-	consum_arch_db.export_period = DB_LOG_CONSUM_ARCH_EXPORT;
+	consum_arch_db.export_period = LOG_DB_CONSUM_ARCH_EXPORT;
 	consum_arch_db.export_timer = 0;
-	consum_arch_db.storage_deep = DB_LOG_CONSUM_ARCH_DEEP;
+	consum_arch_db.storage_deep = LOG_DB_CONSUM_ARCH_DEEP;
 	consum_arch_db.add_var_rec = log_db_add_var_rec;
 	consum_arch_db.get_vars = log_db_get_vars;
-	consum_arch_db.add_event = log_db_add_event;
-	consum_arch_db.get_event = log_db_get_event;
+	consum_arch_db.add_event = NULL;
+	consum_arch_db.get_events = NULL;
 
 	dev_event_db.flds_list = NULL;
 	dev_event_db.flds_num = 0;
 	dev_event_db.add_period = 0;
 	dev_event_db.add_timer = 0;
-	dev_event_db.export_period = DB_LOG_EVENT_EXPORT;
+	dev_event_db.export_period = LOG_DB_EVENT_EXPORT;
 	dev_event_db.export_timer = 0;
-	dev_event_db.storage_deep = DB_LOG_EVENT_DEEP;
-	dev_event_db.add_var_rec = log_db_add_var_rec;
-	dev_event_db.get_vars = log_db_get_vars;
+	dev_event_db.storage_deep = LOG_DB_EVENT_DEEP;
+	dev_event_db.add_var_rec = NULL;
+	dev_event_db.get_vars = NULL;
 	dev_event_db.add_event = log_db_add_event;
-	dev_event_db.get_event = log_db_get_event;
+	dev_event_db.get_events = log_db_get_events;
 
 	app_event_db.flds_list = NULL;
 	app_event_db.flds_num = 0;
 	app_event_db.add_period = 0;
 	app_event_db.add_timer = 0;
-	app_event_db.export_period = DB_LOG_EVENT_EXPORT;
+	app_event_db.export_period = LOG_DB_EVENT_EXPORT;
 	app_event_db.export_timer = 0;
-	app_event_db.storage_deep = DB_LOG_EVENT_DEEP;
-	app_event_db.add_var_rec = log_db_add_var_rec;
-	app_event_db.get_vars = log_db_get_vars;
+	app_event_db.storage_deep = LOG_DB_EVENT_DEEP;
+	app_event_db.add_var_rec = NULL;
+	app_event_db.get_vars = NULL;
 	app_event_db.add_event = log_db_add_event;
-	app_event_db.get_event = log_db_get_event;
+	app_event_db.get_events = log_db_get_events;
 
 	log_db_config_build(file_name);
 }
@@ -964,15 +964,18 @@ int	log_db_get_vars(log_db *db_req, uint32_t adr, char *var_name, time_t log_tim
 }
 
 
-int log_db_get_event(log_db *db_req, uint32_t adr, time_t *log_time, char **msg, int *len)
+int log_db_get_events(log_db *db_req, uint32_t adr, time_t st_time, time_t end_time, log_event **events)
 {
 	DBT key, data;
 	DBC *cursor = NULL;
-	uint32_t *rec_adr;
+	uint32_t rec_adr;
 	time_t rec_time;
-	int ret;
+	log_event *event_new = NULL;
+	int ret, rec_num = 0;
 
-	if(!db_env || !db_req || !db_req->db || db_req->flds_num != 0 || !log_time || !msg || !len) return -1;
+	if(!db_env || !db_req || !db_req->db || db_req->flds_num != 0 || !events) return -1;
+
+	*events = NULL;
 
     ret = db_req->db->cursor(db_req->db, NULL, &cursor, 0);
 
@@ -989,33 +992,33 @@ int log_db_get_event(log_db *db_req, uint32_t adr, time_t *log_time, char **msg,
 	pthread_mutex_lock(&db_log_mtx);
 
 	// go through log records in the loop
-	while((ret = cursor->c_get(cursor, &key, &data, DB_NEXT)) == 0)
+	while((ret = cursor->c_get(cursor, &key, &data, DB_NEXT)) == 0 && rec_time < end_time)
     {
-		*log_time = ntohl( *((uint32_t*)key.data) );
-
 		rec_time = ntohl( *((uint32_t*)key.data) );
 
-		rec_adr = (uint32_t*)data.data;
+		rec_adr = ntohl( *((uint32_t*)data.data) );
 
-		if(*rec_adr == adr && rec_time >= *log_time) break;
+		if(rec_time < st_time || rec_adr != adr) continue;
+
+		event_new = (log_event*) realloc((void*) *events, sizeof(log_event) * (rec_num + 1));
+
+		if(event_new)
+		{
+			*events = event_new;
+			(*events)[rec_num].event_msg = (char*) malloc(data.size - sizeof(uint32_t));
+
+			(*events)[rec_num].event_adr = rec_adr;
+			(*events)[rec_num].event_time = rec_time;
+			memcpy((void*) (*events)[rec_num].event_msg, (void*) ((char*)data.data+sizeof(uint32_t)), data.size - sizeof(uint32_t));
+
+			rec_num++;
+		}
     }
-
-	if(ret == 0)
-	{
-		*log_time = rec_time;
-		*msg = (char*) malloc(data.size - sizeof(uint32_t));
-		memcpy((void*) *msg, (void*) ((char*)data.data+sizeof(uint32_t)), data.size - sizeof(uint32_t));
-		*len = data.size - sizeof(uint32_t);
-	}
-	else
-	{
-		ret = -1;
-	}
 
 	pthread_mutex_unlock(&db_log_mtx);
 
 	cursor->c_close(cursor);
 	cursor = NULL;
 
-	return ret;
+	return rec_num;
 }
