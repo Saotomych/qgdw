@@ -143,12 +143,14 @@ typedef struct _varattach{
 	uint32_t		id;
 	uint32_t		type;
 	uint32_t		lenname;
+	uint32_t		intr;
 } __attribute__ ((packed)) varattach;
 
 typedef struct _varevent{
 	time_t			time;
 	uint32_t		uid;
 	uint32_t		vallen;
+	uint32_t		validx;
 
 	union {
 		uint32_t	ui;					/* unsigned integer representation */

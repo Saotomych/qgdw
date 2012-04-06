@@ -18,7 +18,6 @@ extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
 extern int intervals[];
-extern char lnclasses[][5];
 
 static struct _mons{
 	char *meng;
@@ -51,25 +50,25 @@ static char *days[7] = {
 
 //char menutxt[8192];
 
-// Menu of LNODES
+// Menu of LDEVICES
 char* ChangeLN(char *arg){
 char *txtmenu = arg;
 char *pmenu = arg;
 LNODE *pln = (LNODE*) actlnode;
 int x, y = 0;
-char *lnodefilter = (char*) pln->ln.lnclass;
+char *lnodefilter = "MMXU";
 
 	pln = (LNODE*) fln.next; x = 0;
-	ts_sprintf(pmenu, "main 16 33 128 126\n");
+	ts_sprintf(pmenu, "main 4 33 155 126\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys enter:setlnbyclass\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
 	pmenu += strlen(pmenu);
-	y += MENUSTEP; x = MENUSTEP;
+	y += MENUSTEP; x = 4;
 	while(pln){
 		if (!strcmp(pln->ln.lnclass, lnodefilter)){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+			ts_sprintf(pmenu, "menu %d %d a a Адр: %s Тип: %s\n", x, y, pln->ln.ldinst, pln->ln.prefix);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}
@@ -85,45 +84,63 @@ char *lnodefilter = (char*) pln->ln.lnclass;
 char* ChangeLNType(char *arg){
 char *txtmenu = arg;
 char *pmenu = arg;
+char *ptxt;
 LNODE *pln = (LNODE*) actlnode;
-int x, y = 0;
+int x, y = 0, inst;
 
-	pln = (LNODE*) fln.next; x = 2;
-	ts_sprintf(pmenu, "main 16 15 128 145\n");
+	pln = actlnode; x = 2;
+	ts_sprintf(pmenu, "main 4 48 155 111\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys enter:setlnbytype\n");
 	pmenu += strlen(pmenu);
-	ts_sprintf(pmenu, "text %d %d a a Выбор устройства\n", x, y);
+	ts_sprintf(pmenu, "text %d %d a a Выбор меню\n", x, y);
 	pmenu += strlen(pmenu);
-	y += MENUSTEP; x = MENUSTEP;
-	while(pln){
-		if (!strcmp(pln->ln.lnclass, lnclasses[0])){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+	y += MENUSTEP; x = 4;
+
+	// Find LLN0
+
+	inst = atoi(pln->ln.ldinst);
+	while ((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+	// Make text menu
+	while ((pln) && (inst == atoi(pln->ln.ldinst))){
+		ptxt = get_textbylnclass(pln->ln.lnclass);
+		if (ptxt){
+			ts_sprintf(pmenu, "menu %d %d a a %s\n", x, y, ptxt);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
 		}
 		pln = pln->l.next;
 	}
 
-	pln = (LNODE*) fln.next;
-	while(pln){
-		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			pmenu += strlen(pmenu);
-			y += MENUSTEP;
-		}
-		pln = pln->l.next;
-	}
-
-	pln = (LNODE*) fln.next;
-	while(pln){
-		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
-			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			pmenu += strlen(pmenu);
-			y += MENUSTEP;
-		}
-		pln = pln->l.next;
-	}
+//	while(pln){
+//		if (!strcmp(pln->ln.lnclass, lntxts[0].ln)){
+//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+//			pmenu += strlen(pmenu);
+//			y += MENUSTEP;
+//		}
+//		pln = pln->l.next;
+//	}
+//
+//	pln = (LNODE*) fln.next;
+//	while(pln){
+//		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
+//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+//			pmenu += strlen(pmenu);
+//			y += MENUSTEP;
+//		}
+//		pln = pln->l.next;
+//	}
+//
+//	pln = (LNODE*) fln.next;
+//	while(pln){
+//		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
+//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
+//			pmenu += strlen(pmenu);
+//			y += MENUSTEP;
+//		}
+//		pln = pln->l.next;
+//	}
 
 	*pmenu = 0;
 

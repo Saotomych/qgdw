@@ -16,6 +16,10 @@
 #include "../common/paths.h"
 #include "menu.h"
 
+extern struct _lntxt{
+	char ln[5];
+	char lntext[50];
+} lntxts[];
 
 LNODE *actlnode;			// Global variable, change in menu only
 tarif *acttarif;			// Global variable, change in menu only
@@ -28,6 +32,11 @@ int intervals[] = {1,5,10,15,20,30,60};
 int *pinterval = intervals;		// Time Interval for view journal records
 int *ptarifid = NULL;
 char *ptarifname = NULL;
+char *pdevtype = NULL;
+char *pdevaddr = NULL;
+char *pdevport = NULL;
+char *pdevstat = NULL;
+char *pdevcode = NULL;
 
 static struct tm mtime_tm;	// Time for convert of time_l
 static struct tm jtime_tm;	// Time for convert of time_l
@@ -47,7 +56,7 @@ static menu *num_menu;     //указатель на структуру меню
 static char tmpstring[100];			// For temporary operations
 static char *devtypetext;		// Text of device type
 
-static char lnmenunames[3][64];
+static char lnmenunames[10][64];
 
 static value menuvalues[] = {
 		// Time variables
@@ -68,11 +77,17 @@ static value menuvalues[] = {
 		{0, "APP:jmin", 	&(jtime_tm.tm_min), "XX", 		INT32DIG2,	STRING},
 		{0, "APP:jsec", 	&(jtime_tm.tm_sec), "XX", 		INT32DIG2,	STRING},
 		// IEC variables
-		{0, "APP:ldtypetext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
+		{0, "APP:lnclasstext", &devtypetext,  	"Тип не выбран", PTRSTRING , STRING},
 		{0, "APP:interval", &pinterval, "нет", PTRINT32, STRING},
 		// Tarif variables
 		{0, "APP:tarifid", &ptarifid, "-", PTRINT32, STRING},
 		{0, "APP:tarifname", &ptarifname, "все тарифы", PTRSTRING, STRING},
+		// String variables
+		{0, "APP:devicetype", &pdevtype, "SCADA", PTRSTRING, STRING},
+		{0, "APP:deviceaddr", &pdevaddr, "не найден", PTRSTRING, STRING},
+		{0, "APP:deviceport", &pdevport, "не найден", PTRSTRING, STRING},
+		{0, "APP:devicestat", &pdevstat, "оффлайн", PTRSTRING, STRING},
+		{0, "APP:devicecode", &pdevcode, "нет", PTRSTRING, STRING},
 };
 
 //------------------------------------------------------------------------------------
@@ -84,6 +99,7 @@ GR_WINDOW_ID *main_window = &(pitem->main_window);
 GR_WINDOW_INFO winfo;
 int len = sizeof(wintext) - 1;
 int idtype;
+int i;
 
 			GrGetWindowInfo(*main_window, &winfo);
 
@@ -93,7 +109,6 @@ int idtype;
 			GrSetGCForeground(gc, bg);
 			GrFillRect(*main_window, gc, 0, 0, winfo.width, winfo.height);
 			GrSetGCForeground(gc, fg);
-
 			GrSetGCFont(gc, num_menu->font);
 
 			if (pitem->vr) {
@@ -101,57 +116,59 @@ int idtype;
 				wintext[0] = 0;
 				wintext[1] = 0;
 
-				idtype = pitem->vr->val->idtype;
+				for(i=0; i < pitem->vr->maxval; i++){
 
-				if (idtype & FLOAT32){
-					ts_sprintf(wintext, "%s%09.2F%s", pitem->text, *((float*) (pitem->vr->val->val)), pitem->endtext);
-				}
+					idtype = pitem->vr->val[i].idtype;
 
-				if (idtype & INT32){
-					ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
-				}
-
-				if (idtype & PTRINT32){
-					if (*((int*) (pitem->vr->val->val))){
-						ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val->val))), pitem->endtext);
-					}else ts_sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val->defval, pitem->endtext);
-				}
-
-				if (idtype & INT32DIG2){
-					ts_sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val->val)), pitem->endtext);
-				}
-
-				if (idtype & INT64){
-					ts_sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val->val)), pitem->endtext);
-				}
-
-				if (idtype & STRING){
-					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
-					len -= strlen(wintext);
-					if ((pitem->vr) && (pitem->vr->val)){
-						if (pitem->vr->val->val) strncat(wintext, (char*) pitem->vr->val->val, len);
-						else if (pitem->vr->val->defval) strncat(wintext, (char*) pitem->vr->val->defval, len);
+					if (idtype & FLOAT32){
+						ts_sprintf(wintext, "%s%9.2f%s", pitem->text, *((float*) (pitem->vr->val[i].val)), pitem->endtext);
 					}
-					len = sizeof(wintext) - 1 - strlen(wintext);
-					if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
-					wintext[sizeof(wintext) - 1] = 0;
-				}
 
-				if (idtype & PTRSTRING){
-					strncpy(wintext, pitem->text, sizeof(wintext) - 1);
-					len -= strlen(wintext);
-					if ((pitem->vr) && (pitem->vr->val)){
-						if ((pitem->vr->val->val) && (*((int*) pitem->vr->val->val)))
-							strncat(wintext, (char*) *((int*) pitem->vr->val->val), len);
-						else if (pitem->vr->val->defval) strncat(wintext, (char*) pitem->vr->val->defval, len);
+					if (idtype & INT32){
+						ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val[i].val)), pitem->endtext);
 					}
-					len = sizeof(wintext) - 1 - strlen(wintext);
-					if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
-					wintext[sizeof(wintext) - 1] = 0;
+
+					if (idtype & PTRINT32){
+						if (*((int*) (pitem->vr->val[i].val))){
+							ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val[i].val))), pitem->endtext);
+						}else ts_sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val[i].defval, pitem->endtext);
+					}
+
+					if (idtype & INT32DIG2){
+						ts_sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val[i].val)), pitem->endtext);
+					}
+
+					if (idtype & INT64){
+						ts_sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val[i].val)), pitem->endtext);
+					}
+
+					if (idtype & STRING){
+						strncpy(wintext, pitem->text, sizeof(wintext) - 1);
+						len -= strlen(wintext);
+						if ((pitem->vr) && (&pitem->vr->val[i])){
+							if (pitem->vr->val[i].val) strncat(wintext, (char*) pitem->vr->val[i].val, len);
+							else if (pitem->vr->val[i].defval) strncat(wintext, (char*) pitem->vr->val[i].defval, len);
+						}
+						len = sizeof(wintext) - 1 - strlen(wintext);
+						if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
+						wintext[sizeof(wintext) - 1] = 0;
+					}
+
+					if (idtype & PTRSTRING){
+						strncpy(wintext, pitem->text, sizeof(wintext) - 1);
+						len -= strlen(wintext);
+						if ((pitem->vr) && (&pitem->vr->val[i])){
+							if ((pitem->vr->val[i].val) && (*((int*) pitem->vr->val[i].val)))
+								strncat(wintext, (char*) *((int*) pitem->vr->val[i].val), len);
+							else if (pitem->vr->val[i].defval) strncat(wintext, (char*) pitem->vr->val[i].defval, len);
+						}
+						len = sizeof(wintext) - 1 - strlen(wintext);
+						if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
+						wintext[sizeof(wintext) - 1] = 0;
+					}
+
+					GrText(*main_window, gc, 2, MENUSTEP * i, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
 				}
-
-				GrText(*main_window, gc, 2, 0, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);
-
 			}else GrText(*main_window, gc, 2, 0, pitem->text, strlen(pitem->text), GR_TFUTF8|GR_TFTOP);
 
 			GrDestroyGC(gc);
@@ -173,7 +190,6 @@ static void draw_menu()
 			GR_WINDOW_ID *main_window;
 			GR_WINDOW_INFO winfo;
 			GR_WM_PROPERTIES props;
-
 
 			num_menu->main_window = GrNewWindow(GR_ROOT_WINDOW_ID,
 												num_menu->rect.x,
@@ -276,19 +292,22 @@ int stepy, y, itemy, itemh;
 // Keys functions
 
 void default_left(GR_EVENT *event){
-int ret;
+int ret, num_item;
 struct tm *ttm;
 
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
-
+		num_item = num_menu->num_item;
 		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
 				num_menu = create_menu(lnmenunames[idlnmenuname]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
 			}
-			if (num_menu) draw_menu();
+			if (num_menu){
+				num_menu->num_item = num_item;
+				draw_menu();
+			}
 		}
 
 		if (ret == REDRAWTIMEJOUR){
@@ -314,19 +333,22 @@ struct tm *ttm;
 }
 
 void default_right(GR_EVENT *event){
-int ret;
+int ret, num_item;
 struct tm *ttm;
 
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
-
+		num_item = num_menu->num_item;
 		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
 				num_menu = create_menu(lnmenunames[idlnmenuname]);
 				call_action(NODIRECT, num_menu);		// Refresh variables
 			}
-			if (num_menu) draw_menu();
+			if (num_menu){
+				num_menu->num_item = num_item;
+				draw_menu();
+			}
 		}
 
 		if (ret == REDRAWTIMEJOUR){
@@ -398,6 +420,7 @@ int itemy, itemh, i;
 		if (ttm->tm_mon) ttm->tm_mon--;
 		else { ttm->tm_mon = 11; ttm->tm_year--;}
 		tmptime = mktime(ttm);
+		call_epiloque(num_menu);
 		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 		default_enter(NULL);
 	}else{
@@ -434,6 +457,7 @@ int itemy, itemh, i;
 		if (ttm->tm_mon < 11) ttm->tm_mon++;
 		else { ttm->tm_mon = 0; ttm->tm_year++;}
 		tmptime = mktime(ttm);
+		call_epiloque(num_menu);
 		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 		default_enter(NULL);
 	}else{
@@ -510,6 +534,7 @@ int itemy, itemh, i;
 void date_enter(GR_EVENT *event){
 struct tm *ttm;
 
+	call_epiloque(num_menu);
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 
 	ttm	= localtime(&jourtime);
@@ -573,6 +598,7 @@ char *pdig = num_menu->pitems[num_menu->num_item]->text;
 void time_enter(GR_EVENT *event){
 struct tm *ttm;
 
+	call_epiloque(num_menu);
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 
 	ttm	= localtime(&jourtime);
@@ -589,14 +615,21 @@ struct tm *ttm;
 }
 
 void setlnbytype(GR_EVENT *event){
-LNODE *pln = (LNODE*) fln.next;
+LNODE *pln = actlnode;
 char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
+	itemtext = get_lnclassbytext(itemtext);
+
+	// Find LLN0
+	while((pln) && (pln->ln.lnclass)) pln=pln->l.prev;
+
+
 	while(pln){
-		ts_sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-		if (!strcmp(itemtext, tmpstring)){
-			actlnode = pln;
-			break;
+		if (pln->ln.lnclass){
+			if (!strcmp(itemtext, pln->ln.lnclass)){
+				actlnode = pln;
+				break;
+			}
 		}
 		pln = pln->l.next;
 	}
@@ -615,15 +648,13 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
 void setlnbyclass(GR_EVENT *event){
 LNODE *pln = (LNODE*) fln.next;
-char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
+char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text + 8;
+int adr = atoi(itemtext);	// LD address
 
 	while(pln){
-		if (!strcmp(pln->ln.lnclass, actlnode->ln.lnclass)){
-			ts_sprintf(tmpstring, "%s.%s.%s%s",pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-			if (!strcmp(itemtext, tmpstring)){
+		if (atoi(pln->ln.ldinst) == adr){
 				actlnode = pln;
 				break;
-			}
 		}
 		pln = pln->l.next;
 	}
@@ -631,7 +662,13 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 	// Return to previous menu
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	// Refresh menu by new values
-	call_action(NODIRECT, num_menu);		// Refresh variables
+	call_action(NODIRECT, num_menu);		// Refresh variables for set right main menu
+	num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
+	if (!num_menu){
+		num_menu = create_menu(lnmenunames[idlnmenuname]);
+		call_action(NODIRECT, num_menu);		// Refresh variables for set all vars
+	}
+	if (num_menu) draw_menu();
 }
 
 void setinterval(GR_EVENT *event){
@@ -734,6 +771,7 @@ void key_rised(void *arg)
 //int init_menu(fact *factsetting, int len)
 int init_menu(){
 struct tm *ttm;
+int i, z;
 
 	if (!fln.next) return 1;
 
@@ -749,12 +787,10 @@ struct tm *ttm;
 	m_mon = mtime_tm.tm_mon + 1;
 
 	// Init base menu names
-	strcpy(lnmenunames[0], getpath2menu());
-	strcat(lnmenunames[0], "itemti");
-	strcpy(lnmenunames[1], getpath2menu());
-	strcat(lnmenunames[1], "itemts");
-	strcpy(lnmenunames[2], getpath2menu());
-	strcat(lnmenunames[2], "itemtu");
+	z = get_quanoftypes();
+	for (i=0; i < z; i++){
+		ts_sprintf(lnmenunames[i], "%s/item%s", getpath2menu(), lntxts[i].ln);
+	}
 
 	// First actual LNODE init
 	actlnode = (LNODE*) fln.next;					// Try set first LLN0
@@ -766,10 +802,10 @@ struct tm *ttm;
 	acttarif->id = 0;
 
 	// Set first actual LN
-	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
-	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
-	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
-	if (!actlnode) exit(1);
+//	actlnode = setdef_lnode(0, num_menu);					// Try set Telemetering / MMXU
+//	if (!actlnode) actlnode = setdef_lnode(1, num_menu);	// Try set Telesignal
+//	if (!actlnode) actlnode = setdef_lnode(2, num_menu);	// Try set Telecontrol
+//	if (!actlnode) exit(1);
 
 	// Open first menu
 	num_menu = create_menu(lnmenunames[0]);

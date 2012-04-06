@@ -1,0 +1,14 @@
+main 0 0 160 160
+text 20 0 a a Устройство
+text 2 16 77 a Адр: &var:LD:inst~changeld>lnmenu
+text 80 16 80 a Тип: &var:APP:devicetype
+menu 2 32 a a Напряжения средние (B)
+menu 0 48 80 a Время учета >interval~chinterval
+text 90 48 80 a &var:APP:interval
+text 110 48 60 a минут
+text 2 a a a А: &var:LN:AvVoltsA.mag.f
+text 2 a a a В: &var:LN:AvVoltsB.mag.f
+text 2 a a a С: &var:LN:AvVoltsC.mag.f
+text 2 a a a АB: &var:LN:AvVoltsAB.mag.f
+text 2 a a a ВC: &var:LN:AvVoltsBC.mag.f
+text 2 a a a СA: &var:LN:AvVoltsAC.mag.f

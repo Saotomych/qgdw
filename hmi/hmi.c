@@ -22,7 +22,7 @@
 #define FGCOLOR BLACK
 #define BGCOLOR	WHITE
 
-static LIST fldextinfo = {NULL, NULL};
+LIST fldextinfo = {NULL, NULL};
 static ldextinfo *actldei = (ldextinfo *) &fldextinfo;
 
 int fkeyb = 0;
@@ -61,12 +61,18 @@ value defvalues[] = {
 		{25, "APP:jmin", NULL, NULL, 0, 0},
 		{26, "APP:jsec", NULL, NULL, 0, 0},
 		// IEC variables
-		{27, "APP:ldtypetext", NULL, NULL, 0 ,0},
+		{27, "APP:lnclasstext", NULL, NULL, 0 ,0},
 		// Filter variables
 		{28, "APP:interval", NULL, NULL, 0 ,0},
 		// Tarif variables
 		{29, "APP:tarifid", NULL, "-", 0, STRING},
 		{30, "APP:tarifname", NULL, "не выбран", 0, STRING},
+		// String variables
+		{31, "APP:devicetype", NULL, NULL, 0, 0},
+		{32, "APP:deviceaddr", NULL, NULL, 0, 0},
+		{33, "APP:deviceport", NULL, NULL, 0, 0},
+		{34, "APP:devicestat", NULL, NULL, 0, 0},
+		{35, "APP:devicecode", NULL, NULL, 0, 0},
 		{0, NULL, NULL, NULL, 0, 0},
 };
 
@@ -238,30 +244,35 @@ void main_switch(GR_EVENT *event){
 uint32_t setvarbyevent(varevent *ave){
 varrec *avr;
 char *pstr;
+value *actval;
+
+//	ts_printf(STDOUT_FILENO, "HMI: varrec address = 0x%X\n", ave->uid);
+//	ts_printf(STDOUT_FILENO, "HMI: varrec value index = %d\n", ave->validx);
 
 	if (ave){
 
 		avr = (varrec*) ave->uid;
+		actval = &avr->val[ave->validx];
 
-		switch(avr->val->idtype){
+		switch(actval->idtype){
 		case QUALITY:
 		case INT32:
-			*((int32_t*) (avr->val->val)) = ave->value.i;
+			*((int32_t*) (actval->val)) = ave->value.i;
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get int value %d as %s\n", ave->value.i, avr->name->fc);
 			break;
 
 		case FLOAT32:
-			*((float*) (avr->val->val)) = ave->value.f;
+			*((float*) (actval->val)) = ave->value.f;
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get float value %.2F as %s\n", ave->value.f, avr->name->fc);
 			break;
 
 		case TIMESTAMP:
-			*((time_t*) (avr->val->val)) = (time_t) ave->value.i;
+			*((time_t*) (actval->val)) = (time_t) ave->value.i;
 			break;
 
 		case STRING:
 			pstr = (char*)((uint32_t) ave + ave->vallen);
-			strncpy((char*) (avr->val->val), pstr, ave->vallen);
+			strncpy((char*) (actval->val), pstr, ave->vallen);
 //			ts_printf(STDOUT_FILENO, "HMI!!!: get string value %s as %s\n", (char*) (ave->value.i), avr->name->fc);
 			break;
 		}
@@ -271,14 +282,14 @@ char *pstr;
 	return 0;
 }
 
+
 varevent *get_nextvarevent(ep_data_header *edh, varevent *ave){
+int32_t len = (uint32_t) ave - (uint32_t) edh - edh->len - sizeof(ep_data_header) + sizeof(varevent);
 
-	if (ave->vallen) ave = (varevent*) ((uint32_t) ave + ave->vallen);
 	ave++;
+	if (len < 0) return ave;
 
-	if ( ((uint32_t) ave - (uint32_t) edh - sizeof(ep_data_header) - edh->len) <= 0) return NULL;
-
-	return ave;
+	return 0;
 }
 
 // -- Multififo receive data --
@@ -295,25 +306,24 @@ varevent *ave;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
-	ts_printf(STDOUT_FILENO, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+	ts_printf(STDOUT_FILENO, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, fullrdlen, dir == DIRDN? "from down" : "from up");
 
 	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < fullrdlen){
-		if(fullrdlen - offset < sizeof(ep_data_header)){
+		if ((fullrdlen - offset) < sizeof(ep_data_header)){
 			ts_printf(STDOUT_FILENO, "HMI: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
 		}
 
-		edh = (struct ep_data_header *) (buff + offset);				// set start structure
+		edh = (ep_data_header *) (buff + offset);				// set start structure
 
 		// Incoming data will be working
 		switch(edh->sys_msg){
 
 		case EP_MSG_VAREVENT:
-			edh = (ep_data_header*) (buff + offset);
 			ave = (varevent*)((char*) edh + sizeof(ep_data_header));
 
 			do{
@@ -321,14 +331,14 @@ varevent *ave;
 				ave = get_nextvarevent(edh, ave);
 			}while(ave);
 
-			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
+//			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
 
 			break;
 		}
 
 		// move over the data
-		offset += sizeof(ep_data_header);
-		offset += edh->len;
+		// move over the data
+		offset += sizeof(ep_data_header) + edh->len;
 	}
 
 	free(buff);
@@ -444,7 +454,7 @@ pid_t chldpid;
 
 	// Multififo init
 	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);
-//	// Set endpoint for datasets
+	// Set endpoint for datasets
 	mf_newendpoint(IDHMI, "startiec", getpath2fifomain(), 0);
 
 	//---*** Init visual control ***---//

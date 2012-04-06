@@ -1,0 +1,11 @@
+main 0 0 160 160
+text 20 0 a a Устройство
+text 2 16 77 a Адр: &var:LD:inst~changeld>lnmenu
+text 80 16 80 a Тип: &var:APP:devicetype
+menu 2 40 a a Токи средние (A)
+menu 0 56 80 a Время учета >interval~chinterval
+text 90 56 80 a &var:APP:interval
+text 110 56 60 a минут
+text 2 a a a А: &var:LN:AvAmpsA.mag.f
+text 2 a a a В: &var:LN:AvAmpsB.mag.f
+text 2 a a a С: &var:LN:AvAmpsC.mag.f

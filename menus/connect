@@ -1,27 +1,17 @@
-text 0 0 a a Параметры &var:LD:desc
-text 0 a a a LN:&var:LN:prefix
-menu a a a a Мощность активная
-text a a a a Фаза А: 145 Вт
-text a a a a Фаза B: 150 Вт
-text a a a a Фаза С: 1250 Вт
-menu a a a a Мощность реактивная
-text a a a a Фаза А: 1 Вт
-text a a a a Фаза B: 0 Вт
-text a a a a Фаза С: 3 Вт
-menu a a a a Мощность полная
-text a a a a Фаза А: 150 Вт
-text a a a a Фаза B: 150 Вт
-text a a a a Фаза С: 1251 Вт
-menu a a a a Энергия активная
-text a a a a Фаза А: 145000 кВт/ч
-text a a a a Фаза B: 150000 кВт/ч
-text a a a a Фаза С: 1250000 кВт/ч
-menu a a a a Энергия реактивная
-text a a a a Фаза А: 1 кВт/ч
-text a a a a Фаза B: 0 кВт/ч
-text a a a a Фаза С: 3 кВт/ч
-menu a a a a Энергия полная
-text a a a a Фаза А: 1500000 кВт/ч
-text a a a a Фаза B: 150000 кВт/ч
-text a a a a Фаза С: 1251 кВт/ч
-menu a a a a Частота сети - 50 Гц
+main 0 0 160 160
+text 0 0 a a Присоединение
+text 0 16 77 a Адр: &var:LD:inst
+text 80 16 80 a Тип: &var:APP:devicetype
+menu a a a a Мощность активная (Вт)
+text a a a a Фаза А: &var:LN:WphsA.mag.f
+text a a a a Фаза B: &var:LN:WphsB.mag.f
+text a a a a Фаза С: &var:LN:WphsC.mag.f
+menu a a a a Мощность реакт. (вар)
+text a a a a Фаза А: &var:LN:VArphsA.mag.f
+text a a a a Фаза B: &var:LN:VArphsB.mag.f
+text a a a a Фаза С: &var:LN:VArphsC.mag.f
+menu a a a a Мощность полная (ВА)
+text a a a a Фаза А: &var:LN:VAphsA.mag.f
+text a a a a Фаза B: &var:LN:VAphsB.mag.f
+text a a a a Фаза С: &var:LN:VAphsC.mag.f
+menu a a a a Частота сети (Гц): &var:LN:Hz.mag.i

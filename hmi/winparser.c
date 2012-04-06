@@ -17,6 +17,7 @@ static int maxmenus = 0;
 
 extern LNODE *actlnode;
 extern time_t jourtime;
+extern int *pinterval;
 
 //------------------------------------------------------------------------------------
 // Definition for function keys
@@ -351,7 +352,7 @@ menu *num_menu = allmenus[maxmenus];
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
 
-   	 		 vc_attach_dataset(num_menu->fvarrec, &jourtime, actlnode);
+   	 		 vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode);
 
    	 	 	 return num_menu;
 }
@@ -371,8 +372,6 @@ menu* num_menu;
 	if (actmenu != num_menu){
 		exit(2);
 	}
-
-	call_epiloque(actmenu);
 
 	if (num_menu->fvarrec){
 		vc_unattach_dataset(num_menu->fvarrec, actlnode);
