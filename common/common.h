@@ -79,7 +79,7 @@
 #define EP_MSG_NEWEP			0xF1	/* !internal multififo message! - down2up */
 #define EP_MSG_EPRDY			0xF2	/* !internal multififo message! - down2up */
 
-#define DOBJ_NAMESIZE			sizeof(int) * 8
+#define DOBJ_NAMESIZE			sizeof(int) * 4
 
 #define IEC104_CHLENGHT			400
 #define APP_NAME_LEN			sizeof(int) * 8
