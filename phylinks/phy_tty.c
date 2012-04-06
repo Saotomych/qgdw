@@ -373,6 +373,7 @@ struct timeval tv;	// for sockets select
 char outbuf[300] = {0xFE, 0xFE, 0x68, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x68, 0x13, 0x00, 0xDF, 0x16};
 
 	init_allpaths();
+	mf_semadelete(getpath2fifomain(), "phy_tty");
 
 	if (createroutetable() == -1){
 		ts_printf(STDOUT_FILENO, "Phylink TTY: config file not found\n");

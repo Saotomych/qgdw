@@ -371,6 +371,7 @@ fd_set ex_socks;
 int maxdesc;
 
 	init_allpaths();
+	mf_semadelete(getpath2fifomain(), "phy_tcp");
 
 	if (createroutetable() == -1){
 		ts_printf(STDOUT_FILENO, "Phylink TCP/IP: Config file not found\n");
