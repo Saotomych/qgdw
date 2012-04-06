@@ -18,8 +18,6 @@ extern time_t maintime;		// Actual Time
 extern time_t jourtime;		// Time for journal setting
 extern time_t tmptime;		// Time for journal setting
 extern int intervals[];
-extern char lnclasses[][5];
-extern LIST fldextinfo;
 
 static struct _mons{
 	char *meng;

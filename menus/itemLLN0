@@ -1,4 +1,9 @@
 main 0 0 160 160
 text 40 0 a a УСПД M-700
+text 2 16 a a &var:IED:desc
+menu 2 32 77 a Адр: &var:LD:inst~changeld>lnmenu
+text 80 32 80 a Тип: &var:APP:devicetype
+menu 8 54 142 a &var:APP:lnclasstext~changetypeln>lntypemenu
 menu 2 74 a a 1. Системный журнал >journal
 menu 2 a a a 2. Системные параметры >parameters
+text 0 a a a var: &var:LN:PhVphsC.mag.f

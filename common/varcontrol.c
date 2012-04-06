@@ -13,7 +13,6 @@
 #include "paths.h"
 #include "ts_print.h"
 
-static int varrec_number;	// Argument counter for actual attaching
 static LIST fvarrec;
 static varrec *lastvr;
 
