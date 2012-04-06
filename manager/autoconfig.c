@@ -6,6 +6,7 @@
  */
 
 #include "../common/paths.h"
+#include "../common/ts_print.h"
 #include "autoconfig.h"
 #include "icdxml.h"
 
@@ -48,7 +49,7 @@ void catch_alarm(int sig)
 		// stop request timer
 		timer_recv = 0;
 #ifdef _DEBUG
-		printf("Config Manager: Timer req went off.\n");
+		ts_printf(STDOUT_FILENO, "Config Manager: Timer req went off.\n");
 #endif
 	}
 
@@ -63,7 +64,7 @@ int createllforiec104(LOWREC *lr, char* scfg){
 	int ret;
 
 	// Form lowlevel string
-	ret = sprintf(scfg, "%d -addr %s -name \"unitlink-iec104.phy_tcp.%d\" -port %s -sync 300 -wack %d\n", lr->asdu, inet_ntoa(lr->sai.sin_addr), lr->sai.sin_port, lr->host_type == HOST_MASTER?"CONNECT":"LISTEN", lr->host_type == HOST_MASTER?1:1);
+	ret = ts_sprintf(scfg, "%d -addr %s -name \"unitlink-iec104.phy_tcp.%d\" -port %s -sync 300 -wack %d\n", lr->asdu, inet_ntoa(lr->sai.sin_addr), lr->sai.sin_port, lr->host_type == HOST_MASTER?"CONNECT":"LISTEN", lr->host_type == HOST_MASTER?1:1);
 
 	return ret;
 }
@@ -73,7 +74,7 @@ int createllforiec101(LOWREC *lr, char* scfg){
 	int ret;
 
 	// Form lowlevel string
-	ret = sprintf(scfg, "%d -addr %llu -name \"unitlink-iec101.phy_tty.ttyS3\" -port %d,8E1,NO -sync 300\n", lr->asdu, lr->link_adr, lr->setspeed);
+	ret = ts_sprintf(scfg, "%d -addr %llu -name \"unitlink-iec101.phy_tty.ttyS3\" -port %d,8E1,NO -sync 300\n", lr->asdu, lr->link_adr, lr->setspeed);
 
 	return ret;
 }
@@ -83,7 +84,7 @@ int createllfordlt645(LOWREC *lr, char* scfg){
 	int ret;
 
 	// Form lowlevel string
-	ret = sprintf(scfg, "%d -addr %12llu -name \"unitlink-dlt645.phy_tty.ttyS3\" -port %d,8E1,NO -sync 300\n", lr->asdu, lr->link_adr, lr->setspeed);
+	ret = ts_sprintf(scfg, "%d -addr %12llu -name \"unitlink-dlt645.phy_tty.ttyS3\" -port %d,8E1,NO -sync 300\n", lr->asdu, lr->link_adr, lr->setspeed);
 
 	return ret;
 }
@@ -93,7 +94,7 @@ int createllformx00(LOWREC *lr, char* scfg){
 	int ret;
 
 	// Form lowlevel string
-	ret = sprintf(scfg, "%d -addr %llu -name \"unitlink-m700.phy_tty.ttyS4\" -port %d,8E1,NO -sync 300\n", lr->asdu, lr->link_adr, lr->setspeed);
+	ret = ts_sprintf(scfg, "%d -addr %llu -name \"unitlink-m700.phy_tty.ttyS4\" -port %d,8E1,NO -sync 300\n", lr->asdu, lr->link_adr, lr->setspeed);
 
 	return ret;
 }
@@ -141,7 +142,7 @@ struct stat fst;
 	}
 	else
 	{
-		printf("Config Manager: Addr.cfg file cannot opened\n");
+		ts_printf(STDOUT_FILENO, "Config Manager: Addr.cfg file cannot opened\n");
 	}
 
 	return ret;
@@ -161,7 +162,7 @@ int recv_data(int len)
 	len = mf_readbuffer(buff, len, &adr, &dir);
 
 #ifdef _DEBUG
-	printf("Config Manager: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN ? "DIRUP" : "DIRDN");
+	ts_printf(STDOUT_FILENO, "Config Manager: Data received. Address = %d, Length = %d, Direction = %s.\n", adr, len, dir == DIRDN ? "DIRUP" : "DIRDN");
 #endif
 
 	offset = 0;
@@ -171,7 +172,7 @@ int recv_data(int len)
 		if(len - offset < sizeof(ep_data_header))
 		{
 #ifdef _DEBUG
-			printf("Config Manager: ERROR - Looks like ep_data_header missed.\n");
+			ts_printf(STDOUT_FILENO, "Config Manager: ERROR - Looks like ep_data_header missed.\n");
 #endif
 
 			free(buff);
@@ -182,13 +183,13 @@ int recv_data(int len)
 		offset += sizeof(ep_data_header);
 
 #ifdef _DEBUG
-		printf("Config Manager: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
+		ts_printf(STDOUT_FILENO, "Config Manager: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
 #endif
 
 		if(len - offset < ep_header_in->len)
 		{
 #ifdef _DEBUG
-			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", sizeof(ep_data_header) + ep_header_in->len, len - offset);
+			ts_printf(STDOUT_FILENO, "%s: ERROR - Expected data length %d bytes, received %d bytes.\n", sizeof(ep_data_header) + ep_header_in->len, len - offset);
 #endif
 
 			free(buff);
@@ -198,7 +199,7 @@ int recv_data(int len)
 		if(ep_header_in->sys_msg == EP_MSG_DEV_ONLINE)
 		{
 #ifdef _DEBUG
-			printf("Config Manager: System message EP_MSG_DEV_ONLINE received. Address = %d, Length = %d\n", ep_header_in->adr, ep_header_in->len);
+			ts_printf(STDOUT_FILENO, "Config Manager: System message EP_MSG_DEV_ONLINE received. Address = %d, Length = %d\n", ep_header_in->adr, ep_header_in->len);
 #endif
 
 			for(i=0; i<maxrec; i++)
@@ -208,7 +209,7 @@ int recv_data(int len)
 					lrs[i]->connect = 1;
 
 #ifdef _DEBUG
-					printf("Config Manager: Device is Online. Address = %d\n", ep_header_in->adr);
+					ts_printf(STDOUT_FILENO, "Config Manager: Device is Online. Address = %d\n", ep_header_in->adr);
 #endif
 					break;
 				}
@@ -537,7 +538,7 @@ char *fname;
 
 	if(!strstr(Addrfile, "</Hardware>"))
 	{
-		printf("Config Manager: ADDR file is incomplete\n");
+		ts_printf(STDOUT_FILENO, "Config Manager: ADDR file is incomplete\n");
 		exit(1);
 	}
 
@@ -551,7 +552,7 @@ char *fname;
 	// Create lowrecord structures
 	XMLSelectSource(Addrfile);
 
-	printf("Config Manager: low records = %d\n", maxrec);
+	ts_printf(STDOUT_FILENO, "Config Manager: low records = %d\n", maxrec);
 
 	signal(SIGALRM, catch_alarm);
 	alarm(alarm_t);
@@ -570,12 +571,12 @@ char *fname;
 
 		if(!fdesc) break;
 
-		printf("Config Manager: Begin testing connections for %s devices\n", unitlink_list[scen]);
+		ts_printf(STDOUT_FILENO, "Config Manager: Begin testing connections for %s devices\n", unitlink_list[scen]);
 
 		// test connection for different scenarios one by one
 		scenfunc[scen](fdesc);
 
-		printf("Config Manager: Testing connections for %s devices ended\n", unitlink_list[scen]);
+		ts_printf(STDOUT_FILENO, "Config Manager: Testing connections for %s devices ended\n", unitlink_list[scen]);
 
 		// set speed index to zero after each test
 		speed_idx = 0;
@@ -583,7 +584,7 @@ char *fname;
 
 	// write lowlevel.cfg and ieclevel.icd files
 
-	printf("Config Manager: Writing of lowlevel.cfg file started...\n");
+	ts_printf(STDOUT_FILENO, "Config Manager: Writing of lowlevel.cfg file started...\n");
 
 	fdesc = fopen(llevelfile, "w");
 
@@ -597,11 +598,11 @@ char *fname;
 
 	fclose(fdesc);
 
-	printf("Config Manager: Writing of ieclevel.icd file started...\n");
+	ts_printf(STDOUT_FILENO, "Config Manager: Writing of ieclevel.icd file started...\n");
 
 	icd_full(icdfile);
 
-	printf("Config Manager: Creating of configuration files finished\n");
+	ts_printf(STDOUT_FILENO, "Config Manager: Creating of configuration files finished\n");
 
 	mf_exit();
 

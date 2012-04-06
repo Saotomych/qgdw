@@ -58,13 +58,15 @@ int main(int argc, char *argv[])
 	res = asdu_map_read(&map_list, fname, APP_NAME, DEC_BASE);
 	free(fname);
 
+	if(res != RES_SUCCESS) exit(1);
+
 	chldpid = mf_init(getpath2fifoul(), APP_NAME, iec104_recv_data);
 
 	signal(SIGALRM, iec104_catch_alarm);
 	alarm(alarm_t);
 
 #ifdef _DEBUG
-		printf("%s: Waiting for end-point initialization end event...\n", APP_NAME);
+	ts_printf(STDOUT_FILENO, "%s: Waiting for end-point initialization end event...\n", APP_NAME);
 #endif
 
 	do
@@ -81,7 +83,7 @@ int main(int argc, char *argv[])
 		{
 			// start forward endpoint
 #ifdef _DEBUG
-			printf("%s: Forward endpoint DIRDN\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, "%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
 
 			mf_newendpoint(eih->addr, CHILD_APP_NAME, getpath2fifophy(), 1);
@@ -89,12 +91,12 @@ int main(int argc, char *argv[])
 			iec104_sys_msg_send(EP_MSG_CONNECT, eih->addr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, eih->addr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, eih->addr);
 #endif
 		}
 
 #ifdef _DEBUG
-		if(ret == 2) printf("%s: mf_waitevent timeout\n", APP_NAME);
+		if(ret == 2) ts_printf(STDOUT_FILENO, "%s: mf_waitevent timeout\n", APP_NAME);
 #endif
 	}while(!appexit);
 
@@ -165,7 +167,7 @@ uint16_t iec104_config_read(const char *file_name)
 
 				ep_num++;
 #ifdef _DEBUG
-				printf("%s: New ep_ext added. Address = %d.\n", APP_NAME, ep_ext->adr);
+				ts_printf(STDOUT_FILENO, "%s: New ep_ext added. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 		}
@@ -198,7 +200,7 @@ void iec104_catch_alarm(int sig)
 			if(ep_exts[i]->timer_t0 > 0 && difftime(cur_time, ep_exts[i]->timer_t0) >= t_t0)
 			{
 #ifdef _DEBUG
-				printf("%s: Timer t0 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				ts_printf(STDOUT_FILENO, "%s: Timer t0 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 				// stop timer
 				ep_exts[i]->timer_t0 = 0;
@@ -209,7 +211,7 @@ void iec104_catch_alarm(int sig)
 			if(ep_exts[i]->timer_t1 > 0 && difftime(cur_time, ep_exts[i]->timer_t1) >= t_t1)
 			{
 #ifdef _DEBUG
-				printf("%s: Timer t1 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				ts_printf(STDOUT_FILENO, "%s: Timer t1 went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 				// stop timer
 				ep_exts[i]->timer_t1 = 0;
@@ -235,7 +237,7 @@ void iec104_catch_alarm(int sig)
 			if(ep_exts[i]->timer_rc > 0 && difftime(cur_time, ep_exts[i]->timer_rc) >= t_rc)
 			{
 #ifdef _DEBUG
-				printf("%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				ts_printf(STDOUT_FILENO, "%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 				// stop timer
 				ep_exts[i]->timer_rc = 0;
@@ -260,7 +262,7 @@ uint16_t iec104_reconnect(iec104_ep_ext *ep_ext)
 	if(res == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		printf("%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
 		// re-initialize end-point
 		iec104_init_ep_ext(ep_ext);
@@ -334,7 +336,7 @@ void iec104_init_ep_ext(iec104_ep_ext* ep_ext)
 	ep_ext->timer_t0 = ep_ext->timer_t1 = ep_ext->timer_t2 = ep_ext->timer_t3 = ep_ext->timer_sync = ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
-	printf("%s: ep_ext (re)initialized. Address = %d.\n", APP_NAME, ep_ext->adr);
+	ts_printf(STDOUT_FILENO, "%s: ep_ext (re)initialized. Address = %d.\n", APP_NAME, ep_ext->adr);
 #endif
 }
 
@@ -350,7 +352,7 @@ uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 	if(!res_map)
 	{
 #ifdef _DEBUG
-		printf("%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
+		ts_printf(STDOUT_FILENO, "%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
 #endif
 
 		return RES_INCORRECT;
@@ -359,7 +361,7 @@ uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 	if(iec104_get_dobj_item(ep_ext, res_map->proto_id) == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		printf("%s: DOBJ already exists. Address = %d, iec104_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+		ts_printf(STDOUT_FILENO, "%s: DOBJ already exists. Address = %d, iec104_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
 #endif
 		return RES_SUCCESS;
 	}
@@ -374,7 +376,7 @@ uint16_t iec104_add_dobj_item(iec104_ep_ext* ep_ext, uint32_t dobj_id, unsigned 
 	ep_ext->data_ids_size++;
 
 #ifdef _DEBUG
-	printf("%s: New DOBJ was added. Address = %d, iec104_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
+	ts_printf(STDOUT_FILENO, "%s: New DOBJ was added. Address = %d, iec104_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, ep_ext->data_ids[ep_ext->data_ids_size-1], dobj_name);
 #endif
 
 	return RES_SUCCESS;
@@ -410,7 +412,7 @@ int iec104_recv_data(int len)
 	if(len <= 0)
 	{
 #ifdef _DEBUG
-		printf("%s: ERROR - Data received with Length = %d! Something went wrong!\n", APP_NAME, len);
+		ts_printf(STDOUT_FILENO, "%s: ERROR - Data received with Length = %d! Something went wrong!\n", APP_NAME, len);
 #endif
 
 		free(buff);
@@ -418,7 +420,7 @@ int iec104_recv_data(int len)
 	}
 
 #ifdef _DEBUG
-	printf("%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
+	ts_printf(STDOUT_FILENO, "%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN? "DIRUP" : "DIRDN");
 #endif
 
 	offset = 0;
@@ -428,7 +430,7 @@ int iec104_recv_data(int len)
 		if(len - offset < sizeof(ep_data_header))
 		{
 #ifdef _DEBUG
-			printf("%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, "%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
 #endif
 
 			free(buff);
@@ -439,13 +441,13 @@ int iec104_recv_data(int len)
 		offset += sizeof(ep_data_header);
 
 #ifdef _DEBUG
-		printf("%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
+		ts_printf(STDOUT_FILENO, "%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
 #endif
 
 		if(ep_header_in->len < 0 || len - offset < ep_header_in->len)
 		{
 #ifdef _DEBUG
-			printf("%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, ep_header_in->len, len - offset);
+			ts_printf(STDOUT_FILENO, "%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, ep_header_in->len, len - offset);
 #endif
 
 			free(buff);
@@ -458,14 +460,14 @@ int iec104_recv_data(int len)
 			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-				printf("%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, "%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 				iec104_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
 			}
 			else
 			{
 #ifdef _DEBUG
-				printf("%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, "%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
@@ -477,7 +479,7 @@ int iec104_recv_data(int len)
 			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-				printf("%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, "%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				iec104_frame_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
@@ -485,7 +487,7 @@ int iec104_recv_data(int len)
 			else
 			{
 #ifdef _DEBUG
-				printf("%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, "%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				iec104_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
@@ -553,7 +555,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_TEST_CONN:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			break;
@@ -563,7 +565,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d.\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d.\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr);
 #endif
 
 			iec104_add_dobj_item(ep_ext, fr_do->id, (unsigned char*)fr_do->name);
@@ -572,7 +574,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		case EP_MSG_DCOLL_START:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			if(ep_ext->host_type == IEC_HOST_MASTER)
@@ -584,7 +586,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			if(ep_ext->host_type == IEC_HOST_MASTER)
@@ -598,7 +600,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		case EP_MSG_QUIT:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT received.\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_QUIT received.\n", APP_NAME);
 #endif
 
 			// initiate data transfer stop from all connected devices
@@ -615,7 +617,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 			iec104_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
 #endif
 
 			// wait until child app is quit
@@ -632,7 +634,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		default:
 #ifdef _DEBUG
-			printf("%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
 #endif
 
 			break;
@@ -644,7 +646,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 		{
 		case EP_MSG_CONNECT_ACK:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			iec104_log_msg_send(ep_ext->adr, "Connection established");
 
@@ -670,7 +672,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		case EP_MSG_CONNECT_NACK:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			iec104_log_msg_send(ep_ext->adr, "Connection failed");
 
@@ -683,7 +685,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		case EP_MSG_CONNECT_LOST:
 #ifdef _DEBUG
-			printf("%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			iec104_log_msg_send(ep_ext->adr, "Connection lost");
 
@@ -696,7 +698,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 		default:
 #ifdef _DEBUG
-			printf("%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
 #endif
 
 			break;
@@ -705,6 +707,7 @@ uint16_t iec104_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsign
 
 	return RES_SUCCESS;
 }
+
 
 uint16_t iec104_log_msg_send(uint16_t adr, char *msg)
 {
@@ -721,10 +724,10 @@ uint16_t iec104_log_msg_send(uint16_t adr, char *msg)
 		buf_len = ts_sprintf(buf, "%s", msg) + 1;
 		res = iec104_sys_msg_send(EP_MSG_LOG_DEV_EVENT, adr, DIRUP, (unsigned char *)buf, buf_len);
 	}
-	else
+	else if(ep_exts[0])
 	{
 		buf_len = ts_sprintf(buf, "%s: %s", APP_NAME, msg) + 1;
-		res = iec104_sys_msg_send(EP_MSG_LOG_APP_EVENT, adr, DIRUP, (unsigned char *)buf, buf_len);
+		res = iec104_sys_msg_send(EP_MSG_LOG_APP_EVENT, ep_exts[0]->adr, DIRUP, (unsigned char *)buf, buf_len);
 	}
 
 	free(buf);
@@ -775,7 +778,7 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 
 #ifdef _DEBUG
-			if(res == RES_SUCCESS) printf("%s: Time synchronization command sent. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
+			if(res == RES_SUCCESS) ts_printf(STDOUT_FILENO, "%s: Time synchronization command sent. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
 #endif
 		}
 		else
@@ -793,7 +796,7 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext)
 {
 #ifdef _DEBUG
-	printf("%s: Time synchronization command received. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
+	ts_printf(STDOUT_FILENO, "%s: Time synchronization command received. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
 #endif
 
 	int res;
@@ -803,7 +806,7 @@ uint16_t iec104_time_sync_recv(asdu *iec_asdu, iec104_ep_ext* ep_ext)
 	res = settimeofday(&tv, NULL);
 
 #ifdef _DEBUG
-	printf("%s: Time synchronization with IEC_HOST_MASTER %s. Address = %d.\n", APP_NAME, res?"failed":"succeeded", ep_ext->adr);
+	ts_printf(STDOUT_FILENO, "%s: Time synchronization with IEC_HOST_MASTER %s. Address = %d.\n", APP_NAME, res?"failed":"succeeded", ep_ext->adr);
 #endif
 
 	if(res == 0)
@@ -849,7 +852,7 @@ uint16_t iec104_comm_inter_send(iec104_ep_ext *ep_ext)
 			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 
 #ifdef _DEBUG
-			if(res == RES_SUCCESS) printf("%s: Common interrogation command sent. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
+			if(res == RES_SUCCESS) ts_printf(STDOUT_FILENO, "%s: Common interrogation command sent. Address = %d, COT = %s.\n", APP_NAME, ep_ext->adr, iec_asdu->fnc == COT_Act?"COT_Act":"COT_ActCon");
 #endif
 		}
 		else
@@ -997,22 +1000,22 @@ uint16_t iec104_frame_u_send(uint8_t u_cmd, iec104_ep_ext *ep_ext, uint8_t dir)
 		switch(u_cmd)
 		{
 		case APCI_U_STARTDT_ACT:
-			printf("%s: U-Format frame sent STARTDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: U-Format frame sent STARTDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_STARTDT_CON:
-			printf("%s: U-Format frame sent STARTDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: U-Format frame sent STARTDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_STOPDT_ACT:
-			printf("%s: U-Format frame sent STOPDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: U-Format frame sent STOPDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_STOPDT_CON:
-			printf("%s: U-Format frame sent STOPDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: U-Format frame sent STOPDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_TESTFR_ACT:
-			printf("%s: U-Format frame sent TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: U-Format frame sent TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		case APCI_U_TESTFR_CON:
-			printf("%s: U-Format frame sent TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: U-Format frame sent TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
 			break;
 		}
 	}
@@ -1032,7 +1035,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 	{
 	case APCI_U_STARTDT_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STARTDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. STARTDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
@@ -1056,7 +1059,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STARTDT_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STARTDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. STARTDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
@@ -1078,7 +1081,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STOPDT_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STOPDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. STOPDT (act). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_MASTER) return RES_SUCCESS;
@@ -1093,7 +1096,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_STOPDT_CON:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. STOPDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. STOPDT (con). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		if(ep_ext->host_type == IEC_HOST_SLAVE) return RES_SUCCESS;
@@ -1103,7 +1106,7 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 
 	case APCI_U_TESTFR_ACT:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. TESTFR (act). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		iec104_frame_u_send(APCI_U_TESTFR_CON, ep_ext, DIRDN);
@@ -1115,14 +1118,14 @@ uint16_t iec104_frame_u_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 		ep_ext->timer_t1 = 0;
 
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. TESTFR (con). Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		break;
 
 	default:
 #ifdef _DEBUG
-		printf("%s: U-Format frame received. ERROR - Unknown command. Address = %d\n", APP_NAME, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: U-Format frame received. ERROR - Unknown command. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 		return RES_INCORRECT;
@@ -1138,7 +1141,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
 #ifdef _DEBUG
-		printf("%s: S-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = 0x%02X\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
+		ts_printf(STDOUT_FILENO, "%s: S-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = 0x%02X\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
 #endif
 		return RES_INCORRECT;
 	}
@@ -1165,7 +1168,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 		ep_ext->timer_t2 = time(NULL);
 
 #ifdef _DEBUG
-		printf("%s: S-Format frame sent (N(R) = %d). Address = %d\n", APP_NAME, ep_ext->vr, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, "%s: S-Format frame sent (N(R) = %d). Address = %d\n", APP_NAME, ep_ext->vr, ep_ext->adr);
 #endif
 	}
 
@@ -1178,7 +1181,7 @@ uint16_t iec104_frame_s_send(iec104_ep_ext *ep_ext, uint8_t dir)
 uint16_t iec104_frame_s_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-	printf("%s: S-Format frame received (N(R) = %d). Address = %d\n", APP_NAME, a_fr->recv_num, ep_ext->adr);
+	ts_printf(STDOUT_FILENO, "%s: S-Format frame received (N(R) = %d). Address = %d\n", APP_NAME, a_fr->recv_num, ep_ext->adr);
 #endif
 
 	if(iec104_frame_check_recv_num(ep_ext, a_fr->recv_num) == RES_SUCCESS)
@@ -1203,7 +1206,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 	if(ep_ext->host_type == IEC_HOST_SLAVE && ep_ext->u_cmd != APCI_U_STARTDT_CON)
 	{
 #ifdef _DEBUG
-		printf("%s: I-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = 0x%02X\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
+		ts_printf(STDOUT_FILENO, "%s: I-Format frame sending rejected, TX is not ready. Address = %d, u_cmd = 0x%02X\n", APP_NAME, ep_ext->adr, ep_ext->u_cmd);
 #endif
 		return RES_INCORRECT;
 	}
@@ -1235,7 +1238,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 		else
 		{
 #ifdef _DEBUG
-			printf("%s: I-Format frame send rejected, limit of unconfirmed sent frames is reached. Address = %d, k = %d\n", APP_NAME, ep_ext->adr, (ep_ext->vs - ep_ext->as + 32768) % 32768);
+			ts_printf(STDOUT_FILENO, "%s: I-Format frame send rejected, limit of unconfirmed sent frames is reached. Address = %d, k = %d\n", APP_NAME, ep_ext->adr, (ep_ext->vs - ep_ext->as + 32768) % 32768);
 #endif
 			res = RES_INCORRECT;
 		}
@@ -1251,7 +1254,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 			ep_ext->timer_t2 = time(NULL);
 
 #ifdef _DEBUG
-			printf("%s: I-Format frame sent (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, "%s: I-Format frame sent (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
 #endif
 		}
 	}
@@ -1269,7 +1272,7 @@ uint16_t iec104_frame_i_send(asdu *iec_asdu, iec104_ep_ext *ep_ext, uint8_t dir)
 uint16_t iec104_frame_i_recv(apdu_frame *a_fr, iec104_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-	printf("%s: I-Format frame received (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
+	ts_printf(STDOUT_FILENO, "%s: I-Format frame received (N(S) = %d, N(R) = %d). Address = %d\n", APP_NAME, a_fr->send_num, a_fr->recv_num, ep_ext->adr);
 #endif
 
 	uint16_t res;
@@ -1380,7 +1383,7 @@ uint16_t iec104_asdu_send(asdu *iec_asdu, uint16_t adr, uint8_t dir)
 			free(ep_buff);
 
 #ifdef _DEBUG
-			printf("%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
+			ts_printf(STDOUT_FILENO, "%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
 #endif
 		}
 		else
@@ -1410,7 +1413,7 @@ uint16_t iec104_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr)
 	if(res == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		printf("%s: ASDU received in DIRDN. Address = %d, Length = %d\n", APP_NAME, adr, buff_len);
+		ts_printf(STDOUT_FILENO, "%s: ASDU received in DIRDN. Address = %d, Length = %d\n", APP_NAME, adr, buff_len);
 #endif
 		res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 	}
@@ -1430,7 +1433,7 @@ uint16_t iec104_frame_check_send_num(iec104_ep_ext *ep_ext, uint16_t send_num)
 	if(send_num == ep_ext->vr) return RES_SUCCESS;
 
 #ifdef _DEBUG
-	printf("%s: ERROR - expected N(S) = %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->vr, send_num, ep_ext->adr);
+	ts_printf(STDOUT_FILENO, "%s: ERROR - expected N(S) = %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->vr, send_num, ep_ext->adr);
 #endif
 
 	return RES_INCORRECT;
@@ -1442,7 +1445,7 @@ uint16_t iec104_frame_check_recv_num(iec104_ep_ext *ep_ext, uint16_t recv_num)
 	if( (recv_num - ep_ext->as + 32768) % 32768 <= (ep_ext->vs - ep_ext->as + 32768) % 32768 ) return RES_SUCCESS;
 
 #ifdef _DEBUG
-	printf("%s: ERROR - expected %d <= N(S) <= %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->as, ep_ext->vs, recv_num, ep_ext->adr);
+	ts_printf(STDOUT_FILENO, "%s: ERROR - expected %d <= N(S) <= %d, but received N(S) = %d. Frame lost or reordered. Address = %d\n", APP_NAME, ep_ext->as, ep_ext->vs, recv_num, ep_ext->adr);
 #endif
 
 	return RES_INCORRECT;
