@@ -844,6 +844,7 @@ struct channel *initch = 0;
 pthread_t in_thread;
 pthread_attr_t in_thread_attr;
 char fname[160] = {0};
+FILE *fsema;
 
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
@@ -872,7 +873,9 @@ char fname[160] = {0};
 	strcat(fname,"/");
 	strcat(fname, a_name);
 	strcat(fname, sufsema);
-	fopen(fname, "w");
+	fsema = fopen(fname, "w");
+	fwrite((char*)"on", 2, 2, fsema);
+	fclose(fsema);
 
 //	signal(SIGQUIT, sighandler_sigquit);
 //	signal(SIGCHLD, sighandler_sigchld);
@@ -900,6 +903,12 @@ struct stat fstt;
 	par[0] = chld_name;
 	par[1] = NULL;
 
+	// Make name of semaphore file
+	strcpy(fname, pathinit);
+	strcat(fname,"/");
+	strcat(fname, chld_name);
+	strcat(fname, sufsema);
+
 	ret = mf_testrunningapp(chld_name);
 
 	if(ret == -1) return -1;
@@ -908,10 +917,6 @@ struct stat fstt;
 		// lowlevel application not running
 
 		// remove file semaphore
-		strcpy(fname, pathinit);
-		strcat(fname,"/");
-		strcat(fname, chld_name);
-		strcat(fname, sufsema);
 		remove(fname);
 
 		// running it
@@ -929,12 +934,13 @@ struct stat fstt;
 			exit(0);
 		}
 
-		// wait file semaphore
-		while(stat(fname, &fstt) == -1);
 //		was: usleep(1000);
 	}else{
 		ts_printf(STDOUT_FILENO, "MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 	}
+
+	// wait file semaphore
+	while(stat(fname, &fstt) == -1);
 
 	// Find real endpoint number
 	if (ep_num){
@@ -1034,9 +1040,15 @@ struct endpoint *ep = 0;
 	if (ch->descout) wrlen = write(ch->descout, buf, len);
 	else{
 		ts_printf(STDOUT_FILENO, "MFI %s error: Outfile descriptor = 0\n", appname);
+
+		exit(1);
+
 	}
 	if (wrlen == -1) {
 		ts_printf(STDOUT_FILENO, "MFI %s error: write error:%d - %s\n",appname, errno, strerror(errno));
+
+		exit(2);
+
 		return -1;
 	}
 	return wrlen;
