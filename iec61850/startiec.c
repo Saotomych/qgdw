@@ -51,6 +51,9 @@ char *cidname;
 	// open log env and db
 	log_db_env_open();
 
+//	signal(SIGTERM, sighandler);
+	signal(SIGINT, sighandler);
+
 	// Start of virtualize functions
 	chldpid = virt_start("startiec");
 	if (chldpid == -1){
@@ -62,9 +65,6 @@ char *cidname;
 
 	signal(SIGALRM, catch_alarm);
 	alarm(ALARM_PER);
-
-//	signal(SIGTERM, sighandler);
-	signal(SIGINT, sighandler);
 
 	// Cycle data routing in rcv_data
 	do{
