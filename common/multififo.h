@@ -24,6 +24,8 @@ typedef struct _transactinfo{
 	int ep_index;
 } TRANSACTINFO;
 
+// Delete semaphore file
+extern void mf_semadelete(char *pathinit, char *a_name);
 // Initialisation
 // in: pathinit - pointer to path to pipes
 // in: devicename - pointer to devicename from config

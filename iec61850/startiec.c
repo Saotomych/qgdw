@@ -31,6 +31,7 @@ int lenname;
 char *cidname;
 
 	init_allpaths();
+	mf_semadelete(getpath2fifomain(), "startiec");
 
 	// Make config name
 	lenname = strlen(getpath2configs()) + strlen(IECCONFIG) + 3;

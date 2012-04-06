@@ -510,6 +510,7 @@ FILE* fdesc;
 char *fname;
 
 	init_allpaths();
+	mf_semadelete(getpath2fifomain(), APP_NAME);
 
 // Backup previous lowlevel.cfg and ieclevel.icd
 	fname = malloc(strlen(getpath2configs()) + strlen(LLEVEL_FILEBAK) + 1);

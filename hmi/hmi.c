@@ -396,6 +396,7 @@ char *fname;
 pid_t chldpid;
 
 	init_allpaths();
+	mf_semadelete(getpath2fifomain(), "hmi700");
 
 	//---*** Init IEC61850 ***---//
 	// Make config name

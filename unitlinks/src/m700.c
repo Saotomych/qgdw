@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 	struct ep_init_header *eih = 0;
 
 	init_allpaths();
+	mf_semadelete(getpath2fifomain(), APP_NAME);
 
 	fname = malloc(strlen(getpath2configs()) + strlen(APP_CFG) + 1);
 	strcpy(fname, getpath2configs());

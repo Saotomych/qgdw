@@ -838,6 +838,16 @@ void sighandler_sigquit(int arg){
 
 // ================= External API ============================================== //
 // Create init-channel and run inotify thread for reading files
+void mf_semadelete(char *pathinit, char *a_name){
+char fname[160] = {0};
+	// Create file semaphore
+	strcpy(fname, pathinit);
+	strcat(fname,"/");
+	strcat(fname, a_name);
+	strcat(fname, sufsema);
+	remove(fname);
+}
+
 int mf_init(char *pathinit, char *a_name, void *func_rcvdata){
 int ret;
 struct channel *initch = 0;
