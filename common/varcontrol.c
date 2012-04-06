@@ -630,17 +630,17 @@ int vc_destroyvarreclist(varrec *fvr){
 varrec *vr = lastvr;
 varrec *prevvr;
 
-	while((vr->l.next != fvr) && (vr->l.prev)){
+	if (!fvr) return 0;
 
-		// Free and switch to next varrec
+	prevvr = vr->l.prev;
+	vc_freevarrec(vr);
+	while((vr != fvr) && (prevvr->l.prev)){
+		// Set previuos vr
+		vr = vr->l.prev;
+		lastvr = vr;
 		prevvr = vr->l.prev;
-		// TODO Unattach variable if needed
-//		if (vr->prop & ATTACHING)	unattach(vr);
 		// Free memory of value
 		vc_freevarrec(vr);
-		vr = prevvr;
-		lastvr = vr;
-		varrec_number--;
 	}
 
 	vr->l.next = NULL;

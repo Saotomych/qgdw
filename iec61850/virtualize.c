@@ -910,11 +910,9 @@ uint32_t i, x;
 					// If log record not found then break attach process
 					pve = actve;
 					for (i = 0; i < len; i++){
-
 						// Fake data for debugging
-						pve->vallen = 0;
-						pve->value.f = 12.34 + i;
-
+//						pve->vallen = 0;
+//						pve->value.f = 12.34 + i;
 						// Needed init
 						pve->uid = avb->uid;
 						pve->validx = i;

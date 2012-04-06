@@ -191,7 +191,6 @@ static void draw_menu()
 			GR_WINDOW_INFO winfo;
 			GR_WM_PROPERTIES props;
 
-
 			num_menu->main_window = GrNewWindow(GR_ROOT_WINDOW_ID,
 												num_menu->rect.x,
 												num_menu->rect.y,
