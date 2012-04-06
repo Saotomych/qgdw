@@ -574,10 +574,10 @@ int log_db_env_open()
 	ret = log_db_open_db(db_env, &consum_arch_db.db, LOG_DB_FILE_NAME, LOG_DB_CONSUM_ARCH, 1);
 	if(ret != 0) goto err;
 
-	ret = log_db_open_db(db_env, &dev_event_db.db, LOG_DB_FILE_NAME, LOG_DB_DEV_EVENT, 0);
+	ret = log_db_open_db(db_env, &dev_event_db.db, LOG_DB_FILE_NAME, LOG_DB_DEV_EVENT, 1);
 	if(ret != 0) goto err;
 
-	ret = log_db_open_db(db_env, &app_event_db.db, LOG_DB_FILE_NAME, LOG_DB_APP_EVENT, 0);
+	ret = log_db_open_db(db_env, &app_event_db.db, LOG_DB_FILE_NAME, LOG_DB_APP_EVENT, 1);
 	if(ret != 0) goto err;
 
 	ret = log_db_open_db(db_env, &db_export_log, LOG_DB_FILE_NAME, LOG_DB_EXPORT, 0);
