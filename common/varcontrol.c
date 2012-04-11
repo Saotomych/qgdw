@@ -617,10 +617,13 @@ int i;
 
 	free(vr->val->name);
 	if (vr->prop & NEEDFREE){
-		for (i = 0; i < vr->maxval; i++) free(vr->val[i].val);
+		for (i = 0; i < vr->maxval; i++){
+				free(vr->val[i].val);
+				free(vr->val[i].name);
+		}
 	}
-	if (vr->name) free(vr->name);
 	if (vr->val) free(vr->val);
+	if (vr->name) free(vr->name);
 	free(vr);
 }
 

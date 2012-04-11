@@ -10,3 +10,4 @@ text 97 35 23 a :&var:APP:jsec
 menu 0 50 70 a Интервал >interval~chinterval
 text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
+text 0 a a 80 &var:JR:(-10,6):TotWh.mag.f

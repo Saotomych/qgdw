@@ -331,7 +331,7 @@ varevent *ave;
 				ave = get_nextvarevent(edh, ave);
 			}while(ave);
 
-//			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
+			MFMessage = GR_EVENT_TYPE_EXPOSURE;		// Event for screen refresh
 
 			break;
 		}

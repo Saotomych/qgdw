@@ -13,3 +13,4 @@ text 100 50 80 a минут
 menu 0 65 40 a Тариф >tarif~chtarif
 text 40 65 10 a &var:APP:tarifid
 text 53 65 110 a - &var:APP:tarifname
+text 0 a a 64 &var:JR:(-2,5):TotWh.mag.f
