@@ -343,6 +343,7 @@ int dlt645_recv_data(int len)
 		}
 
 		offset += ep_header_in->len;
+		ts_printf(STDOUT_FILENO, "%s: Len of data = %d; Offset = %d\n", APP_NAME, ep_header_in->len, offset);
 	}
 
 	free(buff);

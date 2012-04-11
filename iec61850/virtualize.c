@@ -702,7 +702,7 @@ varevent *ve = *pve;
 time_t tmin = time(NULL) - (60*60*24);
 time_t tmax = time(NULL) + (60*60*24);
 time_t tbgn = avb->time + (offset * avb->intr);
-int32_t ret;
+int32_t ret = 0;
 
 // Database definition
 log_db *db;
@@ -715,7 +715,7 @@ log_db *db;
 	if (pname){
 		ts_printf(STDOUT_FILENO, "IEC61850: Call DB query: id=%d, name=%s, time=%d, interval=%d, len=%d\n",
 														avb->id, pname, tbgn, avb->intr, len);
-		ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
+//		ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
 	}else ret = 0;
 
 	if (ret <= 0){
@@ -1140,6 +1140,10 @@ frame_dobj fr_do = FRAME_DOBJ_INITIALIZER;
 
 				// write to endpoint
 				mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
+
+				ts_printf(STDOUT_FILENO, "IEC61850: Send DOBJ %s - id=%d; adr=%d; len=%d; numep=%d; sys_msg=%d \n",
+						fr_do.name, fr_do.id, fr_do.edh.adr, fr_do.edh.len, fr_do.edh.numep, fr_do.edh.sys_msg);
+
 				usleep(5);	// delay for forming  next event
 
 				pdm = pdm->l.next;

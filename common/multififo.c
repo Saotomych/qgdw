@@ -13,7 +13,7 @@
 #include "multififo.h"
 #include "ts_print.h"
 
-#define LENRINGBUF	1024
+#define LENRINGBUF	1024 * 32
 #define INOTIFYTHR_STACKSIZE	64*1024
 
 char *appname, *pathapp;
@@ -694,14 +694,16 @@ struct ep_init_header *eih=0;
 
 		if (edh.numep >= maxep){
 			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
-			return -1;
+			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint: adr=%d, len=%d, msg=%d\n", appname, edh.adr, edh.len, edh.sys_msg);
+			exit(5);
 		}
 
 		// Init ep by recv index
 		ep = myeps[edh.numep];
 		if (!ep){
 			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
-			return 0;
+			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint: adr=%d, len=%d, msg=%d\n", appname, edh.adr, edh.len, edh.sys_msg);
+			exit(5);
 		}
 
 		if (edh.sys_msg == EP_MSG_NEWEP){
@@ -920,6 +922,7 @@ struct stat fstt;
 	strcat(fname, sufsema);
 
 	ret = mf_testrunningapp(chld_name);
+//	ret = 1;
 
 	if(ret == -1) return -1;
 
