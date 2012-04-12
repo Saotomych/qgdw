@@ -586,15 +586,14 @@ char keywords[][10] = {
 
 						// Set all variables
 						for (i = 0; i < x; i++){
-							vr->val[i].name = malloc(varlen);
-							strcpy(vr->val[i].name, varname);
 							vr->val[i].idx = IECBASE + JRVALUE;
 							vr->val[i].idtype = get_type_idx(po);
 							vr->val[i].val = malloc(sizeof_idx(vr->val[i].idtype));
 							memset(vr->val[i].val, 0, sizeof_idx(vr->val[i].idtype));
-							vr->prop = ATTACHING | NEEDFREE;
 						}
-
+						vr->prop = ATTACHING | NEEDFREE;
+						vr->val->name = malloc(varlen);
+						strcpy(vr->val->name, varname);
 					}
 
 					return vr;
@@ -607,24 +606,15 @@ char keywords[][10] = {
 }
 
 void vc_freevarrec(varrec *vr){
-varrec *prevvr = vr->l.prev;
 int i;
-
-	if (prevvr){
-		prevvr->l.next = NULL;
-		lastvr = prevvr;
-	}
 
 	if (vr->prop & NEEDFREE){
 		for (i = 0; i < vr->maxval; i++){
 				free(vr->val[i].val);
-				vr->val[i].val = NULL;
-				free(vr->val[i].name);
-				vr->val[i].name = NULL;
 		}
 	}
-	if (vr->val) free(vr->val);
 	if (vr->val->name) free(vr->val->name);
+	if (vr->val) free(vr->val);
 	if (vr->name) free(vr->name);
 	free(vr);
 }
