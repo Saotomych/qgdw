@@ -102,7 +102,7 @@ extern int vc_destroyvarreclist(varrec *fvr);
 //extern void vc_attach_dataset(varrec *vr, time_t *t, LNODE *actln);
 extern void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln);
 extern void vc_freevarrec(varrec *vr);
-extern void vc_unattach_dataset(varrec *vr, LNODE *actln);
+extern void vc_detach_dataset(varrec *vr, LNODE *actln);
 extern varrec* vc_getfirst_varrec(void);
 
 #endif /* VARCONTROL_H_ */

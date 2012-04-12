@@ -69,7 +69,7 @@
 #define EP_MSG_TEST_CONN		17		/* test device connection - up2down */
 #define EP_MSG_DEV_ONLINE		18		/* device is online - down2up */
 #define EP_MSG_ATTACH			20		/* to attach data for event - up2down */
-#define EP_MSG_UNATTACH			21		/* to unattach data from event - up2down */
+#define EP_MSG_DETACH			21		/* to unattach data from event - up2down */
 #define EP_MSG_VAREVENT			22		/* event variable has changed - down2 up */
 
 #define EP_MSG_LOG_DEV_EVENT	25		/* device log event - down2up */

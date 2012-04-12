@@ -397,8 +397,6 @@ char keywords[][10] = {
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = ATTACHING| NEEDFREE;
 								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
-								// TODO Attach DO value
-
 								return vr;
 							}
 
@@ -437,8 +435,6 @@ char keywords[][10] = {
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = ATTACHING | NEEDFREE;
 								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
-								// TODO Attach DA value
-
 								return vr;
 							}
 
@@ -498,8 +494,6 @@ char keywords[][10] = {
 								memset(vr->val->val, 0, sizeof_idx(vr->val->idtype));
 								vr->prop = ATTACHING | NEEDFREE;
 								vc_get_map_by_name(po, (uint32_t*) &(vr->id));
-								// TODO Attach BDA value
-
 								return vr;
 							}
 
@@ -608,6 +602,7 @@ char keywords[][10] = {
 void vc_freevarrec(varrec *vr){
 int i;
 
+	vr->uid = 0; // For receive data control, if 0 then not write new value
 	if (vr->prop & NEEDFREE){
 		for (i = 0; i < vr->maxval; i++){
 				free(vr->val[i].val);
@@ -684,7 +679,7 @@ uint32_t len;
 				vb->id = atoi(actln->ln.ldinst);
 				vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
 				vb->intr = intr;
-
+				vr->uid = vb->uid;
 				// Send attach this varrec
 				if (len) mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
 
@@ -697,37 +692,41 @@ uint32_t len;
 }
 
 // Make unattach remote variables from end to vr->name->fc
-void vc_unattach_dataset(varrec *fvr, LNODE *actln){
+void vc_detach_dataset(varrec *fvr, LNODE *actln){
 ep_data_header *edh;
 varrec *vr;
 uint32_t *uids;
 u08 *varbuf;
 uint32_t len = 0;
 
+	if (fvr == NULL) return;
+
 	vr = fvr;
-	while(vr){
-		len += sizeof(int);
+	while (vr){
+		if  (vr->prop & ATTACHING){
+			len += sizeof(int);
+		}
 		vr = vr->l.next;
 	}
 
 	varbuf = malloc(len + sizeof(ep_data_header));
 	edh = (ep_data_header*) varbuf;
 	edh->adr = IDHMI;
-	edh->sys_msg = EP_MSG_UNATTACH;
+	edh->sys_msg = EP_MSG_DETACH;
 	edh->len = len;
 	edh->numep = 0;
 
 	vr = fvr;
 	uids = (uint32_t*)(varbuf + sizeof(ep_data_header));
-	while(vr){
-		*uids = vr->uid;
-		uids++;
+	while (vr){
+		if  (vr->prop & ATTACHING){
+			*uids = (uint32_t) vr;
+			uids++;
+		}
 		vr = vr->l.next;
 	}
 
-	ts_printf(STDOUT_FILENO, "HMI: unattach\n");
-
-	// Send unattach all varrec
+	// Send detach all varrec
 	mf_toendpoint((char*) varbuf, len + sizeof(ep_data_header), IDHMI, DIRDN);
 
 	free(varbuf);

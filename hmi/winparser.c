@@ -374,7 +374,7 @@ menu* num_menu;
 	}
 
 	if (num_menu->fvarrec){
-		vc_unattach_dataset(num_menu->fvarrec, actlnode);
+		vc_detach_dataset(num_menu->fvarrec, actlnode);
 		vc_destroyvarreclist((varrec*) num_menu->fvarrec);
 	}
 	GrDestroyFont(num_menu->font);

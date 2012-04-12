@@ -953,23 +953,35 @@ uint32_t i, x;
 
 			break;
 
-		case EP_MSG_UNATTACH:
-			ts_printf(STDOUT_FILENO, "IEC61850: set unattach for dataset from value 0x%X\n", pname);
-
+		case EP_MSG_DETACH:
 			cntdm = edh->len;
 			uids = (uint32_t*) (buff + sizeof(ep_data_header));
+
+			ts_printf(STDOUT_FILENO, "IEC61850: Detach all varrecs of dataset 0x%X\n", *uids);
+
 			while(cntdm){
 				actvr = vc_getfirst_varrec();
-				while ((actvr) && (actvr->uid != *uids)) actvr = actvr->l.next;
-				if (actvr) actvr->prop &= ~ATTACHING;
+				while ((actvr) && (actvr->uid != *uids)){
+					actvr = actvr->l.next;
+				}
+				if (actvr){
+					actvr->prop &= ~ATTACHING;
+					actvr->uid = 0;
+
+					ts_printf(STDOUT_FILENO, "IEC61850: Detach %s \n", actvr->name->fc);
+
+				}else{
+
+					ts_printf(STDOUT_FILENO, "IEC61850: Detached uid 0x%X not found\n", *uids);
+
+				}
 				// change counters and pointers
 				cntdm-=sizeof(int); uids++;
 			}
 
-			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was unattached\n");
+			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was detached\n");
 
 			break;
-
 		}
 
 		// move over the data
@@ -1100,8 +1112,6 @@ int dobj_num;
 			else ts_printf(STDOUT_FILENO, "ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
 
 			// Link ASDU_TYPE to DATAMAP
-
-
 			ts_printf(STDOUT_FILENO, "ASDU: new VIRT_ASDU offset=%d for LN name=%s.%s.%s type=%s ied=%s\n",
 					actasdu->baseoffset, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
 		}

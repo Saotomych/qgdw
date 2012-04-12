@@ -252,18 +252,20 @@ value *actval;
 	if (ave){
 
 		avr = (varrec*) ave->uid;
-		actval = &avr->val[ave->validx];
 
+		if (ave->uid != avr->uid) return 0;
+
+		actval = &avr->val[ave->validx];
 		switch(actval->idtype){
 		case QUALITY:
 		case INT32:
 			*((int32_t*) (actval->val)) = ave->value.i;
-//			ts_printf(STDOUT_FILENO, "HMI!!!: get int value %d as %s\n", ave->value.i, avr->name->fc);
+			ts_printf(STDOUT_FILENO, "HMI: new value %s(0x%X) = %d\n", avr->name->fc, ave->uid, ave->value.i);
 			break;
 
 		case FLOAT32:
 			*((float*) (actval->val)) = ave->value.f;
-//			ts_printf(STDOUT_FILENO, "HMI!!!: get float value %.2F as %s\n", ave->value.f, avr->name->fc);
+			ts_printf(STDOUT_FILENO, "HMI: new value %s(0x%X) = %.2F\n", avr->name->fc, ave->uid, ave->value.f);
 			break;
 
 		case TIMESTAMP:
