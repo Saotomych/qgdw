@@ -615,14 +615,16 @@ int i;
 		lastvr = prevvr;
 	}
 
-	free(vr->val->name);
 	if (vr->prop & NEEDFREE){
 		for (i = 0; i < vr->maxval; i++){
 				free(vr->val[i].val);
+				vr->val[i].val = NULL;
 				free(vr->val[i].name);
+				vr->val[i].name = NULL;
 		}
 	}
 	if (vr->val) free(vr->val);
+	if (vr->val->name) free(vr->val->name);
 	if (vr->name) free(vr->name);
 	free(vr);
 }
@@ -636,16 +638,17 @@ varrec *prevvr;
 
 	prevvr = vr->l.prev;
 	vc_freevarrec(vr);
-	while((vr != fvr) && (prevvr->l.prev)){
+	while ((vr != fvr) && (prevvr->l.prev)){
 		// Set previuos vr
-		vr = vr->l.prev;
+		vr = prevvr;
 		lastvr = vr;
 		prevvr = vr->l.prev;
 		// Free memory of value
 		vc_freevarrec(vr);
 	}
 
-	vr->l.next = NULL;
+	lastvr = prevvr;
+	if (prevvr) prevvr->l.next = NULL;
 
 	return 0;
 }
@@ -656,7 +659,7 @@ void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln){
 ep_data_header *edh;
 varattach *vb;
 char *varname;
-u08 *varbuf;
+u08 *varbuf = NULL;
 uint32_t len;
 
 	while(vr){
@@ -672,29 +675,31 @@ uint32_t len;
 									  + strlen(vr->name->fc);  // with start ep_data_header
 
 			varbuf = malloc(len);
-			edh = (ep_data_header*) varbuf;
-			vb = (varattach*) ((char*) edh + sizeof(ep_data_header));
-			varname = (char*) ((char*) vb + sizeof(varattach));
-			ts_sprintf(varname, "%s/%s.%s.%s.%s", actln->ln.ldinst,
-													actln->ln.prefix,
-													actln->ln.lnclass,
-													actln->ln.lninst,
-													&(vr->name->fc)[3]);
+			if (varbuf){
+				edh = (ep_data_header*) varbuf;
+				vb = (varattach*) ((char*) edh + sizeof(ep_data_header));
+				varname = (char*) ((char*) vb + sizeof(varattach));
+				ts_sprintf(varname, "%s/%s.%s.%s.%s", actln->ln.ldinst,
+														actln->ln.prefix,
+														actln->ln.lnclass,
+														actln->ln.lninst,
+														&(vr->name->fc)[3]);
 
-			edh->adr = IDHMI;
-			edh->sys_msg = EP_MSG_ATTACH;
-			edh->len = len - sizeof(ep_data_header);
-			edh->numep = 0;
-			vb->lenname = strlen(varname);
-			vb->time = *t;
-			vb->id = atoi(actln->ln.ldinst);
-			vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
-			vb->intr = intr;
+				edh->adr = IDHMI;
+				edh->sys_msg = EP_MSG_ATTACH;
+				edh->len = len - sizeof(ep_data_header);
+				edh->numep = 0;
+				vb->lenname = strlen(varname);
+				vb->time = *t;
+				vb->id = atoi(actln->ln.ldinst);
+				vb->uid = (uint32_t) vr;	// UID of variable is pointer to varrec
+				vb->intr = intr;
 
-			// Send attach this varrec
-			if (len) mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
+				// Send attach this varrec
+				if (len) mf_toendpoint((char*) varbuf, len, IDHMI, DIRDN);
 
-			free(varbuf);
+				free(varbuf);
+			}
 		}
 		// Next varrec
 		vr = vr->l.next;
