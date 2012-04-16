@@ -715,7 +715,7 @@ log_db *db;
 	if (pname){
 		ts_printf(STDOUT_FILENO, "IEC61850: Call DB query: id=%d, name=%s, time=%d, interval=%d, len=%d\n",
 														avb->id, pname, tbgn, avb->intr, len);
-//		ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
+		ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
 	}else ret = 0;
 
 	if (ret <= 0){
