@@ -11,6 +11,7 @@
 #include "../common/common.h"
 #include "../common/multififo.h"
 #include "../common/paths.h"
+#include "../common/ts_print.h"
 #include "local-phyints.h"
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo

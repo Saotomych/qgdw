@@ -12,5 +12,5 @@ menu 0 50 70 a Интервал >interval~chinterval
 text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
 text 0 a a a Время/Актив/Реактив
-text 0 80 80 80 &var:JR:(-10,5):TotW.mag.f
+text 0 80 80 80 &var:JR:(-10,5):PhVphsC.mag.f
 text 80 80 80 80 &var:JR:(-10,5):TotVA.mag.f

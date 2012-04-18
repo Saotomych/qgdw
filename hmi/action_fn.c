@@ -127,7 +127,6 @@ ldextinfo *actldei;
 						*((int*)(actmenu->pitems[i]->vr->val->val)) = (int) actldei->portmode;
 					}
 				}
-
 			}
 		}
 	}
