@@ -1014,7 +1014,7 @@ struct stat fstt;
 	ts_printf(STDOUT_FILENO, "\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 	ts_printf(STDOUT_FILENO, "- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-	while (mf_waitevent(fname, 160, 5000) != 1);
+	while (mf_waitevent(fname, 160, 5000, NULL, 0) != 1);
 
 	mychs[0]->descout = 0;
 	ep->ready = 3;
@@ -1088,14 +1088,20 @@ struct ep_data_header *edh = 0;
 	return (i==maxep ? 0 : ret);
 }
 
-int mf_waitevent(char *buf, int len, int ms_delay){
+int mf_waitevent(char *buf, int len, int ms_delay, int *addfd, int setlen){
 fd_set rddesc;
-int ret;
+int ret, cnt, fdlen;
 struct timeval tm;
 
 	FD_ZERO(&rddesc);
 
 	FD_SET(hpp[0], &rddesc);
+
+	cnt = 0; fdlen = setlen;
+	while (fdlen){
+		FD_SET(addfd[cnt], &rddesc);
+		cnt++; fdlen--;
+	}
 
     if (!ms_delay) ret = select(hpp[1] + 1, &rddesc, NULL, NULL, NULL);
     else{
@@ -1111,6 +1117,19 @@ struct timeval tm;
     		return 1;
     	}
     }
+
+	cnt = 0; fdlen = setlen;
+	while (fdlen){
+	    if (FD_ISSET(addfd[cnt], &rddesc)){
+	    	if (ret > 0){
+	    		ret = read(addfd[cnt], buf, len);
+	    		return 1;
+	    	}
+	    	return cnt + FDSETPOS;
+	    }
+		cnt++; fdlen--;
+	}
+
     return (ms_delay ? 2 : 3);
 }
 

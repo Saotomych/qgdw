@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		ret = mf_waitevent((char*) &eih, sizeof(eih), 0);
+		ret = mf_waitevent((char*) &eih, sizeof(eih), 0, NULL, 0);
 
 		if(!ret)
 		{

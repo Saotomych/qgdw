@@ -4,7 +4,7 @@
  * LLC "Mediakon"
  */
  
-
+#include <linux/input.h>
 #include "../include/m700.h"
 #include "../../common/ts_print.h"
 
@@ -35,15 +35,17 @@ static uint8_t t_rc		= M700_T_RC;
 
 static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application with quit multififo
 
+static int fev0 = 0;               // ITMI event file open
 
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
-	uint16_t res;
+	uint16_t res, evlen;
 	char *fname;
-
+	struct input_event ev[16];
 	int ret;
 	struct ep_init_header *eih = 0;
+	ep_data_header *edh;
 
 	init_allpaths();
 	mf_semadelete(getpath2fifomain(), APP_NAME);
@@ -64,6 +66,8 @@ int main(int argc, char *argv[])
 
 	if(res != RES_SUCCESS) exit(1);
 
+	fev0 = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
+
 	chldpid = mf_init(getpath2fifoul(), APP_NAME, m700_recv_data);
 
 	signal(SIGALRM, m700_catch_alarm);
@@ -75,7 +79,7 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		ret = mf_waitevent((char*) &eih, sizeof(eih), 0);
+		ret = mf_waitevent((char*) &eih, sizeof(eih), 0, &fev0, 1);
 
 		if(!ret)
 		{
@@ -102,6 +106,26 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 		if(ret == 2) ts_printf(STDOUT_FILENO, "%s: mf_waitevent timeout\n", APP_NAME);
 #endif
+
+		if (ret == FDSETPOS)
+		{
+			// Wait event from event0 (keys + telesignals)
+ 			evlen = read(fev0, ev, sizeof(ev)) / sizeof(struct input_event);
+
+ 			if (evlen != 0xFFFFFFF)
+ 			{
+				if (ev[0].value)
+				{
+					printf("Telesignal: %X, %X, %X\n", ev[0].value, ev[0].type, ev[0].code);
+					// TODO Send TS (Loc) to multififo
+//					res = m700_asdu_send(m700_asdu, ep_ext->adr, DIRUP);
+					edh = (ep_data_header*) make_tsasdu(ev);
+					mf_toendpoint((char*) &edh, sizeof(ep_data_header) + edh->len, 1, DIRUP);	// to startiec
+
+				}
+ 			}
+		}
+
 	}while(!appexit);
 
 	mf_exit();
@@ -1202,4 +1226,31 @@ uint16_t m700_read_adr_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 	return RES_SUCCESS;
 }
 
+// Make frame for telesignal data
+uint8_t tsframe[sizeof(ep_data_header) + sizeof(asdu) + sizeof(data_unit)];
 
+uint8_t *make_tsasdu(struct input_event *ev){
+asdu *pasdu = (asdu*)(tsframe + sizeof(ep_data_header));
+data_unit *pdu = (data_unit*) (pasdu + sizeof(asdu));
+
+	pasdu->data = pdu;
+
+	pasdu->adr = M700_ASDU_ADR;
+	pasdu->attr = 0;
+	pasdu->fnc = 0;
+	pasdu->proto = 0;
+	pasdu->size = sizeof(data_unit);
+	pasdu->type = 35;
+
+	ts_sprintf(pdu->name, "TMLoc%d", ev->code - BTN_TRIGGER_HAPPY);
+	pdu->attr = 0;
+	pdu->id = ev->code;
+	pdu->time_iv = 0;
+	pdu->time_tag = (int32_t) time(NULL);
+	pdu->value_type = ASDU_VAL_UINT;
+
+	pdu->value.i = ev->value;
+
+
+	return tsframe;
+}

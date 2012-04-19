@@ -14,6 +14,7 @@
 #include "../common/common.h"
 #include "../common/multififo.h"
 #include "../common/paths.h"
+#include "../common/ts_print.h"
 #include "local-phyints.h"
 
 // Test config_device

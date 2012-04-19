@@ -10,6 +10,7 @@
 #include "../include/iec_asdu.h"
 #include "../../common/resp_codes.h"
 #include "../include/p_num.h"
+#include "../../common/ts_print.h"
 
 
 uint8_t iec_asdu_check_io_buffer_len(uint32_t buff_len, uint32_t offset, uint8_t type_size, asdu *iec_asdu, uint8_t ioa_len)

@@ -69,7 +69,7 @@ char *cidname;
 
 	// Cycle data routing in rcv_data
 	do{
-		mf_waitevent(buf, sizeof(buf), 0);
+		mf_waitevent(buf, sizeof(buf), 0, NULL, 0);
 	}while(!appexit);
 
 	mf_exit();
