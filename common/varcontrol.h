@@ -104,5 +104,6 @@ extern void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln
 extern void vc_freevarrec(varrec *vr);
 extern void vc_detach_dataset(varrec *vr, LNODE *actln);
 extern varrec* vc_getfirst_varrec(void);
+extern void vc_recall_jourrefresh(char *name, time_t jtime);
 
 #endif /* VARCONTROL_H_ */

@@ -376,14 +376,17 @@ int next_jourmin(void *arg){
 
 	jourtime = next_min((void*) jourtime);
 
-	return REDRAWTIMEJOUR;
+//	return REDRAWTIMEJOUR;
+	return REMAKEMENU;
+
 }
 
 int prev_jourmin(void *arg){
 
 	jourtime = prev_min((void*) jourtime);
 
-	return REDRAWTIMEJOUR;
+//	return REDRAWTIMEJOUR;
+	return REMAKEMENU;
 }
 
 int next_mainmin(void *arg){
@@ -405,7 +408,9 @@ int prev_interval(void *arg){
 	if (pinterval > &intervals) pinterval--;
 	else pinterval = &intervals + 6;
 
-	return REDRAW;
+//	return REDRAW;
+	return REMAKEMENU;
+
 }
 
 int next_interval(void *arg){
@@ -413,28 +418,31 @@ int next_interval(void *arg){
 	if (pinterval < (&intervals+6)) pinterval++;
 	else pinterval = &intervals;		// Time Interval for view journal records
 
-	return REDRAW;
+//	return REDRAW;
+	return REMAKEMENU;
+
 }
 
 int prev_tarif(void *arg){
 
 	if (acttarif->l.prev) acttarif = acttarif->l.prev;
 
-	return REDRAW;
+//	return REDRAW;
+	return REMAKEMENU;
 }
 
 int next_tarif(void *arg){
 
 	if (acttarif->l.next) acttarif = acttarif->l.next;
 
-	return REDRAW;
+//	return REDRAW;
+	return REMAKEMENU;
 }
 
 // Array of structures "synonym to function"
 fact actfactset[] = {
 		{"changeld", (void*) prev_ld, (void*) next_ld},
 		{"changetypeln", (void*) prev_type_ln, (void*) next_type_ln},
-//		{"changeld", (void*) prev_ld, (void*) next_ld},
 		{"change1day", (void*) prev_jourday, (void*) next_jourday},
 		{"change1min", (void*) prev_jourmin, (void*) next_jourmin},
 		{"change1mainday", (void*) prev_mainday, (void*) next_mainday},

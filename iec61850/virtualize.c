@@ -881,7 +881,7 @@ uint32_t i, x;
 			sync_time( *(time_t*)(buff + offset + sizeof(ep_data_header)) );
 			break;
 
-		case EP_MSG_ATTACH:
+		case EP_MSG_VARATTACH:
 
 			// Init pointers
 			avb = (varattach*) ((int32_t) edh + sizeof(ep_data_header));
@@ -953,7 +953,7 @@ uint32_t i, x;
 
 			break;
 
-		case EP_MSG_DETACH:
+		case EP_MSG_VARDETACH:
 			cntdm = edh->len;
 			uids = (uint32_t*) (buff + sizeof(ep_data_header));
 

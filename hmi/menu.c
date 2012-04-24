@@ -611,6 +611,7 @@ struct tm *ttm;
 	myear = 1900 + mtime_tm.tm_year;
 	m_mon = mtime_tm.tm_mon + 1;
 
+//	vc_recall_jourrefresh(var name in jour format, journal time, interval);
 	redraw_screen(NULL);
 }
 
@@ -622,7 +623,6 @@ char* itemtext = (char*) num_menu->pitems[num_menu->num_item]->text;
 
 	// Find LLN0
 	while((pln) && (pln->ln.lnclass)) pln=pln->l.prev;
-
 
 	while(pln){
 		if (pln->ln.lnclass){

@@ -56,7 +56,10 @@ int main(int argc, char *argv[])
 	res = m700_config_read(fname);
 	free(fname);
 
-	if(res != RES_SUCCESS) exit(1);
+	if(res != RES_SUCCESS){
+		ts_printf(STDOUT_FILENO, "%s: Configuration not found...\n", APP_NAME);
+		exit(1);
+	}
 
 	fname = malloc(strlen(getpath2configs()) + strlen(APP_MAP) + 1);
 	strcpy(fname, getpath2configs());
@@ -64,7 +67,10 @@ int main(int argc, char *argv[])
 	res = asdu_map_read(&map_list, fname, APP_NAME, HEX_BASE);
 	free(fname);
 
-	if(res != RES_SUCCESS) exit(1);
+	if(res != RES_SUCCESS){
+		ts_printf(STDOUT_FILENO, "%s: Variable map not found...\n", APP_NAME);
+		exit(1);
+	}
 
 	fev0 = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
 
@@ -107,7 +113,7 @@ int main(int argc, char *argv[])
 		if(ret == 2) ts_printf(STDOUT_FILENO, "%s: mf_waitevent timeout\n", APP_NAME);
 #endif
 
-		if (ret == FDSETPOS)
+		if (ret >= FDSETPOS)
 		{
 			// Wait event from event0 (keys + telesignals)
  			evlen = read(fev0, ev, sizeof(ev)) / sizeof(struct input_event);
@@ -116,12 +122,10 @@ int main(int argc, char *argv[])
  			{
 				if (ev[0].value)
 				{
-					printf("Telesignal: %X, %X, %X\n", ev[0].value, ev[0].type, ev[0].code);
-					// TODO Send TS (Loc) to multififo
-//					res = m700_asdu_send(m700_asdu, ep_ext->adr, DIRUP);
+					printf("Telesignal %d: %X, %X, %X\n", ret-FDSETPOS, ev[0].value, ev[0].type, ev[0].code);
+					// Send TS (Loc) to multififo
 					edh = (ep_data_header*) make_tsasdu(ev);
 					mf_toendpoint((char*) &edh, sizeof(ep_data_header) + edh->len, 1, DIRUP);	// to startiec
-
 				}
  			}
 		}

@@ -1123,9 +1123,8 @@ struct timeval tm;
 	    if (FD_ISSET(addfd[cnt], &rddesc)){
 	    	if (ret > 0){
 	    		ret = read(addfd[cnt], buf, len);
-	    		return 1;
+		    	return cnt + FDSETPOS;
 	    	}
-	    	return cnt + FDSETPOS;
 	    }
 		cnt++; fdlen--;
 	}

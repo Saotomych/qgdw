@@ -671,7 +671,7 @@ uint32_t len;
 														&(vr->name->fc)[3]);
 
 				edh->adr = IDHMI;
-				edh->sys_msg = EP_MSG_ATTACH;
+				edh->sys_msg = EP_MSG_VARATTACH;
 				edh->len = len - sizeof(ep_data_header);
 				edh->numep = 0;
 				vb->lenname = strlen(varname);
@@ -712,7 +712,7 @@ uint32_t len = 0;
 	varbuf = malloc(len + sizeof(ep_data_header));
 	edh = (ep_data_header*) varbuf;
 	edh->adr = IDHMI;
-	edh->sys_msg = EP_MSG_DETACH;
+	edh->sys_msg = EP_MSG_VARDETACH;
 	edh->len = len;
 	edh->numep = 0;
 
@@ -736,4 +736,11 @@ uint32_t len = 0;
 varrec* vc_getfirst_varrec(void){
 
 	return fvarrec.next;
+}
+
+void vc_recall_jourrefresh(char *name, time_t jtime){
+ep_data_header edh = {0, 0, EP_MSG_VARREFRESH, 0};
+
+	mf_toendpoint((char*) &edh, sizeof(ep_data_header), IDHMI, DIRDN);
+
 }
