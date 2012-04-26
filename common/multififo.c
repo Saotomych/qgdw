@@ -1089,25 +1089,27 @@ struct ep_data_header *edh = 0;
 }
 
 int mf_waitevent(char *buf, int len, int ms_delay, int *addfd, int setlen){
-fd_set rddesc;
-int ret, cnt, fdlen;
+static fd_set rddesc;
+int ret, cnt, fdlen, max;
 struct timeval tm;
 
 	FD_ZERO(&rddesc);
 
 	FD_SET(hpp[0], &rddesc);
+	max = hpp[0];
 
 	cnt = 0; fdlen = setlen;
 	while (fdlen){
 		FD_SET(addfd[cnt], &rddesc);
+		if (addfd[cnt] > max) max = addfd[cnt];
 		cnt++; fdlen--;
 	}
 
-    if (!ms_delay) ret = select(hpp[1] + 1, &rddesc, NULL, NULL, NULL);
+    if (!ms_delay) ret = select(max + 1, &rddesc, NULL, NULL, NULL);
     else{
     	tm.tv_sec = ms_delay / 1000;
     	tm.tv_usec = (ms_delay % 1000) * 1000;
-    	ret = select(hpp[1] + 1, &rddesc, NULL, NULL, &tm);
+    	ret = select(max + 1, &rddesc, NULL, NULL, &tm);
     }
 
     if (FD_ISSET(hpp[0], &rddesc)){

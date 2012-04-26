@@ -37,15 +37,17 @@ static volatile int appexit = 0;	// EP_MSG_QUIT: appexit = 1 => quit application
 
 static int fev0 = 0;               // ITMI event file open
 
+static char mf_buffer[sizeof(struct ep_init_header)];
+
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
 	uint16_t res, evlen;
 	char *fname;
-	struct input_event ev[16];
 	int ret;
-	struct ep_init_header *eih = 0;
 	ep_data_header *edh;
+	static struct ep_init_header *eih;	// Init header from multififo
+	static struct input_event *iets;	// Input event from multififo
 
 	init_allpaths();
 	mf_semadelete(getpath2fifomain(), APP_NAME);
@@ -73,6 +75,11 @@ int main(int argc, char *argv[])
 	}
 
 	fev0 = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
+	if (fev0 == -1){
+#ifdef _DEBUG
+		ts_printf(STDOUT_FILENO, "%s: Event driver hasn't open\n", APP_NAME);
+#endif
+	}
 
 	chldpid = mf_init(getpath2fifoul(), APP_NAME, m700_recv_data);
 
@@ -85,7 +92,8 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		ret = mf_waitevent((char*) &eih, sizeof(eih), 0, &fev0, 1);
+//		ret = mf_waitevent((char*) &eih, sizeof(eih), 0, &fev0, 1);
+		ret = mf_waitevent(mf_buffer, sizeof(mf_buffer), 0, &fev0, 1);
 
 		if(!ret)
 		{
@@ -99,7 +107,7 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 			ts_printf(STDOUT_FILENO, "%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
-
+			eih = (ep_init_header*) mf_buffer;
 			mf_newendpoint(eih->addr, CHILD_APP_NAME, getpath2fifophy(), 1);
 
 			m700_sys_msg_send(EP_MSG_CONNECT, eih->addr, DIRDN, NULL, 0);
@@ -113,21 +121,15 @@ int main(int argc, char *argv[])
 		if(ret == 2) ts_printf(STDOUT_FILENO, "%s: mf_waitevent timeout\n", APP_NAME);
 #endif
 
-		if (ret >= FDSETPOS)
+		if (ret == FDSETPOS)
 		{
-			// Wait event from event0 (keys + telesignals)
- 			evlen = read(fev0, ev, sizeof(ev)) / sizeof(struct input_event);
-
- 			if (evlen != 0xFFFFFFF)
- 			{
-				if (ev[0].value)
-				{
-					printf("Telesignal %d: %X, %X, %X\n", ret-FDSETPOS, ev[0].value, ev[0].type, ev[0].code);
+			iets = (struct input_event *) mf_buffer;
+#ifdef _DEBUG
+			printf("M700: ITMI event: %X, %X, %X in %d sec\n", iets->value, iets->type, iets->code, (int) iets->time.tv_sec);
+#endif
 					// Send TS (Loc) to multififo
-					edh = (ep_data_header*) make_tsasdu(ev);
-					mf_toendpoint((char*) &edh, sizeof(ep_data_header) + edh->len, 1, DIRUP);	// to startiec
-				}
- 			}
+			edh = (ep_data_header*) make_tsasdu(iets);
+//					mf_toendpoint((char*) &edh, sizeof(ep_data_header) + edh->len, , DIRUP);	// to startiec
 		}
 
 	}while(!appexit);
