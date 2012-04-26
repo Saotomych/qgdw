@@ -42,7 +42,7 @@ static char mf_buffer[sizeof(struct ep_init_header)];
 int main(int argc, char *argv[])
 {
 	pid_t chldpid;
-	uint16_t res, evlen;
+	uint16_t res;
 	char *fname;
 	int ret;
 	ep_data_header *edh;
@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
 
 	do
 	{
-//		ret = mf_waitevent((char*) &eih, sizeof(eih), 0, &fev0, 1);
 		ret = mf_waitevent(mf_buffer, sizeof(mf_buffer), 0, &fev0, 1);
 
 		if(!ret)
@@ -124,12 +123,18 @@ int main(int argc, char *argv[])
 		if (ret == FDSETPOS)
 		{
 			iets = (struct input_event *) mf_buffer;
+			if (iets->code >= BTN_TRIGGER_HAPPY)
+			{
 #ifdef _DEBUG
-			printf("M700: ITMI event: %X, %X, %X in %d sec\n", iets->value, iets->type, iets->code, (int) iets->time.tv_sec);
+				printf("M700: ITMI event: %X, %X, %X\n", iets->value, iets->type, iets->code);
 #endif
-					// Send TS (Loc) to multififo
-			edh = (ep_data_header*) make_tsasdu(iets);
-//					mf_toendpoint((char*) &edh, sizeof(ep_data_header) + edh->len, , DIRUP);	// to startiec
+				// Create asdu frame for LocX
+				edh = (ep_data_header*) make_tsasdu(iets);
+				edh->adr = m700_get_ep_ext(1, M700_LINK_ADR)->adr;
+
+				// send ITMI event to startiec
+				mf_toendpoint((char*) edh, sizeof(ep_data_header) + edh->len, edh->adr, DIRUP);
+			}
 		}
 
 	}while(!appexit);
@@ -1241,7 +1246,7 @@ data_unit *pdu = (data_unit*) (pasdu + sizeof(asdu));
 
 	pasdu->data = pdu;
 
-	pasdu->adr = M700_ASDU_ADR;
+	pasdu->adr = M700_ASDU_ADR;	// it's zero, set next
 	pasdu->attr = 0;
 	pasdu->fnc = 0;
 	pasdu->proto = 0;
@@ -1252,11 +1257,10 @@ data_unit *pdu = (data_unit*) (pasdu + sizeof(asdu));
 	pdu->attr = 0;
 	pdu->id = ev->code;
 	pdu->time_iv = 0;
-	pdu->time_tag = (int32_t) time(NULL);
-	pdu->value_type = ASDU_VAL_UINT;
+	pdu->time_tag = ev->time.tv_sec;
+	pdu->value_type = ASDU_VAL_BOOL;
 
 	pdu->value.i = ev->value;
-
 
 	return tsframe;
 }
