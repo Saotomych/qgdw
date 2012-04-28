@@ -882,7 +882,7 @@ FILE *fsema;
 
 	// Delay for ready thread to data receive
 	// It's very need for stable run
-	usleep(10);
+	usleep(100);
 
 	// Create file semaphore
 	strcpy(fname, pathinit);
@@ -1036,22 +1036,31 @@ struct endpoint *ep = 0;
 
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
+
+		ts_printf(STDOUT_FILENO, "MF_EP: adr = %d, adr_link = %d \n", myeps[i]->eih.addr, myeps[i]->eih.numep);
+
 		if (myeps[i]->eih.addr == addr){
 			ep = myeps[i];
 			if (direct == DIRDN){
 				ch = ep->cdcdn;
 				((struct ep_data_header *)buf)->numep = ep->ep_dn;
 			}
+
 			if (direct == DIRUP){
 				ch = ep->cdcup;
 				((struct ep_data_header *)buf)->numep = ep->ep_up;
 			}
+
 			break;
+
 		}
 	}
 
+
 	if (!ep) return -1;
 	if (!ch) return -1;
+
+	ts_printf(STDOUT_FILENO, "MF_EP: ch pointr = 0x%08X, descin = 0x%08X, descout 0x%08X \n", ch, ch->descin, ch->descout);
 
 	// Write data to channel
 	if (ch->descout) wrlen = write(ch->descout, buf, len);
@@ -1059,14 +1068,11 @@ struct endpoint *ep = 0;
 		ts_printf(STDOUT_FILENO, "MFI %s error: Outfile descriptor = 0\n", appname);
 
 		exit(1);
-
 	}
 	if (wrlen == -1) {
 		ts_printf(STDOUT_FILENO, "MFI %s error: write error:%d - %s\n",appname, errno, strerror(errno));
 
 		exit(2);
-
-		return -1;
 	}
 	return wrlen;
 }

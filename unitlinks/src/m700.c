@@ -129,11 +129,17 @@ int main(int argc, char *argv[])
 			if (iets->code >= BTN_TRIGGER_HAPPY)
 			{
 #ifdef _DEBUG
-				printf("M700: ITMI event: %X, %X, %X\n", iets->value, iets->type, iets->code);
+				ts_printf(STDOUT_FILENO, "M700: ITMI event: %X, %X, %X\n", iets->value, iets->type, iets->code);
 #endif
 				// Create asdu frame for LocX
 				edh = (ep_data_header*) make_tsasdu(iets);
 				edh->adr = m700_get_ep_ext(1, M700_LINK_ADR)->adr;
+
+//#ifdef _DEBUG
+//				for (res = 0; (res < 5) && (ep_exts[res]); res++){
+//					ts_printf(STDOUT_FILENO, "M700: EP Ext: adr = %d, adr_link = %d \n", ep_exts[res]->adr, ep_exts[res]->adr_link);
+//				}
+//#endif
 
 				// send ITMI event to startiec
 				mf_toendpoint((char*) edh, sizeof(ep_data_header) + edh->len, edh->adr, DIRUP);
