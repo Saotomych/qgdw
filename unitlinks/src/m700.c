@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	pid_t chldpid;
 	uint16_t res;
 	char *fname;
-	int ret;
+	int ret, evlen;
 	ep_data_header *edh;
 	static struct ep_init_header *eih;	// Init header from multififo
 	static struct input_event *iets;	// Input event from multififo
@@ -75,10 +75,13 @@ int main(int argc, char *argv[])
 	}
 
 	fev0 = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
+	evlen = 1;
 	if (fev0 == -1){
 #ifdef _DEBUG
 		ts_printf(STDOUT_FILENO, "%s: Event driver hasn't open\n", APP_NAME);
 #endif
+		fev0 = 0;
+		evlen = 0;
 	}
 
 	chldpid = mf_init(getpath2fifoul(), APP_NAME, m700_recv_data);
@@ -92,7 +95,7 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		ret = mf_waitevent(mf_buffer, sizeof(mf_buffer), 0, &fev0, 1);
+		ret = mf_waitevent(mf_buffer, sizeof(mf_buffer), 0, &fev0, evlen);
 
 		if(!ret)
 		{
@@ -100,7 +103,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 
-		if(ret == 1)
+		if (ret == 1)
 		{
 			// start forward endpoint
 #ifdef _DEBUG

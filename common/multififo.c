@@ -880,6 +880,10 @@ FILE *fsema;
 	ret = pthread_attr_setstacksize(&in_thread_attr, INOTIFYTHR_STACKSIZE);
 	ret = pthread_create(&in_thread, &in_thread_attr, inotify_thr, NULL);
 
+	// Delay for ready thread to data receive
+	// It's very need for stable run
+	usleep(10);
+
 	// Create file semaphore
 	strcpy(fname, pathinit);
 	strcat(fname,"/");
