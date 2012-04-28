@@ -1037,8 +1037,6 @@ struct endpoint *ep = 0;
 	// Find endpoint by addr
 	for (i = 1; i < maxep; i++){
 
-		ts_printf(STDOUT_FILENO, "MF_EP: adr = %d, adr_link = %d \n", myeps[i]->eih.addr, myeps[i]->eih.numep);
-
 		if (myeps[i]->eih.addr == addr){
 			ep = myeps[i];
 			if (direct == DIRDN){
@@ -1059,8 +1057,6 @@ struct endpoint *ep = 0;
 
 	if (!ep) return -1;
 	if (!ch) return -1;
-
-	ts_printf(STDOUT_FILENO, "MF_EP: ch pointr = 0x%08X, descin = 0x%08X, descout 0x%08X \n", ch, ch->descin, ch->descout);
 
 	// Write data to channel
 	if (ch->descout) wrlen = write(ch->descout, buf, len);

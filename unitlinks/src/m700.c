@@ -133,13 +133,9 @@ int main(int argc, char *argv[])
 #endif
 				// Create asdu frame for LocX
 				edh = (ep_data_header*) make_tsasdu(iets);
+				edh->sys_msg = EP_USER_DATA;
+				edh->len = sizeof(asdu) + sizeof(data_unit);
 				edh->adr = m700_get_ep_ext(1, M700_LINK_ADR)->adr;
-
-//#ifdef _DEBUG
-//				for (res = 0; (res < 5) && (ep_exts[res]); res++){
-//					ts_printf(STDOUT_FILENO, "M700: EP Ext: adr = %d, adr_link = %d \n", ep_exts[res]->adr, ep_exts[res]->adr_link);
-//				}
-//#endif
 
 				// send ITMI event to startiec
 				mf_toendpoint((char*) edh, sizeof(ep_data_header) + edh->len, edh->adr, DIRUP);
@@ -1256,6 +1252,7 @@ data_unit *pdu = (data_unit*) (pasdu + sizeof(asdu));
 	pasdu->data = pdu;
 
 	pasdu->adr = M700_ASDU_ADR;	// it's zero, set next
+	// FIXME next parameters
 	pasdu->attr = 0;
 	pasdu->fnc = 0;
 	pasdu->proto = 0;

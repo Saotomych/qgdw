@@ -849,12 +849,12 @@ uint32_t i, x;
 			// Print Statistics and send data to MF
 			ts_printf(STDOUT_FILENO, "IEC61850: Statistics:\n");
 			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_unit(s)\n", cntdu);
+
 			if (cntdm){
 				ts_printf(STDOUT_FILENO, "IEC61850: sent %d data_unit(s) to %d SCADA\n", cntdm, send_asdu2scada(senddm, cntdm));
 			}
 
 			if (cntve){
-
 				pve = (varevent*) (sendve + sizeof(ep_data_header));
 				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable's uid 0x%X[%d] was send to HMI \n", pve->uid, pve->validx);
 
@@ -865,8 +865,8 @@ uint32_t i, x;
 			ts_printf(STDOUT_FILENO, "\n");
 
 			// Free buffers
-			free(sendve);
-			free(senddm);
+			if (sendve) free(sendve);
+			if (senddm) free(senddm);
 
 			break;
 
