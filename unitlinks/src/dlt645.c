@@ -1397,7 +1397,7 @@ uint16_t dlt645_time_sync_send(dlt645_ep_ext *ep_ext)
 		d_fr->fnc = FNC_TIME_SYNC;
 		d_fr->dir = DIR_REQUEST;
 
-		d_fr->adr = ep_ext->adr;
+		d_fr->adr_hex = 0x999999999999;
 
 		d_fr->data_len = 6;
 		d_fr->data = (unsigned char*) malloc(d_fr->data_len);
