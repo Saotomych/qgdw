@@ -1247,15 +1247,15 @@ uint8_t tsframe[sizeof(ep_data_header) + sizeof(asdu) + sizeof(data_unit)];
 
 uint8_t *make_tsasdu(struct input_event *ev){
 asdu *pasdu = (asdu*)(tsframe + sizeof(ep_data_header));
-data_unit *pdu = (data_unit*) (pasdu + sizeof(asdu));
+data_unit *pdu = (data_unit*) ((char*)pasdu + sizeof(asdu));
 
 	pasdu->data = pdu;
 
 	pasdu->adr = M700_ASDU_ADR;	// it's zero, set next
 	// FIXME next parameters
 	pasdu->attr = 0;
-	pasdu->fnc = 0;
-	pasdu->proto = 0;
+	pasdu->fnc = 3; // set to field fnc value cause of transmission - COT_Spont = 3 (spontaneous transmission by IEC101/104 specifications)
+	pasdu->proto = PROTO_M700;
 	pasdu->size = sizeof(data_unit);
 	pasdu->type = 35;
 
