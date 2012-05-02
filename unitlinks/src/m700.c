@@ -131,14 +131,14 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 				ts_printf(STDOUT_FILENO, "M700: ITMI event: %X, %X, %X\n", iets->value, iets->type, iets->code);
 #endif
-				// Create asdu frame for LocX
-				edh = (ep_data_header*) make_tsasdu(iets);
-				edh->sys_msg = EP_USER_DATA;
-				edh->len = sizeof(asdu) + sizeof(data_unit);
-				edh->adr = m700_get_ep_ext(1, M700_LINK_ADR)->adr;
+				if(ep_exts[0])
+				{
+					// Create asdu frame for LocX
+					edh = (ep_data_header*) make_tsasdu(iets, ep_exts[0]->adr);
 
-				// send ITMI event to startiec
-				mf_toendpoint((char*) edh, sizeof(ep_data_header) + edh->len, edh->adr, DIRUP);
+					// send ITMI event to startiec
+					mf_toendpoint((char*) edh, sizeof(ep_data_header) + edh->len, edh->adr, DIRUP);
+				}
 			}
 		}
 
@@ -1245,18 +1245,23 @@ uint16_t m700_read_adr_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 // Make frame for telesignal data
 uint8_t tsframe[sizeof(ep_data_header) + sizeof(asdu) + sizeof(data_unit)];
 
-uint8_t *make_tsasdu(struct input_event *ev){
+uint8_t *make_tsasdu(struct input_event *ev, uint16_t adr){
+ep_data_header *edh = (ep_data_header*) tsframe;
 asdu *pasdu = (asdu*)(tsframe + sizeof(ep_data_header));
 data_unit *pdu = (data_unit*) ((char*)pasdu + sizeof(asdu));
 
+	edh->sys_msg = EP_USER_DATA;
+	edh->len = sizeof(asdu) + sizeof(data_unit);
+	edh->adr = adr;
+
 	pasdu->data = pdu;
 
-	pasdu->adr = M700_ASDU_ADR;	// it's zero, set next
-	// FIXME next parameters
+	pasdu->adr = adr;	// it's zero, set next
 	pasdu->attr = 0;
 	pasdu->fnc = 3; // set to field fnc value cause of transmission - COT_Spont = 3 (spontaneous transmission by IEC101/104 specifications)
 	pasdu->proto = PROTO_M700;
 	pasdu->size = sizeof(data_unit);
+	// FIXME next parameter
 	pasdu->type = 35;
 
 	ts_sprintf(pdu->name, "TMLoc%d", ev->code - BTN_TRIGGER_HAPPY);

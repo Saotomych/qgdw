@@ -197,7 +197,7 @@ char buf[160] = {0};
 int ret, pid, wait_st;
 int opipe[2];
 struct timeval tv;
-fd_set readset;
+static fd_set readset;
 
 		par[0] = pidof;
 		par[1] = name;
@@ -226,7 +226,7 @@ fd_set readset;
 		}
 		pid = ret;
 		waitpid(pid, &wait_st, 0);
-//		FD_ZERO(&readset);
+		FD_ZERO(&readset);
 	    FD_SET(opipe[0], &readset);
 	    close(opipe[1]);
 	    tv.tv_sec = 1;

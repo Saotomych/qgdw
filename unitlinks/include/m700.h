@@ -124,7 +124,7 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr);
 uint16_t m700_asdu_send(asdu *dlt_asdu, uint16_t adr, uint8_t dir);
 uint16_t m700_asdu_recv(unsigned char* buff, uint32_t buff_len, uint16_t adr);
 
-uint8_t *make_tsasdu(struct input_event *ev);
+uint8_t *make_tsasdu(struct input_event *ev, uint16_t adr);
 
 
 void sighandler_sigchld(int arg);
