@@ -519,6 +519,7 @@ uint32_t get_quanoftypes(){
 	return (sizeof(lntxts) / sizeof(struct _lntxt));
 }
 
+// Return russian string - definition of LN class
 char *get_textbylnclass(char* lnclass){
 int i, z;
 	z = sizeof(lntxts) / sizeof(struct _lntxt);
