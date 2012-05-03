@@ -250,26 +250,33 @@ int prev_type_ln(void *arg){
 LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
-int i, idx;
+int i, idx, lnid;
 int inst = atoi(pln->ln.ldinst);
 
-	idx = get_quanoftypes();
-	for (i = 0; i < idx; i++){
+	lnid = get_quanoftypes();
+	for (i = 0; i < lnid; i++){
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
-	if (i) i--;
-	lntype = lntxts[i].ln;
 
-	// Find LLN0
-	idx = atoi(pln->ln.ldinst);
-	while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+	do{
 
-	// Find prev LN by class
-	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
-	if ((pln) && (idx == atoi(pln->ln.ldinst))){
-		*pbln = pln;
-		return REMAKEMENU;
-	}
+		if (i) i--;
+		else i = lnid-1;
+		lntype = lntxts[i].ln;
+
+		// Find LLN0
+		pln = *pbln;
+		idx = atoi(pln->ln.ldinst);
+		while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+		// Find prev LN by class
+		while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
+		if ((pln) && (idx == atoi(pln->ln.ldinst))){
+			*pbln = pln;
+			return REMAKEMENU;
+		}
+
+	}while(i);
 
 	return 0;
 }
@@ -279,27 +286,33 @@ int next_type_ln(void *arg){
 LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
-int i, idx;
+int i, idx, lnid;
 int inst = atoi(pln->ln.ldinst);
 
-	idx = get_quanoftypes();
-	for (i = 0; i < idx; i++){
+	lnid = get_quanoftypes();
+	for (i = 0; i < lnid; i++){
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
-	i++;
-	if (i >= idx) i = 0;
-	lntype = lntxts[i].ln;
 
-	// Find LLN0
-	idx = atoi(pln->ln.ldinst);
-	while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+	do{
 
-	// Find next LN by class
-	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
-	if ((pln) && (idx == atoi(pln->ln.ldinst))){
-		*pbln = pln;
-		return REMAKEMENU;
-	}
+		i++;
+		if (i >= lnid) i = 0;
+		lntype = lntxts[i].ln;
+
+		// Find LLN0
+		pln = *pbln;
+		idx = atoi(pln->ln.ldinst);
+		while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+		// Find next LN by class
+		while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
+		if ((pln) && (idx == atoi(pln->ln.ldinst))){
+			*pbln = pln;
+			return REMAKEMENU;
+		}
+
+	}while(i);
 
 	return 0;
 }
