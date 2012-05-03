@@ -331,6 +331,9 @@ struct tm *ttm;
 		}
 
 		if (ret == REDRAW){
+
+			vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 			redraw_screen(NULL);
 		}
 	}

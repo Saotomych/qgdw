@@ -389,8 +389,7 @@ int next_jourmin(void *arg){
 
 	jourtime = next_min((void*) jourtime);
 
-//	return REDRAWTIMEJOUR;
-	return REMAKEMENU;
+	return REDRAWTIMEJOUR;
 
 }
 
@@ -398,8 +397,7 @@ int prev_jourmin(void *arg){
 
 	jourtime = prev_min((void*) jourtime);
 
-//	return REDRAWTIMEJOUR;
-	return REMAKEMENU;
+	return REDRAWTIMEJOUR;
 }
 
 int next_mainmin(void *arg){
@@ -421,8 +419,7 @@ int prev_interval(void *arg){
 	if (pinterval > &intervals) pinterval--;
 	else pinterval = &intervals + 6;
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 
 }
 
@@ -431,8 +428,7 @@ int next_interval(void *arg){
 	if (pinterval < (&intervals+6)) pinterval++;
 	else pinterval = &intervals;		// Time Interval for view journal records
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 
 }
 
@@ -440,16 +436,14 @@ int prev_tarif(void *arg){
 
 	if (acttarif->l.prev) acttarif = acttarif->l.prev;
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 }
 
 int next_tarif(void *arg){
 
 	if (acttarif->l.next) acttarif = acttarif->l.next;
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 }
 
 // Array of structures "synonym to function"
