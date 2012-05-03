@@ -429,7 +429,6 @@ int next_interval(void *arg){
 	else pinterval = &intervals;		// Time Interval for view journal records
 
 	return REDRAW;
-
 }
 
 int prev_tarif(void *arg){
