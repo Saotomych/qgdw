@@ -649,13 +649,16 @@ ep_data_header *edh;
 varattach *vb;
 char *varname;
 u08 *varbuf = NULL;
-uint32_t len;
+uint32_t len, i;
 
 	while(vr){
 		// Need attach
 		if (vr->prop & vartype){
 			// make full name LDinst.LNprefix.LNclass.LNdesc.
 			// ready part = DOname.DAname.BDAname.JRNoffset
+
+			vr->prop &= ~TRUEVALUE;
+			for (i=0; i < vr->maxval; i++) *((int*)(vr->val[i].val)) = 0;
 
 			len = sizeof(ep_data_header) + sizeof(varattach) + 7 + strlen(actln->ln.ldinst)
 									  + strlen(actln->ln.prefix)

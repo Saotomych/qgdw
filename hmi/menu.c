@@ -111,7 +111,7 @@ int i;
 			GrSetGCForeground(gc, fg);
 			GrSetGCFont(gc, num_menu->font);
 
-			if (pitem->vr) {
+			if ((pitem->vr) && (pitem->vr->prop & TRUEVALUE)){
 
 				wintext[0] = 0;
 				wintext[1] = 0;
