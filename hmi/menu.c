@@ -298,6 +298,7 @@ struct tm *ttm;
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
 		num_item = num_menu->num_item;
+
 		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
@@ -315,6 +316,9 @@ struct tm *ttm;
 			memcpy(&jtime_tm, ttm, sizeof(struct tm));
 			jyear = 1900 + jtime_tm.tm_year;
 			j_mon = jtime_tm.tm_mon + 1;
+
+			vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 			redraw_screen(NULL);
 		}
 
@@ -339,6 +343,7 @@ struct tm *ttm;
 	if (num_menu->pitems[num_menu->num_item]->action){
 		ret = call_action(event->keystroke.ch, num_menu);
 		num_item = num_menu->num_item;
+
 		if (ret == REMAKEMENU){
 			num_menu = destroy_menu(num_menu, DIR_SIDEBKW);
 			if (!num_menu){
@@ -356,6 +361,9 @@ struct tm *ttm;
 			memcpy(&jtime_tm, ttm, sizeof(struct tm));
 			jyear = 1900 + jtime_tm.tm_year;
 			j_mon = jtime_tm.tm_mon + 1;
+
+			vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 			redraw_screen(NULL);
 		}
 
@@ -547,6 +555,8 @@ struct tm *ttm;
 	myear = 1900 + mtime_tm.tm_year;
 	m_mon = mtime_tm.tm_mon + 1;
 
+	vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 	redraw_screen(NULL);
 
 }
@@ -611,7 +621,8 @@ struct tm *ttm;
 	myear = 1900 + mtime_tm.tm_year;
 	m_mon = mtime_tm.tm_mon + 1;
 
-//	vc_recall_jourrefresh(var name in jour format, journal time, interval);
+	vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 	redraw_screen(NULL);
 }
 
@@ -676,6 +687,9 @@ int i = num_menu->num_item - 2;
 
 	num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 	pinterval = &intervals[i];
+
+	vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 	redraw_screen(NULL);
 }
 
@@ -691,6 +705,9 @@ tarif *ptarif = (tarif*) &ftarif;
 		acttarif = ptarif;
 		num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 		call_action(NODIRECT, num_menu);		// Refresh variables
+
+		vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, LOGGED);
+
 		redraw_screen(NULL);
 	}else num_menu = destroy_menu(num_menu, DIR_BACKWARD);
 
@@ -700,6 +717,7 @@ tarif *ptarif = (tarif*) &ftarif;
 void redraw_screen(void *arg){
 int i;
 
+//  Full redraw
 	for (i = 0; i < num_menu->count_item; i++){
 		do_paint(num_menu->pitems[i], FGCOLOR, BGCOLOR);
 	}

@@ -14,6 +14,7 @@
 #define IDHMI			0x10000
 
 // varrec properties
+#define LOGGED		0x200
 #define ATTACHING	0x100
 #define TRUEVALUE	0x080
 #define ISATTACHED	0x040
@@ -99,11 +100,9 @@ extern int vc_get_type_by_name(char *name, char *type);
 extern char* vc_typetest(char *ptype);
 extern varrec *vc_addvarrec(LNODE *actln, char *varname, value *defvr);
 extern int vc_destroyvarreclist(varrec *fvr);
-//extern void vc_attach_dataset(varrec *vr, time_t *t, LNODE *actln);
-extern void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln);
+extern void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln, uint32_t vartype);
 extern void vc_freevarrec(varrec *vr);
 extern void vc_detach_dataset(varrec *vr, LNODE *actln);
 extern varrec* vc_getfirst_varrec(void);
-extern void vc_recall_jourrefresh(char *name, time_t jtime);
 
 #endif /* VARCONTROL_H_ */
