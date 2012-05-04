@@ -121,6 +121,8 @@ struct tm *ttm;
 
 					if (!pitem->printtype){
 
+						// PRINT VALUE
+
 						idtype = pitem->vr->val[i].idtype;
 
 						if (idtype & FLOAT32){
@@ -171,6 +173,9 @@ struct tm *ttm;
 						}
 
 					}else{
+
+						// PRINT TIME
+
 						if (pitem->vr->ptime){
 							if ((int)pitem->vr->ptime[i] != -1){
 								ttm = localtime(&(pitem->vr->ptime[i]));
@@ -178,6 +183,9 @@ struct tm *ttm;
 							}else{
 								ts_sprintf(wintext, "-----", pitem->text, ttm->tm_hour, ttm->tm_min, pitem->endtext);
 							}
+						}else{
+							ttm = localtime(&(pitem->vr->time));
+							ts_sprintf(wintext, "%s%02d:%02d%s", pitem->text, ttm->tm_hour, ttm->tm_min, pitem->endtext);
 						}
 					}
 
