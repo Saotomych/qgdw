@@ -148,7 +148,8 @@ varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	if (vr->val) memcpy(vr->val, val, sizeof(value));
 	vr->maxval = 1;
 	vr->prop = INTERNAL | TRUEVALUE;
-	vr->time = 0;
+	vr->time = -1;
+	vr->ptime = NULL;
 	return vr;
 }
 
@@ -157,7 +158,8 @@ varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 	// Initialize varrec
 	if (init_varrec(vr, vallen)){	// mallocs for 'fcdarec' and 'value'
 		lastvr = vr;
-		vr->time = 0;
+		vr->time = -1;
+		vr->ptime = NULL;
 		vr->maxval = vallen;
 		// Copy global variable to local for local changes
 		vr->val->idtype = STRING;
@@ -174,6 +176,20 @@ varrec *vr = (varrec*) create_next_struct_in_list(&(lastvr->l), sizeof(varrec));
 		}
 		return NULL;
 	}
+}
+
+static varrec* findiecvarrec(char *varname){
+varrec *vr = (varrec*) fvarrec.next;
+
+	while (vr){
+		ts_printf(STDOUT_FILENO, "VC: %s == %s, prop = 0x%X\n", vr->name->fc, varname, vr->prop);
+		if (strstr(vr->name->fc, varname)){
+			if (vr->prop & LOGGED) return vr;
+		}
+		vr = vr->l.next;
+	}
+
+	return 0;
 }
 
 char* vc_typetest(char *ptype){
@@ -206,6 +222,7 @@ char keywords[][10] = {
 		{"LD:"},
 		{"LN:"},
 		{"JR:"},
+		{"JRTIME:"},
 };
 
 	pld = pln->ln.pmyld;
@@ -593,6 +610,30 @@ char keywords[][10] = {
 					return vr;
 
 					break;
+
+			case 5:		// JRTIME
+					// Get first position and value lenght
+					po = strchr(varname,  '.');
+					if (po == NULL) return NULL;
+					*po = 0;
+
+					p = strchr(varname, ':');
+					if (p == NULL) return NULL;
+
+					// Find var in varrec list
+					vr = findiecvarrec(p+1);
+
+					// Make place for multitime store
+					if (vr){
+						vr->ptime = malloc(vr->maxval * sizeof(int));
+						memset(vr->ptime, -1, vr->maxval * sizeof(int));
+						vr->prop |= PRINTPTIME;
+					}
+
+					return vr;
+
+					break;
+
 			}
 		}
 	}
@@ -611,6 +652,7 @@ int i;
 	if (vr->val->name) free(vr->val->name);
 	if (vr->val) free(vr->val);
 	if (vr->name) free(vr->name);
+	if (vr->ptime) free(vr->ptime);
 	free(vr);
 }
 
@@ -658,7 +700,10 @@ uint32_t len, i;
 			// ready part = DOname.DAname.BDAname.JRNoffset
 
 			vr->prop &= ~TRUEVALUE;
-			for (i=0; i < vr->maxval; i++) *((int*)(vr->val[i].val)) = 0;
+			for (i=0; i < vr->maxval; i++){
+				*((int*)(vr->val[i].val)) = 0;
+				if (vr->ptime) vr->ptime[i] = -1;
+			}
 
 			len = sizeof(ep_data_header) + sizeof(varattach) + 7 + strlen(actln->ln.ldinst)
 									  + strlen(actln->ln.prefix)

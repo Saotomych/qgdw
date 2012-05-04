@@ -14,6 +14,8 @@
 #define IDHMI			0x10000
 
 // varrec properties
+#define PRINTPTIME  0x800
+#define PRINTTIME	0x400
 #define LOGGED		0x200
 #define ATTACHING	0x100
 #define TRUEVALUE	0x080
@@ -90,7 +92,8 @@ typedef struct _VARREC{
 	int maxval;		// Lenght of value array (defaul = 1)
 	int id;			// ID of va from mainmap.cfg, for fast identify with otherside varrec
 	int prop;		// properties: const, var, attaching, true value.
-	int time;		// time from last refresh value, usec
+	time_t time;		// time from last refresh value, usec
+	time_t *ptime;		// pointer to buffer for many values times
 	uint32_t	uid;	// unique ID of value, it's equal pointer to varrec in HMI
 } varrec, *pvarrec;
 

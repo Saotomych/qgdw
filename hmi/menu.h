@@ -59,6 +59,7 @@ typedef struct _item{
 	char *action;
 	char next_item;		// index of next menu point
 	char prev_item;		// index of previous menu point
+	char printtype;		// flag for print type: value or time
 } item;
 
 typedef struct _menu{

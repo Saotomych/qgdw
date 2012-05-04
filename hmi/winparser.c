@@ -322,6 +322,13 @@ menu *num_menu = allmenus[maxmenus];
 	            	*p = 0;
 	            	p += 5;
 	            	num_menu->pitems[i]->vr = vc_addvarrec(actlnode, p, defvalues);
+	            	// time: 2; ptime: 1
+	            	if (num_menu->pitems[i]->vr){
+	            		if (num_menu->pitems[i]->vr->prop & PRINTPTIME) num_menu->pitems[i]->printtype = 1;
+	            		if (num_menu->pitems[i]->vr->prop & PRINTTIME) num_menu->pitems[i]->printtype = 2;
+	            		num_menu->pitems[i]->vr->prop &= ~(PRINTTIME | PRINTPTIME);
+	            	}
+
 	            	while ((*p != ' ') && (*p)) p++;
 	            	num_menu->pitems[i]->endtext = p;
 	            }else{

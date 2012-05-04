@@ -100,6 +100,7 @@ GR_WINDOW_INFO winfo;
 int len = sizeof(wintext) - 1;
 int idtype;
 int i;
+struct tm *ttm;
 
 			GrGetWindowInfo(*main_window, &winfo);
 
@@ -118,53 +119,66 @@ int i;
 
 				for(i=0; i < pitem->vr->maxval; i++){
 
-					idtype = pitem->vr->val[i].idtype;
+					if (!pitem->printtype){
 
-					if (idtype & FLOAT32){
-						ts_sprintf(wintext, "%s%9.2f%s", pitem->text, *((float*) (pitem->vr->val[i].val)), pitem->endtext);
-					}
+						idtype = pitem->vr->val[i].idtype;
 
-					if (idtype & INT32){
-						ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val[i].val)), pitem->endtext);
-					}
-
-					if (idtype & PTRINT32){
-						if (*((int*) (pitem->vr->val[i].val))){
-							ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val[i].val))), pitem->endtext);
-						}else ts_sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val[i].defval, pitem->endtext);
-					}
-
-					if (idtype & INT32DIG2){
-						ts_sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val[i].val)), pitem->endtext);
-					}
-
-					if (idtype & INT64){
-						ts_sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val[i].val)), pitem->endtext);
-					}
-
-					if (idtype & STRING){
-						strncpy(wintext, pitem->text, sizeof(wintext) - 1);
-						len -= strlen(wintext);
-						if ((pitem->vr) && (&pitem->vr->val[i])){
-							if (pitem->vr->val[i].val) strncat(wintext, (char*) pitem->vr->val[i].val, len);
-							else if (pitem->vr->val[i].defval) strncat(wintext, (char*) pitem->vr->val[i].defval, len);
+						if (idtype & FLOAT32){
+								ts_sprintf(wintext, "%s%9.2f%s", pitem->text, *((float*) (pitem->vr->val[i].val)), pitem->endtext);
 						}
-						len = sizeof(wintext) - 1 - strlen(wintext);
-						if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
-						wintext[sizeof(wintext) - 1] = 0;
-					}
 
-					if (idtype & PTRSTRING){
-						strncpy(wintext, pitem->text, sizeof(wintext) - 1);
-						len -= strlen(wintext);
-						if ((pitem->vr) && (&pitem->vr->val[i])){
-							if ((pitem->vr->val[i].val) && (*((int*) pitem->vr->val[i].val)))
-								strncat(wintext, (char*) *((int*) pitem->vr->val[i].val), len);
-							else if (pitem->vr->val[i].defval) strncat(wintext, (char*) pitem->vr->val[i].defval, len);
+						if (idtype & INT32){
+							ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*) (pitem->vr->val[i].val)), pitem->endtext);
 						}
-						len = sizeof(wintext) - 1 - strlen(wintext);
-						if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
-						wintext[sizeof(wintext) - 1] = 0;
+
+						if (idtype & PTRINT32){
+							if (*((int*) (pitem->vr->val[i].val))){
+								ts_sprintf(wintext, "%s%d%s", pitem->text, *((int*)*((int*) (pitem->vr->val[i].val))), pitem->endtext);
+							}else ts_sprintf(wintext, "%s%s%s", pitem->text, (char*) pitem->vr->val[i].defval, pitem->endtext);
+						}
+
+						if (idtype & INT32DIG2){
+							ts_sprintf(wintext, "%s%02d%s", pitem->text, *((int*) (pitem->vr->val[i].val)), pitem->endtext);
+						}
+
+						if (idtype & INT64){
+							ts_sprintf(wintext, "%s%ld%s", pitem->text, *((long*) (pitem->vr->val[i].val)), pitem->endtext);
+						}
+
+						if (idtype & STRING){
+							strncpy(wintext, pitem->text, sizeof(wintext) - 1);
+							len -= strlen(wintext);
+							if ((pitem->vr) && (&pitem->vr->val[i])){
+								if (pitem->vr->val[i].val) strncat(wintext, (char*) pitem->vr->val[i].val, len);
+								else if (pitem->vr->val[i].defval) strncat(wintext, (char*) pitem->vr->val[i].defval, len);
+							}
+							len = sizeof(wintext) - 1 - strlen(wintext);
+							if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
+							wintext[sizeof(wintext) - 1] = 0;
+						}
+
+						if (idtype & PTRSTRING){
+							strncpy(wintext, pitem->text, sizeof(wintext) - 1);
+							len -= strlen(wintext);
+							if ((pitem->vr) && (&pitem->vr->val[i])){
+								if ((pitem->vr->val[i].val) && (*((int*) pitem->vr->val[i].val)))
+									strncat(wintext, (char*) *((int*) pitem->vr->val[i].val), len);
+								else if (pitem->vr->val[i].defval) strncat(wintext, (char*) pitem->vr->val[i].defval, len);
+							}
+							len = sizeof(wintext) - 1 - strlen(wintext);
+							if ((pitem->endtext) && (len > 0)) strncat(wintext, pitem->endtext, len);
+							wintext[sizeof(wintext) - 1] = 0;
+						}
+
+					}else{
+						if (pitem->vr->ptime){
+							if ((int)pitem->vr->ptime[i] != -1){
+								ttm = localtime(&(pitem->vr->ptime[i]));
+								ts_sprintf(wintext, "%s%02d:%02d%s", pitem->text, ttm->tm_hour, ttm->tm_min, pitem->endtext);
+							}else{
+								ts_sprintf(wintext, "-----", pitem->text, ttm->tm_hour, ttm->tm_min, pitem->endtext);
+							}
+						}
 					}
 
 					GrText(*main_window, gc, 2, MENUSTEP * i, wintext, strlen(wintext), GR_TFUTF8|GR_TFTOP);

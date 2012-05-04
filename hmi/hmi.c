@@ -281,6 +281,11 @@ value *actval;
 			break;
 		}
 
+		if (avr->ptime){
+			avr->ptime[ave->validx] = ave->time;
+		}
+		else avr->time = ave->time;
+
 	}
 
 	return 0;
