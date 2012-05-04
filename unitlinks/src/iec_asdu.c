@@ -205,7 +205,7 @@ void iec_asdu_build_cp56time2a(unsigned char *buff, uint32_t *offset, cp56time2a
 
 void iec_asdu_parse_C_CS(unsigned char *buff, uint32_t *offset, data_unit *unit, uint8_t type)
 {
-	unit->value_type = ASDU_VAL_TIME;
+	unit->value_type = ASDU_VAL_NONE;
 
 	cp56time2a time_tag;
 	iec_asdu_parse_cp56time2a(buff, offset, &time_tag);

@@ -776,8 +776,8 @@ uint16_t iec104_time_sync_send(iec104_ep_ext *ep_ext)
 
 		if(iec_asdu->data)
 		{
+			iec_asdu->data->value_type = ASDU_VAL_NONE;
 			iec_asdu->data->time_tag = cur_time;
-			iec_asdu->data->value_type = ASDU_VAL_TIME;
 
 			res = iec104_frame_i_send(iec_asdu, ep_ext, DIRDN);
 
