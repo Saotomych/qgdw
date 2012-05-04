@@ -352,7 +352,7 @@ menu *num_menu = allmenus[maxmenus];
 	         allmenus[maxmenus] = num_menu;
    	 	 	 maxmenus++;
 
-   	 		 vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode);
+   	 		 vc_attach_dataset(num_menu->fvarrec, &jourtime, *pinterval, actlnode, ATTACHING | LOGGED);
 
    	 	 	 return num_menu;
 }

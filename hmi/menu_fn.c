@@ -59,7 +59,7 @@ int x, y = 0;
 char *lnodefilter = "MMXU";
 
 	pln = (LNODE*) fln.next; x = 0;
-	ts_sprintf(pmenu, "main 4 33 155 126\n");
+	ts_sprintf(pmenu, "main 4 16 151 140\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys enter:setlnbyclass\n");
 	pmenu += strlen(pmenu);
@@ -89,7 +89,7 @@ LNODE *pln = (LNODE*) actlnode;
 int x, y = 0, inst;
 
 	pln = actlnode; x = 2;
-	ts_sprintf(pmenu, "main 4 48 155 111\n");
+	ts_sprintf(pmenu, "main 4 16 151 140\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys enter:setlnbytype\n");
 	pmenu += strlen(pmenu);
@@ -105,7 +105,7 @@ int x, y = 0, inst;
 	// Make text menu
 	while ((pln) && (inst == atoi(pln->ln.ldinst))){
 		ptxt = get_textbylnclass(pln->ln.lnclass);
-		if (ptxt){
+		if ((ptxt) && (!strstr(txtmenu, ptxt))){
 			ts_sprintf(pmenu, "menu %d %d a a %s\n", x, y, ptxt);
 			pmenu += strlen(pmenu);
 			y += MENUSTEP;
@@ -113,52 +113,10 @@ int x, y = 0, inst;
 		pln = pln->l.next;
 	}
 
-//	while(pln){
-//		if (!strcmp(pln->ln.lnclass, lntxts[0].ln)){
-//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-//			pmenu += strlen(pmenu);
-//			y += MENUSTEP;
-//		}
-//		pln = pln->l.next;
-//	}
-//
-//	pln = (LNODE*) fln.next;
-//	while(pln){
-//		if (!strcmp(pln->ln.lnclass, lnclasses[1])){
-//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-//			pmenu += strlen(pmenu);
-//			y += MENUSTEP;
-//		}
-//		pln = pln->l.next;
-//	}
-//
-//	pln = (LNODE*) fln.next;
-//	while(pln){
-//		if (!strcmp(pln->ln.lnclass, lnclasses[2])){
-//			ts_sprintf(pmenu, "menu %d %d a a %s.%s.%s%s\n", x, y, pln->ln.prefix, pln->ln.ldinst, pln->ln.lnclass, pln->ln.lninst);
-//			pmenu += strlen(pmenu);
-//			y += MENUSTEP;
-//		}
-//		pln = pln->l.next;
-//	}
-
 	*pmenu = 0;
 
 	return txtmenu;
 }
-
-// Menu of Date
-//struct tm {
-//               int tm_sec;         /* seconds */
-//               int tm_min;         /* minutes */
-//               int tm_hour;        /* hours */
-//               int tm_mday;        /* day of the month */
-//               int tm_mon;         /* month */
-//               int tm_year;        /* year */
-//               int tm_wday;        /* day of the week */
-//               int tm_yday;        /* day in the year */
-//               int tm_isdst;       /* daylight saving time */
-//           };
 
 char* ChangeDate(char *arg){
 char *txtmenu = arg;

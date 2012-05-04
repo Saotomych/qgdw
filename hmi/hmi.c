@@ -255,6 +255,8 @@ value *actval;
 
 		if (ave->uid != avr->uid) return 0;
 
+		avr->prop |= TRUEVALUE;
+
 		actval = &avr->val[ave->validx];
 		switch(actval->idtype){
 		case QUALITY:

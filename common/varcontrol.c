@@ -585,7 +585,7 @@ char keywords[][10] = {
 							vr->val[i].val = malloc(sizeof_idx(vr->val[i].idtype));
 							memset(vr->val[i].val, 0, sizeof_idx(vr->val[i].idtype));
 						}
-						vr->prop = ATTACHING | NEEDFREE;
+						vr->prop = NEEDFREE | LOGGED;
 						vr->val->name = malloc(varlen);
 						strcpy(vr->val->name, varname);
 					}
@@ -640,18 +640,25 @@ varrec *prevvr;
 
 
 // Make attach to all remote variables of last menu
-void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln){
+// vartype:
+// ATTACHING for actual values
+// LOGGED for journal values
+// ATTACHING | LOGGED for all values
+void vc_attach_dataset(varrec *vr, time_t *t, uint32_t intr, LNODE *actln, uint32_t vartype){
 ep_data_header *edh;
 varattach *vb;
 char *varname;
 u08 *varbuf = NULL;
-uint32_t len;
+uint32_t len, i;
 
 	while(vr){
 		// Need attach
-		if (vr->prop & ATTACHING){
+		if (vr->prop & vartype){
 			// make full name LDinst.LNprefix.LNclass.LNdesc.
 			// ready part = DOname.DAname.BDAname.JRNoffset
+
+			vr->prop &= ~TRUEVALUE;
+			for (i=0; i < vr->maxval; i++) *((int*)(vr->val[i].val)) = 0;
 
 			len = sizeof(ep_data_header) + sizeof(varattach) + 7 + strlen(actln->ln.ldinst)
 									  + strlen(actln->ln.prefix)
@@ -736,11 +743,4 @@ uint32_t len = 0;
 varrec* vc_getfirst_varrec(void){
 
 	return fvarrec.next;
-}
-
-void vc_recall_jourrefresh(char *name, time_t jtime){
-ep_data_header edh = {0, 0, EP_MSG_VARREFRESH, 0};
-
-	mf_toendpoint((char*) &edh, sizeof(ep_data_header), IDHMI, DIRDN);
-
 }

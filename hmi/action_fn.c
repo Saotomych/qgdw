@@ -250,26 +250,33 @@ int prev_type_ln(void *arg){
 LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
-int i, idx;
+int i, idx, lnid;
 int inst = atoi(pln->ln.ldinst);
 
-	idx = get_quanoftypes();
-	for (i = 0; i < idx; i++){
+	lnid = get_quanoftypes();
+	for (i = 0; i < lnid; i++){
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
-	if (i) i--;
-	lntype = lntxts[i].ln;
 
-	// Find LLN0
-	idx = atoi(pln->ln.ldinst);
-	while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+	do{
 
-	// Find prev LN by class
-	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
-	if ((pln) && (idx == atoi(pln->ln.ldinst))){
-		*pbln = pln;
-		return REMAKEMENU;
-	}
+		if (i) i--;
+		else i = lnid-1;
+		lntype = lntxts[i].ln;
+
+		// Find LLN0
+		pln = *pbln;
+		idx = atoi(pln->ln.ldinst);
+		while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+		// Find prev LN by class
+		while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
+		if ((pln) && (idx == atoi(pln->ln.ldinst))){
+			*pbln = pln;
+			return REMAKEMENU;
+		}
+
+	}while(i);
 
 	return 0;
 }
@@ -279,27 +286,33 @@ int next_type_ln(void *arg){
 LNODE **pbln =  (LNODE**) &actlnode;
 LNODE *pln = *pbln;
 char *lntype;
-int i, idx;
+int i, idx, lnid;
 int inst = atoi(pln->ln.ldinst);
 
-	idx = get_quanoftypes();
-	for (i = 0; i < idx; i++){
+	lnid = get_quanoftypes();
+	for (i = 0; i < lnid; i++){
 		if (!strcmp(lntxts[i].ln, pln->ln.lnclass)) break;
 	}
-	i++;
-	if (i >= idx) i = 0;
-	lntype = lntxts[i].ln;
 
-	// Find LLN0
-	idx = atoi(pln->ln.ldinst);
-	while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+	do{
 
-	// Find next LN by class
-	while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
-	if ((pln) && (idx == atoi(pln->ln.ldinst))){
-		*pbln = pln;
-		return REMAKEMENU;
-	}
+		i++;
+		if (i >= lnid) i = 0;
+		lntype = lntxts[i].ln;
+
+		// Find LLN0
+		pln = *pbln;
+		idx = atoi(pln->ln.ldinst);
+		while((pln) && (pln->ln.prefix) && (inst == atoi(pln->ln.ldinst))) pln=pln->l.prev;
+
+		// Find next LN by class
+		while ((pln) && (strcmp(lntype, pln->ln.lnclass))) pln = pln->l.next;
+		if ((pln) && (idx == atoi(pln->ln.ldinst))){
+			*pbln = pln;
+			return REMAKEMENU;
+		}
+
+	}while(i);
 
 	return 0;
 }
@@ -376,8 +389,7 @@ int next_jourmin(void *arg){
 
 	jourtime = next_min((void*) jourtime);
 
-//	return REDRAWTIMEJOUR;
-	return REMAKEMENU;
+	return REDRAWTIMEJOUR;
 
 }
 
@@ -385,8 +397,7 @@ int prev_jourmin(void *arg){
 
 	jourtime = prev_min((void*) jourtime);
 
-//	return REDRAWTIMEJOUR;
-	return REMAKEMENU;
+	return REDRAWTIMEJOUR;
 }
 
 int next_mainmin(void *arg){
@@ -408,8 +419,7 @@ int prev_interval(void *arg){
 	if (pinterval > &intervals) pinterval--;
 	else pinterval = &intervals + 6;
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 
 }
 
@@ -418,8 +428,7 @@ int next_interval(void *arg){
 	if (pinterval < (&intervals+6)) pinterval++;
 	else pinterval = &intervals;		// Time Interval for view journal records
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 
 }
 
@@ -427,16 +436,14 @@ int prev_tarif(void *arg){
 
 	if (acttarif->l.prev) acttarif = acttarif->l.prev;
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 }
 
 int next_tarif(void *arg){
 
 	if (acttarif->l.next) acttarif = acttarif->l.next;
 
-//	return REDRAW;
-	return REMAKEMENU;
+	return REDRAW;
 }
 
 // Array of structures "synonym to function"
@@ -506,6 +513,7 @@ uint32_t get_quanoftypes(){
 	return (sizeof(lntxts) / sizeof(struct _lntxt));
 }
 
+// Return russian string - definition of LN class
 char *get_textbylnclass(char* lnclass){
 int i, z;
 	z = sizeof(lntxts) / sizeof(struct _lntxt);
