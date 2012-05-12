@@ -1258,20 +1258,20 @@ data_unit *pdu = (data_unit*) ((char*)pasdu + sizeof(asdu));
 
 	pasdu->adr = adr;	// it's zero, set next
 	pasdu->attr = 0;
-	pasdu->fnc = 3; // set to field fnc value cause of transmission - COT_Spont = 3 (spontaneous transmission by IEC101/104 specifications)
+	pasdu->fnc = COT_Spont; // set to field fnc value cause of transmission - COT_Spont = 3 (spontaneous transmission by IEC101/104 specifications)
 	pasdu->proto = PROTO_M700;
 	pasdu->size = sizeof(data_unit);
-	// FIXME next parameter
-	pasdu->type = 35;
+	pasdu->type = M_SP_TB_1;
 
 	ts_sprintf(pdu->name, "TMLoc%d", ev->code - BTN_TRIGGER_HAPPY);
 	pdu->attr = 0;
+	// FIXME set some real id!!!
 	pdu->id = ev->code;
 	pdu->time_iv = 0;
 	pdu->time_tag = ev->time.tv_sec;
 	pdu->value_type = ASDU_VAL_BOOL;
 
-	pdu->value.i = ev->value;
+	pdu->value.ui = ev->value ? 1 : 0;
 
 	return tsframe;
 }
