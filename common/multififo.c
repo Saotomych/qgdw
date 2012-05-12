@@ -753,6 +753,7 @@ struct inotify_event einoty;
 static int evcnt=0;
 struct timeval tv;
 fd_set readset, excpset;
+FILE *fsema;
 
 //	ts_printf(STDOUT_FILENO, "MFI %X: start inotify thread OK\n", appname);
 
@@ -762,7 +763,14 @@ fd_set readset, excpset;
 	}
 	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
 
-    do{
+	// create semaphore file
+	fsema = fopen((char*)arg, "w");
+	fwrite((char*)"on", 2, 1, fsema);
+	fclose(fsema);
+	free(arg);
+	arg = NULL;
+
+	do{
 		// Waiting for inotify events
 		FD_ZERO(&readset);
 		FD_ZERO(&excpset);
@@ -855,8 +863,7 @@ int ret;
 struct channel *initch = 0;
 pthread_t in_thread;
 pthread_attr_t in_thread_attr;
-char fname[160] = {0};
-FILE *fsema;
+char *semfname = NULL;
 
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGPWR, SIG_IGN);
@@ -868,6 +875,13 @@ FILE *fsema;
 	strcpy(pathapp, pathinit);
 	cb_rcvdata = func_rcvdata;
 
+	// Create semaphore file name
+	semfname = malloc(160);
+	strcpy(semfname, pathinit);
+	strcat(semfname,"/");
+	strcat(semfname, a_name);
+	strcat(semfname, sufsema);
+
 	d_inoty = inotify_init();
 	initch = initchannel(pathinit, a_name);
 	if (!initch) return -1;
@@ -878,20 +892,7 @@ FILE *fsema;
 	ret = pthread_attr_init(&in_thread_attr);
 	ret = pthread_attr_setdetachstate(&in_thread_attr, PTHREAD_CREATE_JOINABLE);
 	ret = pthread_attr_setstacksize(&in_thread_attr, INOTIFYTHR_STACKSIZE);
-	ret = pthread_create(&in_thread, &in_thread_attr, inotify_thr, NULL);
-
-	// Delay for ready thread to data receive
-	// It's very need for stable run
-	usleep(100);
-
-	// Create file semaphore
-	strcpy(fname, pathinit);
-	strcat(fname,"/");
-	strcat(fname, a_name);
-	strcat(fname, sufsema);
-	fsema = fopen(fname, "w");
-	fwrite((char*)"on", 2, 2, fsema);
-	fclose(fsema);
+	ret = pthread_create(&in_thread, &in_thread_attr, inotify_thr, (void*) semfname);
 
 //	signal(SIGQUIT, sighandler_sigquit);
 //	signal(SIGCHLD, sighandler_sigchld);
@@ -919,12 +920,6 @@ struct stat fstt;
 	par[0] = chld_name;
 	par[1] = NULL;
 
-	// Make name of semaphore file
-	strcpy(fname, pathinit);
-	strcat(fname,"/");
-	strcat(fname, chld_name);
-	strcat(fname, sufsema);
-
 	ret = mf_testrunningapp(chld_name);
 //	ret = 1;
 
@@ -933,8 +928,8 @@ struct stat fstt;
 	if (!ret){
 		// lowlevel application not running
 
-		// remove file semaphore
-		remove(fname);
+		// remove semaphore file
+		mf_semadelete(pathinit, chld_name);
 
 		// running it
 		ret = fork();
@@ -951,13 +946,20 @@ struct stat fstt;
 			exit(0);
 		}
 
+		// make name of semaphore file
+		strcpy(fname, pathinit);
+		strcat(fname,"/");
+		strcat(fname, chld_name);
+		strcat(fname, sufsema);
+
+		// wait for semaphore file
+		while(stat(fname, &fstt) == -1);
+
 //		was: usleep(1000);
 	}else{
 		ts_printf(STDOUT_FILENO, "MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 	}
 
-	// wait file semaphore
-	while(stat(fname, &fstt) == -1);
 
 	// Find real endpoint number
 	if (ep_num){
@@ -1007,7 +1009,7 @@ struct stat fstt;
 		return -1;
 	}
 
-	// prepare ep_init_heaer to transfer to child application
+	// prepare ep_init_header to transfer to child application
 	strcpy(eih_out.appname, appname);
 	eih_out.addr = ep->eih.addr;
 	eih_out.numep = ep->eih.numep;
