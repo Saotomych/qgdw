@@ -301,6 +301,7 @@ int32_t len = (uint32_t) ave - (uint32_t) edh - edh->len - sizeof(ep_data_header
 	return 0;
 }
 
+
 // -- Multififo receive data --
 int rcvdata(int len){
 char *buff;
@@ -345,7 +346,6 @@ varevent *ave;
 			break;
 		}
 
-		// move over the data
 		// move over the data
 		offset += sizeof(ep_data_header) + edh->len;
 	}

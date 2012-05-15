@@ -1,10 +1,22 @@
+#!/bin/sh
 source /tmp/about/setenv.sh
-rm /rw/mx00/configs/addr.cfg
-sftp $UPDATE@$SFTP:dev/$ID/configs/addr.cfg /rw/mx00/configs
-stat /rw/mx00/configs/addr.cfg
-if [ $? -eq 0 ]
+home1=/rw/mx00
+cd $home1/configs
+sftp $UPDATE@$SFTP:dev/$ID/configs/addr.cfg.md5 $home1/configs > /dev/null 2>&1
+md5sum -c addr.cfg.md5 > /dev/null 2>&1
+if [ $? -ne 0 ] 
+  then
+  rm $home1/configs/addr.cfg > /dev/null 2>&1
+  sftp $UPDATE@$SFTP:dev/$ID/configs/addr.cfg $home1/configs > /dev/null 2>&1
+  stat $home1/configs/addr.cfg > /dev/null 2>&1
+  if [ $? -eq 0 ]
     then
-    rm /rw/mx00/configs/*.icd
-    rm /rw/mx00/configs/*.cid
+    rm $home1/configs/*.icd > /dev/null 2>&1
+    rm $home1/configs/*.cid > /dev/null 2>&1
+    echo "new addr.cfg download OK" >> $home1/cfgupdate.log
+    echo "REBOOT" >> $home1/cfgupdate.log
+    echo "put $home1/cfgupdate.log dev/$ID/logs" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
     reboot
+  fi
 fi
+
