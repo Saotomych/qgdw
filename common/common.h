@@ -162,4 +162,7 @@ typedef struct _varevent{
 
 } __attribute__ ((packed)) varevent;
 
+// For args.c
+extern void args_parser(int argc, char * argv[]);
+
 #endif /* COMMON_H_ */

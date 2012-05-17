@@ -438,7 +438,7 @@ int itemy, itemh;
 void default_enter(GR_EVENT *event){
 	// Select new menu
 	if (num_menu->pitems[num_menu->num_item]->next_menu){
-		strcpy(tmpstring, "menus/");
+		strcpy(tmpstring, getpath2menu());
 		strcat(tmpstring, num_menu->pitems[num_menu->num_item]->next_menu);
 		num_menu = create_menu(tmpstring);
 		call_action(NODIRECT, num_menu);		// Refresh variables

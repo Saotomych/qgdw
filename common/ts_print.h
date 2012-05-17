@@ -16,8 +16,13 @@ extern "C" {
 
 
 #define TS_PRINT_BUFF_SIZE	512
+#define TS_VERBOSE	1
+#define TS_DEBUG	2
+#define TS_INFO		4
 
-int ts_printf(int desc, const char *fmt, ...);
+void ts_setmode(int mode);
+//int ts_printf(int desc, const char *fmt, ...);
+int ts_printf(int desc, int mode, const char *fmt, ...);
 int ts_sprintf(char *dest, const char *ftm, ...);
 
 

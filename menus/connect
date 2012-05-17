@@ -1,17 +1,32 @@
 main 0 0 160 160
-text 0 0 a a Присоединение
+text 0 0 a a Параметры сети
 text 0 16 77 a Адр: &var:LD:inst
 text 80 16 80 a Тип: &var:APP:devicetype
-menu a a a a Мощность активная (Вт)
-text a a a a Фаза А: &var:LN:WphsA.mag.f
-text a a a a Фаза B: &var:LN:WphsB.mag.f
-text a a a a Фаза С: &var:LN:WphsC.mag.f
-menu a a a a Мощность реакт. (вар)
-text a a a a Фаза А: &var:LN:VArphsA.mag.f
-text a a a a Фаза B: &var:LN:VArphsB.mag.f
-text a a a a Фаза С: &var:LN:VArphsC.mag.f
-menu a a a a Мощность полная (ВА)
-text a a a a Фаза А: &var:LN:VAphsA.mag.f
-text a a a a Фаза B: &var:LN:VAphsB.mag.f
-text a a a a Фаза С: &var:LN:VAphsC.mag.f
-menu a a a a Частота сети (Гц): &var:LN:Hz.mag.f
+menu a a a a Напряжение линейное(В)
+text a a a a Uab(B): &var:LN:PPVphsABcVal.mag.f
+text a a a a Ubc(B): &var:LN:PPVphsBCcVal.mag.f
+text a a a a Uca(B): &var:LN:PPVphsCAcVal.mag.f
+text a a a a -
+text a a a a -
+text a a a a -
+menu a a a a Напряжение фазное(В)
+text a a a a Ua(B): &var:LN:PhVphsA.mag.f
+text a a a a Ub(B): &var:LN:PhVphsB.mag.f
+text a a a a Uc(B): &var:LN:PhVphsC.mag.f
+text a a a a -
+text a a a a -
+text a a a a -
+menu a a a a Ток (А)
+text a a a a Ia(A): &var:LN:AphsA.mag.f
+text a a a a Ib(A): &var:LN:AphsB.mag.f
+text a a a a Ic(A): &var:LN:AphsC.mag.f
+text a a a a -
+text a a a a -
+text a a a a -
+menu a a a a Коэффицент мощности
+text a a a a cosF А: &var:LN:PFphsA.mag.f
+text a a a a cosF B: &var:LN:PFphsB.mag.f
+text a a a a cosF С: &var:LN:PFphsC.mag.f
+text a a a a cosF общий: &var:LN:TotPF.mag.f
+text a a a a -
+text a a a a Частота (Гц): HZ.mag.f

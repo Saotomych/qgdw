@@ -31,6 +31,7 @@ int lenname;
 char *cidname;
 
 	init_allpaths();
+	args_parser(argc, argv);
 	mf_semadelete(getpath2fifomain(), "startiec");
 
 	// Make config name

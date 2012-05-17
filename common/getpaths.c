@@ -7,7 +7,8 @@
 
 #include "common.h"
 
-static char defprepath[] = {"/rw/mx00/"};
+static char defzero[] = {0};
+static char defprepath[] = {"/rw/mx00"};
 static char defpathbin[] = {"bin"};
 static char defpathconfig[] = {"configs"};
 static char defpathlibs[] = {"lib"};
@@ -71,8 +72,8 @@ int lenname = lenbasepath;
 void init_allpaths(){
 
 	// Make path to project
-	basepath = getenv("MXPATH");
-	if (basepath == NULL) basepath = defprepath;
+	basepath = defzero;
+	basepath = makepath("MXPATH", defprepath);
 	lenbasepath = strlen(basepath);
 
 	// Make all path
