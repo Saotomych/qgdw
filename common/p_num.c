@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "../include/p_num.h"
+#include "p_num.h"
 
 
 uint32_t buff_get_le_uint(unsigned char *buff, uint32_t offset, uint8_t size)
