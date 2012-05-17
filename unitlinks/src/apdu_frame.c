@@ -8,7 +8,7 @@
 #include <string.h>
 #include "../include/apdu_frame.h"
 #include "../../common/resp_codes.h"
-#include "../include/p_num.h"
+#include "../../common/p_num.h"
 
 
 /*

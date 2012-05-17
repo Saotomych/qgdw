@@ -13,7 +13,7 @@
 #include <malloc.h>
 #include <time.h>
 #include <signal.h>
-#include "p_num.h"
+#include "../../common/p_num.h"
 #include "dlt_frame.h"
 #include "../../common/resp_codes.h"
 #include "../../common/common.h"

@@ -10,7 +10,7 @@ SRCS = src/iec101.c \
        src/lpdu_frame.c \
        src/iec_asdu.c \
        ../common/asdu.c \
-       src/p_num.c \
+       ../common/p_num.c \
        ../common/multififo.c \
        ../common/ts_print.c \
        ../common/getpaths.c
@@ -63,7 +63,7 @@ obj/iec_asdu.o : src/iec_asdu.c
 obj/asdu.o : ../common/asdu.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-obj/p_num.o : src/p_num.c
+obj/p_num.o : ../common/p_num.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 obj/multififo.o : ../common/multififo.c

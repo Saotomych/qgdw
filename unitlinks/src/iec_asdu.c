@@ -9,7 +9,7 @@
 #include "../include/iec_asdu_def.h"
 #include "../include/iec_asdu.h"
 #include "../../common/resp_codes.h"
-#include "../include/p_num.h"
+#include "../../common/p_num.h"
 #include "../../common/ts_print.h"
 
 

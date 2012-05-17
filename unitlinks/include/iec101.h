@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <malloc.h>
-#include "p_num.h"
+#include "../../common/p_num.h"
 #include "iec_def.h"
 #include "lpdu_frame.h"
 #include "../../common/resp_codes.h"

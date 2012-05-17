@@ -9,7 +9,7 @@ OBJ_DIR = obj
 SRCS = src/m700.c \
        src/m700_frame.c \
        ../common/asdu.c \
-       src/p_num.c \
+       ../common/p_num.c \
        ../common/multififo.c \
        ../common/ts_print.c \
        ../common/getpaths.c
@@ -58,7 +58,7 @@ obj/m700_frame.o : src/m700_frame.c
 obj/asdu.o : ../common/asdu.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-obj/p_num.o : src/p_num.c
+obj/p_num.o : ../common/p_num.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 obj/multififo.o : ../common/multififo.c
