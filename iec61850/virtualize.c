@@ -99,7 +99,7 @@ void start_collect_data()
 	{
 		send_sys_msg(sch->ASDUaddr, EP_MSG_DCOLL_START);
 
-		ts_printf(STDOUT_FILENO, "IEC61850: System message EP_MSG_DCOLL_START sent. Address = %d.\n", sch->ASDUaddr);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: System message EP_MSG_DCOLL_START sent. Address = %d.\n", sch->ASDUaddr);
 
 		sch = sch->l.next;
 	}
@@ -340,7 +340,7 @@ int sync_time(time_t srv_time)
 
 		if(p_adj != 0 && res != -1)
 		{
-			ts_printf(STDOUT_FILENO, "IEC61850: RTC precision adjustment needed. rtc_time = %d, srv_time = %d, p_adj_cur = %d, p_adj = %d.\n", (int)rtc_time, (int)srv_time, p_adj_cur, p_adj);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: RTC precision adjustment needed. rtc_time = %d, srv_time = %d, p_adj_cur = %d, p_adj = %d.\n", (int)rtc_time, (int)srv_time, p_adj_cur, p_adj);
 
 			p_adj += p_adj_cur;
 
@@ -348,7 +348,7 @@ int sync_time(time_t srv_time)
 
 			if(res != -1)
 			{
-				ts_printf(STDOUT_FILENO, "IEC61850: RTC precision adjustment %s.\n", res?"failed":"succeeded");
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: RTC precision adjustment %s.\n", res?"failed":"succeeded");
 
 				time_adj = srv_time;
 			}
@@ -361,7 +361,7 @@ int sync_time(time_t srv_time)
 
 	res = set_rtc_time(RTC_DEV_NAME, srv_time);
 
-	ts_printf(STDOUT_FILENO, "IEC61850: RTC synchronization with master host %s.\n", res?"failed":"succeeded");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: RTC synchronization with master host %s.\n", res?"failed":"succeeded");
 
 	sys_time = time(NULL);
 
@@ -380,13 +380,13 @@ int sync_time(time_t srv_time)
 
 			res = settimeofday(&tv, NULL);
 
-			ts_printf(STDOUT_FILENO, "IEC61850: STC synchronization with master host %s. Time diff = %d.\n", res?"failed":"succeeded", (int)time_diff);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: STC synchronization with master host %s. Time diff = %d.\n", res?"failed":"succeeded", (int)time_diff);
 		}
 		else
 		{
 			time_dev = sys_time - srv_time;
 
-			ts_printf(STDOUT_FILENO, "IEC61850: Time adjusting started. time_dev = %d\n", (int)time_dev);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Time adjusting started. time_dev = %d\n", (int)time_dev);
 		}
 	}
 
@@ -479,19 +479,19 @@ uint32_t  fld_idx;
 			if(sasdu){
 				memcpy(spdu, pdu, sizeof(data_unit));
 				spdu->id =  sasdu->baseoffset + pdm->scadaid;
-				ts_printf(STDOUT_FILENO, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Value = 0x%X. id %d map to SCADA_ASDU id %d (%d). Time = %d\n", pdu->value.ui, pdm->meterid, pdm->scadaid, pdu->id, pdu->time_tag);
 				(*pspdu)++; 	// Next pdu
 				return 1;
 			}else{
-				ts_printf(STDOUT_FILENO, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
+				ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850 error: Address ASDU %d not found\n", edh->adr);
 			}
 		}
 		else{
-			ts_printf(STDOUT_FILENO, "IEC61850 error: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850 error: Value = 0x%X. id %d don't map to SCADA_ASDU id. Time = %d\n", pdu->value.ui, pdu->id, pdu->time_tag);
 		}
 	}
 	else{
-		ts_printf(STDOUT_FILENO, "IEC61850 error: id %d very big\n", pdu->id);
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850 error: id %d very big\n", pdu->id);
 	}
 
 	(*pspdu)++; 	// Next pdu
@@ -713,13 +713,13 @@ log_db *db;
 
 //	(*get_vars)(log_db *db_req, uint32_t adr, char *var_name, time_t log_time, time_t intr, int num, varevent *vars);
 	if (pname){
-		ts_printf(STDOUT_FILENO, "IEC61850: Call DB query: id=%d, name=%s, time=%d, interval=%d, len=%d\n",
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Call DB query: id=%d, name=%s, time=%d, interval=%d, len=%d\n",
 														avb->id, pname, tbgn, avb->intr, len);
 		ret = db->get_vars(db, avb->id, pname, tbgn, avb->intr, len, ve);
 	}else ret = 0;
 
 	if (ret <= 0){
-		ts_printf(STDOUT_FILENO, "IEC61850 Error: database query failed\n");
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850 Error: database query failed\n");
 		return 0;
 	}
 
@@ -808,15 +808,15 @@ uint32_t i, x;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
-	ts_printf(STDOUT_FILENO, "IEC61850: Transaction %d\n", Transaction++);
-	ts_printf(STDOUT_FILENO, "IEC61850: Data received . Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Transaction %d\n", Transaction++);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Data received . Address = %d, Length = %d %s.\n", adr, len, dir == DIRDN? "from down" : "from up");
 
 	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < fullrdlen){
 		if(fullrdlen - offset < sizeof(ep_data_header)){
-			ts_printf(STDOUT_FILENO, "IEC61850 error: Found not full ep_data_header\n");
+			ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850 error: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
 		}
@@ -847,22 +847,22 @@ uint32_t i, x;
 			}
 
 			// Print Statistics and send data to MF
-			ts_printf(STDOUT_FILENO, "IEC61850: Statistics:\n");
-			ts_printf(STDOUT_FILENO, "IEC61850: receive %d data_unit(s)\n", cntdu);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Statistics:\n");
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: receive %d data_unit(s)\n", cntdu);
 
 			if (cntdm){
-				ts_printf(STDOUT_FILENO, "IEC61850: sent %d data_unit(s) to %d SCADA\n", cntdm, send_asdu2scada(senddm, cntdm));
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: sent %d data_unit(s) to %d SCADA\n", cntdm, send_asdu2scada(senddm, cntdm));
 			}
 
 			if (cntve){
 				pve = (varevent*) (sendve + sizeof(ep_data_header));
-				ts_printf(STDOUT_FILENO, "IEC61850!!!: Variable's uid 0x%X[%d] was send to HMI \n", pve->uid, pve->validx);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Variable's uid 0x%X[%d] was send to HMI \n", pve->uid, pve->validx);
 
 				cntve = send_varevent2hmi(sendve, cntve);
-				if (cntve) ts_printf(STDOUT_FILENO, "IEC61850: sent %d varevent(s) to HMI\n", cntve);
-				else ts_printf(STDOUT_FILENO, "IEC61850 error: MF channel to HMI closed\n");
+				if (cntve) ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: sent %d varevent(s) to HMI\n", cntve);
+				else ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850 error: MF channel to HMI closed\n");
 			}
-			ts_printf(STDOUT_FILENO, "\n");
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "\n");
 
 			// Free buffers
 			if (sendve) free(sendve);
@@ -887,7 +887,7 @@ uint32_t i, x;
 			avb = (varattach*) ((int32_t) edh + sizeof(ep_data_header));
 			pname = (char*) ((int32_t) avb + sizeof(varattach));
 
-			ts_printf(STDOUT_FILENO, "IEC61850: set attach for value %s\n", pname);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: set attach for value %s\n", pname);
 
 			// Detect LOG or ACTUAL variable
 			p = strchr(pname, '(');
@@ -918,9 +918,9 @@ uint32_t i, x;
 						pve->validx = i;
 						pve++;
 					}
-					ts_printf(STDOUT_FILENO, "IEC61850: %s journal data OK, attach to HMI. Set %d varevents.\n", pname, len);
+					ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: %s journal data OK, attach to HMI. Set %d varevents.\n", pname, len);
 				}else{
-					ts_printf(STDOUT_FILENO, "IEC61850 error: %s journal data failed, attach to HMI\n", pname);
+					ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850 error: %s journal data failed, attach to HMI\n", pname);
 				}
 			}else{
 				// Get varevent by name
@@ -928,10 +928,10 @@ uint32_t i, x;
 				actvr = find_varrecbyname(avb);
 				if (actvr){
 					if (get_actvarevent(actvr, avb, &actve)){
-						ts_printf(STDOUT_FILENO, "IEC61850 error: %s not attach to HMI \n\n", pname);
+						ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850 error: %s not attach to HMI \n\n", pname);
 						len = 0;
 					}else{
-						ts_printf(STDOUT_FILENO, "IEC61850: %s attach to HMI \n\n", pname);
+						ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: %s attach to HMI \n\n", pname);
 						len = 1;
 					}
 				}
@@ -957,7 +957,7 @@ uint32_t i, x;
 			cntdm = edh->len;
 			uids = (uint32_t*) (buff + sizeof(ep_data_header));
 
-			ts_printf(STDOUT_FILENO, "IEC61850: Detach all varrecs of dataset 0x%X\n", *uids);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Detach all varrecs of dataset 0x%X\n", *uids);
 
 			while(cntdm){
 				actvr = vc_getfirst_varrec();
@@ -968,18 +968,18 @@ uint32_t i, x;
 					actvr->prop &= ~ATTACHING;
 					actvr->uid = 0;
 
-					ts_printf(STDOUT_FILENO, "IEC61850: Detach %s \n", actvr->name->fc);
+					ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Detach %s \n", actvr->name->fc);
 
 				}else{
 
-					ts_printf(STDOUT_FILENO, "IEC61850: Detached uid 0x%X not found\n", *uids);
+					ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Detached uid 0x%X not found\n", *uids);
 
 				}
 				// change counters and pointers
 				cntdm-=sizeof(int); uids++;
 			}
 
-			ts_printf(STDOUT_FILENO, "IEC61850: all varrec was detached\n");
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: all varrec was detached\n");
 
 			break;
 		}
@@ -1007,7 +1007,7 @@ DOBJ *adobj;
 
 int dobj_num;
 
-	ts_printf(STDOUT_FILENO, "ASDU: Start ASDU mapping to parse\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: Start ASDU mapping to parse\n");
 
 	// Create VIRT_ASDU_TYPE list
 	actasdutype = (VIRT_ASDU_TYPE*) &fasdutype;
@@ -1019,7 +1019,7 @@ int dobj_num;
 
 		actasdutype->fdmap = NULL;
 
-		ts_printf(STDOUT_FILENO, "ASDU: new VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: new VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
 		// Fill VIRT_ASDU_TYPE
 		actasdutype->mylntype = alnt;
@@ -1043,16 +1043,16 @@ int dobj_num;
 						if (!vc_get_map_by_name(adobj->dobj.name, &actasdudm->meterid)){
 							// find by DOType->DA.name = mag => DOType->DA.btype
 							actasdudm->value_type = vc_get_type_by_name("mag", adobj->dobj.type);
-							ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
+							ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: new SCADA_ASDU_DO for DOBJ name=%s type=%s: %d =>moveto=> %d by type=%d\n",
 									adobj->dobj.name, adobj->dobj.type, actasdudm->meterid, actasdudm->scadaid, actasdudm->value_type);
-						}else ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
-				}else ts_printf(STDOUT_FILENO, "ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
+						}else ts_printf(STDOUT_FILENO, TS_VERBOSE, "ASDU: new SCADA_ASDU_DO for DOBJ error: Tag not found into mainmap.cfg\n");
+				}else ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: new SCADA_ASDU_DO for DOBJ (without mapping) name=%s type=%s\n", adobj->dobj.name, adobj->dobj.type);
 			}
 			// Next DOBJ
 			adobj = adobj->l.next;
 		}
 
-		ts_printf(STDOUT_FILENO, "ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: ready VIRT_ASDU_TYPE for LNTYPE id=%s \n", alnt->lntype.id);
 
 		alnt = alnt->l.next;
 	}
@@ -1071,7 +1071,7 @@ int dobj_num;
 			actscadach->ASDUaddr = atoi(ald->ld.inst);
 			actscadach->log_rec = calloc(dobj_num, sizeof(uint32_t)); // initialize array log record fields
 
-			ts_printf(STDOUT_FILENO, "ASDU: ready SCADA_CH addr=%d for LDEVICE inst=%s \n", actscadach->ASDUaddr, ald->ld.inst);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: ready SCADA_CH addr=%d for LDEVICE inst=%s \n", actscadach->ASDUaddr, ald->ld.inst);
 		}
 
 		ald = ald->l.next;
@@ -1106,20 +1106,20 @@ int dobj_num;
 			}
 			if (actasdutype){
 				actasdu->myasdutype = actasdutype;
-				ts_printf(STDOUT_FILENO, "ASDU: VIRT_ASDU %s.%s.%s linked to TYPE %s\n",
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: VIRT_ASDU %s.%s.%s linked to TYPE %s\n",
 						actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass, actasdutype->mylntype->lntype.id);
 			}
-			else ts_printf(STDOUT_FILENO, "ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
+			else ts_printf(STDOUT_FILENO, TS_VERBOSE, "ASDU: VIRT_ASDU %s.%s.%s NOT linked to TYPE\n", actasdu->myln->ln.ldinst, actasdu->myln->ln.lninst, actasdu->myln->ln.lnclass);
 
 			// Link ASDU_TYPE to DATAMAP
-			ts_printf(STDOUT_FILENO, "ASDU: new VIRT_ASDU offset=%d for LN name=%s.%s.%s type=%s ied=%s\n",
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: new VIRT_ASDU offset=%d for LN name=%s.%s.%s type=%s ied=%s\n",
 					actasdu->baseoffset, aln->ln.ldinst, aln->ln.lninst, aln->ln.lnclass, aln->ln.lntype, aln->ln.iedname);
 		}
 
 		aln = aln->l.next;
 	}
 
-	ts_printf(STDOUT_FILENO, "ASDU: End ASDU mapping\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "ASDU: End ASDU mapping\n");
 
 	return 0;
 }
@@ -1151,7 +1151,7 @@ frame_dobj fr_do = FRAME_DOBJ_INITIALIZER;
 				// write to endpoint
 				mf_toendpoint((char*) &fr_do, sizeof(frame_dobj), fr_do.edh.adr, DIRDN);
 
-				ts_printf(STDOUT_FILENO, "IEC61850: Send DOBJ %s - id=%d; adr=%d; len=%d; numep=%d; sys_msg=%d \n",
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Send DOBJ %s - id=%d; adr=%d; len=%d; numep=%d; sys_msg=%d \n",
 						fr_do.name, fr_do.id, fr_do.edh.adr, fr_do.edh.len, fr_do.edh.numep, fr_do.edh.sys_msg);
 
 				usleep(5);	// delay for forming  next event
@@ -1264,13 +1264,13 @@ char *chld_app;
 	// Create places for incoming data
 	create_varctrl();
 
-	ts_printf(STDOUT_FILENO, "\n--- Configuration ready --- \n\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "\n--- Configuration ready --- \n\n");
 
 //	//	Execute all low level application for devices by LDevice (SCADA_CH)
 	sch = sch->l.next;
 	while(sch){
 
-		ts_printf(STDOUT_FILENO, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "\n--------------\nIEC Virt: execute for LDevice asdu = %s\n", sch->myld->ld.inst);
 
 		// Create config_device
 		chld_app = malloc(strlen(sch->myld->ld.desc) + 1);

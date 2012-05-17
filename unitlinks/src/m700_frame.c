@@ -140,7 +140,7 @@ uint16_t m700_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t 
 	if(fcs != buff_get_le_uint8(buff, *offset))
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: FCS incorrect. Expected FCS = %02X, received FCS = %02X.\n", "unitlink-m700", fcs, buff_get_le_uint8(buff, *offset));
+		ts_printf(STDOUT_FILENO, TS_VERBOSE, "%s: FCS incorrect. Expected FCS = %02X, received FCS = %02X.\n", "unitlink-m700", fcs, buff_get_le_uint8(buff, *offset));
 #endif
 
 		return RES_FCS_INCORRECT;
@@ -383,7 +383,7 @@ uint16_t m700_asdu_buff_parse(m700_frame *m_fr, asdu *m700_asdu, uint32_t *offse
 	}
 
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-m700", m700_asdu->type, m700_asdu->size, m700_asdu->attr & 0x01);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-m700", m700_asdu->type, m700_asdu->size, m700_asdu->attr & 0x01);
 #endif
 
 	return RES_SUCCESS;

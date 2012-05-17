@@ -64,12 +64,12 @@ void TagEndEnumVal(const char *pTag){
 }
 
 void TagSetSCL(const char *pTag){
-	ts_printf(STDOUT_FILENO, "IEC61850: Start SCL file to parse\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Start SCL file to parse\n");
 }
 
 void TagEndSCL(const char *pTag){
 	EndScript=1;
-	ts_printf(STDOUT_FILENO, "IEC61850: Stop SCL file to parse\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Stop SCL file to parse\n");
 }
 
 void TagSetXml(const char *pTag){

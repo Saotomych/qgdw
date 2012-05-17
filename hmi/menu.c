@@ -762,7 +762,7 @@ int i;
 void key_pressed(void *arg){
 GR_EVENT *event = (GR_EVENT*) arg;
 
-	ts_printf(STDOUT_FILENO, "HMI: Key press 0x%04X\n", event->keystroke.ch);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "HMI: Key press 0x%04X\n", event->keystroke.ch);
 
 	switch(event->keystroke.ch){
 

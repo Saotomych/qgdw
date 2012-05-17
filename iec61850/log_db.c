@@ -174,7 +174,7 @@ int log_db_config_build(const char *filename)
 	// Get size of main config file
 	if (stat(filename, &fst) == -1)
 	{
-		ts_printf(STDOUT_FILENO, "IEC61850: Log configuration file not found\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: Log configuration file not found\n");
 		return -1;
 	}
 
@@ -187,12 +187,12 @@ int log_db_config_build(const char *filename)
 	config_file[fst.st_size] = '\0'; // make it null terminating string
 	if(!strstr(config_file, "</LogConfig>"))
 	{
-		ts_printf(STDOUT_FILENO, "IEC61850: Log configuration file is incomplete\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: Log configuration file is incomplete\n");
 		free(config_file);
 		return -1;
 	}
 	else
-		ts_printf(STDOUT_FILENO, "IEC61850: Log configuration file parsing started\n");
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Log configuration file parsing started\n");
 
 
 	if(cfglen == fst.st_size)
@@ -258,7 +258,7 @@ void log_db_xml_dbsync_tag(const char *pTag)			// call parse DBSync
 	}
 	while(p);
 
-	ts_printf(STDOUT_FILENO, "IEC61850: Database synchronization period = %d\n", db_sync_period);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Database synchronization period = %d\n", db_sync_period);
 }
 
 
@@ -290,7 +290,7 @@ void log_db_xml_database_tag(const char *pTag)
 	}
 	while(p);
 
-	if(actdb && actdb->db) ts_printf(STDOUT_FILENO, "IEC61850: Database \"%s\" parameters: add_period = %d, export_peiod = %d, storage_deep = %d\n", actdb->db->dname, actdb->add_period, actdb->export_period, (int)actdb->storage_deep);
+	if(actdb && actdb->db) ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Database \"%s\" parameters: add_period = %d, export_peiod = %d, storage_deep = %d\n", actdb->db->dname, actdb->add_period, actdb->export_period, (int)actdb->storage_deep);
 }
 
 
@@ -308,14 +308,14 @@ void log_db_xml_var_tag(const char *pTag)
 	}
 	while(p);
 
-	if(actdb) ts_printf(STDOUT_FILENO, "IEC61850: Variable \"%s\" for database \"%s\" added\n", par, actdb->db->dname);
+	if(actdb) ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Variable \"%s\" for database \"%s\" added\n", par, actdb->db->dname);
 }
 
 
 void log_db_xml_end_tag(const char *pTag)
 {
 	end_script=1;
-	ts_printf(STDOUT_FILENO, "IEC61850: Stop Log configuration file to parse\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: Stop Log configuration file to parse\n");
 }
 
 
@@ -383,7 +383,7 @@ void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec)
 
 	if(!db_env || !db_req || !db_req->db || db_req->flds_num == 0 || !log_rec) return;
 
-    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Adding record to %s DB: Time = %d, Address = %d\n", db_req->db->dname,  (int)cur_time, adr);
+    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Adding record to %s DB: Time = %d, Address = %d\n", db_req->db->dname,  (int)cur_time, adr);
 
     memset(&key, 0, sizeof(DBT));
     memset(&data, 0, sizeof(DBT));
@@ -415,7 +415,7 @@ void log_db_add_var_rec(log_db *db_req, uint32_t adr, uint32_t *log_rec)
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Error adding record to %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Error adding record to %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
 	}
 }
 
@@ -430,7 +430,7 @@ void log_db_add_event_ll(DB *db_req, void *buf, int len)
 
 	if(!db_req) return;
 
-	ts_printf(STDOUT_FILENO, "IEC61850: BDB - Adding record to %s DB: Time = %d\n", db_req->dname, (int)cur_time);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Adding record to %s DB: Time = %d\n", db_req->dname, (int)cur_time);
 
     memset(&key, 0, sizeof(DBT));
     memset(&data, 0, sizeof(DBT));
@@ -448,7 +448,7 @@ void log_db_add_event_ll(DB *db_req, void *buf, int len)
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Error adding record to %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Error adding record to %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
 	}
 
 	return;
@@ -484,7 +484,7 @@ int log_db_open_db(DB_ENV *env_req, DB **db_req, char *file_name, char *db_name,
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Error creating %s handle: %s (%d)\n", db_name, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: BDB - Error creating %s handle: %s (%d)\n", db_name, db_strerror(ret), ret);
 	    return -1;
 	}
 
@@ -494,11 +494,11 @@ int log_db_open_db(DB_ENV *env_req, DB **db_req, char *file_name, char *db_name,
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Database %s open failed: %s (%d)\n", db_name, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: BDB - Database %s open failed: %s (%d)\n", db_name, db_strerror(ret), ret);
 	    return -1;
 	}
 	else
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Database %s opened\n", db_name);
+	    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Database %s opened\n", db_name);
 
 	return 0;
 }
@@ -539,34 +539,34 @@ int log_db_env_open()
 	if (stat(getpath2log(), &sb) != 0)
 	{
 		// if not - try to create one
-		ts_printf(STDOUT_FILENO, "IEC61850: BDB - directory \"%s\" does not exist\n", getpath2log());
+		ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - directory \"%s\" does not exist\n", getpath2log());
 
 		if (mkdir(getpath2log(), S_IRWXU) != 0)
 		{
 			// directory creation failed
-			ts_printf(STDOUT_FILENO, "IEC61850: BDB - Cannot mkdir \"%s\" (%s)\n", getpath2log(), strerror(errno));
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Cannot mkdir \"%s\" (%s)\n", getpath2log(), strerror(errno));
 			goto err;
 		}
 
-		ts_printf(STDOUT_FILENO, "IEC61850: BDB - Directory \"%s\" created\n", getpath2log());
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Directory \"%s\" created\n", getpath2log());
 	}
 
 	ret = db_env_create(&db_env, 0);
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Error creating DB_ENV handle: %s (%d)\n", db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: BDB - Error creating DB_ENV handle: %s (%d)\n", db_strerror(ret), ret);
 	    goto err;
 	}
 
 	ret = db_env->open(db_env, getpath2log(), DB_CREATE | DB_INIT_MPOOL | DB_PRIVATE, 0);
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - DB_ENV open failed: %s (%d)\n", db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: BDB - DB_ENV open failed: %s (%d)\n", db_strerror(ret), ret);
 	    goto err;
 	}
 	else
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - DB_ENV opened: %s \n", getpath2log());
+	    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - DB_ENV opened: %s \n", getpath2log());
 
 	ret = log_db_open_db(db_env, &load_profile_db.db, LOG_DB_FILE_NAME, LOG_DB_LOAD_PROFILE, 1);
 	if(ret != 0) goto err;
@@ -603,7 +603,7 @@ void log_db_env_close()
 {
 	if(!db_env) return;
 
-	ts_printf(STDOUT_FILENO, "IEC61850: BDB - Closing DB environment\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Closing DB environment\n");
 
 	pthread_mutex_lock(&db_log_mtx);
 
@@ -658,7 +658,7 @@ void log_db_set_export_time(DB *db_req, time_t export_time)
 
 	if(!db_req || !db_req || !db_export_log) return;
 
-    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Set last export time for %s DB: Time = %d\n", db_req->dname, (int)export_time);
+    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Set last export time for %s DB: Time = %d\n", db_req->dname, (int)export_time);
 
     memset(&key, 0, sizeof(DBT));
     memset(&data, 0, sizeof(DBT));
@@ -678,7 +678,7 @@ void log_db_set_export_time(DB *db_req, time_t export_time)
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Error adding record to %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Error adding record to %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
 	}
 
 	return;
@@ -706,7 +706,7 @@ int log_db_export_data(DB *db_req, time_t cut_time)
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
 
 	    return -1;
 	}
@@ -719,7 +719,7 @@ int log_db_export_data(DB *db_req, time_t cut_time)
 		return ret;
 	}
 
-    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Start creation of export file \"%s\"\n", db_file_tmp);
+    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Start creation of export file \"%s\"\n", db_file_tmp);
 
     prev_exp_time = log_db_get_export_time(db_req);
 
@@ -753,7 +753,7 @@ int log_db_export_data(DB *db_req, time_t cut_time)
 	{
 		rename(db_file_tmp, db_file_out);
 
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Export file \"%s\" created. rec_count_exp = %d\n", db_file_out, rec_count_exp);
+	    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Export file \"%s\" created. rec_count_exp = %d\n", db_file_out, rec_count_exp);
 
 	    log_db_set_export_time(db_req, cut_time);
 
@@ -788,11 +788,11 @@ int log_db_clean_old_data(DB *db_req, time_t cut_time, time_t storage_deep)
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->dname, db_strerror(ret), ret);
 	}
 	else
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Start cleaning old records from %s DB\n", db_req->dname);
+	    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Start cleaning old records from %s DB\n", db_req->dname);
 
 		pthread_mutex_lock(&db_log_mtx);
 
@@ -818,7 +818,7 @@ int log_db_clean_old_data(DB *db_req, time_t cut_time, time_t storage_deep)
 
 		if((ret == 0 || DB_NOTFOUND) && rec_count_del > 0)
 		{
-		    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Old records from %s DB deleted. rec_count_del = %d\n", db_req->dname, rec_count_del);
+		    ts_printf(STDOUT_FILENO, TS_DEBUG, "IEC61850: BDB - Old records from %s DB deleted. rec_count_del = %d\n", db_req->dname, rec_count_del);
 
 		    db_req->compact(db_req, NULL, NULL, NULL, NULL, DB_FREE_SPACE, NULL);
 
@@ -927,7 +927,7 @@ int	log_db_get_vars(log_db *db_req, uint32_t adr, char *var_name, time_t log_tim
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
 
 	    return -1;
 	}
@@ -981,7 +981,7 @@ int log_db_get_events(log_db *db_req, uint32_t adr, time_t st_time, time_t end_t
 
 	if(ret != 0)
 	{
-	    ts_printf(STDOUT_FILENO, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
+	    ts_printf(STDOUT_FILENO, TS_VERBOSE, "IEC61850: BDB - Cursor setup failed for %s DB: %s (%d)\n", db_req->db->dname, db_strerror(ret), ret);
 
 	    return -1;
 	}

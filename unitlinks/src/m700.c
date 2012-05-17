@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	free(fname);
 
 	if(res != RES_SUCCESS){
-		ts_printf(STDOUT_FILENO, "%s: Configuration not found...\n", APP_NAME);
+		ts_printf(STDOUT_FILENO, TS_INFO, "%s: Configuration not found...\n", APP_NAME);
 		exit(1);
 	}
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	free(fname);
 
 	if(res != RES_SUCCESS){
-		ts_printf(STDOUT_FILENO, "%s: Variable map not found...\n", APP_NAME);
+		ts_printf(STDOUT_FILENO, TS_INFO, "%s: Variable map not found...\n", APP_NAME);
 		exit(1);
 	}
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	evlen = 1;
 	if (fev0 == -1){
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: Event driver hasn't open\n", APP_NAME);
+		ts_printf(STDOUT_FILENO, TS_INFO, "%s: Event driver hasn't open\n", APP_NAME);
 #endif
 		fev0 = 0;
 		evlen = 0;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 	alarm(alarm_t);
 
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: Waiting for end-point initialization end event...\n", APP_NAME);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Waiting for end-point initialization end event...\n", APP_NAME);
 #endif
 
 	do
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 		{
 			// start forward endpoint
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: Forward endpoint DIRDN\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Forward endpoint DIRDN\n", APP_NAME);
 #endif
 			eih = (ep_init_header*) mf_buffer;
 			mf_newendpoint(eih->addr, CHILD_APP_NAME, getpath2fifophy(), 1);
@@ -115,12 +115,12 @@ int main(int argc, char *argv[])
 			m700_sys_msg_send(EP_MSG_CONNECT, eih->addr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, eih->addr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_CONNECT sent. Address = %d\n", APP_NAME, eih->addr);
 #endif
 		}
 
 #ifdef _DEBUG
-		if(ret == 2) ts_printf(STDOUT_FILENO, "%s: mf_waitevent timeout\n", APP_NAME);
+		if(ret == 2) ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: mf_waitevent timeout\n", APP_NAME);
 #endif
 
 		if (ret == FDSETPOS)
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 			if (iets->code >= BTN_TRIGGER_HAPPY)
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "M700: ITMI event: %X, %X, %X\n", iets->value, iets->type, iets->code);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "M700: ITMI event: %X, %X, %X\n", iets->value, iets->type, iets->code);
 #endif
 				if(ep_exts[0])
 				{
@@ -182,7 +182,7 @@ uint16_t m700_config_read(const char *file_name)
 
 				ep_num++;
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: New ep_ext added. Address = %d\n", APP_NAME, ep_ext->adr);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: New ep_ext added. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 		}
@@ -216,7 +216,7 @@ void m700_catch_alarm(int sig)
 		recv_buff_len = 0;
 
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: Timer req went off.\n", APP_NAME);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Timer req went off.\n", APP_NAME);
 #endif
 
 		// if collection is in progress force to collect data from the next device
@@ -235,7 +235,7 @@ void m700_catch_alarm(int sig)
 		timer_dcoll = 0;
 
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: Data Collection started.\n", APP_NAME);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Data Collection started.\n", APP_NAME);
 #endif
 
 		m700_collect_data();
@@ -253,8 +253,8 @@ void m700_catch_alarm(int sig)
 				m700_sys_msg_send(EP_MSG_RECONNECT, ep_exts[i]->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
-				ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Timer rc went off. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_RECONNECT sent. Address = %d.\n", APP_NAME, ep_exts[i]->adr);
 #endif
 			}
 		}
@@ -283,7 +283,7 @@ int m700_recv_data(int len)
 	if(len <= 0)
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: ERROR - Data received with Length = %d! Something went wrong!\n", APP_NAME, len);
+		ts_printf(STDOUT_FILENO, TS_INFO, "%s: ERROR - Data received with Length = %d! Something went wrong!\n", APP_NAME, len);
 #endif
 
 		free(buff);
@@ -291,7 +291,7 @@ int m700_recv_data(int len)
 	}
 
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN ? "DIRUP" : "DIRDN");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Data received. Address = %d, Length = %d, Direction = %s.\n", APP_NAME, adr, len, dir == DIRDN ? "DIRUP" : "DIRDN");
 #endif
 
 	offset = 0;
@@ -301,7 +301,7 @@ int m700_recv_data(int len)
 		if(len - offset < sizeof(ep_data_header))
 		{
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, TS_INFO, "%s: ERROR - Looks like ep_data_header missed.\n", APP_NAME);
 #endif
 
 			free(buff);
@@ -312,13 +312,13 @@ int m700_recv_data(int len)
 		offset += sizeof(ep_data_header);
 
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Received ep_data_header - adr = %d, sys_msg = %d, len = %d.\n", APP_NAME, ep_header_in->adr, ep_header_in->sys_msg, ep_header_in->len);
 #endif
 
 		if(ep_header_in->len < 0 || len - offset < ep_header_in->len)
 		{
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, ep_header_in->len, len - offset);
+			ts_printf(STDOUT_FILENO, TS_INFO, "%s: ERROR - Expected data length %d bytes, received %d bytes.\n", APP_NAME, ep_header_in->len, len - offset);
 #endif
 
 			free(buff);
@@ -331,7 +331,7 @@ int m700_recv_data(int len)
 			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: User data in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				m700_asdu_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
@@ -339,7 +339,7 @@ int m700_recv_data(int len)
 			else
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message in DIRDN received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				m700_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
@@ -351,7 +351,7 @@ int m700_recv_data(int len)
 			if(ep_header_in->sys_msg == EP_USER_DATA)
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: User data in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				m700_frame_recv((unsigned char*)(buff + offset), ep_header_in->len, ep_header_in->adr);
@@ -360,7 +360,7 @@ int m700_recv_data(int len)
 			else
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message in DIRUP received. Address = %d, Length = %d\n", APP_NAME, ep_header_in->adr, ep_header_in->len);
 #endif
 
 				m700_sys_msg_recv(ep_header_in->sys_msg, ep_header_in->adr, dir, (unsigned char*)(buff + offset), ep_header_in->len);
@@ -395,12 +395,12 @@ void m700_test_connect(uint16_t adr)
 		ep_exts[i]->data_ids_size++;
 
 	#ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: New DOBJ was added. Address = %d, m700_id = 0x%02x\n", APP_NAME, ep_exts[i]->adr, ep_exts[i]->data_ids[ep_exts[i]->data_ids_size-1]);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: New DOBJ was added. Address = %d, m700_id = 0x%02x\n", APP_NAME, ep_exts[i]->adr, ep_exts[i]->data_ids[ep_exts[i]->data_ids_size-1]);
 	#endif
 	}
 
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: Connection test started. Address = all\n", APP_NAME);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Connection test started. Address = all\n", APP_NAME);
 #endif
 
 	// allow data collection
@@ -498,7 +498,7 @@ void m700_init_ep_ext(m700_ep_ext* ep_ext)
 	ep_ext->timer_rc = 0;
 
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: ep_ext (re)initialized. Address = %d\n", APP_NAME, ep_ext->adr);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: ep_ext (re)initialized. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 }
 
@@ -515,7 +515,7 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 	if(!res_map)
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
+		ts_printf(STDOUT_FILENO, TS_VERBOSE, "%s: ERROR - Received DOBJ was ignored - no map found. Address = %d, dobj_id = %d, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, dobj_id, dobj_name);
 #endif
 
 		return RES_INCORRECT;
@@ -526,7 +526,7 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 	if(m700_get_dobj_item(ep_ext, m700_id) == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: DOBJ already exists. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->proto_id, dobj_name);
+		ts_printf(STDOUT_FILENO, TS_VERBOSE, "%s: DOBJ already exists. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->proto_id, dobj_name);
 #endif
 		return RES_SUCCESS;
 	}
@@ -541,7 +541,7 @@ uint16_t m700_add_dobj_item(m700_ep_ext* ep_ext, uint32_t dobj_id, unsigned char
 	ep_ext->data_ids_size++;
 
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: New DOBJ was added. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->proto_id, dobj_name);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: New DOBJ was added. Address = %d, m700_id = 0x%04x, dobj_name = \"%s\"\n", APP_NAME, ep_ext->adr, res_map->proto_id, dobj_name);
 #endif
 
 	return RES_SUCCESS;
@@ -580,7 +580,7 @@ uint16_t m700_collect_data()
 			if(dcoll_ep_idx >= MAXEP)
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: m700_collect_data - reached end of ep_exts array\n", APP_NAME);
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: m700_collect_data - reached end of ep_exts array\n", APP_NAME);
 #endif
 
 				// reached end of array, time to wait for next data collection
@@ -600,7 +600,7 @@ uint16_t m700_collect_data()
 #ifdef _DEBUG
 		if(ep_ext && ep_ext->tx_ready)
 		{
-			ts_printf(STDOUT_FILENO, "%s: Collecting data from - Address = %d, ep_idx = %d\n", APP_NAME, ep_ext->adr, dcoll_ep_idx);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Collecting data from - Address = %d, ep_idx = %d\n", APP_NAME, ep_ext->adr, dcoll_ep_idx);
 		}
 #endif
 	}
@@ -625,7 +625,7 @@ uint16_t m700_collect_data()
 	else
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: m700_collect_data - data_idx = %d. Address = %d\n", APP_NAME, dcoll_data_idx, ep_ext->adr);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: m700_collect_data - data_idx = %d. Address = %d\n", APP_NAME, dcoll_data_idx, ep_ext->adr);
 #endif
 
 		// device and data identifier were found! device is ready for data transfer! let's get the data from it!
@@ -715,7 +715,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 		{
 		case EP_MSG_TEST_CONN:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_TEST_CONN received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			m700_test_connect(ep_ext->adr);
 
@@ -725,7 +725,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 			fr_do = (frame_dobj *) (buff - sizeof(ep_data_header));
 
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_NEWDOBJ (%d, %s) received. Address = %d\n", APP_NAME, fr_do->id, fr_do->name, ep_ext->adr);
 #endif
 
 			m700_add_dobj_item(ep_ext, fr_do->id, (unsigned char*)fr_do->name);
@@ -734,7 +734,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_DCOLL_START:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_DCOLL_START received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			if(dcoll_stopped) // do it only if data collection is stopped
@@ -750,7 +750,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_DCOLL_STOP:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_DCOLL_STOP received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_DCOLL_STOP received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			// disable data collection
@@ -765,7 +765,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_CONNECT_CLOSE:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_CONNECT_CLOSE received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 
 			m700_init_ep_ext(ep_ext);
@@ -774,13 +774,13 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_QUIT:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_QUIT received.\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_QUIT received.\n", APP_NAME);
 #endif
 
 			m700_sys_msg_send(EP_MSG_QUIT, ep_ext->adr, DIRDN, NULL, 0);
 
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_QUIT sent. Address = all.\n", APP_NAME);
 #endif
 
 			// wait until child app is quit
@@ -797,7 +797,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		default:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
 #endif
 
 			break;
@@ -810,7 +810,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_CONNECT_ACK:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_CONNECT_ACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			m700_log_msg_send(ep_ext->adr, "Connection established");
 
@@ -825,7 +825,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_CONNECT_NACK:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "%s: System message EP_MSG_CONNECT_NACK received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			m700_log_msg_send(ep_ext->adr, "Connection failed");
 
@@ -838,7 +838,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		case EP_MSG_CONNECT_LOST:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_CONNECT_LOST received. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			m700_log_msg_send(ep_ext->adr, "Connection lost");
 
@@ -851,7 +851,7 @@ uint16_t m700_sys_msg_recv(uint32_t sys_msg, uint16_t adr, uint8_t dir, unsigned
 
 		default:
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "%s: Warning - unsupported System message (%d) received. Address = %d\n", APP_NAME, sys_msg, ep_ext->adr);
 #endif
 
 			break;
@@ -901,11 +901,11 @@ uint16_t m700_frame_send(m700_frame *m_fr, uint16_t adr, uint8_t dir)
 			if(mf_toendpoint(ep_buff, sizeof(ep_data_header)+ d_len, adr, dir) <= 0) res = RES_INCORRECT;
 
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: User data in DIRDN sent. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_header.len);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: User data in DIRDN sent. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, ep_header.len);
 
 			char c_buff[512] = {0};
 			hex2ascii((unsigned char *)ep_buff+sizeof(ep_data_header), c_buff, + d_len);
-			ts_printf(STDOUT_FILENO, "%s: %s\n", APP_NAME, c_buff);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: %s\n", APP_NAME, c_buff);
 #endif
 
 			free(ep_buff);
@@ -943,7 +943,7 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	if(adr != ep_exts[dcoll_ep_idx]->adr)
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: ERROR - Frame chunk in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
+		ts_printf(STDOUT_FILENO, TS_INFO, "%s: ERROR - Frame chunk in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, adr);
 #endif
 		return RES_INCORRECT;
 	}
@@ -971,11 +971,11 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 	if(res == RES_SUCCESS)
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: Frame in DIRUP received. Length = %d\n", APP_NAME, recv_buff_len);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Frame in DIRUP received. Length = %d\n", APP_NAME, recv_buff_len);
 
 		char c_buff[512] = {0};
 		hex2ascii(recv_buff, c_buff, recv_buff_len);
-		ts_printf(STDOUT_FILENO, "%s: %s\n", APP_NAME, c_buff);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: %s\n", APP_NAME, c_buff);
 #endif
 
 		// reset request-response variables
@@ -990,7 +990,7 @@ uint16_t m700_frame_recv(unsigned char *buff, uint32_t buff_len, uint16_t adr)
 			if(ep_ext->adr != ep_exts[dcoll_ep_idx]->adr)
 			{
 #ifdef _DEBUG
-				ts_printf(STDOUT_FILENO, "%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
+				ts_printf(STDOUT_FILENO, TS_INFO, "%s: ERROR - Frame in DIRUP ignored. Expected adr = %d , received adr = %d.\n", APP_NAME, ep_exts[dcoll_ep_idx]->adr, ep_ext->adr);
 #endif
 
 				res = RES_INCORRECT;
@@ -1047,7 +1047,7 @@ uint16_t m700_asdu_send(asdu *m700_asdu, uint16_t adr, uint8_t dir)
 			free(ep_buff);
 
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: ASDU sent in DIRUP. Address = %d, Length = %d\n", APP_NAME, adr, a_len);
 #endif
 		}
 		else
@@ -1125,7 +1125,7 @@ uint16_t m700_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t
 			timer_recv = time(NULL);
 			recv_buff_len = 0;
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: Read Data command sent. Address = %d.\n", APP_NAME, adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Read Data command sent. Address = %d.\n", APP_NAME, adr);
 #endif
 		}
 
@@ -1139,7 +1139,7 @@ uint16_t m700_read_data_send(uint16_t adr, uint32_t data_id, uint8_t num, time_t
 uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: Read Data frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Read Data frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
 #endif
 
 	uint16_t res;
@@ -1166,7 +1166,7 @@ uint16_t m700_read_data_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 				// send system message if it address info
 				res = m700_sys_msg_send(EP_MSG_DEV_ONLINE, ep_ext->adr, DIRUP, NULL, 0);
 #ifdef _DEBUG
-				if(res == RES_SUCCESS) ts_printf(STDOUT_FILENO, "%s: System message EP_MSG_DEV_ONLINE sent. Address = %d\n", APP_NAME, ep_ext->adr);
+				if(res == RES_SUCCESS) ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: System message EP_MSG_DEV_ONLINE sent. Address = %d\n", APP_NAME, ep_ext->adr);
 #endif
 			}
 
@@ -1221,7 +1221,7 @@ uint16_t m700_read_adr_send(uint16_t adr)
 			recv_buff_len = 0;
 
 #ifdef _DEBUG
-			ts_printf(STDOUT_FILENO, "%s: Read address command sent. Address = %d.\n", APP_NAME, adr);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Read address command sent. Address = %d.\n", APP_NAME, adr);
 #endif
 		}
 
@@ -1235,7 +1235,7 @@ uint16_t m700_read_adr_send(uint16_t adr)
 uint16_t m700_read_adr_recv(m700_frame *m_fr, m700_ep_ext *ep_ext)
 {
 #ifdef _DEBUG
-	ts_printf(STDOUT_FILENO, "%s: Read Address frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Read Address frame received. Address = %d, Length = %d\n", APP_NAME, ep_ext->adr, m_fr->data_len);
 #endif
 
 	// TODO finish function m700_read_adr_recv()

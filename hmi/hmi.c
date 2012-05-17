@@ -218,7 +218,7 @@ void main_switch(GR_EVENT *event){
 
 	case GR_EVENT_TYPE_EXPOSURE:
 		if (event->exposure.wid == GR_ROOT_WINDOW_ID){
-			ts_printf(STDOUT_FILENO, "Root exposure event 0x%04X\n", event->exposure.wid);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "Root exposure event 0x%04X\n", event->exposure.wid);
 			redraw_screen(&event);
 		}
 		break;
@@ -232,7 +232,7 @@ void main_switch(GR_EVENT *event){
 		break;
 
 	case GR_EVENT_TYPE_UPDATE:
-		ts_printf(STDOUT_FILENO, "Window event update\n");
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "Window event update\n");
 		break;
 
 		case GR_EVENT_TYPE_CLOSE_REQ:
@@ -262,12 +262,12 @@ value *actval;
 		case QUALITY:
 		case INT32:
 			*((int32_t*) (actval->val)) = ave->value.i;
-			ts_printf(STDOUT_FILENO, "HMI: new value %s(0x%X) = %d\n", avr->name->fc, ave->uid, ave->value.i);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "HMI: new value %s(0x%X) = %d\n", avr->name->fc, ave->uid, ave->value.i);
 			break;
 
 		case FLOAT32:
 			*((float*) (actval->val)) = ave->value.f;
-			ts_printf(STDOUT_FILENO, "HMI: new value %s(0x%X) = %.2F\n", avr->name->fc, ave->uid, ave->value.f);
+			ts_printf(STDOUT_FILENO, TS_DEBUG, "HMI: new value %s(0x%X) = %.2F\n", avr->name->fc, ave->uid, ave->value.f);
 			break;
 
 		case TIMESTAMP:
@@ -316,14 +316,14 @@ varevent *ave;
 
 	fullrdlen = mf_readbuffer(buff, len, &adr, &dir);
 
-	ts_printf(STDOUT_FILENO, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, fullrdlen, dir == DIRDN? "from down" : "from up");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "HMI: Data received. Address = %d, Length = %d %s.\n", adr, fullrdlen, dir == DIRDN? "from down" : "from up");
 
 	// set offset to zero before loop
 	offset = 0;
 
 	while(offset < fullrdlen){
 		if ((fullrdlen - offset) < sizeof(ep_data_header)){
-			ts_printf(STDOUT_FILENO, "HMI: Found not full ep_data_header\n");
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "HMI: Found not full ep_data_header\n");
 			free(buff);
 			return 0;
 		}
@@ -415,7 +415,7 @@ pid_t chldpid;
 
 	// Parsing cid, create virtualization structures from common iec61850 configuration
 	if (cid_build(fname)){
-		ts_printf(STDOUT_FILENO, "IEC61850: cid file not found\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: cid file not found\n");
 	}else{
 		// Cross connection of IEC structures
 		crossconnection();
@@ -430,7 +430,7 @@ pid_t chldpid;
 	fname = malloc(i);
 	sprintf(fname, "%s%s", getpath2configs(), "lowlevel.cfg");
 	// Parse lowlevel config file
-	if (lowlevel_parser(fname)) ts_printf(STDOUT_FILENO, "IEC61850: lowlevel file reading error\n");
+	if (lowlevel_parser(fname)) ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: lowlevel file reading error\n");
 	free(fname);
 
 	// Parse Tariffes
@@ -438,7 +438,7 @@ pid_t chldpid;
 	fname = malloc(i);
 	sprintf(fname, "%s%s", getpath2configs(), "tarif.xml");
 	// Parse lowlevel config file
-	if (tarif_parser(fname)) ts_printf(STDOUT_FILENO, "Tarif: configuration file reading error\n");
+	if (tarif_parser(fname)) ts_printf(STDOUT_FILENO, TS_INFO, "Tarif: configuration file reading error\n");
 	free(fname);
 
 	// Setup environment variables from device environment
@@ -448,7 +448,7 @@ pid_t chldpid;
 	i = strlen(getpath2about()) + strlen("about.me") + 3;
 	fname = malloc(i);
 	sprintf(fname, "%s%s", getpath2about(), "about.me");
-	if (about_parser(fname)) ts_printf(STDOUT_FILENO, "HMI: about.me file reading error\n");
+	if (about_parser(fname)) ts_printf(STDOUT_FILENO, TS_INFO, "HMI: about.me file reading error\n");
 	free(fname);
 
 	// Parse vars from menu.c
@@ -469,7 +469,7 @@ pid_t chldpid;
 
 	//---*** Init visual control ***---//
 	if (init_menu()){
-		ts_printf(STDOUT_FILENO, "Configuration of LNODEs not found\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "Configuration of LNODEs not found\n");
 		exit(1);
 	}
 	mainloop();

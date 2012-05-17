@@ -179,7 +179,7 @@ uint16_t dlt_frame_buff_parse(unsigned char *buff, uint32_t buff_len, uint32_t *
 	if(fcs != buff_get_le_uint8(buff, *offset))
 	{
 #ifdef _DEBUG
-		ts_printf(STDOUT_FILENO, "%s: FCS incorrect. Expected FCS = %02X, received FCS = %02X.\n", "unitlink-dlt645", fcs, buff_get_le_uint8(buff, *offset));
+		ts_printf(STDOUT_FILENO, TS_INFO, "%s: FCS incorrect. Expected FCS = %02X, received FCS = %02X.\n", "unitlink-dlt645", fcs, buff_get_le_uint8(buff, *offset));
 #endif
 
 		return RES_FCS_INCORRECT;

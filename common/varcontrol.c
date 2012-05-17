@@ -124,7 +124,7 @@ struct stat fst;
 	strcat(fname, "mainmap.cfg");
 
 	if (stat(fname, &fst) == -1){
-		ts_printf(STDOUT_FILENO, "IEC Virt: 'mainmap.cfg' file not found\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC Virt: 'mainmap.cfg' file not found\n");
 	}
 	MCFGfile =  malloc(fst.st_size+1);
 	fmcfg = fopen(fname, "r");
@@ -182,7 +182,7 @@ static varrec* findiecvarrec(char *varname){
 varrec *vr = (varrec*) fvarrec.next;
 
 	while (vr){
-		ts_printf(STDOUT_FILENO, "VC: %s == %s, prop = 0x%X\n", vr->name->fc, varname, vr->prop);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "VC: %s == %s, prop = 0x%X\n", vr->name->fc, varname, vr->prop);
 		if (strstr(vr->name->fc, varname)){
 			if (vr->prop & LOGGED) return vr;
 		}

@@ -41,7 +41,7 @@ char *cidname;
 
 	// Parsing cid, create virtualization structures from common iec61850 configuration
 	if (cid_build(cidname)){
-		ts_printf(STDOUT_FILENO, "IEC61850: cid file not found\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: cid file not found\n");
 		exit(1);
 	}
 
@@ -59,11 +59,11 @@ char *cidname;
 	// Start of virtualize functions
 	chldpid = virt_start("startiec");
 	if (chldpid == -1){
-		ts_printf(STDOUT_FILENO, "IEC61850: Virtualization wasn't started\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "IEC61850: Virtualization wasn't started\n");
 		exit(2);
 	}
 
-	ts_printf(STDOUT_FILENO, "\n--- Low level applications ready --- \n\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "\n--- Low level applications ready --- \n\n");
 
 	signal(SIGALRM, catch_alarm);
 	alarm(ALARM_PER);

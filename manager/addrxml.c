@@ -61,7 +61,7 @@ int get_mac(char *file_name)
 	}
 	else
 	{
-		ts_printf(STDOUT_FILENO, "Config Manager: \"%s\" file cannot be opened\n", file_name);
+		ts_printf(STDOUT_FILENO, TS_INFO, "Config Manager: \"%s\" file cannot be opened\n", file_name);
 		return ret;
 	}
 
@@ -153,7 +153,7 @@ char *p;
 			}
 			else
 			{
-				ts_printf(STDOUT_FILENO, "Config Manager: MAC-addresses does not match\n");
+				ts_printf(STDOUT_FILENO, TS_INFO, "Config Manager: MAC-addresses does not match\n");
 			}
 		}
 }
@@ -247,12 +247,12 @@ char sadr[16], *ps = sadr;
 // ssd functions
 
 void TagSetHrdw(const char *pTag){
-	ts_printf(STDOUT_FILENO, "Config Manager: Start ADDR file to parse\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Start ADDR file to parse\n");
 }
 
 void TagEndHrdw(const char *pTag){
 	EndScript=1;
-	ts_printf(STDOUT_FILENO, "Config Manager: Stop ADDR file to parse\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Stop ADDR file to parse\n");
 }
 
 void TagSetXml(const char *pTag){

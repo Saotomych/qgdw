@@ -142,7 +142,7 @@ struct stat fst;
 	}
 	else
 	{
-		ts_printf(STDOUT_FILENO, "Config Manager: Addr.cfg file cannot opened\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "Config Manager: Addr.cfg file cannot opened\n");
 	}
 
 	return ret;
@@ -539,7 +539,7 @@ char *fname;
 
 	if(!strstr(Addrfile, "</Hardware>"))
 	{
-		ts_printf(STDOUT_FILENO, "Config Manager: ADDR file is incomplete\n");
+		ts_printf(STDOUT_FILENO, TS_INFO, "Config Manager: ADDR file is incomplete\n");
 		exit(1);
 	}
 
@@ -553,7 +553,7 @@ char *fname;
 	// Create lowrecord structures
 	XMLSelectSource(Addrfile);
 
-	ts_printf(STDOUT_FILENO, "Config Manager: low records = %d\n", maxrec);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: low records = %d\n", maxrec);
 
 	signal(SIGALRM, catch_alarm);
 	alarm(alarm_t);
@@ -572,12 +572,12 @@ char *fname;
 
 		if(!fdesc) break;
 
-		ts_printf(STDOUT_FILENO, "Config Manager: Begin testing connections for %s devices\n", unitlink_list[scen]);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Begin testing connections for %s devices\n", unitlink_list[scen]);
 
 		// test connection for different scenarios one by one
 		scenfunc[scen](fdesc);
 
-		ts_printf(STDOUT_FILENO, "Config Manager: Testing connections for %s devices ended\n", unitlink_list[scen]);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Testing connections for %s devices ended\n", unitlink_list[scen]);
 
 		// set speed index to zero after each test
 		speed_idx = 0;
@@ -585,7 +585,7 @@ char *fname;
 
 	// write lowlevel.cfg and ieclevel.icd files
 
-	ts_printf(STDOUT_FILENO, "Config Manager: Writing of lowlevel.cfg file started...\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Writing of lowlevel.cfg file started...\n");
 
 	fdesc = fopen(llevelfile, "w");
 
@@ -599,11 +599,11 @@ char *fname;
 
 	fclose(fdesc);
 
-	ts_printf(STDOUT_FILENO, "Config Manager: Writing of ieclevel.icd file started...\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Writing of ieclevel.icd file started...\n");
 
 	icd_full(icdfile);
 
-	ts_printf(STDOUT_FILENO, "Config Manager: Creating of configuration files finished\n");
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "Config Manager: Creating of configuration files finished\n");
 
 	mf_exit();
 

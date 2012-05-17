@@ -205,13 +205,13 @@ static fd_set readset;
 
 		if (pipe(opipe) == -1)
 		{
-			ts_printf(STDOUT_FILENO, "MFI %s: failed to create pipe\n", appname);
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "MFI %s: failed to create pipe\n", appname);
 			return -1;
 		}
 		ret = fork();
 		if (ret < 0){
 			// fork failed
-			ts_printf(STDOUT_FILENO, "MFI %s: fork failed: %d - %s\n", appname, errno, strerror(errno));
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "MFI %s: fork failed: %d - %s\n", appname, errno, strerror(errno));
 			return -1;
 		}
 		if (!ret){
@@ -221,7 +221,7 @@ static fd_set readset;
 	        close(opipe[0]);
 	        close(opipe[1]);
 			execv(pidof, par);
-			ts_printf(STDOUT_FILENO, "MFI %s: testrunnigapp failed: %d - %s\n",appname, errno, strerror(errno));
+			ts_printf(STDOUT_FILENO, TS_VERBOSE, "MFI %s: testrunnigapp failed: %d - %s\n",appname, errno, strerror(errno));
 			exit(0);
 		}
 		pid = ret;
@@ -425,13 +425,13 @@ int ret;
 	ep = create_ep(eih_in->addr);
 
 	if (!ep){
-		ts_printf(STDOUT_FILENO, "MFI %s error: New endpoint wasn't created\n", appname);
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: New endpoint wasn't created\n", appname);
 		return -1;
 	}
 
 	ch->events = IN_CLOSE;
 
-	ts_printf(STDOUT_FILENO, "\n");
+//	ts_printf(STDOUT_FILENO, "\n", appname);
 
 	memcpy((void*) ep->eih.appname, (void*) eih_in->appname, APP_NAME_LEN);
 	ep->ep_up = eih_in->numep;
@@ -486,7 +486,7 @@ int init_open(struct channel *ch){
 //			ts_printf(STDOUT_FILENO, "MFI %s: system has open init file %s, desc = %d\n", appname, ch->f_namein, ch->descin);
 		}
 	}else{
-		ts_printf(STDOUT_FILENO, "MFI %s error: Init channel opens already\n", appname);
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Init channel opens already\n", appname);
 	}
 	return 0;
 
@@ -530,7 +530,7 @@ struct {
 					if (ep->cdcup == ch) break;
 				}
 				if (i == maxep){
-					ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint for up channel to %s not found\n", appname, ch->appname);
+					ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint for up channel to %s not found\n", appname, ch->appname);
 					return 0;
 				}
 				epforup.edh.adr = ep->eih.addr;
@@ -634,7 +634,7 @@ int len = 0, rdlen;
 	// 0 - init already
 
 	if (!ch->descin){
-		ts_printf(STDOUT_FILENO, "MFI %s error: init channel closed\n", appname);
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: init channel closed\n", appname);
 		return 0;		// Init file dont open
 	}
 
@@ -642,13 +642,13 @@ int len = 0, rdlen;
 
 	if (rdlen == -1){
 		ch->events = 0;
-		ts_printf(STDOUT_FILENO, "MFI %s error: readchannel init error:%d - %s\n", appname, errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: readchannel init error:%d - %s\n", appname, errno, strerror(errno));
 		return 0;
 	}
 
 
 	if (rdlen == -2){
-		ts_printf(STDOUT_FILENO, "MFI %s error: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
@@ -677,12 +677,12 @@ struct ep_init_header *eih=0;
 	rdlen = readchannel(ch);
 
 	if (rdlen == -1){
-		ts_printf(STDOUT_FILENO, "MFI %s error: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: readchannel system error:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
 	if (rdlen == -2){
-		ts_printf(STDOUT_FILENO, "MFI %s error: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: ring buffer overflow:%d - %s\n", appname, errno, strerror(errno));
 		return -1;
 	}
 
@@ -693,16 +693,16 @@ struct ep_init_header *eih=0;
 //		ts_printf(STDOUT_FILENO, "MFI %s: ep_data_header_recv:\n- adr=%d\n- numep=%d\n- sysmsg=%d\n- len=%d\n", appname, edh.adr, edh.numep, edh.sys_msg, edh.len);
 
 		if (edh.numep >= maxep){
-			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
-			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint: adr=%d, len=%d, msg=%d\n", appname, edh.adr, edh.len, edh.sys_msg);
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint %d of %d for receiving data very big\n", appname, edh.numep, maxep);
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint: adr=%d, len=%d, msg=%d\n", appname, edh.adr, edh.len, edh.sys_msg);
 			exit(5);
 		}
 
 		// Init ep by recv index
 		ep = myeps[edh.numep];
 		if (!ep){
-			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
-			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint: adr=%d, len=%d, msg=%d\n", appname, edh.adr, edh.len, edh.sys_msg);
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint %d for receiving data not found\n", appname, edh.numep);
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint: adr=%d, len=%d, msg=%d\n", appname, edh.adr, edh.len, edh.sys_msg);
 			exit(5);
 		}
 
@@ -713,10 +713,10 @@ struct ep_init_header *eih=0;
 			if (mychs[0]->descout){
 	 			ret = close(mychs[0]->descout);
 	 			if (ret == -1){
-					ts_printf(STDOUT_FILENO, "MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
+					ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: init file don't closed: %d - %s\n", appname, errno, strerror(errno));
 	 			}
 			}else{
-				ts_printf(STDOUT_FILENO, "MFI %s error: Handler for init file damaged = 0x%X\n", appname, mychs[0]->descout);
+				ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Handler for init file damaged = 0x%X\n", appname, mychs[0]->descout);
 			}
 		}
 
@@ -758,7 +758,7 @@ FILE *fsema;
 //	ts_printf(STDOUT_FILENO, "MFI %X: start inotify thread OK\n", appname);
 
 	if (!d_inoty){
-		ts_printf(STDOUT_FILENO, "MFI %s error: Inotify initialization failed\n", appname);
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Inotify initialization failed\n", appname);
 		exit(1);
 	}
 	mychs[0]->watch = inotify_add_watch(d_inoty, mychs[0]->f_namein, mychs[0]->events);
@@ -786,8 +786,8 @@ FILE *fsema;
 				ch = mychs[i];
 				if (einoty.wd == ch->watch)	break;
 			}
-			if (i < maxch) ts_printf(STDOUT_FILENO, "MFI %s: Inotify exception for channel %s\n", appname, ch->appname);
-			else  ts_printf(STDOUT_FILENO, "MFI %s: Inotify exception for non-exist channel 0x%X\n", appname, (int) ch);
+			if (i < maxch) ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s: Inotify exception for channel %s\n", appname, ch->appname);
+			else  ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s: Inotify exception for non-exist channel 0x%X\n", appname, (int) ch);
 			exit(0);
 		}
 
@@ -828,7 +828,7 @@ FILE *fsema;
 			}
 		}
 	}while(inotifystop);
-	ts_printf(STDOUT_FILENO, "MFI %s: inotify thread exit!\n", appname);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: inotify thread exit!\n", appname);
 
 	exit(0);
 }
@@ -836,12 +836,12 @@ FILE *fsema;
 
 // ================= Signal Handlers  ========================================== //
 void sighandler_sigchld(int arg){
-	ts_printf(STDOUT_FILENO, "MFI %s: sigchld\n", appname);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: sigchld\n", appname);
 	mf_exit();
 }
 
 void sighandler_sigquit(int arg){
-	ts_printf(STDOUT_FILENO, "MFI %s: own quit\n", appname);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: own quit\n", appname);
 	mf_exit();
 	exit(0);
 }
@@ -935,14 +935,14 @@ struct stat fstt;
 		ret = fork();
 		if (ret < 0){
 			// fork failed
-			ts_printf(STDOUT_FILENO, "MFI %s: fork failed: %d - %s\n", appname, errno, strerror(errno));
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s: fork failed: %d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
 		if (!ret){
 
 			// run child process
 			execv(chld_name, par);
-			ts_printf(STDOUT_FILENO, "MFI %s: inotify_init failed: %d - %s\n", appname, errno, strerror(errno));
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s: inotify_init failed: %d - %s\n", appname, errno, strerror(errno));
 			exit(0);
 		}
 
@@ -957,7 +957,7 @@ struct stat fstt;
 
 //		was: usleep(1000);
 	}else{
-		ts_printf(STDOUT_FILENO, "MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: LOW LEVEL APPLICATION RUNNING ALREADY\n", appname);
 	}
 
 
@@ -966,11 +966,11 @@ struct stat fstt;
 		// Forward existing endpoint
 		ep = find_ep_by_addr(addr);
 		if (!ep){
-			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint with address = %d not found\n", appname, addr);
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint with address = %d not found\n", appname, addr);
 			return -1;		// if ep_num don't have, ep = 0
 		}
 		if (ep->cdcdn){
-			ts_printf(STDOUT_FILENO, "MFI %s error: Endpoint with address = %d has down-channel already\n", appname, addr);
+			ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Endpoint with address = %d has down-channel already\n", appname, addr);
 			//return -1;	// if down channel created already
 		}
 		ep->ready = 0;
@@ -978,20 +978,20 @@ struct stat fstt;
 		// Create new endpoint
 		ep = create_ep(addr);
 		if (!ep) return -1;		// endpoint don't create
-//		ts_printf(STDOUT_FILENO, "%s: Create endpoint begin\n", appname);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: Create endpoint begin\n", appname);
 	}
 
 	// Find channel for this low level application
 	ch = findch_by_name(chld_name);
 	if (!ch){
 		// Create new channel
-		ts_printf(STDOUT_FILENO, "MFI %s: Create channel to %s\n", appname, chld_name);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: Create channel to %s\n", appname, chld_name);
 		ch = newchanneldn(pathinit, chld_name);
 		if (!ch) return -1;
 //		ts_printf(STDOUT_FILENO, "MFI %s: Channel for %s was created\n", appname, ch->appname);
 	}else{
 		// Start connect new endpoint with exist channel
-		ts_printf(STDOUT_FILENO, "MFI %s: Found channel for %s\n", appname, chld_name);
+		ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: Found channel for %s\n", appname, chld_name);
 	}
 	ep->cdcdn = ch;
 
@@ -1005,7 +1005,7 @@ struct stat fstt;
 	strcat(fname, sufinit);
 	mychs[0]->descout = open(fname, O_RDWR);
 	if (!mychs[0]->descout){
-		ts_printf(STDOUT_FILENO, "MFI %s: Failed to open init file\n", chld_name);
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s: Failed to open init file\n", chld_name);
 		return -1;
 	}
 
@@ -1017,15 +1017,15 @@ struct stat fstt;
 	// Write config to init channel
 	wrlen = write(mychs[0]->descout, (char*) &eih_out, sizeof(ep_init_header));
 
-	ts_printf(STDOUT_FILENO, "\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
-	ts_printf(STDOUT_FILENO, "- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
 	while (mf_waitevent(fname, 160, 5000, NULL, 0) != 1);
 
 	mychs[0]->descout = 0;
 	ep->ready = 3;
 
-	ts_printf(STDOUT_FILENO, "MFI %s: connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
+	ts_printf(STDOUT_FILENO, TS_DEBUG, "MFI %s: connect of endpoint %d for asdu = %d to channel 0x%X (descs = 0x%X/0x%X) completed\n", appname, ep->my_ep, ep->eih.addr, (int) ep->cdcdn, ep->cdcdn->descin, ep->cdcdn->descout);
 
 	return 0;
 }
@@ -1063,12 +1063,12 @@ struct endpoint *ep = 0;
 	// Write data to channel
 	if (ch->descout) wrlen = write(ch->descout, buf, len);
 	else{
-		ts_printf(STDOUT_FILENO, "MFI %s error: Outfile descriptor = 0\n", appname);
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: Outfile descriptor = 0\n", appname);
 
 		exit(1);
 	}
 	if (wrlen == -1) {
-		ts_printf(STDOUT_FILENO, "MFI %s error: write error:%d - %s\n",appname, errno, strerror(errno));
+		ts_printf(STDOUT_FILENO, TS_INFO, "MFI %s error: write error:%d - %s\n",appname, errno, strerror(errno));
 
 		exit(2);
 	}
@@ -1123,7 +1123,6 @@ struct timeval tm;
     if (FD_ISSET(hpp[0], &rddesc)){
     	if (ret > 0){
     		ret = read(hpp[0], buf, len);
-//    		ts_printf(STDOUT_FILENO, "MFI %s: read error:%d - %s\n",appname, errno, strerror(errno));
     		return 1;
     	}
     }

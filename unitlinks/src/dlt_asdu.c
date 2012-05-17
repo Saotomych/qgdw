@@ -604,7 +604,7 @@ uint16_t dlt_asdu_buff_parse(unsigned char *buff, uint32_t buff_len, asdu *dlt_a
 	}
 
 #ifdef _DEBUG
-	if(res == RES_SUCCESS) ts_printf(STDOUT_FILENO, "%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size, dlt_asdu->attr & 0x01);
+	if(res == RES_SUCCESS) ts_printf(STDOUT_FILENO, TS_DEBUG, "%s: ASDU parsed OK. Type = %d, IO num = %d, SQ = %d\n", "unitlink-dlt645", dlt_asdu->type, dlt_asdu->size, dlt_asdu->attr & 0x01);
 #endif
 
 	return res;
