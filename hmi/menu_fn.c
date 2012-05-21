@@ -293,7 +293,7 @@ int i, x = 4, l;
 	ts_sprintf(pmenu, "text 50 14 160 a минуты\n");
 	pmenu += strlen(pmenu);
 
-	for (i=0; i < 7; i++){
+	for (i=0; i < 8; i++){
 		if (intervals[i] > 9) l = 18;
 		else l = 11;
 		ts_sprintf(pmenu, "menu %d 40 %d a %d\n", x, l, intervals[i]);

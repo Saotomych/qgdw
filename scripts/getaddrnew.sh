@@ -13,6 +13,8 @@ if [ $? -ne 0 ]
     then
     rm $home1/configs/*.icd > /dev/null 2>&1
     rm $home1/configs/*.cid > /dev/null 2>&1
+    echo >> $home1/cfgupdate.log
+    date +%d.%m.%Y-%a-%H:%M:%S >> $home1/cfgupdate.log
     echo "new addr.cfg download OK" >> $home1/cfgupdate.log
     echo "REBOOT" >> $home1/cfgupdate.log
     echo "put $home1/cfgupdate.log dev/$ID/logs" | sftp $UPDATE@$SFTP 2>&1 > /dev/null

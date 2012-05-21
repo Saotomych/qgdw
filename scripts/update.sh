@@ -5,9 +5,9 @@ sourcce=/tmp
 source $sourcce/about/setenv.sh
 
 mkdir recycle 2>&1 > /dev/null
-rm $home1/update.log 2>&1 > /dev/null
 
-d=`date`
+echo New update operation > $home1/update.log
+date +%d.%m.%Y-%a-%H:%M:%S >> $home1/update.log
 
 # SOFTWARE UPDATE
 cd $home1
@@ -95,7 +95,7 @@ in
 		echo m700env.0 download OK > $home1/update.log
 		echo erase flash
     		flash_erase /dev/mtd0 # очистка нужного раздела
-    		echo "$d write m700env.0" > $home1/update.log
+    		echo "write m700env.0" > $home1/update.log
    		nandwrite -p /dev/mtd0 $sourcce/m700env.0 | grep bad > $home1/update.log # запись образа
     		case $?
 		in
@@ -136,7 +136,7 @@ in
 		echo uImage download OK > $home1/update.log
 		echo erase flash
     		flash_eraseall /dev/mtd2 # очистка нужного раздела
-    		echo "$d write uImage" > $home1/update.log
+    		echo "write uImage" > $home1/update.log
    		nandwrite -p /dev/mtd2 $sourcce/uImage | grep bad > $home1/update.log # запись образа
     		case $?
 		in
@@ -176,7 +176,7 @@ in
 		echo u-boot.bin download OK > $home1/update.log
 		echo erase flash
     		flash_eraseall /dev/mtd1 # очистка нужного раздела
-    		echo "$d write u-boot.bin" > $home1/update.log
+    		echo "write u-boot.bin" > $home1/update.log
    		nandwrite -p /dev/mtd1 $sourcce/u-boot.bin | grep bad > $home1/update.log # запись образа
     		case $?
 		in
@@ -217,7 +217,7 @@ in
 		echo erase flash
 		cp /usr/sbin/nandwrite $sourcce		# save nandwrite for working without rootfs
     		flash_eraseall /dev/mtd3 # очистка нужного раздела
-    		echo "$d write rootfs.cramfs" > $home1/update.log
+    		echo "write rootfs.cramfs" > $home1/update.log
  		$sourcce/nandwrite -p /dev/mtd3 $sourcce/rootfs.cramfs | grep bad > $home1/update.log # запись образа
     		case $?
 		in

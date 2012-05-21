@@ -32,6 +32,8 @@ if [ $adr -ne 0 ]
 # no addr.cfg, exist *.icd, no *.cid
     echo "Manager has making ICD file. CID waiting."
     echo put ../configs/ieclevel.icd dev/$ID/configs/ieclevel.icd | sftp $UPDATE@$SFTP  > /dev/null 2>&1
+    echo >> $home1/cfgupdate.log
+    date +%d.%m.%Y-%a-%H:%M:%S >> $home1/cfgupdate.log    
     echo "ieclevel.icd upload OK" >> $home1/cfgupdate.log
     echo "put $home1/cfgupdate.log dev/$ID/logs/cfgupdate.log" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
     crontab -u root /tmp/crontabs/getcid.cron
@@ -83,6 +85,8 @@ else
 
 fi
 
+echo >> $home1/cfgupdate.log
+date +%d.%m.%Y-%a-%H:%M:%S >> $home1/cfgupdate.log    
 icd=`stat ieclevel.icd > /dev/null 2>&1`
 if [ $icd -eq 0 ] 
   then
@@ -97,6 +101,6 @@ if [ $icd -eq 0 ]
 fi
 
 # no *.icd, no *.cid
-echo "ERROR: Manager don't has making ICD file"
+echo "ERROR: Manager don't has making ICD file. Set getaddrnew script." >> $home1/cfgupdate.log
 crontab -u root /tmp/crontabs/getaddrnew.cron
 exit 2

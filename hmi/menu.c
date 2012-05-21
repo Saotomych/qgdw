@@ -28,7 +28,7 @@ time_t maintime;		// Actual Time
 time_t jourtime;		// Time for journal setting
 time_t tmptime;			// Time for setting process
 int idlnmenuname = 0;
-int intervals[] = {1,5,10,15,20,30,60};
+int intervals[] = {1,2,3,5,10,15,20,30};
 int *pinterval = intervals;		// Time Interval for view journal records
 int *ptarifid = NULL;
 char *ptarifname = NULL;

@@ -47,9 +47,8 @@ extern int mf_toendpoint(char *buf, int len, int addr, int direct);
 extern int mftai_readbuffer(TRANSACTINFO *tai);
 extern int mf_readbuffer_by_index(char *buf, int len, int *index, int *direct);
 extern int mf_readbuffer(char *buf, int len, int *addr, int *direct);
-
-//extern int mf_waitevent(char *buf, int len, int ms_delay);
-extern int mf_waitevent(char *buf, int len, int ms_delay, int *addfd, int setlen);
+extern void mf_addctrlheader(int addfd);
+extern int mf_waitevent(char *buf, int len, int ms_delay);
 extern int mf_testrunningapp(char *name);
 
 #endif /* MULTIFIFO_H_ */

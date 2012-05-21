@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
 	}
 
 	fev0 = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
+	mf_addctrlheader(fev0);
 	evlen = 1;
 	if (fev0 == -1){
 #ifdef _DEBUG
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 
 	do
 	{
-		ret = mf_waitevent(mf_buffer, sizeof(mf_buffer), 0, &fev0, evlen);
+		ret = mf_waitevent(mf_buffer, sizeof(mf_buffer), 0);
 
 		if(!ret)
 		{

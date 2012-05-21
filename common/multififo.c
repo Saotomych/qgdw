@@ -24,6 +24,8 @@ int hpp[2];
 
 // Control inotify
 static int d_inoty = 0;
+static int addhdrs[5];
+static int setlenhdrs = 0;
 
 // Control channel
 char *sufsema = {"-sema"};
@@ -1020,7 +1022,7 @@ struct stat fstt;
 	ts_printf(STDOUT_FILENO, TS_DEBUG, "\nMFI %s: WAITING THIS ENDPOINT in high level:\n- number = %d\n- up endpoint = %d\n- down endpoint = %d\n", appname, ep->my_ep, ep->ep_up, ep->ep_dn);
 	ts_printf(STDOUT_FILENO, TS_DEBUG, "- up channel desc = 0x%X\n- down channel desc = 0x%X\n\n", (int) ep->cdcup, (int) ep->cdcdn);
 
-	while (mf_waitevent(fname, 160, 5000, NULL, 0) != 1);
+	while (mf_waitevent(fname, 160, 5000) != 1);
 
 	mychs[0]->descout = 0;
 	ep->ready = 3;
@@ -1096,7 +1098,15 @@ struct ep_data_header *edh = 0;
 	return (i==maxep ? 0 : ret);
 }
 
-int mf_waitevent(char *buf, int len, int ms_delay, int *addfd, int setlen){
+void mf_addctrlheader(int addfd){
+
+	if (setlenhdrs < 5){
+		addhdrs[setlenhdrs] = addfd;
+		setlenhdrs++;
+	}
+}
+
+int mf_waitevent(char *buf, int len, int ms_delay){
 static fd_set rddesc;
 int ret, cnt, fdlen, max;
 struct timeval tm;
@@ -1106,10 +1116,10 @@ struct timeval tm;
 	FD_SET(hpp[0], &rddesc);
 	max = hpp[0];
 
-	cnt = 0; fdlen = setlen;
+	cnt = 0; fdlen = setlenhdrs;
 	while (fdlen){
-		FD_SET(addfd[cnt], &rddesc);
-		if (addfd[cnt] > max) max = addfd[cnt];
+		FD_SET(addhdrs[cnt], &rddesc);
+		if (addhdrs[cnt] > max) max = addhdrs[cnt];
 		cnt++; fdlen--;
 	}
 
@@ -1127,11 +1137,11 @@ struct timeval tm;
     	}
     }
 
-	cnt = 0; fdlen = setlen;
+	cnt = 0; fdlen = setlenhdrs;
 	while (fdlen){
-	    if (FD_ISSET(addfd[cnt], &rddesc)){
+	    if (FD_ISSET(addhdrs[cnt], &rddesc)){
 	    	if (ret > 0){
-	    		ret = read(addfd[cnt], buf, len);
+	    		ret = read(addhdrs[cnt], buf, len);
 		    	return cnt + FDSETPOS;
 	    	}
 	    }
