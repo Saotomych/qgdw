@@ -363,6 +363,7 @@ GR_EVENT event;
 //GR_WM_PROPERTIES props;
 struct input_event ev[16];
 size_t evlen;
+int ret;
 
 	memset(&event, 0, sizeof(GR_EVENT));
 
@@ -371,17 +372,39 @@ size_t evlen;
  		GrGetNextEventTimeout(&event, 100L);
 
  		// Read of keyboard
- 		if (fkeyb != -1){
- 			evlen = read(fkeyb, ev, sizeof(ev)) / sizeof(struct input_event);
- 			if (evlen != 0xFFFFFFF){
-				if (ev[0].value){
-					printf("KEY: %X, %X, %X\n", ev[0].value, ev[0].type, ev[0].code);
-					event.type = GR_EVENT_TYPE_KEY_DOWN;
-					event.keystroke.ch = ev[0].code;
-					main_switch(&event);
-				}
- 			}else main_switch(&event);
- 		}else main_switch(&event);
+ 		ret = mf_waitevent((char*) ev, sizeof(ev), 10L);
+
+ 		if(!ret) {
+			mf_exit();
+			exit(0);
+		}
+
+		if (ret == 1) {
+			// Not used here
+		}
+
+		if (ret == FDSETPOS){
+			if (ev[0].value){
+#ifdef _DEBUG
+				ts_printf(STDOUT_FILENO, TS_DEBUG, "KEY: %X, %X, %X\n", ev[0].value, ev[0].type, ev[0].code);
+#endif
+				event.type = GR_EVENT_TYPE_KEY_DOWN;
+				event.keystroke.ch = ev[0].code;
+				main_switch(&event);
+			}
+		}else main_switch(&event);
+
+// 		if (fkeyb != -1){
+// 			evlen = read(fkeyb, ev, sizeof(ev)) / sizeof(struct input_event);
+// 			if (evlen != 0xFFFFFFF){
+//				if (ev[0].value){
+//					printf("KEY: %X, %X, %X\n", ev[0].value, ev[0].type, ev[0].code);
+//					event.type = GR_EVENT_TYPE_KEY_DOWN;
+//					event.keystroke.ch = ev[0].code;
+//					main_switch(&event);
+//				}
+// 			}else main_switch(&event);
+// 		}else main_switch(&event);
 
  		// Check my events
  		if (MFMessage){
@@ -461,6 +484,7 @@ pid_t chldpid;
 	vc_init();
 
 	fkeyb = open("/dev/input/event0", O_RDONLY | O_NONBLOCK);
+	mf_addctrlheader(fkeyb);
 
 	// Multififo init
 	chldpid = mf_init(getpath2fifomain(), "hmi700", rcvdata);

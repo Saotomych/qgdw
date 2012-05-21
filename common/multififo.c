@@ -1100,7 +1100,7 @@ struct ep_data_header *edh = 0;
 
 void mf_addctrlheader(int addfd){
 
-	if (setlenhdrs < 5){
+	if ((setlenhdrs < 5) && (addfd != -1)){
 		addhdrs[setlenhdrs] = addfd;
 		setlenhdrs++;
 	}
