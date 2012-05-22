@@ -382,9 +382,9 @@ int i;
 	}
 
 	// Find and run proloque
-	pmenu = strstr(menuname,"/");
-	if (pmenu) pmenu++;
-	else pmenu = menuname;
+	pmenu = menuname + strlen(menuname);
+	while ((*pmenu != '/') && (pmenu > menuname)) pmenu--;
+	pmenu++;
 
 	for (i=0; i < sizeof(menufactset) / sizeof(fact); i++){
 		if (!strcmp(menufactset[i].action, pmenu)){
