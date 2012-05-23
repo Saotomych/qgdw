@@ -16,7 +16,9 @@ if [ $? -ne 0 ]
     date +%d.%m.%Y-%a-%H:%M:%S >> $home1/cfgupdate.log
     echo "addr.cfg download OK" >> $home1/cfgupdate.log
     echo "put $home1/cfgupdate.log dev/$ID/logs" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
+    crontab -u root /tmp/crontabs/update.cron
     ./manager
+    date +%d.%m.%Y-%a-%H:%M:%S >> $home1/cfgupdate.log
     echo "Configuration READY" >> $home1/cfgupdate.log
     echo "put $home1/cfgupdate.log dev/$ID/logs" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
     $home1/scripts/startconfig.sh

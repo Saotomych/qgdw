@@ -228,7 +228,7 @@ menu *num_menu = allmenus[maxmenus];
 	            while ((*ptxt) < ' ') ptxt++;
 
 	            num_menu->pitems[i] = (item*) malloc(sizeof(item));
-	            memset(num_menu->pitems[i], sizeof(item), 0);
+	            memset(num_menu->pitems[i], 0, sizeof(item));
 	            ptxt[4] = 0;
 	            pitemtype = ptxt;
 	            ptxt += 5;
@@ -261,7 +261,7 @@ menu *num_menu = allmenus[maxmenus];
 
 	            	num_menu->pitems[i]->prev_item = last_menuitem;
 	            	num_menu->pitems[i]->next_item = first_menuitem;
-	            	num_menu->pitems[(int)last_menuitem]->next_item = i;
+	            	num_menu->pitems[(int)last_menuitem]->next_item = (char) i;
 		            num_menu->pitems[i]->text = ptxt;
 		            num_menu->pitems[i]->next_menu = 0;
 	               	num_menu->pitems[i]->action = 0;
@@ -316,7 +316,7 @@ menu *num_menu = allmenus[maxmenus];
 	            	p--;
 	            }while ((uchar) (*p)  < ' ');
 
-	            // IF Fixed text is variable
+	            // IF Fixed text have variable
 	            p = strstr(num_menu->pitems[i]->text, "&var:");
 	            if (p){
 	            	*p = 0;

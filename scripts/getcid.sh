@@ -15,11 +15,12 @@ if [ $? -ne 0 ]
       echo >> $home1/cfgupdate.log
       date +%d.%m.%Y-%a-%H:%M:%S >> $home1/cfgupdate.log
       cd $home1/bin > /dev/null 2>&1
-      echo Start IEC software
+      crontab -u root /tmp/crontabs/getaddrnew.cron
+      echo "ieclevel.cid download OK" >> $home1/cfgupdate.log
+      echo "Start IEC software" >> $home1/cfgupdate.log
+      echo "put $home1/cfgupdate.log dev/$ID/logs" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
       ./hmi700&
       ./nano-X&
-      echo "ieclevel.cid download OK" >> $home1/cfgupdate.log
-      echo "put $home1/cfgupdate.log dev/$ID/logs" | sftp $UPDATE@$SFTP 2>&1 > /dev/null
    fi
 fi
 
