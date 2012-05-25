@@ -7,3 +7,7 @@ menu 8 54 142 a &var:APP:lnclasstext~changetypeln>lntypemenu
 menu 2 74 a a 1. Средние токи >isred
 menu 2 a a a 2. Средние напряжения >usred
 menu 2 a a a 3. Средние мощности >psred
+menu 2 a a a 4. Дневные максимумы >daymax
+menu 2 a a a 5. Ночные максимумы >nightmax
+menu 2 a a a 6. Утренние максимумы >mornmax
+menu 2 a a a 7. Вечерние максимумы >evenmax

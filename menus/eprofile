@@ -11,7 +11,7 @@ text 97 35 23 a :&var:APP:jsec
 menu 0 50 70 a Интервал >interval~chinterval
 text 80 50 80 a &var:APP:interval
 text 100 50 80 a минут
-text 80 65 80 a Мощность А
-text 0 65 80 a Время
-text 80 80 80 80 &var:JR:(-10,5):PhVphsC.mag.f
-text 0 80 80 80 &var:JRTIME:(-10,5):PhVphsC.mag.f
+text 40 64 120 48 Акт: &var:JR:(0,3):TotW.mag.f
+text 0 64 40 48 &var:JRTIME:(0,3):TotW.mag.f
+text 40 112 120 48 Реакт: &var:JR:(0,3):TotVAr.mag.f
+text 0 112 40 48 &var:JRTIME:(0,3):TotVAr.mag.f

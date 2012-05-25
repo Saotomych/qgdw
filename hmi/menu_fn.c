@@ -284,7 +284,7 @@ char *txtmenu = arg;
 char *pmenu = arg;
 int i, x = 4, l;
 
-	ts_sprintf(pmenu, "main 10 65 140 60\n");
+	ts_sprintf(pmenu, "main 5 65 155 60\n");
 	pmenu += strlen(pmenu);
 	ts_sprintf(pmenu, "keys right:timeright left:timeleft enter:setinterval\n");
 	pmenu += strlen(pmenu);
@@ -293,7 +293,7 @@ int i, x = 4, l;
 	ts_sprintf(pmenu, "text 50 14 160 a минуты\n");
 	pmenu += strlen(pmenu);
 
-	for (i=0; i < 8; i++){
+	for (i=0; i < 9; i++){
 		if (intervals[i] > 9) l = 18;
 		else l = 11;
 		ts_sprintf(pmenu, "menu %d 40 %d a %d\n", x, l, intervals[i]);

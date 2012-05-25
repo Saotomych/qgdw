@@ -32,7 +32,7 @@ for filemd5 in $dir
 			echo "Directory $home1/$filemd5 OK $filenew"
       		fi
 		dir_md5=$filemd5
-		sftp $UPDATE@$SFTP:$dir_md5/*.md5 $home1/$dir_md5
+		sftp $UPDATE@$SFTP:$dir_md5/*.md5 $home1/$dir_md5 2>&1 > /dev/null
 		cd $home1/$dir_md5 2>&1 > /dev/null
 	else
 		md5sum -c $filemd5.md5 > /dev/null 2>&1
@@ -40,6 +40,7 @@ for filemd5 in $dir
 			then
 		    	echo "found new version of $filemd5.md5 -> download $filemd5 from sftp-server"
 		      	echo "found new version of $filemd5.md5 -> download $filemd5 from sftp-server" >> $home1/update.log
+			rm -f $home1/$dir_md5/$filemd5 > /dev/null 2>&1
 			sftp $UPDATE@$SFTP:$dir_md5/$filemd5 $home1/$dir_md5/$filemd5 2>&1 > /dev/null
 			stat $filemd5.md5 > /dev/null 2>&1
 			if [ $? -eq 0 ]

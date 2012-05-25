@@ -1,4 +1,4 @@
-text 5 0 a a Архив потребления
+text 5 0 a a Энергия по тарифам
 menu 0 20 60 a Дата >jourdate~change1day
 text 60 20 15 a &var:APP:jday
 text 75 20 22 a .&var:APP:jmondig
@@ -7,7 +7,7 @@ menu 0 35 60 a Время >jourtime~change1min
 text 60 35 15 a &var:APP:jhour
 text 75 35 22 a :&var:APP:jmin
 text 97 35 23 a :&var:APP:jsec
-menu 0 50 70 a Интервал >interval~chinterval
-text 80 50 80 a &var:APP:interval
-text 100 50 80 a минут
-text 0 a a 80 &var:JR:(-10,6):TotWh.mag.f
+text 40 60 120 60 Реакт: &var:JR:(0,3):TotWh.mag.f
+text 0 60 40 60 &var:JRTIME:(0,3):TotWh.mag.f
+text 40 112 120 60 Реакт: &var:JR:(0,3):TotWh.mag.f
+text 0 112 40 60 &var:JRTIME:(0,3):TotWh.mag.f

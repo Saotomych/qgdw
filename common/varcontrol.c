@@ -102,11 +102,6 @@ static size_t sizeof_idx(int idx){
 	return 0;
 }
 
-// Set callback function for variable changing events
-void vc_setcallback(){
-
-}
-
 // Make memory allocation for all variables, read values and set pointers
 int vc_init(){
 FILE *fmcfg;
@@ -625,7 +620,7 @@ char keywords[][10] = {
 
 					// Make place for multitime store
 					if (vr){
-						vr->ptime = malloc(vr->maxval * sizeof(int));
+						vr->ptime = malloc(vr->maxval * sizeof(int));   // definit lost 12 bytes
 						memset(vr->ptime, -1, vr->maxval * sizeof(int));
 						vr->prop |= PRINTPTIME;
 					}

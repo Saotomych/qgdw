@@ -5,5 +5,5 @@ menu 2 32 77 a Адр: &var:LD:inst~changeld>lnmenu
 text 80 32 80 a Тип: &var:APP:devicetype
 menu 8 54 142 a &var:APP:lnclasstext~changetypeln>lntypemenu
 menu 2 74 156 a 1. Профиль мощности>pprofile
-menu 2 a 156 a 3. Параметры сети>connect
+menu 2 a 156 a 2. Параметры сети>connect
 menu 2 a 156 a 3. Профиль нагрузки>eprofile
