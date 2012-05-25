@@ -7,3 +7,5 @@ menu 0 35 60 a Время >jourtime~change1min
 text 60 35 15 a &var:APP:jhour
 text 75 35 22 a :&var:APP:jmin
 text 97 35 23 a :&var:APP:jsec
+text 0 40 120 a &var:JR:(0,7):SysMsg
+text 0 0 40 a &var:JRTIME:(0,7):SysMsg

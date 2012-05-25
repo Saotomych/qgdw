@@ -17,7 +17,7 @@ static char defpathfonts[] = {"pcf"};
 static char defpathul[] = {"unitlinks"};
 static char defpathphy[] = {"phyints"};
 static char defpathmain[] = {"mainapp"};
-static char defpathabout[] = {"about"};
+static char defpathabout[] = {"/tmp/about"};
 static char defpathlog[] = {"log"};
 
 static char *basepath;		// Path to all project from environment MXPATH or default
