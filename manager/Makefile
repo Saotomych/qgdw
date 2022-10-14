@@ -3,7 +3,6 @@
 OBJS_MGR = autoconfig.o addrxml.o icdxml.o multififo.o ts_print.o getpaths.o
 OBJS_PP = persparser.o
 CCFLAGS += -c -O0 -g3 -Wall
-LDFLAGS += -Wl
 
 persparser: $(OBJS_PP)
 	$(CC) $(LDFLAGS) -o ../bin/persparser $(OBJS_PP)

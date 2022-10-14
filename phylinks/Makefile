@@ -3,7 +3,6 @@
 OBJS_TCP = phy_tcp.o multififo.o ts_print.o getpaths.o
 OBJS_TTY = phy_tty.o multififo.o ts_print.o getpaths.o
 CCFLAGS += -c -O0 -g3 -Wall
-LDFLAGS += -Wl
 
 phy_tty: $(OBJS_TTY)
 	$(CC) $(LDFLAGS) -o ../bin/phy_tty $(OBJS_TTY) -lpthread

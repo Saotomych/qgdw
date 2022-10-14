@@ -1,14 +1,14 @@
 -include ../common/common.mk
 
 OBJS += startiec.o virtualize.o ssd.o xml.o multififo.o ts_print.o log_db.o tarif.o getpaths.o varcontrol.o args.o
-BDB_INC = -I../../BerkeleyDB.4.4/include
-BDB_LIB = -L../../BerkeleyDB.4.4/lib
+BDB_INC = -I ../third_party/include
+BDB_LIB = -L ../third_party/libs
 ifeq ($(ARCH), arm)
-BDB_INC = -I..
-BDB_LIB = -L..
+BDB_INC = -I ..
+BDB_LIB = -L ..
 endif
 CCFLAGS += -c -O0 -g3 -Wall $(BDB_INC)
-LDFLAGS += -Wl $(BDB_LIB)
+LDFLAGS += -Wl,$(BDB_LIB)
 
 startiec: $(OBJS)
 	$(CC) $(LDFLAGS) -o ../bin/startiec $(OBJS) -lpthread -ldb

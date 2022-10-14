@@ -4,7 +4,6 @@ OBJS1 = multififo-test.o multififo.o
 OBJS2 = multififo-test-device.o multififo.o
 OBJS3 = fbmmap.o
 CCFLAGS += -c -Os -Wall
-LDFLAGS += -Wl
 
 multififo-test: $(OBJS1)
 	$(CC) $(LDFLAGS) -o mainapptest $(OBJS1)
